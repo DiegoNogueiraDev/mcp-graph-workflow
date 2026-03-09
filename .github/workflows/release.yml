@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: write
-  id-token: write
 
 jobs:
   validate:
@@ -63,9 +62,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
-        run: npm run build
-
+      - name: Install dashboard dependencies
+        run: cd src/web/dashboard && npm ci
       - name: Publish to npm
         run: npm publish --access public
         env:
