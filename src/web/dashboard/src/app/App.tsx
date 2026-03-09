@@ -13,6 +13,7 @@ const GraphTab = lazy(() => import("@/components/tabs/graph-tab").then((m) => ({
 const PrdBacklogTab = lazy(() => import("@/components/tabs/prd-backlog-tab").then((m) => ({ default: m.PrdBacklogTab })));
 const CodeGraphTab = lazy(() => import("@/components/tabs/code-graph-tab").then((m) => ({ default: m.CodeGraphTab })));
 const InsightsTab = lazy(() => import("@/components/tabs/insights-tab").then((m) => ({ default: m.InsightsTab })));
+const BenchmarkTab = lazy(() => import("@/components/tabs/benchmark-tab").then((m) => ({ default: m.BenchmarkTab })));
 
 function LoadingFallback(): React.JSX.Element {
   return (
@@ -61,6 +62,7 @@ function AppContent(): React.JSX.Element {
             {activeTab === "prd-backlog" && graph && <PrdBacklogTab graph={graph} />}
             {activeTab === "code-graph" && <CodeGraphTab />}
             {activeTab === "insights" && <InsightsTab />}
+            {activeTab === "benchmark" && <BenchmarkTab />}
           </Suspense>
         )}
       </main>

@@ -1,17 +1,17 @@
 # MCP Tools Reference
 
-> 31 tools organized in 6 categories — complete parameter reference.
+> 25 tools organized in 6 categories — complete parameter reference.
 
 ## Summary
 
 | Category | Tools | Count |
 |----------|-------|-------|
-| [Graph CRUD](#graph-crud) | init, import_prd, add_node, update_node, delete_node, add_edge, delete_edge, list_edges, move_node, clone_node, export_graph, export_mermaid | 12 |
+| [Graph CRUD](#graph-crud) | init, import_prd, add_node, update_node, delete_node, edge, move_node, clone_node, export | 9 |
 | [Querying](#querying) | list, show, search, rag_context | 4 |
 | [Planning & Execution](#planning--execution) | next, update_status, bulk_update_status, decompose, velocity, dependencies, plan_sprint | 7 |
 | [Knowledge & RAG](#knowledge--rag) | context, reindex_knowledge, sync_stack_docs | 3 |
 | [Validation](#validation) | validate_task | 1 |
-| [Snapshots & Stats](#snapshots--stats) | stats, create_snapshot, restore_snapshot, list_snapshots | 4 |
+| [Snapshots & Stats](#snapshots--stats) | stats, snapshot | 2 |
 
 ---
 
@@ -80,35 +80,21 @@ Delete a node and all its associated edges.
 |-------|------|----------|---------|-------------|
 | `id` | string | Yes | — | Node ID to delete |
 
-### `add_edge`
+### `edge`
 
-Create an edge (relationship) between two nodes.
-
-| Param | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `from` | string | Yes | — | Source node ID |
-| `to` | string | Yes | — | Target node ID |
-| `relationType` | RelationType | Yes | — | Type of relationship |
-| `reason` | string | No | — | Why this relationship exists |
-| `weight` | number | No | — | Edge weight (0-1) |
-
-### `delete_edge`
-
-Delete an edge from the graph.
+Manage edges (relationships) between nodes: add, delete, or list.
 
 | Param | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `id` | string | Yes | — | Edge ID to delete |
-
-### `list_edges`
-
-List and filter edges in the graph.
-
-| Param | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `nodeId` | string | No | — | Filter edges by node ID |
-| `direction` | "from"\|"to"\|"both" | No | `both` | Edge direction relative to nodeId |
-| `relationType` | RelationType | No | — | Filter by relationship type |
+| `action` | "add"\|"delete"\|"list" | Yes | — | Action to perform |
+| `from` | string | No | — | Source node ID (required for add) |
+| `to` | string | No | — | Target node ID (required for add) |
+| `relationType` | RelationType | No | — | Relationship type (required for add, optional filter for list) |
+| `reason` | string | No | — | Why this relationship exists (add only) |
+| `weight` | number | No | — | Edge weight 0-1 (add only) |
+| `id` | string | No | — | Edge ID (required for delete) |
+| `nodeId` | string | No | — | Filter edges by node ID (list only) |
+| `direction` | "from"\|"to"\|"both" | No | `both` | Edge direction relative to nodeId (list only) |
 
 ### `move_node`
 
@@ -129,20 +115,17 @@ Clone a node (optionally with all children).
 | `deep` | boolean | No | `false` | Clone children recursively |
 | `newParentId` | string | No | — | Parent ID for the cloned node |
 
-### `export_graph`
+### `export`
 
-Export the complete graph as a JSON document. No parameters.
-
-### `export_mermaid`
-
-Export the graph as a Mermaid diagram.
+Export the graph as JSON or Mermaid diagram.
 
 | Param | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `format` | "flowchart"\|"mindmap" | No | `flowchart` | Diagram format |
-| `direction` | "TD"\|"LR" | No | `TD` | Flow direction (flowchart only) |
-| `filterStatus` | NodeStatus[] | No | — | Only include nodes with these statuses |
-| `filterType` | NodeType[] | No | — | Only include nodes with these types |
+| `action` | "json"\|"mermaid" | Yes | — | Export format |
+| `format` | "flowchart"\|"mindmap" | No | `flowchart` | Mermaid diagram format (mermaid only) |
+| `direction` | "TD"\|"LR" | No | `TD` | Flow direction (mermaid flowchart only) |
+| `filterStatus` | NodeStatus[] | No | — | Only include nodes with these statuses (mermaid only) |
+| `filterType` | NodeType[] | No | — | Only include nodes with these types (mermaid only) |
 
 ---
 
@@ -298,21 +281,14 @@ Run browser-based validation for a task with optional A/B comparison.
 
 Show aggregate statistics for the project graph, including context compression metrics. No parameters.
 
-### `create_snapshot`
+### `snapshot`
 
-Create a snapshot of the current graph state. No parameters.
-
-### `list_snapshots`
-
-List all available snapshots for the current project. No parameters.
-
-### `restore_snapshot`
-
-Restore the graph to a previous snapshot state.
+Manage graph snapshots: create, list, or restore.
 
 | Param | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `snapshotId` | number | Yes | — | Snapshot ID to restore |
+| `action` | "create"\|"list"\|"restore" | Yes | — | Action to perform |
+| `snapshotId` | number | No | — | Snapshot ID (required for restore) |
 
 ---
 

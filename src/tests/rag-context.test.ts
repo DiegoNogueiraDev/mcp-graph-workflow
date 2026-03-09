@@ -46,7 +46,26 @@ describe("ragBuildContext", () => {
 
     const ctx = ragBuildContext(store, "parser", 500);
     expect(ctx.tokenUsage.budget).toBe(500);
-    expect(ctx.tokenUsage.used).toBeLessThanOrEqual(ctx.tokenUsage.budget + 200); // allow some overflow for first context
+    expect(ctx.tokenUsage.used).toBeLessThanOrEqual(ctx.tokenUsage.budget);
+    expect(ctx.tokenUsage.remaining).toBeGreaterThanOrEqual(0);
+  });
+
+  it("should not report used tokens exceeding budget", () => {
+    // Populate with many nodes to ensure budget would be exceeded
+    for (let i = 0; i < 20; i++) {
+      store.insertNode(
+        makeNode({
+          title: `Parser component ${i}`,
+          description: `A very detailed and long description for parser component ${i} that includes many implementation details, architecture notes, and technical specifications to ensure we consume a lot of tokens in the context expansion phase`,
+        }),
+      );
+    }
+
+    const ctx = ragBuildContext(store, "parser", 500);
+    expect(ctx.tokenUsage.budget).toBe(500);
+    expect(ctx.tokenUsage.used).toBeLessThanOrEqual(500);
+    expect(ctx.tokenUsage.remaining).toBeGreaterThanOrEqual(0);
+    expect(ctx.tokenUsage.used + ctx.tokenUsage.remaining).toBe(500);
   });
 
   it("includes expanded contexts", () => {

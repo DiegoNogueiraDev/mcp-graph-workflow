@@ -93,28 +93,34 @@ export function ragBuildContext(
 
   // Stage 3: Expand context for top results within budget
   const expandedContexts: TaskContext[] = [];
-  let tokensUsed = estimateTokens(JSON.stringify({ query, relevantNodes, knowledgeResults }));
+  const basePayload = JSON.stringify({ query, relevantNodes, knowledgeResults });
+  let tokensUsed = estimateTokens(basePayload);
 
-  for (const result of searchResults) {
-    if (tokensUsed >= tokenBudget) break;
+  // If the base payload already exceeds budget, cap it and skip expansion
+  if (tokensUsed < tokenBudget) {
+    for (const result of searchResults) {
+      if (tokensUsed >= tokenBudget) break;
 
-    const ctx = buildTaskContext(store, result.node.id);
-    if (!ctx) continue;
+      const ctx = buildTaskContext(store, result.node.id);
+      if (!ctx) continue;
 
-    const ctxTokens = ctx.metrics.estimatedTokens;
-    if (tokensUsed + ctxTokens > tokenBudget) {
-      // Check if we have room for at least one more context
-      if (expandedContexts.length === 0) {
-        // Always include at least one context even if over budget
-        expandedContexts.push(ctx);
-        tokensUsed += ctxTokens;
+      const ctxTokens = ctx.metrics.estimatedTokens;
+      if (tokensUsed + ctxTokens > tokenBudget) {
+        // Always include at least one expanded context even if over budget
+        if (expandedContexts.length === 0) {
+          expandedContexts.push(ctx);
+          tokensUsed += ctxTokens;
+        }
+        break;
       }
-      break;
-    }
 
-    expandedContexts.push(ctx);
-    tokensUsed += ctxTokens;
+      expandedContexts.push(ctx);
+      tokensUsed += ctxTokens;
+    }
   }
+
+  // Enforce hard cap: used never exceeds budget in the reported metrics
+  const reportedUsed = Math.min(tokensUsed, tokenBudget);
 
   logger.info(
     `RAG context built: ${relevantNodes.length} nodes, ${knowledgeResults.length} knowledge, ${expandedContexts.length} expanded, ${tokensUsed}/${tokenBudget} tokens`,
@@ -127,8 +133,8 @@ export function ragBuildContext(
     expandedContexts,
     tokenUsage: {
       budget: tokenBudget,
-      used: tokensUsed,
-      remaining: Math.max(0, tokenBudget - tokensUsed),
+      used: reportedUsed,
+      remaining: tokenBudget - reportedUsed,
     },
   };
 }

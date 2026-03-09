@@ -18,6 +18,7 @@ import { createEventsRouter } from "./routes/events.js";
 import { createGitNexusRouter } from "./routes/gitnexus.js";
 import { createRagRouter } from "./routes/rag.js";
 import { createKnowledgeRouter } from "./routes/knowledge.js";
+import { createBenchmarkRouter } from "./routes/benchmark.js";
 import { errorHandler } from "./middleware/error-handler.js";
 
 export interface ApiRouterOptions {
@@ -51,6 +52,7 @@ export function createApiRouter(storeOrOptions: SqliteStore | ApiRouterOptions):
   router.use("/gitnexus", createGitNexusRouter({ basePath }));
   router.use("/rag", createRagRouter(store));
   router.use("/knowledge", createKnowledgeRouter(store));
+  router.use("/benchmark", createBenchmarkRouter(store));
 
   if (eventBus) {
     router.use("/events", createEventsRouter(eventBus));
