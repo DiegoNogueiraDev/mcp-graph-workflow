@@ -1,0 +1,7 @@
+# Global code owner — all PRs require review from Diego
+* @DiegoNogueiraDev
+
+# Critical paths
+/src/core/          @DiegoNogueiraDev
+/src/schemas/       @DiegoNogueiraDev
+/.github/workflows/ @DiegoNogueiraDev
