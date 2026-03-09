@@ -105,7 +105,7 @@ graph LR
 ```mermaid
 sequenceDiagram
     participant U as Usuário
-    participant A as Agent (Claude)
+    participant A as Agent (Opus/Sonnet)
     participant S as Skill: create-prd-chat-mode
 
     U->>A: "Quero adicionar autenticação"
@@ -512,7 +512,7 @@ mindmap
 ```mermaid
 sequenceDiagram
     participant U as Usuário
-    participant A as Agent (Claude)
+    participant A as Agent (Opus/Sonnet)
     participant MCP as mcp-graph
     participant S as Serena
     participant PW as Playwright
