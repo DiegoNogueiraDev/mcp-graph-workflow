@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "mcp-graph": {
+      "command": "npx",
+      "args": ["tsx", "src/mcp/stdio.ts"],
+      "cwd": "/Users/diegonogueira/mcp-graph-workflow"
+    }
+  }
+}

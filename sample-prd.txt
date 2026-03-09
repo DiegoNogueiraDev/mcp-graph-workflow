@@ -1,0 +1,110 @@
+# TaskFlow — Sistema de Gestão de Projetos Ágil
+
+## Visão Geral
+
+Plataforma web para gestão de projetos ágeis com autenticação segura, dashboard analítico em tempo real e integração com ferramentas externas. O sistema deve suportar múltiplos times trabalhando em paralelo com visibilidade completa do progresso.
+
+## Requisitos Não-Funcionais
+
+- Tempo de resposta da API < 200ms (p95)
+- Cobertura de testes > 80%
+- Suporte a 100 usuários simultâneos
+- Deploy automatizado via CI/CD
+- Dados sensíveis criptografados em repouso (AES-256)
+
+## Constraints
+
+- Stack: TypeScript + React + Node.js + PostgreSQL
+- Sem dependência de serviços pagos para funcionalidades core
+- Compatível com navegadores modernos (Chrome, Firefox, Safari últimas 2 versões)
+- API RESTful com versionamento semântico
+
+---
+
+## Epic 1: Autenticação e Autorização
+
+Implementar sistema completo de autenticação com JWT, refresh tokens e controle de acesso baseado em roles (RBAC).
+
+### Task 1.1: Setup do módulo de autenticação
+
+**Descrição:** Criar estrutura base do módulo auth com models, routes e middleware.
+
+**Tamanho:** M
+**Prioridade:** 1 (crítica)
+
+**Critérios de aceite:**
+- Given um novo projeto, When o módulo auth é inicializado, Then as tabelas users e roles são criadas no banco
+- Given a estrutura criada, When o servidor inicia, Then os endpoints /auth/* estão disponíveis
+- Given o módulo configurado, When um request chega sem token, Then retorna 401 Unauthorized
+
+### Task 1.2: Registro e login de usuários
+
+**Descrição:** Implementar endpoints de registro (signup) e login com hash bcrypt e geração de JWT.
+
+**Tamanho:** L
+**Prioridade:** 1 (crítica)
+**Depende de:** Task 1.1
+
+**Critérios de aceite:**
+- Given dados válidos de registro, When POST /auth/signup é chamado, Then o usuário é criado com senha hasheada e retorna JWT
+- Given credenciais válidas, When POST /auth/login é chamado, Then retorna access_token (15min) e refresh_token (7d)
+- Given email já cadastrado, When POST /auth/signup é chamado, Then retorna 409 Conflict
+- Given senha fraca (<8 chars), When POST /auth/signup é chamado, Then retorna 400 com mensagem de validação
+
+### Task 1.3: Middleware de autorização RBAC
+
+**Descrição:** Criar middleware que verifica roles do usuário e restringe acesso a endpoints protegidos.
+
+**Tamanho:** M
+**Prioridade:** 2
+**Depende de:** Task 1.2
+
+**Critérios de aceite:**
+- Given usuário com role "admin", When acessa endpoint admin-only, Then acesso permitido
+- Given usuário com role "viewer", When tenta acessar endpoint de escrita, Then retorna 403 Forbidden
+- Given token expirado, When qualquer request protegido, Then retorna 401 com header WWW-Authenticate
+
+---
+
+## Epic 2: Dashboard Analítico
+
+Dashboard em tempo real com métricas de sprint, gráficos de burndown, distribuição de tasks por status e alertas de blockers.
+
+### Task 2.1: API de métricas agregadas
+
+**Descrição:** Criar endpoints que calculam e retornam métricas agregadas: velocidade do sprint, lead time, throughput.
+
+**Tamanho:** L
+**Prioridade:** 2
+**Depende de:** Task 1.1
+
+**Critérios de aceite:**
+- Given um sprint com tasks concluídas, When GET /metrics/velocity é chamado, Then retorna story points entregues por sprint
+- Given tasks com timestamps, When GET /metrics/lead-time é chamado, Then retorna média e p95 do lead time
+- Given período especificado, When GET /metrics/throughput é chamado, Then retorna tasks concluídas por dia/semana
+
+### Task 2.2: Componente de burndown chart
+
+**Descrição:** Implementar componente React de gráfico burndown com atualização em tempo real via WebSocket.
+
+**Tamanho:** L
+**Prioridade:** 3
+**Depende de:** Task 2.1
+
+**Critérios de aceite:**
+- Given dados de sprint carregados, When o dashboard abre, Then o burndown chart renderiza com linha ideal vs real
+- Given uma task marcada como done, When o evento chega via WebSocket, Then o gráfico atualiza sem refresh
+- Given sprint sem dados, When o dashboard abre, Then mostra estado vazio com mensagem orientativa
+
+### Task 2.3: Painel de alertas e blockers
+
+**Descrição:** Criar painel lateral que mostra tasks bloqueadas, dependências pendentes e alertas de risco.
+
+**Tamanho:** M
+**Prioridade:** 2
+**Depende de:** Task 2.1, Task 1.3
+
+**Critérios de aceite:**
+- Given tasks com status "blocked", When o painel carrega, Then lista todas as tasks bloqueadas com motivo
+- Given dependência circular detectada, When o painel carrega, Then alerta visual destacado em vermelho
+- Given task atrasada (> 2x estimativa), When o painel carrega, Then mostra alerta de risco com sugestão de ação
