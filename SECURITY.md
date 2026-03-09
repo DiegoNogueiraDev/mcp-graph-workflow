@@ -11,7 +11,7 @@
 
 **Please do NOT open a public GitHub issue for security vulnerabilities.**
 
-Instead, report vulnerabilities by emailing the maintainers directly. You can find contact information in the repository's profile or reach out via GitHub's private vulnerability reporting feature.
+Instead, report vulnerabilities by emailing **diegonogueiradev@gmail.com** or use GitHub's [private vulnerability reporting](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/security/advisories/new) feature.
 
 ### What to include
 
