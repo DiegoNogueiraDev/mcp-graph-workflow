@@ -1,0 +1,24 @@
+# Source (not needed — dist/ has compiled output)
+src/
+scripts/
+.claude/
+.mcp-graph/
+.serena/
+.github/
+.vscode/
+
+# Dev/test files
+*.test.ts
+vitest.config.*
+tsconfig.json
+.eslintrc*
+.prettierrc*
+.editorconfig
+
+# Misc
+.DS_Store
+*.tsbuildinfo
+coverage/
+node_modules/
+.env*
+*.log

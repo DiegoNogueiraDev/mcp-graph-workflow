@@ -1,0 +1,49 @@
+export type GraphEventType =
+  | "node:created"
+  | "node:updated"
+  | "node:deleted"
+  | "edge:created"
+  | "edge:deleted"
+  | "import:completed"
+  | "bulk:updated";
+
+export interface GraphEvent {
+  type: GraphEventType;
+  timestamp: string;
+  payload: Record<string, unknown>;
+}
+
+export interface NodeCreatedEvent extends GraphEvent {
+  type: "node:created";
+  payload: { nodeId: string; title: string; nodeType: string };
+}
+
+export interface NodeUpdatedEvent extends GraphEvent {
+  type: "node:updated";
+  payload: { nodeId: string; fields: string[] };
+}
+
+export interface NodeDeletedEvent extends GraphEvent {
+  type: "node:deleted";
+  payload: { nodeId: string };
+}
+
+export interface EdgeCreatedEvent extends GraphEvent {
+  type: "edge:created";
+  payload: { edgeId: string; from: string; to: string; relationType: string };
+}
+
+export interface EdgeDeletedEvent extends GraphEvent {
+  type: "edge:deleted";
+  payload: { edgeId: string };
+}
+
+export interface ImportCompletedEvent extends GraphEvent {
+  type: "import:completed";
+  payload: { nodesCreated: number; edgesCreated: number };
+}
+
+export interface BulkUpdatedEvent extends GraphEvent {
+  type: "bulk:updated";
+  payload: { count: number; operation: string };
+}

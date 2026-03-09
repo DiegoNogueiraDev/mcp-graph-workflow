@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>PRD: Authentication Module</title>
+  <style>body { font-family: sans-serif; }</style>
+  <script>console.log("ignore me");</script>
+</head>
+<body>
+  <nav>Navigation menu</nav>
+  <main>
+    <h1>Authentication Module PRD</h1>
+    <p>This document describes the authentication requirements for the system.</p>
+
+    <h2>Epic: User Authentication</h2>
+    <p>Implement secure user authentication with OAuth2 and JWT tokens.</p>
+
+    <h3>Task: Login Endpoint</h3>
+    <p>Create POST /auth/login endpoint that validates credentials and returns JWT.</p>
+    <ul>
+      <li>Accept email and password</li>
+      <li>Validate against database</li>
+      <li>Return JWT token with 24h expiry</li>
+    </ul>
+
+    <h3>Task: Token Refresh</h3>
+    <p>Create POST /auth/refresh endpoint for token renewal.</p>
+
+    <h2>Requirements</h2>
+    <ul>
+      <li>Passwords must be hashed with bcrypt</li>
+      <li>Tokens must be signed with RS256</li>
+    </ul>
+
+    <h2>Constraints</h2>
+    <p>Must comply with OWASP authentication guidelines.</p>
+  </main>
+  <footer>Footer content</footer>
+</body>
+</html>

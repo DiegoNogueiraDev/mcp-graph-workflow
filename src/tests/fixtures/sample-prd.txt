@@ -1,0 +1,21 @@
+# MCP Local Graph
+
+## Objetivo
+Criar um MCP local em Node.js para transformar PRD em grafo.
+
+## Requisitos
+- Deve rodar em Windows e Linux
+- Não deve depender de Docker
+- Deve persistir dados localmente
+
+## Entregas
+1. Criar CLI mínima
+2. Implementar import de PRD
+3. Implementar parser v1
+4. Converter PRD para grafo
+5. Criar comando next
+
+## Critérios de aceite
+- O sistema deve importar um PRD.txt
+- O sistema deve gerar tasks e subtasks
+- O sistema deve sugerir a próxima task

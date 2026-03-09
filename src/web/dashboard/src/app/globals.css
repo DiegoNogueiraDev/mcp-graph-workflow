@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+@theme {
+  --color-accent: #4263eb;
+  --color-accent-light: #5c7cfa;
+  --color-success: #4caf50;
+  --color-warning: #ff9800;
+  --color-danger: #f44336;
+  --color-info: #2196f3;
+
+  --color-bg: #ffffff;
+  --color-bg-secondary: #f8f9fa;
+  --color-bg-tertiary: #e9ecef;
+  --color-text: #212529;
+  --color-text-muted: #6c757d;
+  --color-border: #dee2e6;
+
+  --color-node-epic: #7c3aed;
+  --color-node-task: #2196f3;
+  --color-node-subtask: #10b981;
+  --color-node-requirement: #f59e0b;
+  --color-node-constraint: #ef4444;
+  --color-node-milestone: #8b5cf6;
+  --color-node-acceptance: #06b6d4;
+  --color-node-risk: #f97316;
+  --color-node-decision: #ec4899;
+
+  --color-status-done: #4caf50;
+  --color-status-in_progress: #2196f3;
+  --color-status-blocked: #f44336;
+  --color-status-ready: #ff9800;
+  --color-status-backlog: #9e9e9e;
+}
+
+.dark {
+  --color-bg: #1a1b1e;
+  --color-bg-secondary: #25262b;
+  --color-bg-tertiary: #2c2e33;
+  --color-text: #c1c2c5;
+  --color-text-muted: #909296;
+  --color-border: #373a40;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  transition: background 0.2s, color 0.2s;
+}
+
+/* React Flow overrides */
+.react-flow__node {
+  font-size: 12px;
+}
+
+.react-flow__attribution {
+  display: none !important;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}

@@ -1,0 +1,14 @@
+import { z } from "zod/v4";
+
+export const ConfigSchema = z.object({
+  port: z.number().int().min(1).max(65535).default(3000),
+  dbPath: z.string().default(".mcp-graph"),
+  basePath: z.string().optional(),
+  integrations: z
+    .object({
+      gitnexusPort: z.number().int().min(1).max(65535).default(3737),
+    })
+    .default({ gitnexusPort: 3737 }),
+});
+
+export type McpGraphConfig = z.infer<typeof ConfigSchema>;
