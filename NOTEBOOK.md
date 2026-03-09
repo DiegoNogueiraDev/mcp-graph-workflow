@@ -1,6 +1,6 @@
 # Caderno de Testes Reais — mcp-graph MCP Tools
 
-> 11 cenários, ~65 steps, 31/31 tools cobertos (100%)
+> 12 cenários, ~73 steps, 25/25 consolidated tools cobertos (100%) + 3 Playwright MCP tools
 
 **Instruções:** Execute cada step sequencialmente. Capture IDs retornados e substitua nos placeholders `<ID>` dos steps seguintes. Cole o output real no campo "Actual" e marque o resultado.
 
@@ -1515,13 +1515,166 @@
 
 ---
 
+## Cenário 12: Frontend Dashboard E2E (via Playwright MCP)
+
+**Objetivo:** Validar que o dashboard web renderiza dados corretamente e que as tabs funcionam.
+**Tools cobertos:** Playwright MCP — `browser_navigate`, `browser_snapshot`, `browser_click`
+**Pré-requisito:** Dashboard rodando em `http://localhost:3377` (ou porta configurada)
+
+### Step 12.1: Navegar para o dashboard
+
+**Tool:** `browser_navigate`
+**Input:**
+```json
+{ "url": "http://localhost:3377" }
+```
+
+**Expected:**
+- Página carrega sem erros
+- Header com nome do projeto visível
+
+**Actual:**
+```json
+
+```
+
+**Result:** ⬜ PASS / ⬜ FAIL / ⬜ SKIP
+
+---
+
+### Step 12.2: Verificar Graph tab (default)
+
+**Tool:** `browser_snapshot`
+
+**Expected:**
+- Tab "Graph" ativa por padrão
+- Canvas area do React Flow renderizada
+- Sem erros no console
+
+**Actual:**
+```json
+
+```
+
+**Result:** ⬜ PASS / ⬜ FAIL / ⬜ SKIP
+
+---
+
+### Step 12.3: Navegar para PRD & Backlog
+
+**Tool:** `browser_click` no botão "PRD & Backlog" → `browser_snapshot`
+
+**Expected:**
+- Tab "PRD & Backlog" fica ativa
+- Lista de nodes do grafo é exibida
+- Nodes têm título e status
+
+**Actual:**
+```json
+
+```
+
+**Result:** ⬜ PASS / ⬜ FAIL / ⬜ SKIP
+
+---
+
+### Step 12.4: Navegar para Insights
+
+**Tool:** `browser_click` no botão "Insights" → `browser_snapshot`
+
+**Expected:**
+- Tab "Insights" fica ativa
+- Cards de métricas visíveis (Total Tasks, Completion %, etc.)
+- Seção de Bottlenecks presente
+
+**Actual:**
+```json
+
+```
+
+**Result:** ⬜ PASS / ⬜ FAIL / ⬜ SKIP
+
+---
+
+### Step 12.5: Navegar para Benchmark
+
+**Tool:** `browser_click` no botão "Benchmark" → `browser_snapshot`
+
+**Expected:**
+- Tab "Benchmark" fica ativa
+- Token Economy section com 4 cards de métricas
+- Avg Compress %, Tokens Saved/Task, Nodes, Edges
+- Compression bars por task visíveis
+
+**Actual:**
+```json
+
+```
+
+**Result:** ⬜ PASS / ⬜ FAIL / ⬜ SKIP
+
+---
+
+### Step 12.6: Verificar consistência — compression % no dashboard vs MCP stats
+
+**Tool:** Comparar output de `stats` MCP tool com dados exibidos no Benchmark tab
+
+**Expected:**
+- `totalNodes` no dashboard = `totalNodes` do `stats` MCP
+- `totalEdges` no dashboard = `totalEdges` do `stats` MCP
+- Avg compression % condizente com dados medidos nos Steps 1.6, 3.3, 3.5
+
+**Actual:**
+```json
+
+```
+
+**Result:** ⬜ PASS / ⬜ FAIL / ⬜ SKIP
+
+---
+
+### Step 12.7: Verificar consistência — nodes/edges vs export_graph
+
+**Tool:** Comparar output de `export` (action: "json") com dados do dashboard
+
+**Expected:**
+- Contagem de nodes no dashboard = length de `nodes` no export
+- Contagem de edges no dashboard = length de `edges` no export
+
+**Actual:**
+```json
+
+```
+
+**Result:** ⬜ PASS / ⬜ FAIL / ⬜ SKIP
+
+---
+
+### Step 12.8: Screenshot final de evidência
+
+**Tool:** `browser_snapshot`
+
+**Expected:**
+- Dashboard renderizado completamente
+- Todos os tabs navegáveis sem erros
+- Screenshot salvo como evidência
+
+**Actual:**
+```json
+
+```
+
+**Result:** ⬜ PASS / ⬜ FAIL / ⬜ SKIP
+
+---
+
 ## Cobertura de Tools
 
 | # | Tool | Cenários |
 |---|------|----------|
 | 1 | `init` | 1 |
 | 2 | `import_prd` | 1 |
-| 3 | `stats` | 1, 6 |
+| 3 | `stats` | 1, 6, 12 |
 | 4 | `list` | 1, 6, 8 |
 | 5 | `next` | 1 |
 | 6 | `context` | 1 |
@@ -1530,25 +1683,28 @@
 | 9 | `add_node` | 2, 5, 6, 8, 9 |
 | 10 | `show` | 2, 9 |
 | 11 | `update_node` | 2 |
-| 12 | `add_edge` | 2 |
-| 13 | `list_edges` | 2 |
-| 14 | `delete_edge` | 2 |
-| 15 | `delete_node` | 2 |
-| 16 | `search` | 3, 4 |
-| 17 | `rag_context` | 3, 4 |
-| 18 | `reindex_knowledge` | 4, 11 |
-| 19 | `decompose` | 5 |
-| 20 | `dependencies` | 5 |
-| 21 | `velocity` | 5 |
-| 22 | `create_snapshot` | 6 |
-| 23 | `list_snapshots` | 6 |
-| 24 | `restore_snapshot` | 6 |
-| 25 | `export_graph` | 7 |
-| 26 | `export_mermaid` | 7 |
-| 27 | `bulk_update_status` | 8 |
-| 28 | `clone_node` | 9 |
-| 29 | `move_node` | 9 |
-| 30 | `validate_task` | 10 |
-| 31 | `sync_stack_docs` | 11 |
+| 12 | `edge` (add/delete/list) | 2 |
+| 13 | `delete_node` | 2 |
+| 14 | `search` | 3, 4 |
+| 15 | `rag_context` | 3, 4 |
+| 16 | `reindex_knowledge` | 4, 11 |
+| 17 | `decompose` | 5 |
+| 18 | `dependencies` | 5 |
+| 19 | `velocity` | 5 |
+| 20 | `snapshot` (create/list/restore) | 6 |
+| 21 | `export` (json/mermaid) | 7, 12 |
+| 22 | `bulk_update_status` | 8 |
+| 23 | `clone_node` | 9 |
+| 24 | `move_node` | 9 |
+| 25 | `validate_task` | 10 |
+| 26 | `sync_stack_docs` | 11 |
 
-**Total: 31/31 tools (100%)**
+**Total: 25/25 consolidated tools (100%)** — reduced from 31 to 25 via tool consolidation (edge, snapshot, export)
+
+### Cenário 12 — Playwright MCP Tools (External)
+
+| # | Tool | Used in |
+|---|------|---------|
+| P1 | `browser_navigate` | 12.1 |
+| P2 | `browser_snapshot` | 12.2, 12.4, 12.5, 12.8 |
+| P3 | `browser_click` | 12.3, 12.4, 12.5 |

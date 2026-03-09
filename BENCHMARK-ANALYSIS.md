@@ -227,4 +227,65 @@ For a 30-task project with Opus agent:
 
 ---
 
+---
+
+## 8. Methodology & Traceability
+
+Every metric in this analysis traces back to a specific benchmark step, formula, and code implementation.
+
+### Data Source Mapping
+
+| Metric | Value | Source Step | Raw Data | Formula | Code Reference |
+|--------|-------|------------|----------|---------|----------------|
+| Avg compression | 73% | Steps 1.6, 3.3, 3.5, 4.3 | originalChars, compactChars per task | `1 - (compactChars / rawChars)` | `compact-context.ts:225-228` |
+| Raw tokens/task | ~2,983 | Step 1.6 `metrics.originalChars` | 11,930 chars (Task 1.1) | `ceil(chars / 4)` | `token-estimator.ts:7` |
+| Compact tokens/task | ~803 | Step 1.6 `metrics.estimatedTokens` | 3,209 chars (Task 1.1) | `ceil(chars / 4)` | `token-estimator.ts:7` |
+| Tokens saved/task | ~2,180 | Derived from Steps 1.6 | raw - compact | `rawTokens - compactTokens` | — |
+| Tokens saved/task (avg) | ~3,010 | Derived from 4 tasks | (3963 - 953) | `without - with` | — |
+| Total nodes | 33 | Step 1.2 `nodesCreated` + Step 1.3 `totalNodes` | import_prd output | Direct count | `sqlite-store.ts:getStats()` |
+| Total edges | 156 | Step 1.2 `edgesCreated` | import_prd output | Direct count | `sqlite-store.ts:getStats()` |
+| Inferred deps | 135 | Step 1.2 `edgesCreated` - structural | 156 total - 21 structural | `total - parent_of - child_of` | `prd-to-graph.ts` edge generation |
+| Blocked tasks | 9 | Step 1.3 `byStatus.blocked` or `blocked=true` nodes | stats output | `count(node.blocked === true)` | `sqlite-store.ts:getStats()` |
+| Dependency cycles | 0 | Step 5.3 `dependencies mode=cycles` | `detectCycles()` output | DFS cycle detection | `dependency-chain.ts:49-97` |
+| Cost/task Opus | $0.045 | Derived | 3,010 tokens saved | `tokens × $15/MTok / 1M` | — |
+| Cost/task Sonnet | $0.009 | Derived | 3,010 tokens saved | `tokens × $3/MTok / 1M` | — |
+| Tasks/hour (without) | 4.8 | Estimated | 75s per interaction | `3600 / 75` | — |
+| Tasks/hour (with) | 45 | Estimated | 8s per interaction (2s × 4 tool calls) | `3600 / 8` | — |
+| Speedup | 9.4x | Derived | 45 / 4.8 | `tasksPerHour_with / tasksPerHour_without` | — |
+
+### Formula Definitions
+
+| Formula | Definition | Justification |
+|---------|-----------|---------------|
+| Token estimate | `ceil(text.length / 4)` | Industry standard ~4 chars/token for English text. Matches OpenAI/Anthropic tokenizer approximations. |
+| Compression % | `(1 - compactChars / originalChars) × 100` | Measures reduction from full graph to focused subgraph context. |
+| Tokens saved/task | `estimateTokens(rawChars) - estimateTokens(compactChars)` | Difference between full context and compressed context. |
+| Cost per task | `tokensSaved × pricePerMTok / 1,000,000` | Standard API pricing calculation. |
+| Tasks per hour | `3600 / secondsPerTaskInteraction` | Direct time conversion. |
+| Speedup | `tasksPerHour_with / tasksPerHour_without` | Ratio of throughput improvement. |
+
+### Code References
+
+| File | Function | Used For |
+|------|----------|----------|
+| `src/core/context/token-estimator.ts:7` | `estimateTokens()` | All token calculations |
+| `src/core/context/compact-context.ts:223-235` | `buildTaskContext()` metrics | Compression measurement |
+| `src/core/planner/dependency-chain.ts:49-97` | `detectCycles()` | Cycle detection count |
+| `src/core/planner/dependency-chain.ts:103-186` | `findCriticalPath()` | Critical path analysis |
+| `src/core/search/fts-search.ts` | `searchNodes()` | BM25+TF-IDF search |
+| `src/core/context/rag-context.ts:53-134` | `ragBuildContext()` | RAG budget management |
+| `src/core/importer/prd-to-graph.ts` | `convertToGraph()` | Node/edge generation from PRD |
+
+### Reproducibility
+
+To reproduce these results:
+1. Run `init` with `projectName: "benchmark"`
+2. Run `import_prd` with `filePath: "./sample-prd.txt"`
+3. Run `context` for any task node → verify compression metrics
+4. Run `stats` → verify totalNodes=33, totalEdges=156
+5. Run `dependencies mode=cycles` → verify cycles=0
+6. Calculate: `ceil(originalChars/4) - ceil(compactChars/4)` → tokens saved
+
+---
+
 *Generated from real benchmark data — no estimates except where explicitly marked.*
