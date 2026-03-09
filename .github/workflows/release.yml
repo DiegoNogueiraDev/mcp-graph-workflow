@@ -64,9 +64,6 @@ jobs:
 
       - name: Install dashboard dependencies
         run: cd src/web/dashboard && npm ci
-      - name: Build
-        run: npm run build
-
       - name: Publish to npm
         run: npm publish --access public
         env:
