@@ -1,7 +1,24 @@
 # Global code owner — all PRs require review from Diego
 * @DiegoNogueiraDev
 
-# Critical paths
+# Critical paths — core logic and schemas
 /src/core/          @DiegoNogueiraDev
 /src/schemas/       @DiegoNogueiraDev
+
+# MCP protocol and API surface
+/src/mcp/           @DiegoNogueiraDev
+/src/api/           @DiegoNogueiraDev
+
+# Web dashboard
+/src/web/           @DiegoNogueiraDev
+
+# Test infrastructure
+/src/tests/         @DiegoNogueiraDev
+
+# CI/CD and GitHub config
 /.github/workflows/ @DiegoNogueiraDev
+/.github/           @DiegoNogueiraDev
+
+# Package and build config
+/package.json       @DiegoNogueiraDev
+/tsconfig.json      @DiegoNogueiraDev
