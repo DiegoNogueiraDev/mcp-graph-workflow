@@ -25,40 +25,110 @@ graph TD
 
 ## Arquitetura de Agents
 
-Quatro MCPs trabalham em conjunto, cada um com responsabilidade clara:
+Cinco MCPs trabalham em conjunto, coordenados pelo `IntegrationOrchestrator` via `GraphEventBus`:
 
 ```mermaid
 graph LR
     subgraph "Source of Truth"
-        MCPGraph[mcp-graph<br/>Task Graph + Status + Dependencies]
+        MCPGraph[mcp-graph<br/>Task Graph + Knowledge Store<br/>RAG + Status]
     end
 
-    subgraph "Code Intelligence"
-        Serena[Serena<br/>Semantic Code Analysis]
-        GitNexus[GitNexus<br/>Code Graph Visualization]
+    subgraph "Code & Docs Intelligence"
+        Serena[Serena<br/>Semantic Code Analysis + Memories]
+        GitNexus[GitNexus<br/>Code Graph + Impact Analysis]
+        Context7[Context7<br/>Library Docs + Stack Detection]
     end
 
     subgraph "Automation"
-        Playwright[Playwright MCP<br/>E2E Testing + UI Exploration]
+        Playwright[Playwright MCP<br/>Validation + A/B Testing + Capture]
     end
 
     MCPGraph <--> Serena
     MCPGraph <--> Playwright
+    MCPGraph <--> Context7
     Serena <--> GitNexus
-    GitNexus --> MCPGraph
+    MCPGraph <--> GitNexus
+    Context7 --> MCPGraph
 
     style MCPGraph fill:#4263eb,color:#fff,stroke:#4263eb
     style Serena fill:#7c3aed,color:#fff,stroke:#7c3aed
     style GitNexus fill:#10b981,color:#fff,stroke:#10b981
+    style Context7 fill:#0ea5e9,color:#fff,stroke:#0ea5e9
     style Playwright fill:#f59e0b,color:#000,stroke:#f59e0b
 ```
 
 | MCP | Papel | Quando |
 |-----|-------|--------|
-| **mcp-graph** | Grafo de tarefas, dependências, status, progresso | Todas as fases — sempre ativo |
-| **Serena** | Análise semântica de código: símbolos, padrões, refactor | Antes de implementar, durante review |
-| **GitNexus** | Visualização do code graph, entendimento da codebase | Pós-PRD, quando já existe código |
-| **Playwright** | Automação de browser: E2E, exploração de UI | Fase VALIDATE |
+| **mcp-graph** | Grafo de tarefas, knowledge store, RAG, dependências, status | Todas as fases — sempre ativo |
+| **Serena** | Análise semântica de código, memories, RAG query | Antes de implementar, durante review |
+| **GitNexus** | Code graph, impact analysis, enriched context | DESIGN (impact analysis), IMPLEMENT (enriched context), REVIEW (blast radius) |
+| **Context7** | Docs de libs, stack detection, sync automático de documentação | PLAN, IMPLEMENT |
+| **Playwright** | Validação browser, A/B testing, content capture + indexação | Fase VALIDATE |
+
+---
+
+## Knowledge Pipeline
+
+O mcp-graph integra um pipeline de conhecimento local que transforma múltiplas fontes em contexto otimizado para LLMs:
+
+```mermaid
+graph LR
+    subgraph "Sources"
+        S1[Serena Memories]
+        S2[Context7 Docs]
+        S3[Web Captures]
+        S4[Uploads]
+        S5[Code Context]
+        S6[GitNexus<br/>Enriched Context]
+    end
+
+    subgraph "Knowledge Store"
+        KS[(SQLite<br/>FTS5 + SHA-256 dedup)]
+    end
+
+    subgraph "Embedding Pipeline"
+        EMB[TF-IDF + Cosine<br/>100% local]
+    end
+
+    subgraph "Tiered Context"
+        TC[Context Assembler<br/>60% graph / 30% knowledge / 10% meta]
+    end
+
+    S1 --> KS
+    S2 --> KS
+    S3 --> KS
+    S4 --> KS
+    S5 --> KS
+    S6 --> KS
+    KS --> EMB
+    EMB --> TC
+    TC --> LLM[Token-budgeted<br/>LLM payload]
+
+    style KS fill:#4263eb,color:#fff
+    style EMB fill:#7c3aed,color:#fff
+    style TC fill:#10b981,color:#fff
+    style LLM fill:#f59e0b,color:#000
+```
+
+**Componentes principais:**
+
+- **Knowledge Store** — SQLite com FTS5, deduplicação SHA-256, 5 source types, chunking automático (~500 tokens)
+- **Embedding Pipeline** — TF-IDF local com cosine similarity (sem APIs externas)
+- **Tiered Context** — 3 níveis de compressão (Summary ~20 tokens, Standard ~150, Deep ~500+)
+- **BM25 Compressor** — Filtra e rankeia chunks por relevância à query atual
+- **Context Assembler** — Budget de tokens: 60% grafo, 30% knowledge, 10% metadata (redução de 70-85%)
+- **Enriched Context** — `buildEnrichedContext()` funde Serena memories + GitNexus code graph em contexto unificado por símbolo (on-demand, não event-driven)
+
+**Orquestração event-driven** (`IntegrationOrchestrator` via `GraphEventBus`):
+
+```
+import:completed  → Trigger reindex (Serena + Docs)
+knowledge:indexed → Rebuild embeddings
+docs:synced       → Index into Knowledge Store
+capture:completed → Index captured content
+```
+
+> Detalhes completos em [Knowledge Pipeline](./KNOWLEDGE-PIPELINE.md) e [Integrations Guide](./INTEGRATIONS-GUIDE.md).
 
 ---
 
@@ -131,6 +201,7 @@ sequenceDiagram
 
 **Agents:**
 - **Serena** — Analisa código existente para entender padrões atuais
+- **GitNexus** — Impact analysis para avaliar blast radius de mudanças arquiteturais
 
 **Saída:** Architecture spec + ADR (Architecture Decision Records)
 
@@ -138,13 +209,16 @@ sequenceDiagram
 sequenceDiagram
     participant A as Agent
     participant Serena as Serena
+    participant GN as GitNexus
     participant Skill as Skill: breakdown-epic-arch
 
     A->>Serena: find_symbol "AuthModule"
     Serena-->>A: Não existe (novo módulo)
     A->>Serena: get_symbols_overview "src/core/"
     Serena-->>A: Padrões existentes: Store, Service, Router
-    A->>Skill: Gerar architecture spec
+    A->>GN: POST /api/impact {symbol: "UserService"}
+    GN-->>A: Blast radius: 5 módulos afetados (router, middleware, test, store, index)
+    A->>Skill: Gerar architecture spec (com blast radius)
     Skill-->>A: AuthService + TokenStore + auth.router.ts
     A->>A: Documenta ADR: "JWT com refresh via httpOnly cookie"
 ```
@@ -161,12 +235,17 @@ sequenceDiagram
 
 **Protocolo mcp-graph:**
 1. `import_prd` — Auto-parse: segmenta → classifica → extrai entidades → infere dependências → cria nós + edges
-2. `stats` — Verificar estado: "8 tasks planned, 0% complete"
+2. `plan_sprint` — Sprint planning report com velocity, riscos e task order
+3. `decompose` — Detectar tasks grandes que precisam ser quebradas em subtasks
+4. `velocity` — Métricas de sprint (avg completion, estimated hours)
+5. `sync_stack_docs` — Detectar stack do projeto e sincronizar docs via Context7
+6. `stats` — Verificar estado: "8 tasks planned, 0% complete"
 
 ```mermaid
 sequenceDiagram
     participant A as Agent
     participant MCP as mcp-graph
+    participant C7 as Context7
     participant Skill as Skill: breakdown-feature-prd
 
     A->>Skill: Decompor PRD em tasks
@@ -174,8 +253,15 @@ sequenceDiagram
     A->>MCP: import_prd(PRD.md)
     MCP-->>MCP: Segment → Classify → Extract → Graph
     MCP-->>A: 8 nodes + 12 edges criados
+    A->>MCP: sync_stack_docs()
+    MCP->>C7: Detectar stack + fetch docs
+    C7-->>MCP: Docs indexados no Knowledge Store
+    A->>MCP: plan_sprint()
+    MCP-->>A: Sprint report: velocity, riscos, task order
+    A->>MCP: decompose()
+    MCP-->>A: 2 tasks detectadas para breakdown
     A->>MCP: stats()
-    MCP-->>A: 8 tasks, 0% done, 3 epics
+    MCP-->>A: 10 tasks, 0% done, 3 epics
 ```
 
 **O que o import_prd faz automaticamente:**
@@ -203,7 +289,13 @@ graph LR
 
 **Agents:**
 - **Serena** — Analisar módulo alvo antes de implementar
-- **mcp-graph** — Rastrear status (in_progress → completed)
+- **GitNexus** — Code graph e dependency context do símbolo em implementação (via enriched-context)
+- **mcp-graph** — Rastrear status, fornecer contexto knowledge-aware
+
+**Tools de contexto:**
+- `context` / `rag_context` — Buscar contexto knowledge-aware antes de implementar (grafo + knowledge store + BM25)
+- `enhanced-next` — Próxima task com knowledge coverage score (0-1) e velocity context
+- `reindex_knowledge` — Rebuild indexes quando novo conteúdo é adicionado
 
 **Protocolo:**
 
@@ -212,11 +304,16 @@ sequenceDiagram
     participant A as Agent
     participant MCP as mcp-graph
     participant Serena as Serena
+    participant GN as GitNexus
 
     A->>MCP: next()
-    MCP-->>A: TASK-001: "Criar AuthService"
+    MCP-->>A: TASK-001: "Criar AuthService" (coverage: 0.8, velocity: 2.3h/task)
+    A->>MCP: context(TASK-001)
+    MCP-->>A: Contexto token-budgeted: grafo + knowledge + metadata
     A->>Serena: get_symbols_overview("src/core/")
     Serena-->>A: Padrões: SqliteStore, typed errors, ESM
+    A->>GN: POST /api/context {symbol: "AuthService"}
+    GN-->>A: Dependency graph: imports, exports, callers do símbolo
     A->>MCP: update_status(TASK-001, "in_progress")
 
     Note over A: TDD Red: Escrever teste que falha
@@ -230,7 +327,7 @@ sequenceDiagram
 
     A->>MCP: update_status(TASK-001, "done")
     A->>MCP: next()
-    MCP-->>A: TASK-002: "Criar auth router"
+    MCP-->>A: TASK-002: "Criar auth router" (coverage: 0.6)
 ```
 
 **Princípio Anti-Vibe-Coding:** Se o AI sugere feature sem teste → RECUSAR. Sempre Red primeiro.
@@ -249,19 +346,35 @@ sequenceDiagram
 
 **Agents:**
 - **Playwright MCP** — Automação de browser
+- **mcp-graph** — `validate_task` wraps Playwright + auto-indexa conteúdo no Knowledge Store
+
+**Tool `validate_task`:**
+- Captura página via Playwright (HTML, screenshot, accessibility tree)
+- Suporta **A/B comparison** com `compareUrl` (diff de conteúdo entre duas URLs)
+- **CSS selector scoping** para extração direcionada
+- Conteúdo capturado é auto-indexado no Knowledge Store (source type: `web_capture`)
+- Evento `capture:completed` dispara reindex via `IntegrationOrchestrator`
 
 ```mermaid
 sequenceDiagram
     participant A as Agent
-    participant PW as Playwright MCP
     participant MCP as mcp-graph
+    participant PW as Playwright MCP
 
-    A->>PW: browser_navigate("/login")
-    PW-->>A: Page loaded, snapshot com seletores
-    A->>PW: browser_snapshot()
-    PW-->>A: form[action="/auth"], input#email, input#password, button#submit
+    A->>MCP: validate_task(TASK-001, url="/login")
+    MCP->>PW: browser_navigate("/login")
+    PW-->>MCP: Page loaded
+    MCP->>PW: browser_snapshot()
+    PW-->>MCP: form[action="/auth"], input#email, input#password
+    MCP-->>MCP: Index conteúdo → Knowledge Store (web_capture)
+    MCP-->>A: Validação OK + conteúdo indexado
+
+    Note over A: A/B Testing (opcional)
+    A->>MCP: validate_task(TASK-001, url="/login-v2", compareUrl="/login-v1")
+    MCP-->>A: Diff report: +3 elementos, -1 campo
+
     A->>A: Gerar auth.spec.ts com seletores reais
-    A->>PW: Rodar testes
+    A->>PW: Rodar testes E2E
     PW-->>A: 3/3 passed ✅
     A->>MCP: update_status(TEST-001, "done")
 ```
@@ -281,15 +394,19 @@ sequenceDiagram
 
 **Agents:**
 - **Serena** — Análise de padrões, inconsistências
+- **GitNexus** — Impact analysis para verificar que mudanças não quebraram dependentes
 
 ```mermaid
 sequenceDiagram
     participant A as Agent
     participant Serena as Serena
+    participant GN as GitNexus
     participant MCP as mcp-graph
 
     A->>Serena: find_referencing_symbols("AuthService")
     Serena-->>A: 4 referências: router, middleware, test, index
+    A->>GN: POST /api/impact {symbol: "AuthService"}
+    GN-->>A: Blast radius: 4 módulos — nenhum dependente quebrado
     A->>A: Review: todos os callers tratam erros tipados? ✅
     A->>A: Review: logs estruturados em todos os paths? ✅
     A->>A: Review: sem segredos em logs? ✅
@@ -460,12 +577,20 @@ graph TD
 |------|---------|-----------|
 | **Início** | `list`, `stats` | Verificar estado atual |
 | **PLAN** | `import_prd` | Parse PRD → nodes + edges |
+| **PLAN** | `plan_sprint` | Sprint planning com velocity e riscos |
+| **PLAN** | `decompose` | Detectar tasks para breakdown |
+| **PLAN** | `sync_stack_docs` | Sincronizar docs da stack via Context7 |
 | **PLAN** | `add_node`, `add_edge` | Criar tarefas manualmente |
-| **IMPLEMENT** | `next` | Próxima task não bloqueada (respeita deps) |
+| **DESIGN** | `POST /gitnexus/impact` | Blast radius analysis de símbolo antes de definir arquitetura |
+| **IMPLEMENT** | `next` | Próxima task knowledge-aware (coverage + velocity) |
+| **IMPLEMENT** | `context`, `rag_context` | Contexto token-budgeted para task atual |
+| **IMPLEMENT** | `POST /gitnexus/context` | Dependency graph do símbolo em implementação |
+| **IMPLEMENT** | `reindex_knowledge` | Rebuild indexes de todas as fontes |
 | **IMPLEMENT** | `update_status → in_progress` | Marcar início |
 | **IMPLEMENT** | `update_status → done` | Marcar conclusão |
-| **VALIDATE** | `update_status [test-id] → done` | Marcar teste validado |
-| **REVIEW** | `export_graph` | Exportar para visualização |
+| **VALIDATE** | `validate_task` | Validação browser + A/B testing + indexação |
+| **REVIEW** | `POST /gitnexus/impact` | Verificar blast radius das mudanças no review |
+| **REVIEW** | `export_graph`, `export_mermaid` | Exportar para visualização |
 | **HANDOFF** | `bulk_update_status → done` | Fechar PRD |
 | **LISTENING** | `add_node` | Registrar feedback |
 
@@ -515,6 +640,8 @@ sequenceDiagram
     participant A as Agent (Opus/Sonnet)
     participant MCP as mcp-graph
     participant S as Serena
+    participant GN as GitNexus
+    participant C7 as Context7
     participant PW as Playwright
 
     Note over U,PW: FASE 1: ANALYZE
@@ -526,35 +653,51 @@ sequenceDiagram
     Note over U,PW: FASE 2: DESIGN
     A->>S: get_symbols_overview("src/core/")
     S-->>A: Padrões existentes
+    A->>GN: POST /api/impact {symbol: "UserService"}
+    GN-->>A: Blast radius: módulos afetados pela mudança
     A->>U: Architecture spec + ADR
 
     Note over U,PW: FASE 3: PLAN
     A->>MCP: import_prd(PRD.md)
     MCP-->>A: 8 nodes, 12 edges criados
+    A->>MCP: sync_stack_docs()
+    MCP->>C7: Detectar stack + fetch docs
+    C7-->>MCP: Docs indexados
+    A->>MCP: plan_sprint()
+    MCP-->>A: Sprint report com velocity
 
     Note over U,PW: FASE 4: IMPLEMENT (loop)
     loop Para cada task
         A->>MCP: next()
-        MCP-->>A: TASK-N
+        MCP-->>A: TASK-N (coverage: 0.8)
+        A->>MCP: context(TASK-N)
+        MCP-->>A: Contexto knowledge-aware
         A->>S: analyze módulo alvo
+        A->>GN: POST /api/context {symbol: "TargetSymbol"}
+        GN-->>A: Dependency graph: imports, exports, callers
         A->>MCP: update_status(in_progress)
         A->>A: TDD: Red → Green → Refactor
         A->>MCP: update_status(done)
     end
 
     Note over U,PW: FASE 5: VALIDATE
-    A->>PW: explore website
-    PW-->>A: seletores reais
-    A->>A: gerar specs
+    A->>MCP: validate_task(TEST-001, url="/login")
+    MCP->>PW: Captura + validação
+    PW-->>MCP: Conteúdo capturado
+    MCP-->>MCP: Index → Knowledge Store
+    MCP-->>A: Validação OK
+    A->>A: gerar E2E specs
     A->>PW: rodar testes
     PW-->>A: all passed ✅
 
     Note over U,PW: FASE 6: REVIEW
     A->>S: find_referencing_symbols
+    A->>GN: POST /api/impact {symbol: "AuthService"}
+    GN-->>A: Blast radius confirmado — nenhum dependente quebrado
     A->>A: code review + logs + observability
 
     Note over U,PW: FASE 7: HANDOFF
-    A->>MCP: export_graph
+    A->>MCP: export_graph + export_mermaid
     A->>U: PR criado, docs atualizados
 
     Note over U,PW: FASE 8: LISTENING
@@ -641,13 +784,14 @@ graph TD
 
 ## Resumo
 
-O mcp-graph não é apenas um task tracker. É o **motor de execução** que:
+O mcp-graph não é apenas um task tracker. É o **Hub de Inteligência Local** — motor de execução com 31 tools MCP e 610+ testes que:
 
 1. **Parseia PRDs** automaticamente em grafos de dependência
-2. **Orquestra agents** (Serena, Playwright, GitNexus) por fase
+2. **Orquestra 5 agents** (Serena, GitNexus, Context7, Playwright) via `IntegrationOrchestrator` event-driven
 3. **Garante disciplina** via TDD, code review, e definition of done
-4. **Preserva contexto** entre sessões (SQLite persistente)
-5. **Economiza tokens** ao dar ao agent exatamente a próxima tarefa com contexto mínimo
-6. **Visualiza progresso** em dashboard interativo (React Flow)
+4. **Preserva contexto** entre sessões (SQLite persistente + Knowledge Store)
+5. **Economiza tokens** com tiered context compression (70-85% redução) e token budgeting (60/30/10)
+6. **Visualiza progresso** em dashboard interativo (React 19 + Tailwind + React Flow)
+7. **Acumula conhecimento** de múltiplas fontes (Serena memories, docs, web captures) com RAG pipeline 100% local
 
 > **Princípio fundamental:** O desenvolvedor define o QUE e o COMO (arquitetura). O AI executa com disciplina. Nunca o contrário.
