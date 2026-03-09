@@ -41,7 +41,16 @@
     "README.md",
     "LICENSE"
   ],
+  "author": "Diego Nogueira (https://github.com/DiegoNogueiraDev)",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DiegoNogueiraDev/mcp-graph-workflow.git"
+  },
+  "homepage": "https://github.com/DiegoNogueiraDev/mcp-graph-workflow#readme",
+  "bugs": {
+    "url": "https://github.com/DiegoNogueiraDev/mcp-graph-workflow/issues"
+  },
   "engines": {
     "node": ">=20.0.0"
   },
