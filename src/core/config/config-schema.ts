@@ -7,8 +7,9 @@ export const ConfigSchema = z.object({
   integrations: z
     .object({
       gitnexusPort: z.number().int().min(1).max(65535).default(3737),
+      gitnexusAutoStart: z.boolean().default(true),
     })
-    .default({ gitnexusPort: 3737 }),
+    .default({ gitnexusPort: 3737, gitnexusAutoStart: true }),
 });
 
 export type McpGraphConfig = z.infer<typeof ConfigSchema>;

@@ -44,3 +44,24 @@ export const ALL_TYPES: NodeType[] = [
   "epic", "task", "subtask", "requirement", "constraint",
   "milestone", "acceptance_criteria", "risk", "decision",
 ];
+
+// ── Code Graph (GitNexus) ──────────────────────
+
+export const CODE_SYMBOL_COLORS: Record<string, string> = {
+  function: "#2196f3",
+  class: "#7c3aed",
+  method: "#10b981",
+  interface: "#06b6d4",
+  variable: "#f59e0b",
+  module: "#8b5cf6",
+  file: "#6c757d",
+  folder: "#9e9e9e",
+};
+
+export const CODE_RELATION_COLORS: Record<string, string> = {
+  imports: "#6c757d",
+  calls: "#2196f3",
+  belongs_to: "#7c3aed",
+  extends: "#10b981",
+  implements: "#06b6d4",
+};

@@ -153,6 +153,51 @@ const migrations: Migration[] = [
       END;
     `,
   },
+  {
+    version: 4,
+    description: "Knowledge documents table with FTS5 index for unified knowledge store",
+    sql: `
+      CREATE TABLE IF NOT EXISTS knowledge_documents (
+        id            TEXT PRIMARY KEY,
+        source_type   TEXT NOT NULL,
+        source_id     TEXT NOT NULL,
+        title         TEXT NOT NULL,
+        content       TEXT NOT NULL,
+        content_hash  TEXT NOT NULL,
+        chunk_index   INTEGER NOT NULL DEFAULT 0,
+        metadata      TEXT, -- JSON object
+        created_at    TEXT NOT NULL,
+        updated_at    TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_knowledge_source_type ON knowledge_documents(source_type);
+      CREATE INDEX IF NOT EXISTS idx_knowledge_source_id ON knowledge_documents(source_id);
+      CREATE INDEX IF NOT EXISTS idx_knowledge_content_hash ON knowledge_documents(content_hash);
+
+      CREATE VIRTUAL TABLE IF NOT EXISTS knowledge_fts USING fts5(
+        title, content,
+        content='knowledge_documents', content_rowid='rowid'
+      );
+
+      -- Sync triggers: keep FTS in sync with knowledge_documents table
+      CREATE TRIGGER IF NOT EXISTS knowledge_fts_insert AFTER INSERT ON knowledge_documents BEGIN
+        INSERT INTO knowledge_fts(rowid, title, content)
+          VALUES (NEW.rowid, NEW.title, NEW.content);
+      END;
+
+      CREATE TRIGGER IF NOT EXISTS knowledge_fts_delete AFTER DELETE ON knowledge_documents BEGIN
+        INSERT INTO knowledge_fts(knowledge_fts, rowid, title, content)
+          VALUES ('delete', OLD.rowid, OLD.title, OLD.content);
+      END;
+
+      CREATE TRIGGER IF NOT EXISTS knowledge_fts_update AFTER UPDATE ON knowledge_documents BEGIN
+        INSERT INTO knowledge_fts(knowledge_fts, rowid, title, content)
+          VALUES ('delete', OLD.rowid, OLD.title, OLD.content);
+        INSERT INTO knowledge_fts(rowid, title, content)
+          VALUES (NEW.rowid, NEW.title, NEW.content);
+      END;
+    `,
+  },
 ];
 
 export function runMigrations(db: Database.Database): void {

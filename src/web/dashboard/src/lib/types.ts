@@ -107,3 +107,43 @@ export interface IntegrationStatus {
   gitnexus?: { running: boolean; url: string };
   serena?: { memories?: Array<{ name: string; content: string }> };
 }
+
+// ── GitNexus Code Graph types ───────────────────
+
+export interface GitNexusStatus {
+  indexed: boolean;
+  running: boolean;
+  port: number;
+  url?: string;
+}
+
+export interface CodeSymbol {
+  name: string;
+  kind: "function" | "class" | "method" | "interface" | "variable" | "module" | "file" | "folder";
+  file?: string;
+  startLine?: number;
+  endLine?: number;
+  metadata?: Record<string, unknown>;
+}
+
+export interface CodeRelation {
+  from: string;
+  to: string;
+  type: "imports" | "calls" | "belongs_to" | "extends" | "implements";
+}
+
+export interface CodeGraphData {
+  symbols: CodeSymbol[];
+  relations: CodeRelation[];
+}
+
+export interface ImpactResult {
+  symbol: string;
+  affectedSymbols: Array<{ name: string; file: string; confidence: number }>;
+  riskLevel: "low" | "medium" | "high";
+}
+
+export interface SerenaMemory {
+  name: string;
+  content: string;
+}

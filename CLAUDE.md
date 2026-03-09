@@ -2,7 +2,7 @@
 
 ## Overview
 
-`mcp-graph` is a local-first CLI tool (TypeScript) that converts PRD text files into persistent execution graphs (SQLite), enabling structured, token-efficient agentic workflows.
+`mcp-graph` is a local-first CLI tool (TypeScript) that converts PRD text files into persistent execution graphs (SQLite), with an integrated knowledge store, RAG pipeline, and multi-agent integration mesh — enabling structured, token-efficient agentic workflows.
 
 ## Stack
 
@@ -11,6 +11,8 @@
 - **CLI:** Commander.js v14
 - **Validation:** Zod v4 (`import { z } from 'zod/v4'`)
 - **Testing:** Vitest v4
+- **Search:** FTS5 + BM25 + TF-IDF (100% local)
+- **Dashboard:** React 19 + Tailwind CSS + React Flow
 - **Build:** `tsc` → `dist/` | Dev: `tsx`
 
 ## Commands
@@ -20,6 +22,9 @@ npm run build          # tsc → dist/
 npm run dev            # tsx src/cli/index.ts
 npm test               # vitest run
 npm run test:watch     # vitest --watch
+npm run test:e2e       # playwright browser tests
+npm run test:coverage  # V8 coverage report
+npm run test:bench     # performance benchmarks
 npm run lint           # eslint
 ```
 
@@ -27,17 +32,46 @@ npm run lint           # eslint
 
 ```
 src/
-  cli/             # Commander.js commands (thin orchestration — NO business logic)
+  cli/               # Commander.js commands (5) — thin orchestration, NO business logic
   core/
-    graph/         # GraphStore, graph-types, graph-indexes, mermaid-export (persistence + query + visualization)
-    importer/      # import-prd, prd-to-graph (pipeline entry)
-    parser/        # classify, extract, normalize, read-file, segment
-    planner/       # next-task selection logic
-    context/       # compact context builder
-    utils/         # errors, fs, id, logger, time
-  mcp/tools/       # MCP tool wrappers (export-mermaid, etc.)
-  schemas/         # Zod schemas (node.schema.ts, edge.schema.ts, graph.schema.ts)
+    capture/         # web-capture, validate-runner, content-extractor
+    config/          # config-schema, config-loader
+    context/         # compact, tiered, bm25-compressor, context-assembler, rag-context, token-estimator
+    docs/            # stack-detector, mcp-context7-fetcher, docs-cache-store, docs-syncer
+    events/          # event-bus, event-types (GraphEventBus)
+    graph/           # graph-types, graph-indexes, mermaid-export
+    importer/        # import-prd, prd-to-graph
+    insights/        # bottleneck-detector, metrics-calculator, skill-recommender
+    integrations/    # integration-orchestrator, serena-reader, gitnexus-launcher, enriched-context, mcp-servers-config, mcp-deps-installer, tool-status
+    parser/          # classify, extract, normalize, read-file, segment, file-reader, read-pdf, read-html
+    planner/         # next-task, enhanced-next, decompose, dependency-chain, velocity, planning-report
+    rag/             # embedding-store, rag-pipeline, serena-indexer, docs-indexer, capture-indexer, serena-rag-query, chunk-text
+    search/          # fts-search, tfidf, tokenizer
+    store/           # sqlite-store, migrations, knowledge-store
+    utils/           # errors, fs, id, logger, time
+  api/               # Express REST API — 17 routers, 44 endpoints
+  mcp/tools/         # MCP tool wrappers (31 tools)
+  schemas/           # Zod schemas (node, edge, graph, knowledge)
+  web/dashboard/     # React + Tailwind + React Flow dashboard
 ```
+
+## Capabilities
+
+| Capability | Key Modules | Docs |
+|------------|-------------|------|
+| PRD Import | parser/, importer/ | — |
+| 31 MCP Tools | mcp/tools/ | [MCP Tools Reference](docs/MCP-TOOLS-REFERENCE.md) |
+| 17 REST API Routers | api/routes/ | [REST API Reference](docs/REST-API-REFERENCE.md) |
+| Knowledge Store + RAG | store/knowledge-store, rag/ | [Knowledge Pipeline](docs/KNOWLEDGE-PIPELINE.md) |
+| Tiered Context Compression | context/ | [Knowledge Pipeline](docs/KNOWLEDGE-PIPELINE.md) |
+| Sprint Planning + Velocity | planner/ | — |
+| Integration Mesh | integrations/, docs/, capture/ | [Integrations Guide](docs/INTEGRATIONS-GUIDE.md) |
+
+## Integration Agents
+
+4 MCP agents coordinated by `IntegrationOrchestrator` via `GraphEventBus`:
+**Serena** (code analysis + memory), **GitNexus** (git graph), **Context7** (library docs), **Playwright** (browser validation).
+See [docs/INTEGRATIONS-GUIDE.md](docs/INTEGRATIONS-GUIDE.md).
 
 ## Non-Regression Rule
 
@@ -150,6 +184,7 @@ This project follows an anti-vibe-coding methodology based on XP (Extreme Progra
 - **Project setup**: Use `/project-scaffold` to auto-generate `.mcp.json`, `CLAUDE.md` template, and `.claude/rules/`
 - **Continuous cycle**: Use `/dev-flow-orchestrator` for ongoing iterations (ANALYZE → DESIGN → PLAN → IMPLEMENT → VALIDATE → REVIEW → HANDOFF → LISTENING)
 - **Graph sync**: Use `/track-with-mcp-graph` to keep the execution graph in sync with real work
+- **Dev lifecycle**: See [docs/LIFECYCLE.md](docs/LIFECYCLE.md) for the 8-phase cycle (ANALYZE → DESIGN → PLAN → IMPLEMENT → VALIDATE → REVIEW → HANDOFF → LISTENING)
 
 Key principles:
 1. **Build to Earning vs Learning** — Production code (Build to Earning) = full discipline, no shortcuts. Side projects (Build to Learning) = experimentation allowed. Know which mode you're in.

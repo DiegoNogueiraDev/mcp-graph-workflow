@@ -11,13 +11,33 @@ export interface SerenaMemory {
 const SERENA_MEMORIES_DIR = ".serena/memories";
 
 /**
- * List all Serena memory files from the project directory.
+ * Recursively collect all .md files under a directory, returning paths relative to root.
+ */
+async function collectMdFiles(dir: string, root: string): Promise<string[]> {
+  const entries = await readdir(dir, { withFileTypes: true });
+  const results: string[] = [];
+
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      const nested = await collectMdFiles(fullPath, root);
+      results.push(...nested);
+    } else if (entry.isFile() && entry.name.endsWith(".md")) {
+      const relative = path.relative(root, fullPath);
+      results.push(relative.replace(/\.md$/, ""));
+    }
+  }
+
+  return results;
+}
+
+/**
+ * List all Serena memory files from the project directory (supports nested dirs).
  */
 export async function listSerenaMemories(basePath: string): Promise<string[]> {
   try {
     const dir = path.join(basePath, SERENA_MEMORIES_DIR);
-    const files = await readdir(dir);
-    return files.filter((f) => f.endsWith(".md")).map((f) => f.replace(/\.md$/, ""));
+    return await collectMdFiles(dir, dir);
   } catch {
     logger.info("No Serena memories directory found", { basePath });
     return [];

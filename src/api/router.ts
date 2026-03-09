@@ -15,6 +15,9 @@ import { createCaptureRouter } from "./routes/capture.js";
 import { createDocsCacheRouter } from "./routes/docs-cache.js";
 import { createContextRouter } from "./routes/context.js";
 import { createEventsRouter } from "./routes/events.js";
+import { createGitNexusRouter } from "./routes/gitnexus.js";
+import { createRagRouter } from "./routes/rag.js";
+import { createKnowledgeRouter } from "./routes/knowledge.js";
 import { errorHandler } from "./middleware/error-handler.js";
 
 export interface ApiRouterOptions {
@@ -45,6 +48,9 @@ export function createApiRouter(storeOrOptions: SqliteStore | ApiRouterOptions):
   router.use("/capture", createCaptureRouter());
   router.use("/docs", createDocsCacheRouter(store));
   router.use("/context", createContextRouter(store));
+  router.use("/gitnexus", createGitNexusRouter({ basePath }));
+  router.use("/rag", createRagRouter(store));
+  router.use("/knowledge", createKnowledgeRouter(store));
 
   if (eventBus) {
     router.use("/events", createEventsRouter(eventBus));

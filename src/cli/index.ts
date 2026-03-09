@@ -4,6 +4,7 @@ import { serveCommand } from "./commands/serve.js";
 import { importCommand } from "./commands/import-cmd.js";
 import { statsCommand } from "./commands/stats.js";
 import { initCommand } from "./commands/init.js";
+import { indexCommand } from "./commands/index-cmd.js";
 
 const program = new Command();
 
@@ -16,5 +17,6 @@ program.addCommand(serveCommand());
 program.addCommand(importCommand());
 program.addCommand(statsCommand());
 program.addCommand(initCommand());
+program.addCommand(indexCommand());
 
 program.parse();

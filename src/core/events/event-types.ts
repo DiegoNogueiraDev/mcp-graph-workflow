@@ -5,7 +5,9 @@ export type GraphEventType =
   | "edge:created"
   | "edge:deleted"
   | "import:completed"
-  | "bulk:updated";
+  | "bulk:updated"
+  | "knowledge:indexed"
+  | "knowledge:deleted";
 
 export interface GraphEvent {
   type: GraphEventType;
@@ -46,4 +48,14 @@ export interface ImportCompletedEvent extends GraphEvent {
 export interface BulkUpdatedEvent extends GraphEvent {
   type: "bulk:updated";
   payload: { count: number; operation: string };
+}
+
+export interface KnowledgeIndexedEvent extends GraphEvent {
+  type: "knowledge:indexed";
+  payload: { source: string; documentsIndexed: number };
+}
+
+export interface KnowledgeDeletedEvent extends GraphEvent {
+  type: "knowledge:deleted";
+  payload: { source: string; documentsDeleted: number };
 }

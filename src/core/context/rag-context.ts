@@ -5,14 +5,25 @@
 
 import type { SqliteStore } from "../store/sqlite-store.js";
 import type { GraphNode } from "../graph/graph-types.js";
+import { KnowledgeStore } from "../store/knowledge-store.js";
+import type { KnowledgeDocument } from "../../schemas/knowledge.schema.js";
 import { searchNodes } from "../search/fts-search.js";
 import { buildTaskContext, type TaskContext } from "./compact-context.js";
 import { estimateTokens } from "./token-estimator.js";
 import { logger } from "../utils/logger.js";
 
+export interface KnowledgeSummary {
+  id: string;
+  sourceType: string;
+  title: string;
+  content: string;
+  score: number;
+}
+
 export interface RagContext {
   query: string;
   relevantNodes: RagNodeSummary[];
+  knowledgeResults: KnowledgeSummary[];
   expandedContexts: TaskContext[];
   tokenUsage: {
     budget: number;
@@ -63,9 +74,26 @@ export function ragBuildContext(
     return summary;
   });
 
-  // Stage 2: Expand context for top results within budget
+  // Stage 2: Search knowledge store for additional context
+  const knowledgeStore = new KnowledgeStore(store.getDb());
+  let knowledgeResults: KnowledgeSummary[] = [];
+  try {
+    const kResults = knowledgeStore.search(query, 5);
+    knowledgeResults = kResults.map((r) => ({
+      id: r.id,
+      sourceType: r.sourceType,
+      title: r.title,
+      content: r.content.length > 500 ? r.content.slice(0, 500) + "..." : r.content,
+      score: Math.round(r.score * 1000) / 1000,
+    }));
+  } catch {
+    // Knowledge search may fail if no knowledge docs exist — that's OK
+    logger.debug("Knowledge FTS search returned no results or errored");
+  }
+
+  // Stage 3: Expand context for top results within budget
   const expandedContexts: TaskContext[] = [];
-  let tokensUsed = estimateTokens(JSON.stringify({ query, relevantNodes }));
+  let tokensUsed = estimateTokens(JSON.stringify({ query, relevantNodes, knowledgeResults }));
 
   for (const result of searchResults) {
     if (tokensUsed >= tokenBudget) break;
@@ -88,11 +116,14 @@ export function ragBuildContext(
     tokensUsed += ctxTokens;
   }
 
-  logger.info(`RAG context built: ${relevantNodes.length} nodes, ${expandedContexts.length} expanded, ${tokensUsed}/${tokenBudget} tokens`);
+  logger.info(
+    `RAG context built: ${relevantNodes.length} nodes, ${knowledgeResults.length} knowledge, ${expandedContexts.length} expanded, ${tokensUsed}/${tokenBudget} tokens`,
+  );
 
   return {
     query,
     relevantNodes,
+    knowledgeResults,
     expandedContexts,
     tokenUsage: {
       budget: tokenBudget,

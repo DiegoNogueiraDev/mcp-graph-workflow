@@ -7,17 +7,40 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-A local-first CLI tool (TypeScript) that converts PRD text files into persistent execution graphs (SQLite), enabling structured, token-efficient agentic workflows.
+A local-first CLI tool (TypeScript) that converts PRD text files into persistent execution graphs (SQLite), with an integrated knowledge store, RAG pipeline, and multi-agent integration mesh — enabling structured, token-efficient agentic workflows. 31 MCP tools, 17 REST API routers, 610+ tests.
+
+## Table of Contents
+
+- [Features](#features)
+- [Quick Start](#quick-start)
+- [Architecture](#architecture)
+- [MCP Tools (31)](#mcp-tools-31)
+- [REST API (17 routers)](#rest-api-17-routers)
+- [CLI Commands (5)](#cli-commands-5)
+- [Knowledge Pipeline](#knowledge-pipeline)
+- [Integrations](#integrations)
+- [Web Dashboard](#web-dashboard)
+- [Testing](#testing)
+- [Dev Flow](#dev-flow)
+- [XP Anti-Vibe-Coding](#xp-anti-vibe-coding)
+- [Documentation](#documentation)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Features
 
-- **PRD to Graph** — Parse PRD text files into structured task graphs with nodes and edges
+- **PRD to Graph** — Parse PRD text files (.md, .txt, .pdf, .html) into structured task graphs
 - **Local-first** — SQLite persistence, zero external dependencies, no Docker
-- **Smart Routing** — `next` command suggests the best task based on priority, dependencies, and blockers
-- **Context Compression** — Reduce LLM context payload by 70-85% via structural summarization
-- **MCP Protocol** — 26 tools accessible via HTTP or Stdio transport
-- **Web Dashboard** — Real-time browser UI with Mermaid diagrams, backlog management, and insights
-- **REST API** — Full CRUD + search + import + insights via Express
+- **31 MCP Tools** — Full graph lifecycle via HTTP or Stdio transport
+- **17 REST API Routers** — CRUD, search, import, knowledge, RAG, integrations, insights
+- **Knowledge Store** — Unified store with FTS5, SHA-256 dedup, 5 source types
+- **RAG Pipeline** — TF-IDF embeddings, cosine similarity, 100% local (no external APIs)
+- **Tiered Context** — 3-level compression achieving 70-85% token reduction
+- **Smart Routing** — `next` suggests best task based on priority, dependencies, and knowledge coverage
+- **Sprint Planning** — `plan_sprint` with velocity-based estimates, risk assessment, task ordering
+- **Integration Mesh** — Serena, GitNexus, Context7, Playwright working together via event bus
+- **Web Dashboard** — React + Tailwind CSS with interactive graph, backlog, code graph, and insights
+- **610+ Tests** — Unit, integration, E2E browser (Playwright), benchmarks
 - **Cross-platform** — Windows, macOS, and Linux compatible
 
 ## Quick Start
@@ -59,8 +82,8 @@ npm run dev:stdio    # Start MCP Stdio server
 ```bash
 mcp-graph init                    # Initialize project
 mcp-graph import docs/my-prd.md  # Import PRD file
+mcp-graph index                  # Rebuild knowledge indexes + embeddings
 mcp-graph stats                  # Show graph statistics
-mcp-graph stats --json           # JSON output
 mcp-graph serve --port 3000      # Start dashboard
 ```
 
@@ -71,105 +94,161 @@ graph TD
     CLI[CLI — Commander.js] --> Core
     MCP[MCP Server — HTTP/Stdio] --> Core
     API[REST API — Express] --> Core
-    Web[Web Dashboard — Vanilla JS] --> API
+    Web[Dashboard — React + Tailwind] --> API
 
     Core --> Store[SQLite Store — WAL + FTS5]
     Core --> Parser[Parser — classify, extract, segment]
-    Core --> Planner[Planner — next-task selection]
-    Core --> Context[Context Builder — 70-85% reduction]
+    Core --> Planner[Planner — next, velocity, sprint planning]
+    Core --> Context[Context — tiered, BM25, assembler]
+    Core --> RAG[RAG — TF-IDF embeddings, semantic search]
+    Core --> Knowledge[Knowledge Store — FTS5, dedup]
+    Core --> Integrations[Integrations — Serena, GitNexus, Context7]
     Core --> Insights[Insights — bottlenecks, metrics]
-    Core --> Search[Search — FTS5 + TF-IDF reranking]
 ```
 
 ```
 src/
-  cli/             # Commander.js commands (thin orchestration)
+  cli/               # Commander.js commands (5) — thin orchestration
   core/
-    graph/         # SQLite persistence + queries + Mermaid export
-    importer/      # PRD import pipeline
-    parser/        # classify, extract, normalize, segment
-    planner/       # next-task selection logic
-    context/       # compact context builder
-    insights/      # bottleneck detection, metrics
-    search/        # FTS5 + TF-IDF search
-    events/        # SSE event bus
-    store/         # SQLite store, migrations
-    config/        # Configuration loader
-    docs/          # Docs cache syncer
-    utils/         # errors, fs, id, logger, time
-  api/             # Express REST API routes + middleware
-  mcp/             # MCP server (HTTP + Stdio) + tool wrappers
-  schemas/         # Zod v4 schemas
-  web/public/      # Dashboard (HTML, CSS, vanilla JS)
-  tests/           # Vitest unit/integration + Playwright E2E
+    graph/           # SQLite persistence + queries + Mermaid export
+    importer/        # PRD import pipeline
+    parser/          # classify, extract, normalize, segment (8 modules)
+    planner/         # next-task, velocity, decompose, planning-report (6 modules)
+    context/         # compact, tiered, BM25, assembler, RAG context (6 modules)
+    rag/             # TF-IDF embeddings, indexers, semantic query (7 modules)
+    store/           # SQLite store, migrations, knowledge store (3 modules)
+    integrations/    # Serena, GitNexus, orchestrator, enriched context (7 modules)
+    docs/            # Stack detector, Context7 fetcher, cache, syncer (4 modules)
+    capture/         # Web capture, validate runner, content extractor (3 modules)
+    insights/        # Bottleneck detection, metrics, skill recommender (3 modules)
+    search/          # FTS5 + TF-IDF search + tokenizer (3 modules)
+    events/          # GraphEventBus + event types (2 modules)
+    config/          # Configuration schema + loader (2 modules)
+    utils/           # errors, fs, id, logger, time (5 modules)
+  api/               # Express REST API — 17 routers, 44 endpoints
+  mcp/               # MCP server (HTTP + Stdio) + 31 tool wrappers
+  schemas/           # Zod v4 schemas (node, edge, graph, knowledge)
+  web/dashboard/     # React + Tailwind + React Flow dashboard
+  tests/             # 67 Vitest files + 5 Playwright E2E specs
 ```
 
-## MCP Tools
+See [docs/ARCHITECTURE-GUIDE.md](docs/ARCHITECTURE-GUIDE.md) for the complete architecture guide.
 
-| Tool | Description |
-|---|---|
-| `init` | Initialize project and SQLite database |
-| `import_prd` | Parse PRD file and generate task graph |
-| `list` | List nodes filtered by type/status/sprint |
-| `show` | Show node details with edges and children |
-| `next` | Suggest next task based on priority and dependencies |
-| `update_status` | Update node status (backlog/ready/in_progress/blocked/done) |
-| `update_node` | Edit node fields (title, description, priority, tags, etc.) |
-| `stats` | Show graph statistics and context reduction metrics |
-| `context` | Build compact context payload for a specific task |
-| `search` | Full-text search across nodes |
-| `rag_context` | RAG-based contextual search via FTS5+TF-IDF |
-| `add_node` | Add a new node to the graph |
-| `add_edge` | Add an edge between nodes |
-| `delete_node` | Delete node with cascade edge cleanup |
-| `delete_edge` | Delete an edge |
-| `list_edges` | List edges filtered by node or type |
-| `move_node` | Move node to a different parent |
-| `clone_node` | Clone a node (optionally with children) |
-| `bulk_update_status` | Update status of multiple nodes at once |
-| `decompose` | Detect large tasks and suggest breakdown |
-| `velocity` | Calculate team velocity and sprint metrics |
-| `dependencies` | Analyze dependency chains, critical path, blockers |
-| `export_graph` | Export the complete graph as JSON |
-| `export_mermaid` | Export the graph as a Mermaid diagram (flowchart or mindmap) |
-| `create_snapshot` | Create a named snapshot of the current graph state |
-| `restore_snapshot` | Restore graph from a snapshot |
-| `list_snapshots` | List available snapshots |
+## MCP Tools (31)
 
-## REST API
+| Category | Tool | Description |
+|----------|------|-------------|
+| **Graph CRUD** | `init` | Initialize project and SQLite database |
+| | `import_prd` | Parse PRD file and generate task graph |
+| | `add_node` | Create a node in the graph |
+| | `update_node` | Edit node fields (title, description, priority, tags, etc.) |
+| | `delete_node` | Delete node with cascade edge cleanup |
+| | `add_edge` | Create an edge between nodes |
+| | `delete_edge` | Delete an edge |
+| | `list_edges` | List edges filtered by node or type |
+| | `move_node` | Move node to a different parent |
+| | `clone_node` | Clone a node (optionally with children) |
+| | `export_graph` | Export the complete graph as JSON |
+| | `export_mermaid` | Export as Mermaid diagram (flowchart/mindmap) |
+| **Querying** | `list` | List nodes filtered by type/status/sprint |
+| | `show` | Show node details with edges and children |
+| | `search` | Full-text search with BM25 ranking |
+| | `rag_context` | Semantic search with token-budgeted context |
+| **Planning** | `next` | Suggest next task by priority + dependencies |
+| | `update_status` | Update node status |
+| | `bulk_update_status` | Update status of multiple nodes |
+| | `decompose` | Detect large tasks and suggest breakdown |
+| | `velocity` | Calculate sprint velocity metrics |
+| | `dependencies` | Analyze dependency chains, cycles, critical path |
+| | `plan_sprint` | Generate sprint planning report |
+| **Knowledge** | `context` | Build compact context payload for a task |
+| | `reindex_knowledge` | Rebuild knowledge indexes + embeddings |
+| | `sync_stack_docs` | Auto-detect stack + fetch docs via Context7 |
+| **Validation** | `validate_task` | Browser-based task validation with A/B compare |
+| **Snapshots** | `stats` | Graph statistics + compression metrics |
+| | `create_snapshot` | Snapshot current graph state |
+| | `restore_snapshot` | Restore from a snapshot |
+| | `list_snapshots` | List available snapshots |
 
-All endpoints under `/api/v1/`:
+See [docs/MCP-TOOLS-REFERENCE.md](docs/MCP-TOOLS-REFERENCE.md) for full parameter documentation.
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/project/init` | Initialize project |
-| GET | `/nodes` | List all nodes |
-| POST | `/nodes` | Create node |
-| GET | `/edges` | List edges |
-| POST | `/edges` | Create edge |
-| GET | `/stats` | Graph statistics |
-| GET | `/search?q=term` | Full-text search |
-| POST | `/import` | Import PRD file (multipart) |
-| GET | `/graph/document` | Full graph document |
-| GET | `/graph/mermaid` | Mermaid diagram |
-| GET | `/insights/bottlenecks` | Bottleneck report |
-| GET | `/context/preview?nodeId=x` | Compact context for node |
-| GET | `/docs` | Docs cache entries |
-| GET | `/events` | SSE real-time events |
-| GET | `/integrations/status` | Integration status (Serena, GitNexus) |
-| GET | `/skills` | Available skills |
+## REST API (17 routers)
+
+| Router | Key Endpoints |
+|--------|---------------|
+| **Project** | `GET /project`, `POST /project/init` |
+| **Nodes** | `GET/POST/PATCH/DELETE /nodes` |
+| **Edges** | `GET/POST/DELETE /edges` |
+| **Stats** | `GET /stats` |
+| **Search** | `GET /search?q=term` |
+| **Graph** | `GET /graph`, `GET /graph/mermaid` |
+| **Import** | `POST /import` (multipart) |
+| **Knowledge** | `GET/POST/DELETE /knowledge`, `POST /knowledge/search` |
+| **RAG** | `POST /rag/query`, `POST /rag/reindex`, `GET /rag/stats` |
+| **Integrations** | `GET /integrations/status`, enriched context, knowledge status |
+| **GitNexus** | `GET /gitnexus/status`, `POST /gitnexus/query\|context\|impact` |
+| **Insights** | `GET /insights/bottlenecks\|recommendations\|metrics` |
+| **Context** | `GET /context/preview` |
+| **Capture** | `POST /capture` |
+| **Docs** | `GET /docs`, `POST /docs/sync` |
+| **Events** | `GET /events` (SSE stream) |
+| **Skills** | `GET /skills` |
+
+See [docs/REST-API-REFERENCE.md](docs/REST-API-REFERENCE.md) for full endpoint documentation.
+
+## CLI Commands (5)
+
+| Command | Description |
+|---------|-------------|
+| `mcp-graph init` | Initialize project + SQLite database |
+| `mcp-graph import <file>` | Import PRD file into graph |
+| `mcp-graph index` | Rebuild knowledge indexes and embeddings |
+| `mcp-graph stats [--json]` | Show graph statistics |
+| `mcp-graph serve [--port]` | Start HTTP server + MCP + dashboard |
+
+## Knowledge Pipeline
+
+```
+Sources                Knowledge Store        Embeddings            Context
+┌─────────────┐       ┌──────────────┐       ┌──────────────┐     ┌──────────────┐
+│ Serena      │──────▶│ FTS5 search  │──────▶│ TF-IDF       │────▶│ Tiered       │
+│ Context7    │       │ SHA-256 dedup│       │ Cosine sim   │     │ BM25 filter  │
+│ Web capture │       │ 5 source     │       │ 100% local   │     │ Token budget │
+│ Uploads     │       │   types      │       │              │     │ 70-85% less  │
+└─────────────┘       └──────────────┘       └──────────────┘     └──────────────┘
+```
+
+The knowledge pipeline indexes content from multiple sources into a unified store, builds TF-IDF embeddings for semantic search, and assembles token-budgeted context with three compression tiers:
+
+- **Tier 1 — Summary** (~20 tok/node): Title + status
+- **Tier 2 — Standard** (~150 tok/node): + description + dependencies
+- **Tier 3 — Deep** (~500+ tok/node): + acceptance criteria + knowledge
+
+See [docs/KNOWLEDGE-PIPELINE.md](docs/KNOWLEDGE-PIPELINE.md) for the complete pipeline documentation.
+
+## Integrations
+
+| Integration | Role | Key Features |
+|-------------|------|-------------|
+| **Serena** | Code analysis + memory | Memory reading, code indexing, RAG query (FTS/semantic/hybrid) |
+| **GitNexus** | Git graph analysis | Symbol query, impact analysis, dependency visualization |
+| **Context7** | Library docs fetching | Stack auto-detection, docs sync, local caching |
+| **Playwright** | Browser automation | Task validation, A/B testing, content capture + indexing |
+
+All integrations are coordinated by the `IntegrationOrchestrator` — an event-driven mesh that listens to `GraphEventBus` events and triggers cross-integration workflows automatically.
+
+See [docs/INTEGRATIONS-GUIDE.md](docs/INTEGRATIONS-GUIDE.md) for detailed integration documentation.
 
 ## Web Dashboard
 
-The dashboard runs at `http://localhost:3000` via `mcp-graph serve` and provides 5 tabs:
+The dashboard runs at `http://localhost:3000` via `mcp-graph serve` and provides 4 tabs:
 
-1. **Graph** — Interactive Mermaid diagram with filters (status, type, direction, format), node table with search/sort, and detail panel
-2. **PRD & Backlog** — PRD source view, backlog list, next task badge, progress bars per epic
-3. **Code Graph** — Integration with GitNexus/Serena code analysis
-4. **Knowledge** — Docs cache and context preview
-5. **Insights** — Bottleneck detection, metrics, and reports
+1. **Graph** — Interactive React Flow diagram with filters, node table with search/sort, and detail panel
+2. **Code Graph** — D3-based code dependency visualization
+3. **PRD Backlog** — PRD backlog list with progress tracking
+4. **Insights** — Bottleneck detection, velocity metrics, and reports
 
-Real-time updates via Server-Sent Events (SSE). Dark/light theme toggle.
+Built with React 19 + TypeScript + Tailwind CSS + React Flow. Real-time updates via SSE. Dark/light theme.
 
 ## Testing
 
@@ -182,30 +261,25 @@ npm run test:bench     # Benchmark tests
 npm run test:all       # All tests (unit + E2E)
 ```
 
+**610+ tests** across 67 Vitest files + 5 Playwright E2E specs covering: parser, store, knowledge, RAG, context compression, planner, integrations, API endpoints, MCP tools, CLI commands, and browser flows.
+
 See [docs/TEST-GUIDE.md](docs/TEST-GUIDE.md) for the full testing guide.
 
-## How It Works
+## Dev Flow
 
-1. **Parse** — Read PRD text, normalize, segment by headings, classify blocks heuristically
-2. **Transform** — Convert blocks to nodes (epic, task, subtask, requirement, constraint, risk) with edges (depends_on, parent_of, blocks, related_to)
-3. **Persist** — Store graph in local SQLite with WAL mode, FTS5 indexes, and snapshots
-4. **Execute** — Route tasks by priority, dependency resolution, and blocker analysis
-5. **Compress** — Generate minimal context payloads for LLM consumption (70-85% token reduction)
-
-## Node Types
-
-`epic` | `task` | `subtask` | `requirement` | `constraint` | `milestone` | `acceptance_criteria` | `risk` | `decision`
-
-## Status Flow
+The project follows an 8-phase development lifecycle:
 
 ```
-backlog → ready → in_progress → done
-                → blocked
+ANALYZE → DESIGN → PLAN → IMPLEMENT → VALIDATE → REVIEW → HANDOFF → LISTENING
 ```
 
-## XP Anti-Vibe-Coding Workflow
+Each phase is supported by specific MCP tools and skills. The execution graph ensures no progress is lost between sessions.
 
-The project follows an anti-vibe-coding methodology based on Extreme Programming (XP). Discipline over intuition. Every line of code has a tested purpose, and the execution graph ensures no progress is lost between sessions.
+See [docs/LIFECYCLE.md](docs/LIFECYCLE.md) for the complete lifecycle documentation.
+
+## XP Anti-Vibe-Coding
+
+The project follows an anti-vibe-coding methodology based on Extreme Programming (XP). Discipline over intuition. Every line of code has a tested purpose.
 
 ### Why a Graph?
 
@@ -226,6 +300,22 @@ The project follows an anti-vibe-coding methodology based on Extreme Programming
 | `/dev-flow-orchestrator` | Continuous XP cycle: ANALYZE → DESIGN → PLAN → IMPLEMENT → VALIDATE → REVIEW → HANDOFF → LISTENING |
 | `/track-with-mcp-graph` | Keep graph in sync with real work state |
 
+See [docs/guia-xp-anti-vibe-coding.md](docs/guia-xp-anti-vibe-coding.md) for the full methodology guide.
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [CLAUDE.md](CLAUDE.md) | AI agent instructions, conventions, and rules |
+| [docs/ARCHITECTURE-GUIDE.md](docs/ARCHITECTURE-GUIDE.md) | System layers, module inventory, data flows |
+| [docs/MCP-TOOLS-REFERENCE.md](docs/MCP-TOOLS-REFERENCE.md) | 31 MCP tools with full parameter reference |
+| [docs/REST-API-REFERENCE.md](docs/REST-API-REFERENCE.md) | 17 routers, 44 endpoints with examples |
+| [docs/KNOWLEDGE-PIPELINE.md](docs/KNOWLEDGE-PIPELINE.md) | Knowledge Store, RAG, embeddings, context assembly |
+| [docs/INTEGRATIONS-GUIDE.md](docs/INTEGRATIONS-GUIDE.md) | Serena, GitNexus, Context7, Playwright |
+| [docs/TEST-GUIDE.md](docs/TEST-GUIDE.md) | Test pyramid, categories, best practices |
+| [docs/LIFECYCLE.md](docs/LIFECYCLE.md) | 8-phase development lifecycle |
+| [docs/guia-xp-anti-vibe-coding.md](docs/guia-xp-anti-vibe-coding.md) | XP methodology guide |
+
 ## Contributing
 
 1. Fork the repository
@@ -233,14 +323,6 @@ The project follows an anti-vibe-coding methodology based on Extreme Programming
 3. Follow TDD: write failing test first, then implement
 4. Ensure all checks pass: `npm run build && npm test && npm run test:e2e`
 5. Submit a PR with clear description
-
-## Documentation
-
-| Document | Description |
-|---|---|
-| [CLAUDE.md](CLAUDE.md) | AI agent instructions, conventions, and rules |
-| [docs/ARCHITECTURE-GUIDE.md](docs/ARCHITECTURE-GUIDE.md) | Complete architecture guide |
-| [docs/TEST-GUIDE.md](docs/TEST-GUIDE.md) | Testing guide and best practices |
 
 ## License
 

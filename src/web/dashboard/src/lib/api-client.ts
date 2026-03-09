@@ -1,4 +1,4 @@
-import type { GraphDocument, GraphEdge, GraphNode, GraphStats, IntegrationStatus } from "./types";
+import type { GraphDocument, GraphEdge, GraphNode, GraphStats, IntegrationStatus, GitNexusStatus, SerenaMemory } from "./types";
 
 const BASE = "/api/v1";
 
@@ -104,4 +104,25 @@ export const apiClient = {
       method: "POST",
       body: JSON.stringify({ url, selector, waitForSelector }),
     }),
+
+  // GitNexus Code Graph
+  getGitNexusStatus: () => request<GitNexusStatus>("/gitnexus/status"),
+  queryCodeGraph: (query: string) =>
+    request("/gitnexus/query", {
+      method: "POST",
+      body: JSON.stringify({ query }),
+    }),
+  getSymbolContext: (symbol: string) =>
+    request("/gitnexus/context", {
+      method: "POST",
+      body: JSON.stringify({ symbol }),
+    }),
+  getSymbolImpact: (symbol: string) =>
+    request("/gitnexus/impact", {
+      method: "POST",
+      body: JSON.stringify({ symbol }),
+    }),
+
+  // Serena Memories
+  getSerenaMemories: () => request<SerenaMemory[]>("/integrations/serena/memories"),
 };

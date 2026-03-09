@@ -2,6 +2,8 @@ import { Router } from "express";
 import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import { getIntegrationsStatus } from "../../core/integrations/tool-status.js";
 import { listSerenaMemories, readSerenaMemory, readAllSerenaMemories } from "../../core/integrations/serena-reader.js";
+import { buildEnrichedContext } from "../../core/integrations/enriched-context.js";
+import { KnowledgeStore } from "../../core/store/knowledge-store.js";
 
 export function createIntegrationsRouter(store: SqliteStore, basePath: string): Router {
   const router = Router();
@@ -49,6 +51,33 @@ export function createIntegrationsRouter(store: SqliteStore, basePath: string): 
         return;
       }
       res.json({ url: status.gitnexus.url });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // ── Enriched context (Serena + GitNexus combined) ──
+  router.get("/enriched-context/:symbol", async (req, res, next) => {
+    try {
+      const symbol = req.params.symbol as string;
+      const ctx = await buildEnrichedContext(symbol, basePath);
+      res.json(ctx);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // ── Knowledge sync status ───────────────────────
+  router.get("/knowledge-status", (_req, res, next) => {
+    try {
+      const knowledgeStore = new KnowledgeStore(store.getDb());
+      const sourceTypes = ["upload", "serena", "code_context", "docs", "web_capture"] as const;
+      const statuses = sourceTypes.map((st) => ({
+        source: st,
+        documentCount: knowledgeStore.count(st),
+      }));
+      const total = knowledgeStore.count();
+      res.json({ total, sources: statuses.filter((s) => s.documentCount > 0) });
     } catch (err) {
       next(err);
     }

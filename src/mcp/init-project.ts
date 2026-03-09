@@ -2,6 +2,8 @@ import { writeFileSync, existsSync, readFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import { SqliteStore } from "../core/store/sqlite-store.js";
 import { logger } from "../core/utils/logger.js";
+import { buildMcpServersConfig } from "../core/integrations/mcp-servers-config.js";
+import { installAllMcpDeps } from "../core/integrations/mcp-deps-installer.js";
 
 const MCP_CONFIG_FILE = ".mcp.json";
 const STORE_DIR = ".mcp-graph";
@@ -27,8 +29,6 @@ function resolveArgs(): string[] {
 
 function writeMcpJson(projectDir: string): void {
   const mcpConfigPath = path.join(projectDir, MCP_CONFIG_FILE);
-  const command = resolveCommand();
-  const args = resolveArgs();
 
   let existing: Record<string, unknown> = {};
   if (existsSync(mcpConfigPath)) {
@@ -39,12 +39,9 @@ function writeMcpJson(projectDir: string): void {
     }
   }
 
-  const servers = (existing.mcpServers ?? {}) as Record<string, unknown>;
-  servers["mcp-graph"] = { command, args };
-
-  const config = { ...existing, mcpServers: servers };
+  const config = buildMcpServersConfig(existing as Partial<{ mcpServers: Record<string, { command: string; args: string[] }> }>);
   writeFileSync(mcpConfigPath, JSON.stringify(config, null, 2) + "\n", "utf-8");
-  logger.info(`${MCP_CONFIG_FILE} configured`, { path: mcpConfigPath });
+  logger.info(`${MCP_CONFIG_FILE} configured with all MCP servers`, { path: mcpConfigPath });
 }
 
 function writeVscodeMcpJson(projectDir: string): void {
@@ -111,6 +108,22 @@ export async function runInit(projectDir: string): Promise<void> {
   writeMcpJson(projectDir);
   writeVscodeMcpJson(projectDir);
   ensureGitignore(projectDir);
+
+  // Install/verify MCP ecosystem dependencies
+  const depResults = await installAllMcpDeps(projectDir);
+  const installed = depResults.filter((r) => r.status === "installed" || r.status === "already_available");
+  const failed = depResults.filter((r) => r.status === "failed" || r.status === "skipped");
+
+  if (installed.length > 0) {
+    logger.success("MCP dependencies ready", {
+      ready: installed.map((r) => r.name).join(", "),
+    });
+  }
+  if (failed.length > 0) {
+    logger.warn("Some MCP dependencies unavailable", {
+      unavailable: failed.map((r) => `${r.name}: ${r.message}`).join("; "),
+    });
+  }
 
   logger.success("mcp-graph initialized", {
     dir: projectDir,
