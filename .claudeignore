@@ -1,0 +1,206 @@
+# ========================================
+# CLAUDE CODE - OTIMIZAÇÃO DE CONTEXTO
+# ========================================
+
+# === DEPENDÊNCIAS ===
+node_modules/
+.pnp/
+.pnp.js
+.yarn/
+
+# === CLAUDE (exceto rules/ e settings) ===
+.claude/skills/
+.claude/docs/
+.claude/data/
+.claude/scripts/
+.claude/plans/
+.claude/lib/
+.claude/CATALOG.md
+.claude/CONTRIBUTING.md
+.claude/README.md
+.claude/SECURITY.md
+.claude/SKILLS_UPDATE_GUIDE.md
+.claude/skills_index.json
+.claude/settings.local.json.backup
+
+# === GIT ===
+.git/
+.gitattributes
+
+# === GITHUB ===
+.github/
+
+# === BUILDS ===
+.next/
+build/
+dist/
+out/
+.turbo/
+*.tsbuildinfo
+.cache/
+
+# === TESTES (artefatos) ===
+coverage/
+test-results/
+playwright-report/
+.nyc_output/
+**/*.spec.ts
+**/*.spec.ts.snap
+**/*test*.txt
+**/*test*.json
+
+# === LOGS ===
+logs/
+*.log
+*-debug.log*
+
+# === PROJETOS SEPARADOS ===
+institutional-website/
+gsm-backup-system/
+
+# === DOCS (usar memória Serena) ===
+docs/
+
+# === MARKDOWN NÃO-ESSENCIAL ===
+*.md
+!CLAUDE.md
+!README.md
+
+# === SKILLS/TEMPLATES/SCRIPTS (não são código fonte) ===
+skills/
+templates/
+scripts/
+
+# === TRANSCRIÇÕES E PRD ===
+transcricao_xp_method.txt
+PRD.md
+
+# === DATA (exemplos/test fixtures) ===
+data/
+
+# === ARQUIVOS GERADOS ===
+*.d.ts.map
+next-env.d.ts
+**/prisma/migrations/*.sql
+**/prisma/generated/
+.prisma/
+
+# === AMBIENTE ===
+.env*
+*.env
+!.env.example
+
+# === UPLOADS/TEMP ===
+**/uploads/
+**/temp/
+**/tmp/
+backups/
+*.backup
+*.bak
+
+# === IDE ===
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# === MCP/FERRAMENTAS ===
+.playwright-mcp/
+.mcp-graph/
+*.db
+*.db-shm
+*.db-wal
+
+# === SERENA ===
+.serena/
+
+# === MÍDIA ===
+*.mp4
+*.avi
+*.mov
+*.pdf
+*.zip
+*.tar
+*.gz
+*.rar
+*.png
+*.jpg
+*.jpeg
+*.ico
+*.woff*
+*.ttf
+*.eot
+
+# === LOCKS ===
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# === BACKUP CÓDIGO ===
+*.original.backup.js
+*.backup.ts
+*.backup.tsx
+
+# === CACHE ===
+.eslintcache
+.stylelintcache
+
+# === COMPONENTES UI (shadcn) ===
+gsm-2.0/frontend/src/components/ui/
+
+# === TIPOS GERADOS ===
+**/types/generated/
+**/*.generated.ts
+
+# === PUBLIC/STATIC (vendor = libs terceiros) ===
+gsm-2.0/frontend/public/
+src/web/public/vendor/
+
+# === CONFIGS ESTÁTICAS ===
+**/tailwind.config.*
+**/postcss.config.*
+**/next.config.*
+**/tsconfig*.json
+**/eslint*
+**/.prettier*
+**/jest.config.*
+**/vitest.config.*
+**/playwright.config.*
+
+# === DOCKER ===
+docker-compose*.yml
+Dockerfile*
+
+# === PRISMA MIGRATIONS ===
+**/prisma/migrations/
+
+# === TESTES PLAYWRIGHT ===
+gsm-2.0/frontend/tests/
+
+# === HOOKS GIT ===
+.husky/
+
+# === CONFIGS JSON EXTRAS ===
+**/components.json
+**/vercel.json
+.editorconfig
+.npmrc
+.nvmrc
+.copilotignore
+.npmignore
+
+# === SCRIPTS ===
+*.sh
+
+# === ARQUIVOS DE TEXTO ===
+*.txt
+!package.json
+
+# === DOCS ROOT NÃO-ESSENCIAIS ===
+CHANGELOG.md
+CODE_OF_CONDUCT.md
+CONTRIBUTING.md
+LICENSE

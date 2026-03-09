@@ -1,0 +1,54 @@
+# Logs
+logs/
+*.log
+
+# Dependencies
+node_modules/
+
+# Build
+dist/
+build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.*
+
+# MCP / Local Tools
+.mcp-graph/
+*.db
+*.db-shm
+*.db-wal
+
+# Serena (local memories and config)
+.serena/
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# Playwright MCP
+.playwright-mcp/
+
+# Dashboard build artifacts
+src/web/dashboard/.next/
+src/web/dashboard/out/
+src/web/dashboard/dist/
+src/web/dashboard/node_modules/
+
+# Test artifacts
+test-results/
+test-screenshots/
+playwright-report/
+coverage/
+.nyc_output/

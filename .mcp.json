@@ -2,8 +2,35 @@
   "mcpServers": {
     "mcp-graph": {
       "command": "npx",
-      "args": ["tsx", "src/mcp/stdio.ts"],
-      "cwd": "/Users/diegonogueira/mcp-graph-workflow"
+      "args": ["tsx", "src/mcp/stdio.ts"]
+    },
+    "serena": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/oraios/serena",
+        "serena",
+        "start-mcp-server",
+        "--context",
+        "claude-code",
+        "--project",
+        "/home/diegonogueira/Documentos/mcp-graph-workflow"
+      ]
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest",
+        "--headless",
+        "--ignore-https-errors"
+      ]
+    },
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp"
+      ]
     }
   }
 }

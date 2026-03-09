@@ -1,0 +1,82 @@
+{
+  "name": "@diegonogueiradev_/mcp-graph",
+  "version": "2.1.0",
+  "description": "MCP local-first PRD to task graph — transforms text into executable structure",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "mcp-graph": "dist/cli/index.js",
+    "mcp-graph-stdio": "dist/mcp/stdio.js",
+    "mcp-graph-server": "dist/mcp/server.js"
+  },
+  "scripts": {
+    "prepublishOnly": "npm run build && npm test",
+    "dev": "tsx src/mcp/server.ts",
+    "dev:stdio": "tsx src/mcp/stdio.ts",
+    "dashboard:install": "cd src/web/dashboard && npm install",
+    "dashboard:dev": "cd src/web/dashboard && npm run dev",
+    "dashboard:build": "cd src/web/dashboard && npm run build",
+    "build": "tsc && npm run dashboard:build && npm run copy-dashboard",
+    "copy-dashboard": "mkdir -p dist/web/dashboard && cp -r src/web/dashboard/dist dist/web/dashboard/",
+    "start": "node dist/mcp/server.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:bench": "vitest bench",
+    "test:coverage": "vitest run --coverage",
+    "test:all": "vitest run && playwright test",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit",
+    "setup:mcp": "bash scripts/setup-mcp.sh"
+  },
+  "keywords": [
+    "mcp",
+    "prd",
+    "task-graph",
+    "local-first",
+    "agent-tooling"
+  ],
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "author": "Diego Nogueira (https://github.com/DiegoNogueiraDev)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DiegoNogueiraDev/mcp-graph-workflow.git"
+  },
+  "homepage": "https://github.com/DiegoNogueiraDev/mcp-graph-workflow#readme",
+  "bugs": {
+    "url": "https://github.com/DiegoNogueiraDev/mcp-graph-workflow/issues"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.1.0",
+    "@types/node": "^25.3.3",
+    "@types/supertest": "^7.2.0",
+    "@vitest/coverage-v8": "^4.0.0",
+    "supertest": "^7.2.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "better-sqlite3": "^12.6.2",
+    "cheerio": "^1.2.0",
+    "commander": "^14.0.3",
+    "express": "^5.2.1",
+    "multer": "^2.1.1",
+    "pdf-parse": "^2.4.5",
+    "playwright": "^1.58.2",
+    "yaml": "^2.8.2",
+    "zod": "^4.3.6"
+  }
+}

@@ -1,0 +1,21 @@
+import { z } from "zod/v4";
+
+export const KnowledgeSourceTypeSchema = z.enum([
+  "upload", "serena", "code_context", "docs", "web_capture",
+]);
+
+export const KnowledgeDocumentSchema = z.object({
+  id: z.string(),
+  sourceType: KnowledgeSourceTypeSchema,
+  sourceId: z.string(),
+  title: z.string(),
+  content: z.string(),
+  contentHash: z.string(),
+  chunkIndex: z.number().int().min(0),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export type KnowledgeSourceType = z.infer<typeof KnowledgeSourceTypeSchema>;
+export type KnowledgeDocument = z.infer<typeof KnowledgeDocumentSchema>;
