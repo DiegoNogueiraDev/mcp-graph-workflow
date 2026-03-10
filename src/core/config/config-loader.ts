@@ -42,6 +42,12 @@ export function loadConfig(basePath?: string): McpGraphConfig {
     }
   }
 
+  if (process.env.GITNEXUS_AUTO_START) {
+    const integrations = (fileConfig.integrations ?? {}) as Record<string, unknown>;
+    integrations.gitnexusAutoStart = process.env.GITNEXUS_AUTO_START !== "false";
+    fileConfig.integrations = integrations;
+  }
+
   const config = ConfigSchema.parse(fileConfig);
   return config;
 }

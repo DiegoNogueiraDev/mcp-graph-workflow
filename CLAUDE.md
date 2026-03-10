@@ -50,7 +50,7 @@ src/
     store/           # sqlite-store, migrations, knowledge-store
     utils/           # errors, fs, id, logger, time
   api/               # Express REST API — 17 routers, 44 endpoints
-  mcp/tools/         # MCP tool wrappers (31 tools)
+  mcp/tools/         # MCP tool wrappers (26 tools)
   schemas/           # Zod schemas (node, edge, graph, knowledge)
   web/dashboard/     # React + Tailwind + React Flow dashboard
 ```
@@ -60,7 +60,7 @@ src/
 | Capability | Key Modules | Docs |
 |------------|-------------|------|
 | PRD Import | parser/, importer/ | — |
-| 31 MCP Tools | mcp/tools/ | [MCP Tools Reference](docs/MCP-TOOLS-REFERENCE.md) |
+| 26 MCP Tools | mcp/tools/ | [MCP Tools Reference](docs/MCP-TOOLS-REFERENCE.md) |
 | 17 REST API Routers | api/routes/ | [REST API Reference](docs/REST-API-REFERENCE.md) |
 | Knowledge Store + RAG | store/knowledge-store, rag/ | [Knowledge Pipeline](docs/KNOWLEDGE-PIPELINE.md) |
 | Tiered Context Compression | context/ | [Knowledge Pipeline](docs/KNOWLEDGE-PIPELINE.md) |
@@ -195,5 +195,5 @@ Key principles:
 6. **CLAUDE.md as evolving spec** — Every error, pattern, or architectural decision must be documented to cumulatively train the agent.
 7. **Graph visualization** — Use `export_mermaid` to visualize the execution graph in reviews, handoffs, and debugging.
 
-See [docs/guia-xp-anti-vibe-coding.md](docs/guia-xp-anti-vibe-coding.md) for the full methodology guide.
+See [docs/LIFECYCLE.md](docs/LIFECYCLE.md) for the full methodology guide.
 

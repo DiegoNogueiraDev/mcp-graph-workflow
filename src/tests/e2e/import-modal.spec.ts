@@ -12,48 +12,48 @@ test.describe("Import Modal", () => {
   });
 
   test("Import PRD button opens the dialog", async ({ page }) => {
-    await page.locator("#btn-import-prd").click();
-    const modal = page.locator("#import-modal");
+    await page.getByRole("button", { name: "Import PRD" }).click();
+    const modal = page.getByRole("heading", { name: "Import PRD" });
     await expect(modal).toBeVisible();
   });
 
   test("drop zone is visible in modal", async ({ page }) => {
-    await page.locator("#btn-import-prd").click();
-    const dropZone = page.locator("#drop-zone");
+    await page.getByRole("button", { name: "Import PRD" }).click();
+    const dropZone = page.getByText("Drag & drop a file here");
     await expect(dropZone).toBeVisible();
   });
 
   test("cancel closes the dialog", async ({ page }) => {
-    await page.locator("#btn-import-prd").click();
-    await expect(page.locator("#import-modal")).toBeVisible();
+    await page.getByRole("button", { name: "Import PRD" }).click();
+    await expect(page.getByRole("heading", { name: "Import PRD" })).toBeVisible();
 
-    await page.locator("#import-cancel").click();
-    await expect(page.locator("#import-modal")).not.toBeVisible();
+    await page.getByRole("button", { name: "Cancel" }).click();
+    await expect(page.getByRole("heading", { name: "Import PRD" })).not.toBeVisible();
   });
 
   test("close button closes the dialog", async ({ page }) => {
-    await page.locator("#btn-import-prd").click();
-    await expect(page.locator("#import-modal")).toBeVisible();
+    await page.getByRole("button", { name: "Import PRD" }).click();
+    await expect(page.getByRole("heading", { name: "Import PRD" })).toBeVisible();
 
-    await page.locator("#modal-close").click();
-    await expect(page.locator("#import-modal")).not.toBeVisible();
+    // Close button is the × in the modal header
+    await page.locator(".fixed.inset-0 button").filter({ hasText: "×" }).click();
+    await expect(page.getByRole("heading", { name: "Import PRD" })).not.toBeVisible();
   });
 
   test("file upload via setInputFiles triggers import", async ({ page }) => {
-    await page.locator("#btn-import-prd").click();
+    await page.getByRole("button", { name: "Import PRD" }).click();
 
     const fixturePath = path.join(__dirname, "..", "fixtures", "sample.md");
-    const fileInput = page.locator("#file-input");
+    const fileInput = page.locator("input[type='file']");
     await fileInput.setInputFiles(fixturePath);
 
-    // Wait for import submit button to become enabled or status to update
+    // Wait for file selection to register
     await page.waitForTimeout(1000);
-    const status = page.locator("#import-status");
-    const submitBtn = page.locator("#import-submit");
 
-    // Either the submit is enabled or the status shows a result
-    const isEnabled = !(await submitBtn.isDisabled());
-    const statusText = await status.textContent();
-    expect(isEnabled || (statusText && statusText.length > 0)).toBeTruthy();
+    // Either the file name is shown or status message appears
+    const hasSelectedFile = await page.getByText("Selected:").count();
+    const importBtn = page.getByRole("button", { name: "Import" }).last();
+    const isEnabled = !(await importBtn.isDisabled());
+    expect(hasSelectedFile > 0 || isEnabled).toBeTruthy();
   });
 });

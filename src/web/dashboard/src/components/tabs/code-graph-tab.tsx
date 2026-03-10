@@ -43,6 +43,17 @@ export function CodeGraphTab(): React.JSX.Element {
     void loadData();
   }, [loadData]);
 
+  // Poll while analyze is in progress
+  useEffect(() => {
+    if (gitNexusStatus?.analyzePhase !== "analyzing") return;
+
+    const interval = setInterval(() => {
+      void loadData();
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [gitNexusStatus?.analyzePhase, loadData]);
+
   const handleQuery = useCallback(async () => {
     if (!queryInput.trim()) return;
 
@@ -177,9 +188,7 @@ function OverviewPanel({
           {gitNexusStatus?.url && <InfoRow label="URL" value={gitNexusStatus.url} />}
         </div>
         {!gitNexusStatus?.indexed && (
-          <div className="mt-3 p-2 rounded bg-[var(--color-bg-tertiary)] text-xs text-[var(--color-text-muted)]">
-            Run <code className="font-mono bg-[var(--color-bg)] px-1 rounded">gitnexus analyze</code> to index the codebase
-          </div>
+          <AnalyzePhaseMessage phase={gitNexusStatus?.analyzePhase} />
         )}
       </div>
 
@@ -315,6 +324,26 @@ function QueryPanel({
           </pre>
         </div>
       )}
+    </div>
+  );
+}
+
+function AnalyzePhaseMessage({ phase }: { phase?: string }): React.JSX.Element {
+  const messages: Record<string, string> = {
+    analyzing: "GitNexus is analyzing the codebase... (automatic on startup)",
+    unavailable: "No git repository detected in the working directory",
+    error: "GitNexus analysis failed. Check server logs.",
+    idle: "GitNexus will analyze on next server start",
+  };
+
+  const message = messages[phase ?? "idle"] ?? messages.idle;
+
+  return (
+    <div className="mt-3 p-2 rounded bg-[var(--color-bg-tertiary)] text-xs text-[var(--color-text-muted)]">
+      {phase === "analyzing" && (
+        <span className="inline-block w-3 h-3 mr-2 border-2 border-current border-t-transparent rounded-full animate-spin align-middle" />
+      )}
+      {message}
     </div>
   );
 }

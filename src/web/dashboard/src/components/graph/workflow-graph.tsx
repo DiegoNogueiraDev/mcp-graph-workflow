@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useDeferredValue, useRef } from "react";
 import {
   ReactFlow,
   Background,
@@ -16,10 +16,11 @@ import { WorkflowEdge } from "./workflow-edge";
 import { FilterPanel } from "./filter-panel";
 import { NodeDetailPanel } from "./node-detail-panel";
 import { NodeTable } from "./node-table";
-import { toFlowNodes, toFlowEdges, applyDagreLayout, type WorkflowNodeData, type WorkflowEdgeData } from "./graph-utils";
+import { toFlowNodes, toFlowEdges, applyDagreLayout, shouldSkipLayout, type WorkflowNodeData, type WorkflowEdgeData } from "./graph-utils";
 
 const nodeTypes = { workflowNode: WorkflowNode };
 const edgeTypes = { workflowEdge: WorkflowEdge };
+const proOptions = { hideAttribution: true };
 
 interface WorkflowGraphProps {
   graph: GraphDocument;
@@ -33,22 +34,38 @@ export function WorkflowGraph({ graph }: WorkflowGraphProps): React.JSX.Element 
   const [filterStatuses, setFilterStatuses] = useState<Set<string>>(new Set());
   const [filterTypes, setFilterTypes] = useState<Set<string>>(new Set());
 
+  // Defer filter values so checkbox updates are visually immediate
+  const deferredStatuses = useDeferredValue(filterStatuses);
+  const deferredTypes = useDeferredValue(filterTypes);
+  const deferredDirection = useDeferredValue(direction);
+
+  // Track previous layout node IDs to skip redundant Dagre runs
+  const prevLayoutIdsRef = useRef<string[] | null>(null);
+
   const applyLayout = useCallback(
     (statuses: Set<string>, types: Set<string>, dir: "TB" | "LR") => {
       const filters = { statuses, types };
       const flowNodes = toFlowNodes(graph.nodes, filters);
-      const visibleIds = new Set(flowNodes.map((n) => n.id));
+      const nextIds = flowNodes.map((n) => n.id);
+
+      // Skip Dagre if visible node IDs haven't changed
+      if (shouldSkipLayout(prevLayoutIdsRef.current, nextIds) && dir === deferredDirection) {
+        return;
+      }
+      prevLayoutIdsRef.current = nextIds;
+
+      const visibleIds = new Set(nextIds);
       const flowEdges = toFlowEdges(graph.edges, visibleIds);
       const layout = applyDagreLayout(flowNodes, flowEdges, dir);
       setNodes(layout.nodes);
       setEdges(layout.edges);
     },
-    [graph, setNodes, setEdges],
+    [graph, setNodes, setEdges, deferredDirection],
   );
 
   useEffect(() => {
-    applyLayout(filterStatuses, filterTypes, direction);
-  }, [graph, applyLayout, filterStatuses, filterTypes, direction]);
+    applyLayout(deferredStatuses, deferredTypes, deferredDirection);
+  }, [graph, applyLayout, deferredStatuses, deferredTypes, deferredDirection]);
 
   const handleNodeClick = useCallback(
     (_: React.MouseEvent, node: Node<WorkflowNodeData>) => {
@@ -122,10 +139,12 @@ export function WorkflowGraph({ graph }: WorkflowGraphProps): React.JSX.Element 
               onNodeClick={handleNodeClick}
               nodeTypes={nodeTypes}
               edgeTypes={edgeTypes}
+              nodesDraggable={false}
+              nodesConnectable={false}
               fitView
               minZoom={0.1}
               maxZoom={2}
-              proOptions={{ hideAttribution: true }}
+              proOptions={proOptions}
             >
               <Background gap={16} size={1} />
               <Controls showInteractive={false} />

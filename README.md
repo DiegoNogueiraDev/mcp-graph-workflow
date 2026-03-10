@@ -7,14 +7,14 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-A local-first CLI tool (TypeScript) that converts PRD text files into persistent execution graphs (SQLite), with an integrated knowledge store, RAG pipeline, and multi-agent integration mesh — enabling structured, token-efficient agentic workflows. 31 MCP tools, 17 REST API routers, 610+ tests.
+A local-first CLI tool (TypeScript) that converts PRD text files into persistent execution graphs (SQLite), with an integrated knowledge store, RAG pipeline, and multi-agent integration mesh — enabling structured, token-efficient agentic workflows. 26 MCP tools, 17 REST API routers, 630+ tests.
 
 ## Table of Contents
 
 - [Features](#features)
 - [Quick Start](#quick-start)
 - [Architecture](#architecture)
-- [MCP Tools (31)](#mcp-tools-31)
+- [MCP Tools (26)](#mcp-tools-26)
 - [REST API (17 routers)](#rest-api-17-routers)
 - [CLI Commands (5)](#cli-commands-5)
 - [Knowledge Pipeline](#knowledge-pipeline)
@@ -31,7 +31,7 @@ A local-first CLI tool (TypeScript) that converts PRD text files into persistent
 
 - **PRD to Graph** — Parse PRD text files (.md, .txt, .pdf, .html) into structured task graphs
 - **Local-first** — SQLite persistence, zero external dependencies, no Docker
-- **31 MCP Tools** — Full graph lifecycle via HTTP or Stdio transport
+- **26 MCP Tools** — Full graph lifecycle via HTTP or Stdio transport
 - **17 REST API Routers** — CRUD, search, import, knowledge, RAG, integrations, insights
 - **Knowledge Store** — Unified store with FTS5, SHA-256 dedup, 5 source types
 - **RAG Pipeline** — TF-IDF embeddings, cosine similarity, 100% local (no external APIs)
@@ -40,7 +40,7 @@ A local-first CLI tool (TypeScript) that converts PRD text files into persistent
 - **Sprint Planning** — `plan_sprint` with velocity-based estimates, risk assessment, task ordering
 - **Integration Mesh** — Serena, GitNexus, Context7, Playwright working together via event bus
 - **Web Dashboard** — React + Tailwind CSS with interactive graph, backlog, code graph, and insights
-- **610+ Tests** — Unit, integration, E2E browser (Playwright), benchmarks
+- **630+ Tests** — Unit, integration, E2E browser (Playwright), benchmarks
 - **Cross-platform** — Windows, macOS, and Linux compatible
 
 ## Quick Start
@@ -73,9 +73,11 @@ git clone <repo-url>
 cd mcp-graph-workflow
 npm install
 npm run build
-npm run dev          # Start HTTP server + dashboard
-npm run dev:stdio    # Start MCP Stdio server
+npm run dev              # Start HTTP server + dashboard + GitNexus auto-analyze
+npm run dev:stdio        # Start MCP Stdio server (no dashboard)
 ```
+
+Open `http://localhost:3000` to access the dashboard. GitNexus analysis starts automatically if a `.git/` directory is detected.
 
 ### CLI
 
@@ -126,15 +128,15 @@ src/
     config/          # Configuration schema + loader (2 modules)
     utils/           # errors, fs, id, logger, time (5 modules)
   api/               # Express REST API — 17 routers, 44 endpoints
-  mcp/               # MCP server (HTTP + Stdio) + 31 tool wrappers
+  mcp/               # MCP server (HTTP + Stdio) + 26 tool wrappers
   schemas/           # Zod v4 schemas (node, edge, graph, knowledge)
   web/dashboard/     # React + Tailwind + React Flow dashboard
-  tests/             # 67 Vitest files + 5 Playwright E2E specs
+  tests/             # 69 Vitest files + 7 Playwright E2E specs
 ```
 
 See [docs/ARCHITECTURE-GUIDE.md](docs/ARCHITECTURE-GUIDE.md) for the complete architecture guide.
 
-## MCP Tools (31)
+## MCP Tools (26)
 
 | Category | Tool | Description |
 |----------|------|-------------|
@@ -143,13 +145,10 @@ See [docs/ARCHITECTURE-GUIDE.md](docs/ARCHITECTURE-GUIDE.md) for the complete ar
 | | `add_node` | Create a node in the graph |
 | | `update_node` | Edit node fields (title, description, priority, tags, etc.) |
 | | `delete_node` | Delete node with cascade edge cleanup |
-| | `add_edge` | Create an edge between nodes |
-| | `delete_edge` | Delete an edge |
-| | `list_edges` | List edges filtered by node or type |
+| | `edge` | Create, delete, or list edges between nodes |
 | | `move_node` | Move node to a different parent |
 | | `clone_node` | Clone a node (optionally with children) |
-| | `export_graph` | Export the complete graph as JSON |
-| | `export_mermaid` | Export as Mermaid diagram (flowchart/mindmap) |
+| | `export` | Export graph as JSON or Mermaid diagram |
 | **Querying** | `list` | List nodes filtered by type/status/sprint |
 | | `show` | Show node details with edges and children |
 | | `search` | Full-text search with BM25 ranking |
@@ -165,10 +164,8 @@ See [docs/ARCHITECTURE-GUIDE.md](docs/ARCHITECTURE-GUIDE.md) for the complete ar
 | | `reindex_knowledge` | Rebuild knowledge indexes + embeddings |
 | | `sync_stack_docs` | Auto-detect stack + fetch docs via Context7 |
 | **Validation** | `validate_task` | Browser-based task validation with A/B compare |
-| **Snapshots** | `stats` | Graph statistics + compression metrics |
-| | `create_snapshot` | Snapshot current graph state |
-| | `restore_snapshot` | Restore from a snapshot |
-| | `list_snapshots` | List available snapshots |
+| **Snapshots & Stats** | `stats` | Graph statistics + compression metrics |
+| | `snapshot` | Create, restore, or list graph snapshots |
 
 See [docs/MCP-TOOLS-REFERENCE.md](docs/MCP-TOOLS-REFERENCE.md) for full parameter documentation.
 
@@ -241,12 +238,65 @@ See [docs/INTEGRATIONS-GUIDE.md](docs/INTEGRATIONS-GUIDE.md) for detailed integr
 
 ## Web Dashboard
 
-The dashboard runs at `http://localhost:3000` via `mcp-graph serve` and provides 4 tabs:
+### Starting the Dashboard
+
+```bash
+# From source
+npm run dev              # Start Express API + MCP + Dashboard + GitNexus auto-analyze
+
+# Or via CLI
+mcp-graph serve --port 3000
+```
+
+The `serve` command starts:
+- **Express REST API** on the configured port (default 3000)
+- **MCP server** (HTTP transport)
+- **React dashboard** served at `http://localhost:3000`
+- **GitNexus auto-analyze** — automatically detects `.git/`, checks index, runs `gitnexus analyze`, and starts `gitnexus serve`
+
+### GitNexus Auto-Analyze
+
+On startup, the server automatically:
+1. Checks if the working directory is a git repository (`.git/` exists)
+2. Checks if GitNexus has already indexed the codebase (`.gitnexus/` exists)
+3. If not indexed, runs `gitnexus analyze` (up to 5 min for large codebases)
+4. Starts `gitnexus serve` on the configured port (default 3737)
+
+The dashboard Code Graph tab shows real-time status of the analysis phase.
+
+To disable auto-analyze:
+```bash
+# Via environment variable
+GITNEXUS_AUTO_START=false npm run dev
+
+# Or in mcp-graph.config.json
+{ "integrations": { "gitnexusAutoStart": false } }
+```
+
+### Configuration
+
+Create a `mcp-graph.config.json` in the project root:
+
+```json
+{
+  "port": 3000,
+  "dbPath": ".mcp-graph",
+  "integrations": {
+    "gitnexusPort": 3737,
+    "gitnexusAutoStart": true
+  }
+}
+```
+
+Environment variable overrides: `MCP_PORT`, `GITNEXUS_PORT`, `GITNEXUS_AUTO_START`.
+
+### Dashboard Tabs
 
 1. **Graph** — Interactive React Flow diagram with filters, node table with search/sort, and detail panel
-2. **Code Graph** — D3-based code dependency visualization
-3. **PRD Backlog** — PRD backlog list with progress tracking
+2. **PRD & Backlog** — PRD backlog list with progress tracking
+3. **Code Graph** — GitNexus code dependency visualization with query interface
 4. **Insights** — Bottleneck detection, velocity metrics, and reports
+5. **Benchmark** — Performance benchmark results and comparisons
 
 Built with React 19 + TypeScript + Tailwind CSS + React Flow. Real-time updates via SSE. Dark/light theme.
 
@@ -261,7 +311,7 @@ npm run test:bench     # Benchmark tests
 npm run test:all       # All tests (unit + E2E)
 ```
 
-**610+ tests** across 67 Vitest files + 5 Playwright E2E specs covering: parser, store, knowledge, RAG, context compression, planner, integrations, API endpoints, MCP tools, CLI commands, and browser flows.
+**630+ tests** across 69 Vitest files + 7 Playwright E2E specs covering: parser, store, knowledge, RAG, context compression, planner, integrations, API endpoints, MCP tools, CLI commands, and browser flows.
 
 See [docs/TEST-GUIDE.md](docs/TEST-GUIDE.md) for the full testing guide.
 
@@ -300,7 +350,7 @@ The project follows an anti-vibe-coding methodology based on Extreme Programming
 | `/dev-flow-orchestrator` | Continuous XP cycle: ANALYZE → DESIGN → PLAN → IMPLEMENT → VALIDATE → REVIEW → HANDOFF → LISTENING |
 | `/track-with-mcp-graph` | Keep graph in sync with real work state |
 
-See [docs/guia-xp-anti-vibe-coding.md](docs/guia-xp-anti-vibe-coding.md) for the full methodology guide.
+See [docs/LIFECYCLE.md](docs/LIFECYCLE.md) for the full methodology guide.
 
 ## Documentation
 
@@ -308,13 +358,12 @@ See [docs/guia-xp-anti-vibe-coding.md](docs/guia-xp-anti-vibe-coding.md) for the
 |----------|-------------|
 | [CLAUDE.md](CLAUDE.md) | AI agent instructions, conventions, and rules |
 | [docs/ARCHITECTURE-GUIDE.md](docs/ARCHITECTURE-GUIDE.md) | System layers, module inventory, data flows |
-| [docs/MCP-TOOLS-REFERENCE.md](docs/MCP-TOOLS-REFERENCE.md) | 31 MCP tools with full parameter reference |
+| [docs/MCP-TOOLS-REFERENCE.md](docs/MCP-TOOLS-REFERENCE.md) | 26 MCP tools with full parameter reference |
 | [docs/REST-API-REFERENCE.md](docs/REST-API-REFERENCE.md) | 17 routers, 44 endpoints with examples |
 | [docs/KNOWLEDGE-PIPELINE.md](docs/KNOWLEDGE-PIPELINE.md) | Knowledge Store, RAG, embeddings, context assembly |
 | [docs/INTEGRATIONS-GUIDE.md](docs/INTEGRATIONS-GUIDE.md) | Serena, GitNexus, Context7, Playwright |
 | [docs/TEST-GUIDE.md](docs/TEST-GUIDE.md) | Test pyramid, categories, best practices |
-| [docs/LIFECYCLE.md](docs/LIFECYCLE.md) | 8-phase development lifecycle |
-| [docs/guia-xp-anti-vibe-coding.md](docs/guia-xp-anti-vibe-coding.md) | XP methodology guide |
+| [docs/LIFECYCLE.md](docs/LIFECYCLE.md) | 8-phase development lifecycle + XP methodology |
 
 ## Contributing
 

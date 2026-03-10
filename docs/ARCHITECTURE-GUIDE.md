@@ -24,7 +24,7 @@ Thin orchestration layer. Commands call core functions and format output. No bus
 
 **Protocol:** Model Context Protocol (Streamable HTTP + Stdio)
 
-31 tools registered via `@modelcontextprotocol/sdk`. Two transport modes:
+26 tools registered via `@modelcontextprotocol/sdk`. Two transport modes:
 
 - **HTTP** (`server.ts`) — Express server with `/mcp` endpoint + REST API + static dashboard
 - **Stdio** (`stdio.ts`) — Standard I/O transport for direct MCP client integration

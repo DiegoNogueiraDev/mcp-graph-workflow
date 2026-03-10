@@ -21,6 +21,7 @@ import { useEffect } from "react";
 
 const nodeTypes = { workflowNode: WorkflowNode };
 const edgeTypes = { workflowEdge: WorkflowEdge };
+const proOptions = { hideAttribution: true };
 
 interface PrdBacklogTabProps {
   graph: GraphDocument;
@@ -96,10 +97,12 @@ export function PrdBacklogTab({ graph }: PrdBacklogTabProps): React.JSX.Element 
             onNodeClick={handleNodeClick}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
+            nodesDraggable={false}
+            nodesConnectable={false}
             fitView
             minZoom={0.1}
             maxZoom={2}
-            proOptions={{ hideAttribution: true }}
+            proOptions={proOptions}
           >
             <Background gap={16} size={1} />
             <Controls showInteractive={false} />

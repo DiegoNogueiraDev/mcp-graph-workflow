@@ -6,7 +6,7 @@
 
 import { Router } from "express";
 import { z } from "zod/v4";
-import { isGitNexusIndexed, isGitNexusRunning } from "../../core/integrations/gitnexus-launcher.js";
+import { isGitNexusIndexed, isGitNexusRunning, getAnalyzePhase } from "../../core/integrations/gitnexus-launcher.js";
 import { logger } from "../../core/utils/logger.js";
 
 const QueryBodySchema = z.object({ query: z.string().min(1) });
@@ -52,6 +52,7 @@ export function createGitNexusRouter(options: GitNexusRouterOptions): Router {
         indexed,
         running,
         port: gitnexusPort,
+        analyzePhase: getAnalyzePhase(),
         ...(running ? { url: `http://localhost:${gitnexusPort}` } : {}),
       });
     } catch (err) {

@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Benchmark tab no dashboard com métricas de token economy
+- `GET /api/v1/benchmark` endpoint na REST API
+- Testes unitários para `graph-utils.ts` (24 testes: toFlowNodes, toFlowEdges, computeLayoutKey, shouldSkipLayout)
+- Testes E2E de performance dos filtros do Graph tab (`graph-filters-perf.spec.ts`)
+- GitNexus auto-analyze on startup (detecta `.git/`, indexa codebase, inicia serve)
+- Configuração `gitnexusAutoStart` e variável de ambiente `GITNEXUS_AUTO_START`
+
+### Changed
+- MCP tools consolidados de 31 → 26 (edge, snapshot, export como multi-action)
+- Dashboard Graph tab: `useDeferredValue` para filtros, `computeLayoutKey` (hash numérico), `shouldSkipLayout` (skip Dagre), ReactFlow `nodesDraggable=false`/`nodesConnectable=false`
+- Dashboard PRD & Backlog tab: ReactFlow read-only props
+- Dashboard node table: paginação (50/page)
+- Testes E2E atualizados para seletores React (substituídos #mermaid-output, #btn-apply-filters, etc.)
+
+### Fixed
+- RAG budget enforcement: hard cap via `Math.min` em `ragBuildContext`
+- Layout cache key: hash numérico em vez de string concatenation (evita alocação de strings grandes)
+
 ## [2.1.0] - 2026-03-09
 
 ### Added
