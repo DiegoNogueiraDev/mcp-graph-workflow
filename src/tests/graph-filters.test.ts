@@ -126,3 +126,72 @@ describe("filterTopLevelNodes", () => {
     expect(result[0].extra).toBe("data");
   });
 });
+
+// ── getNodeEdgeSummary ───────────────────────────
+
+import { getNodeEdgeSummary } from "../web/dashboard/src/lib/graph-filters.js";
+
+interface TestEdge {
+  id: string;
+  from: string;
+  to: string;
+  relationType: string;
+  createdAt: string;
+}
+
+function makeEdge(overrides: Partial<TestEdge> & { id: string; from: string; to: string }): TestEdge {
+  return {
+    relationType: "depends_on",
+    createdAt: "2024-01-01T00:00:00Z",
+    ...overrides,
+  };
+}
+
+describe("getNodeEdgeSummary", () => {
+  const edges: TestEdge[] = [
+    makeEdge({ id: "e1", from: "A", to: "B", relationType: "depends_on" }),
+    makeEdge({ id: "e2", from: "C", to: "A", relationType: "blocks" }),
+    makeEdge({ id: "e3", from: "A", to: "D", relationType: "parent_of" }),
+    makeEdge({ id: "e4", from: "B", to: "C", relationType: "related_to" }),
+  ];
+
+  it("should return outgoing edges where from === nodeId", () => {
+    const result = getNodeEdgeSummary("A", edges);
+    expect(result.outgoing).toHaveLength(2);
+    expect(result.outgoing.map((e) => e.id)).toEqual(["e1", "e3"]);
+  });
+
+  it("should return incoming edges where to === nodeId", () => {
+    const result = getNodeEdgeSummary("A", edges);
+    expect(result.incoming).toHaveLength(1);
+    expect(result.incoming[0].id).toBe("e2");
+  });
+
+  it("should return empty arrays for node with no edges", () => {
+    const result = getNodeEdgeSummary("Z", edges);
+    expect(result.outgoing).toEqual([]);
+    expect(result.incoming).toEqual([]);
+  });
+
+  it("should return empty arrays for empty edges list", () => {
+    const result = getNodeEdgeSummary("A", []);
+    expect(result.outgoing).toEqual([]);
+    expect(result.incoming).toEqual([]);
+  });
+
+  it("should not include edges in both outgoing and incoming for self-referencing node", () => {
+    const selfEdge = makeEdge({ id: "self", from: "X", to: "X" });
+    const result = getNodeEdgeSummary("X", [selfEdge]);
+    // Self-edge appears in both outgoing and incoming
+    expect(result.outgoing).toHaveLength(1);
+    expect(result.incoming).toHaveLength(1);
+  });
+
+  it("should correctly separate edges for a node that is both source and target", () => {
+    const result = getNodeEdgeSummary("B", edges);
+    expect(result.outgoing).toHaveLength(1); // e4: B→C
+    expect(result.outgoing[0].id).toBe("e4");
+    expect(result.incoming).toHaveLength(1); // e1: A→B
+    expect(result.incoming[0].id).toBe("e1");
+  });
+});

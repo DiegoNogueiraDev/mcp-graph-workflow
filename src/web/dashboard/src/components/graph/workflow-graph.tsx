@@ -7,6 +7,7 @@ import {
   useEdgesState,
   type Node,
   type Edge,
+  type Connection,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -17,6 +18,7 @@ import { WorkflowEdge } from "./workflow-edge";
 import { FilterPanel } from "./filter-panel";
 import { NodeDetailPanel } from "./node-detail-panel";
 import { NodeTable } from "./node-table";
+import { EdgeCreateDialog } from "./edge-create-dialog";
 import { toFlowNodes, toFlowEdges, applyDagreLayout, shouldSkipLayout, type WorkflowNodeData, type WorkflowEdgeData } from "./graph-utils";
 
 const nodeTypes = { workflowNode: WorkflowNode };
@@ -27,6 +29,11 @@ interface WorkflowGraphProps {
   graph: GraphDocument;
 }
 
+interface PendingConnection {
+  fromId: string;
+  toId: string;
+}
+
 export function WorkflowGraph({ graph }: WorkflowGraphProps): React.JSX.Element {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<WorkflowNodeData>>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge<WorkflowEdgeData>>([]);
@@ -35,6 +42,7 @@ export function WorkflowGraph({ graph }: WorkflowGraphProps): React.JSX.Element 
   const [filterStatuses, setFilterStatuses] = useState<Set<string>>(new Set());
   const [filterTypes, setFilterTypes] = useState<Set<string>>(new Set());
   const [showFullGraph, setShowFullGraph] = useState(false);
+  const [pendingConnection, setPendingConnection] = useState<PendingConnection | null>(null);
 
   // Defer filter values so checkbox updates are visually immediate
   const deferredStatuses = useDeferredValue(filterStatuses);
@@ -81,6 +89,25 @@ export function WorkflowGraph({ graph }: WorkflowGraphProps): React.JSX.Element 
     setSelectedNode(node);
   }, []);
 
+  const handleNodeNavigate = useCallback(
+    (nodeId: string) => {
+      const target = graph.nodes.find((n) => n.id === nodeId);
+      if (target) setSelectedNode(target);
+    },
+    [graph.nodes],
+  );
+
+  const handleConnect = useCallback((connection: Connection) => {
+    if (connection.source && connection.target && connection.source !== connection.target) {
+      setPendingConnection({ fromId: connection.source, toId: connection.target });
+    }
+  }, []);
+
+  const handleEdgeCreated = useCallback(() => {
+    setPendingConnection(null);
+    // SSE will trigger a graph refresh automatically
+  }, []);
+
   const toggleStatus = useCallback((status: NodeStatus) => {
     setFilterStatuses((prev) => {
       const next = new Set(prev);
@@ -113,6 +140,14 @@ export function WorkflowGraph({ graph }: WorkflowGraphProps): React.JSX.Element 
     });
   }, [graph.nodes, filterStatuses, filterTypes, showFullGraph]);
 
+  // Resolve titles for pending connection dialog
+  const pendingFromTitle = pendingConnection
+    ? graph.nodes.find((n) => n.id === pendingConnection.fromId)?.title
+    : undefined;
+  const pendingToTitle = pendingConnection
+    ? graph.nodes.find((n) => n.id === pendingConnection.toId)?.title
+    : undefined;
+
   return (
     <div className="flex flex-col h-full">
       <FilterPanel
@@ -144,10 +179,11 @@ export function WorkflowGraph({ graph }: WorkflowGraphProps): React.JSX.Element 
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
               onNodeClick={handleNodeClick}
+              onConnect={handleConnect}
               nodeTypes={nodeTypes}
               edgeTypes={edgeTypes}
               nodesDraggable={false}
-              nodesConnectable={false}
+              nodesConnectable={true}
               fitView
               minZoom={0.1}
               maxZoom={2}
@@ -162,12 +198,26 @@ export function WorkflowGraph({ graph }: WorkflowGraphProps): React.JSX.Element 
         {selectedNode && (
           <NodeDetailPanel
             node={selectedNode}
+            edges={graph.edges}
+            allNodes={graph.nodes}
             onClose={() => setSelectedNode(null)}
+            onNodeNavigate={handleNodeNavigate}
           />
         )}
       </div>
 
       <NodeTable nodes={visibleNodes} onNodeClick={handleTableNodeClick} />
+
+      {pendingConnection && (
+        <EdgeCreateDialog
+          fromId={pendingConnection.fromId}
+          toId={pendingConnection.toId}
+          fromTitle={pendingFromTitle}
+          toTitle={pendingToTitle}
+          onCreated={handleEdgeCreated}
+          onCancel={() => setPendingConnection(null)}
+        />
+      )}
     </div>
   );
 }

@@ -1,17 +1,40 @@
-import { memo } from "react";
-import type { GraphNode } from "@/lib/types";
-import { STATUS_COLORS, NODE_TYPE_COLORS } from "@/lib/constants";
+import { memo, useMemo } from "react";
+import type { GraphNode, GraphEdge } from "@/lib/types";
+import { STATUS_COLORS, NODE_TYPE_COLORS, EDGE_STYLES } from "@/lib/constants";
+import { getNodeEdgeSummary } from "@/lib/graph-filters";
 
 interface NodeDetailPanelProps {
   node: GraphNode | null;
+  edges?: GraphEdge[];
+  allNodes?: GraphNode[];
   onClose: () => void;
+  onNodeNavigate?: (nodeId: string) => void;
 }
 
-export const NodeDetailPanel = memo(function NodeDetailPanel({ node, onClose }: NodeDetailPanelProps) {
+export const NodeDetailPanel = memo(function NodeDetailPanel({
+  node,
+  edges = [],
+  allNodes = [],
+  onClose,
+  onNodeNavigate,
+}: NodeDetailPanelProps) {
   if (!node) return null;
 
   const typeColor = NODE_TYPE_COLORS[node.type] || "#6c757d";
   const statusColor = STATUS_COLORS[node.status] || "#9e9e9e";
+
+  const edgeSummary = useMemo(
+    () => getNodeEdgeSummary(node.id, edges),
+    [node.id, edges],
+  );
+
+  const nodeMap = useMemo(() => {
+    const map = new Map<string, GraphNode>();
+    for (const n of allNodes) map.set(n.id, n);
+    return map;
+  }, [allNodes]);
+
+  const hasRelationships = edgeSummary.outgoing.length > 0 || edgeSummary.incoming.length > 0;
 
   return (
     <div className="w-80 border-l border-[var(--color-border)] bg-[var(--color-bg-secondary)] overflow-y-auto p-4">
@@ -50,6 +73,46 @@ export const NodeDetailPanel = memo(function NodeDetailPanel({ node, onClose }: 
           <div className="pt-2 border-t border-[var(--color-border)]">
             <div className="text-xs font-medium text-[var(--color-text-muted)] mb-1">Description</div>
             <p className="text-xs whitespace-pre-wrap">{node.description}</p>
+          </div>
+        )}
+
+        {hasRelationships && (
+          <div className="pt-2 border-t border-[var(--color-border)]">
+            <div className="text-xs font-medium text-[var(--color-text-muted)] mb-1">
+              Relationships ({edgeSummary.outgoing.length + edgeSummary.incoming.length})
+            </div>
+            <div className="space-y-1">
+              {edgeSummary.outgoing.map((edge) => {
+                const target = nodeMap.get(edge.to);
+                const style = EDGE_STYLES[edge.relationType] || EDGE_STYLES.related_to;
+                return (
+                  <EdgeItem
+                    key={edge.id}
+                    direction="out"
+                    label={style.label}
+                    color={style.color}
+                    targetTitle={target?.title ?? edge.to}
+                    targetId={edge.to}
+                    onNavigate={onNodeNavigate}
+                  />
+                );
+              })}
+              {edgeSummary.incoming.map((edge) => {
+                const source = nodeMap.get(edge.from);
+                const style = EDGE_STYLES[edge.relationType] || EDGE_STYLES.related_to;
+                return (
+                  <EdgeItem
+                    key={edge.id}
+                    direction="in"
+                    label={style.label}
+                    color={style.color}
+                    targetTitle={source?.title ?? edge.from}
+                    targetId={edge.from}
+                    onNavigate={onNodeNavigate}
+                  />
+                );
+              })}
+            </div>
           </div>
         )}
 
@@ -104,5 +167,33 @@ function Row({ label, children }: { label: string; children: React.ReactNode }):
       <span className="text-xs text-[var(--color-text-muted)] shrink-0">{label}</span>
       <div className="text-right">{children}</div>
     </div>
+  );
+}
+
+function EdgeItem({
+  direction,
+  label,
+  color,
+  targetTitle,
+  targetId,
+  onNavigate,
+}: {
+  direction: "in" | "out";
+  label: string;
+  color: string;
+  targetTitle: string;
+  targetId: string;
+  onNavigate?: (id: string) => void;
+}): React.JSX.Element {
+  const arrow = direction === "out" ? "\u2192" : "\u2190";
+  return (
+    <button
+      onClick={() => onNavigate?.(targetId)}
+      className="w-full text-left flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-[var(--color-bg-tertiary)] transition-colors text-xs"
+    >
+      <span style={{ color }}>{arrow}</span>
+      <span className="text-[10px] text-[var(--color-text-muted)]">{label}</span>
+      <span className="truncate font-medium">{targetTitle}</span>
+    </button>
   );
 }

@@ -109,6 +109,38 @@ describe("API /api/v1/gitnexus — extended", () => {
     });
   });
 
+  // ── POST /analyze ─────────────────────────────────
+
+  describe("POST /analyze", () => {
+    it("should return AnalyzeResult shape", async () => {
+      const res = await request(app).post("/api/v1/gitnexus/analyze");
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty("skipped");
+      expect(res.body).toHaveProperty("reason");
+      expect(typeof res.body.skipped).toBe("boolean");
+      expect(typeof res.body.reason).toBe("string");
+    });
+  });
+
+  // ── POST /serve ──────────────────────────────────
+
+  describe("POST /serve", () => {
+    it("should return ServeResult shape", async () => {
+      const res = await request(app).post("/api/v1/gitnexus/serve");
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty("started");
+      expect(res.body).toHaveProperty("message");
+      expect(typeof res.body.started).toBe("boolean");
+      expect(typeof res.body.message).toBe("string");
+    });
+
+    it("should return started=false if not indexed", async () => {
+      const res = await request(app).post("/api/v1/gitnexus/serve");
+      // /tmp/fake-project won't be indexed, so it should fail gracefully
+      expect(res.body.started).toBe(false);
+    });
+  });
+
   // ── Error responses ─────────────────────────────
 
   describe("Error responses", () => {

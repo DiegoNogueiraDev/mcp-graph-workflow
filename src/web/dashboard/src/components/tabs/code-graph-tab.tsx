@@ -42,6 +42,9 @@ export function CodeGraphTab(): React.JSX.Element {
   // Graph data for sigma (from queries or symbol context)
   const [graphData, setGraphData] = useState<CodeGraphData | null>(null);
 
+  // GitNexus on-demand action
+  const [actionLoading, setActionLoading] = useState(false);
+
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
@@ -114,6 +117,19 @@ export function CodeGraphTab(): React.JSX.Element {
     }
   }, []);
 
+  const handleAnalyzeAndStart = useCallback(async () => {
+    setActionLoading(true);
+    try {
+      await apiClient.triggerAnalyze();
+      await apiClient.triggerServe();
+      await loadData();
+    } catch {
+      // loadData will refresh status; error state handled by status polling
+    } finally {
+      setActionLoading(false);
+    }
+  }, [loadData]);
+
   const handleSymbolSelect = useCallback((symbolName: string) => {
     setSelectedSymbol(symbolName);
     setSymbolInput(symbolName);
@@ -146,6 +162,8 @@ export function CodeGraphTab(): React.JSX.Element {
           label="GitNexus"
           indexed={gitNexusStatus?.indexed ?? false}
           running={gitNexusStatus?.running ?? false}
+          onAction={handleAnalyzeAndStart}
+          actionLoading={actionLoading}
         />
         <StatusBadge
           label="Serena"
@@ -234,20 +252,36 @@ function StatusBadge({
   label,
   indexed,
   running,
+  onAction,
+  actionLoading,
 }: {
   label: string;
   indexed: boolean;
   running: boolean;
+  onAction?: () => void;
+  actionLoading?: boolean;
 }): React.JSX.Element {
   const color = running ? "var(--color-success)" : indexed ? "var(--color-warning)" : "var(--color-text-muted)";
   const text = running ? "Active" : indexed ? "Indexed" : "Inactive";
+  const showAction = !running && onAction;
 
   return (
-    <span
-      className="text-[10px] font-medium px-2 py-0.5 rounded-full"
-      style={{ background: `${color}20`, color }}
-    >
-      {label}: {text}
+    <span className="inline-flex items-center gap-1">
+      <span
+        className="text-[10px] font-medium px-2 py-0.5 rounded-full"
+        style={{ background: `${color}20`, color }}
+      >
+        {label}: {text}
+      </span>
+      {showAction && (
+        <button
+          onClick={onAction}
+          disabled={actionLoading}
+          className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--color-accent)] text-white disabled:opacity-50 hover:opacity-90 transition-opacity"
+        >
+          {actionLoading ? "Starting..." : "Analyze & Start"}
+        </button>
+      )}
     </span>
   );
 }

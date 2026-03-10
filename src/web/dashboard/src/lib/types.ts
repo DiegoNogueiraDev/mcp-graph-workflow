@@ -148,3 +148,17 @@ export interface SerenaMemory {
   name: string;
   content: string;
 }
+
+// ── GitNexus on-demand action results ───────────
+
+export interface AnalyzeResult {
+  skipped: boolean;
+  success?: boolean;
+  reason: string;
+}
+
+export interface ServeResult {
+  started: boolean;
+  message: string;
+  port?: number;
+}
