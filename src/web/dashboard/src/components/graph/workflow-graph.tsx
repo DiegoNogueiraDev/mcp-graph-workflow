@@ -3,7 +3,6 @@ import {
   ReactFlow,
   Background,
   Controls,
-  MiniMap,
   useNodesState,
   useEdgesState,
   type Node,
@@ -130,12 +129,6 @@ export function WorkflowGraph({ graph }: WorkflowGraphProps): React.JSX.Element 
             >
               <Background gap={16} size={1} />
               <Controls showInteractive={false} />
-              <MiniMap
-                nodeStrokeWidth={3}
-                pannable
-                zoomable
-                style={{ background: "var(--color-bg-secondary)" }}
-              />
             </ReactFlow>
           )}
         </div>

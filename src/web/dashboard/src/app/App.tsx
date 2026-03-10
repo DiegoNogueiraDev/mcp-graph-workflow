@@ -58,8 +58,13 @@ function AppContent(): React.JSX.Element {
           </div>
         ) : (
           <Suspense fallback={<LoadingFallback />}>
-            {activeTab === "graph" && graph && <GraphTab graph={graph} />}
-            {activeTab === "prd-backlog" && graph && <PrdBacklogTab graph={graph} />}
+            {/* Keep-alive: hide with CSS instead of unmounting to avoid expensive re-renders */}
+            <div style={{ display: activeTab === "graph" ? "contents" : "none" }}>
+              {graph && <GraphTab graph={graph} />}
+            </div>
+            <div style={{ display: activeTab === "prd-backlog" ? "contents" : "none" }}>
+              {graph && <PrdBacklogTab graph={graph} />}
+            </div>
             {activeTab === "code-graph" && <CodeGraphTab />}
             {activeTab === "insights" && <InsightsTab />}
             {activeTab === "benchmark" && <BenchmarkTab />}

@@ -76,11 +76,23 @@ export function toFlowEdges(
     });
 }
 
+// Layout cache to avoid expensive Dagre recalculation on tab switches
+let layoutCache: {
+  key: string;
+  result: { nodes: Node<WorkflowNodeData>[]; edges: Edge<WorkflowEdgeData>[] };
+} | null = null;
+
 export function applyDagreLayout(
   nodes: Node<WorkflowNodeData>[],
   edges: Edge<WorkflowEdgeData>[],
   direction: "TB" | "LR" = "TB",
 ): { nodes: Node<WorkflowNodeData>[]; edges: Edge<WorkflowEdgeData>[] } {
+  // Cache key: direction + node IDs + edge source/target pairs
+  const cacheKey = `${direction}:${nodes.map((n) => n.id).join(",")}:${edges.map((e) => `${e.source}-${e.target}`).join(",")}`;
+  if (layoutCache && layoutCache.key === cacheKey) {
+    return layoutCache.result;
+  }
+
   const g = new dagre.graphlib.Graph();
   g.setDefaultEdgeLabel(() => ({}));
   g.setGraph({ rankdir: direction, ranksep: 60, nodesep: 40 });
@@ -106,7 +118,9 @@ export function applyDagreLayout(
     };
   });
 
-  return { nodes: layoutedNodes, edges };
+  const result = { nodes: layoutedNodes, edges };
+  layoutCache = { key: cacheKey, result };
+  return result;
 }
 
 export { NODE_TYPE_COLORS, STATUS_COLORS };

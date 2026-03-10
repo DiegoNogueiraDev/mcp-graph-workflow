@@ -26,19 +26,26 @@ interface PrdBacklogTabProps {
   graph: GraphDocument;
 }
 
+const TOP_LEVEL_TYPES = new Set(["epic", "milestone", "requirement", "constraint"]);
+
 export function PrdBacklogTab({ graph }: PrdBacklogTabProps): React.JSX.Element {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<WorkflowNodeData>>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge<WorkflowEdgeData>>([]);
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
+  const [showFullGraph, setShowFullGraph] = useState(false);
 
   useEffect(() => {
-    const flowNodes = toFlowNodes(graph.nodes);
+    // Show only top-level nodes by default to avoid DOM overload
+    const filteredNodes = showFullGraph
+      ? graph.nodes
+      : graph.nodes.filter((n) => TOP_LEVEL_TYPES.has(n.type) || !n.parentId);
+    const flowNodes = toFlowNodes(filteredNodes);
     const visibleIds = new Set(flowNodes.map((n) => n.id));
     const flowEdges = toFlowEdges(graph.edges, visibleIds);
     const layout = applyDagreLayout(flowNodes, flowEdges, "TB");
     setNodes(layout.nodes);
     setEdges(layout.edges);
-  }, [graph, setNodes, setEdges]);
+  }, [graph, setNodes, setEdges, showFullGraph]);
 
   const handleNodeClick = useCallback(
     (_: React.MouseEvent, node: Node<WorkflowNodeData>) => {
@@ -64,6 +71,22 @@ export function PrdBacklogTab({ graph }: PrdBacklogTabProps): React.JSX.Element 
     <div className="flex h-full">
       {/* Left: Workflow diagram */}
       <div className="flex-1 min-w-0 flex flex-col">
+        <div className="px-3 py-1.5 bg-[var(--color-bg-secondary)] border-b border-[var(--color-border)] flex items-center gap-2 text-xs">
+          <label className="flex items-center gap-1 cursor-pointer text-[var(--color-text-muted)]">
+            <input
+              type="checkbox"
+              checked={showFullGraph}
+              onChange={() => setShowFullGraph((v) => !v)}
+              className="rounded"
+            />
+            Show all nodes ({graph.nodes.length})
+          </label>
+          {!showFullGraph && (
+            <span className="text-[var(--color-text-muted)]">
+              Showing {nodes.length} top-level nodes
+            </span>
+          )}
+        </div>
         {graph.nodes.length > 0 ? (
           <ReactFlow
             nodes={nodes}
