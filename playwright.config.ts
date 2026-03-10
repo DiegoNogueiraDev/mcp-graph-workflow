@@ -19,6 +19,10 @@ export default defineConfig({
       name: "chromium",
       use: { browserName: "chromium" },
     },
+    {
+      name: "firefox",
+      use: { browserName: "firefox" },
+    },
   ],
   webServer: {
     command: "npx tsx src/tests/e2e/test-server.ts",

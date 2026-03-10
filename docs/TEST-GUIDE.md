@@ -162,6 +162,12 @@ npm run test:all            # Vitest + Playwright
 | `e2e-integration.test.ts` | 7 | Cross-module integration |
 | `import-dedup.test.ts` | 8 | Import deduplication |
 
+### Dashboard Utilities
+
+| File | Cases | Coverage |
+|------|-------|----------|
+| `graph-utils.test.ts` | 24 | toFlowNodes, toFlowEdges, computeLayoutKey, shouldSkipLayout |
+
 ### Benchmark
 
 | File | Cases | Coverage |
@@ -188,6 +194,8 @@ Benchmarks:
 | `import-modal.spec.ts` | Import dialog functionality |
 | `prd-backlog-tab.spec.ts` | Backlog tab display |
 | `sse-events.spec.ts` | Real-time event streaming |
+| `graph-filters-perf.spec.ts` | Graph tab filter performance |
+| `benchmark-tab.spec.ts` | Benchmark tab display and metrics |
 | `tabs.spec.ts` | Tab navigation and switching |
 
 ## Writing New Tests

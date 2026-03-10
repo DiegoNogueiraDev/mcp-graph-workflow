@@ -11,6 +11,7 @@ import {
 import "@xyflow/react/dist/style.css";
 
 import type { GraphDocument, GraphNode, NodeStatus, NodeType } from "@/lib/types";
+import { filterTopLevelNodes } from "@/lib/graph-filters";
 import { WorkflowNode } from "./workflow-node";
 import { WorkflowEdge } from "./workflow-edge";
 import { FilterPanel } from "./filter-panel";
@@ -33,6 +34,7 @@ export function WorkflowGraph({ graph }: WorkflowGraphProps): React.JSX.Element 
   const [direction, setDirection] = useState<"TB" | "LR">("TB");
   const [filterStatuses, setFilterStatuses] = useState<Set<string>>(new Set());
   const [filterTypes, setFilterTypes] = useState<Set<string>>(new Set());
+  const [showFullGraph, setShowFullGraph] = useState(false);
 
   // Defer filter values so checkbox updates are visually immediate
   const deferredStatuses = useDeferredValue(filterStatuses);
@@ -44,8 +46,9 @@ export function WorkflowGraph({ graph }: WorkflowGraphProps): React.JSX.Element 
 
   const applyLayout = useCallback(
     (statuses: Set<string>, types: Set<string>, dir: "TB" | "LR") => {
+      const baseNodes = filterTopLevelNodes(graph.nodes, showFullGraph);
       const filters = { statuses, types };
-      const flowNodes = toFlowNodes(graph.nodes, filters);
+      const flowNodes = toFlowNodes(baseNodes, filters);
       const nextIds = flowNodes.map((n) => n.id);
 
       // Skip Dagre if visible node IDs haven't changed
@@ -60,7 +63,7 @@ export function WorkflowGraph({ graph }: WorkflowGraphProps): React.JSX.Element 
       setNodes(layout.nodes);
       setEdges(layout.edges);
     },
-    [graph, setNodes, setEdges, deferredDirection],
+    [graph, setNodes, setEdges, deferredDirection, showFullGraph],
   );
 
   useEffect(() => {
@@ -102,12 +105,13 @@ export function WorkflowGraph({ graph }: WorkflowGraphProps): React.JSX.Element 
   }, []);
 
   const visibleNodes = useMemo(() => {
-    return graph.nodes.filter((n) => {
+    const base = filterTopLevelNodes(graph.nodes, showFullGraph);
+    return base.filter((n) => {
       if (filterStatuses.size && !filterStatuses.has(n.status)) return false;
       if (filterTypes.size && !filterTypes.has(n.type)) return false;
       return true;
     });
-  }, [graph.nodes, filterStatuses, filterTypes]);
+  }, [graph.nodes, filterStatuses, filterTypes, showFullGraph]);
 
   return (
     <div className="flex flex-col h-full">
@@ -119,6 +123,9 @@ export function WorkflowGraph({ graph }: WorkflowGraphProps): React.JSX.Element 
         onTypeToggle={toggleType}
         onDirectionChange={setDirection}
         onClear={clearFilters}
+        showFullGraph={showFullGraph}
+        totalNodeCount={graph.nodes.length}
+        onShowFullGraphChange={setShowFullGraph}
       />
 
       <div className="flex flex-1 min-h-0">

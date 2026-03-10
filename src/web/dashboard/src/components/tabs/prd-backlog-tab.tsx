@@ -12,6 +12,7 @@ import "@xyflow/react/dist/style.css";
 
 import type { GraphDocument, GraphNode } from "@/lib/types";
 import { STATUS_COLORS } from "@/lib/constants";
+import { filterTopLevelNodes } from "@/lib/graph-filters";
 import { WorkflowNode } from "@/components/graph/workflow-node";
 import { WorkflowEdge } from "@/components/graph/workflow-edge";
 import { NodeDetailPanel } from "@/components/graph/node-detail-panel";
@@ -27,8 +28,6 @@ interface PrdBacklogTabProps {
   graph: GraphDocument;
 }
 
-const TOP_LEVEL_TYPES = new Set(["epic", "milestone", "requirement", "constraint"]);
-
 export function PrdBacklogTab({ graph }: PrdBacklogTabProps): React.JSX.Element {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<WorkflowNodeData>>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge<WorkflowEdgeData>>([]);
@@ -37,9 +36,7 @@ export function PrdBacklogTab({ graph }: PrdBacklogTabProps): React.JSX.Element 
 
   useEffect(() => {
     // Show only top-level nodes by default to avoid DOM overload
-    const filteredNodes = showFullGraph
-      ? graph.nodes
-      : graph.nodes.filter((n) => TOP_LEVEL_TYPES.has(n.type) || !n.parentId);
+    const filteredNodes = filterTopLevelNodes(graph.nodes, showFullGraph);
     const flowNodes = toFlowNodes(filteredNodes);
     const visibleIds = new Set(flowNodes.map((n) => n.id));
     const flowEdges = toFlowEdges(graph.edges, visibleIds);
