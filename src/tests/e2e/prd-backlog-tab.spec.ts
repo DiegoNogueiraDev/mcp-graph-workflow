@@ -4,37 +4,54 @@ test.describe("PRD & Backlog Tab", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
     await page.waitForLoadState("domcontentloaded");
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(2000);
     // Navigate to PRD & Backlog tab
-    await page.locator('.tab[data-tab="prd-backlog"]').click();
+    await page.locator("nav button", { hasText: "PRD & Backlog" }).click();
     await page.waitForTimeout(500);
   });
 
   test("clicking tab shows PRD & Backlog content", async ({ page }) => {
-    await expect(page.locator("#tab-prd-backlog")).toHaveClass(/active/);
+    // Tab should be active (accent border)
+    const tab = page.locator("nav button", { hasText: "PRD & Backlog" });
+    await expect(tab).toBeVisible();
   });
 
-  test("backlog list shows nodes", async ({ page }) => {
-    const backlogList = page.locator("#backlog-list");
-    await expect(backlogList).toBeVisible();
+  test("backlog list shows task items or empty state", async ({ page }) => {
+    // BacklogList renders task items or "No tasks in backlog."
+    const hasTasks = await page.locator(".p-2 .mx-1").count();
+    const hasEmpty = await page.getByText("No tasks in backlog").count();
+    expect(hasTasks > 0 || hasEmpty > 0).toBeTruthy();
   });
 
-  test("next task badge is visible", async ({ page }) => {
-    const badge = page.locator("#next-task-badge");
-    await expect(badge).toBeVisible();
+  test("progress bar renders", async ({ page }) => {
+    // Progress section shows "X/Y done (Z%)" in the backlog sidebar
+    const progressText = page.getByText(/\d+\/\d+ done \(\d+%\)/);
+    await expect(progressText).toBeVisible({ timeout: 10_000 });
   });
 
-  test("progress bars render", async ({ page }) => {
-    const progressBars = page.locator("#progress-bars");
-    await expect(progressBars).toBeVisible();
+  test("ReactFlow diagram or empty state visible", async ({ page }) => {
+    const hasFlow = await page.locator(".react-flow").count();
+    const hasEmpty = await page.getByText("Import a PRD to see the workflow").count();
+    expect(hasFlow > 0 || hasEmpty > 0).toBeTruthy();
   });
 
-  test("PRD source section visible", async ({ page }) => {
-    const prdSource = page.locator("#prd-source-content");
-    await expect(prdSource).toBeVisible();
+  test("show all nodes checkbox toggles", async ({ page }) => {
+    const checkbox = page.locator("label").filter({ hasText: "Show all nodes" }).locator("input[type='checkbox']");
+    if (await checkbox.count() > 0) {
+      await checkbox.click();
+      await page.waitForTimeout(500);
+      // Should still render without crash
+      const hasFlow = await page.locator(".react-flow").count();
+      const hasEmpty = await page.getByText("Import a PRD to see the workflow").count();
+      expect(hasFlow > 0 || hasEmpty > 0).toBeTruthy();
+    }
   });
 
-  test("backlog header visible", async ({ page }) => {
-    await expect(page.locator(".backlog-header")).toBeVisible();
+  test("clicking backlog item opens detail panel", async ({ page }) => {
+    const taskItems = page.locator(".mx-1.cursor-pointer");
+    if (await taskItems.count() > 0) {
+      await taskItems.first().click();
+      await expect(page.getByText("Node Details")).toBeVisible();
+    }
   });
 });

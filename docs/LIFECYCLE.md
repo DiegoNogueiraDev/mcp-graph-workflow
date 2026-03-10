@@ -784,7 +784,7 @@ graph TD
 
 ## Resumo
 
-O mcp-graph não é apenas um task tracker. É o **Hub de Inteligência Local** — motor de execução com 31 tools MCP e 610+ testes que:
+O mcp-graph não é apenas um task tracker. É o **Hub de Inteligência Local** — motor de execução com 26 tools MCP e 630+ testes que:
 
 1. **Parseia PRDs** automaticamente em grafos de dependência
 2. **Orquestra 5 agents** (Serena, GitNexus, Context7, Playwright) via `IntegrationOrchestrator` event-driven

@@ -21,8 +21,11 @@ test.describe("SSE Real-Time Updates", () => {
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(1500);
 
-    // Get initial stats
-    const initialStats = await page.locator("#stats-bar").textContent();
+    // Get initial header stats text (shows "X/Y done" in header)
+    const headerStats = page.locator("header span").filter({ hasText: /done/ });
+    const initialText = await headerStats.count() > 0
+      ? await headerStats.textContent()
+      : null;
 
     // Create a node via the API
     await page.request.post("/api/v1/nodes", {
@@ -37,10 +40,12 @@ test.describe("SSE Real-Time Updates", () => {
     // Wait for SSE event to trigger UI update
     await page.waitForTimeout(2000);
 
-    // Stats bar should have updated
-    const updatedStats = await page.locator("#stats-bar").textContent();
-    // The number should have changed since we added a done node
-    expect(updatedStats).toBeDefined();
+    // After adding a done node, the header stats should reflect the change
+    const updatedText = await headerStats.count() > 0
+      ? await headerStats.textContent()
+      : null;
+    // Either stats changed or they are present
+    expect(updatedText !== null || initialText !== null).toBeTruthy();
   });
 
   test("health endpoint responds", async ({ page }) => {

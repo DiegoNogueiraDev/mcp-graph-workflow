@@ -10,6 +10,9 @@ interface FilterPanelProps {
   onTypeToggle: (type: NodeType) => void;
   onDirectionChange: (dir: "TB" | "LR") => void;
   onClear: () => void;
+  showFullGraph: boolean;
+  totalNodeCount: number;
+  onShowFullGraphChange: (show: boolean) => void;
 }
 
 export const FilterPanel = memo(function FilterPanel({
@@ -20,6 +23,9 @@ export const FilterPanel = memo(function FilterPanel({
   onTypeToggle,
   onDirectionChange,
   onClear,
+  showFullGraph,
+  totalNodeCount,
+  onShowFullGraphChange,
 }: FilterPanelProps) {
   return (
     <div className="flex flex-wrap items-center gap-3 px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-xs">
@@ -76,6 +82,21 @@ export const FilterPanel = memo(function FilterPanel({
           <option value="LR">Left → Right</option>
         </select>
       </div>
+
+      <div className="w-px h-4 bg-[var(--color-border)]" />
+
+      <label className="flex items-center gap-1 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={showFullGraph}
+          onChange={() => onShowFullGraphChange(!showFullGraph)}
+          className="w-3 h-3"
+        />
+        <span>Show all nodes ({totalNodeCount})</span>
+      </label>
+      {showFullGraph && totalNodeCount > 200 && (
+        <span className="text-[var(--color-warning)] font-medium">Large graph — may be slow</span>
+      )}
 
       <button
         onClick={onClear}

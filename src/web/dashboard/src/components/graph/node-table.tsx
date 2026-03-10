@@ -9,10 +9,13 @@ interface NodeTableProps {
 
 type SortKey = "title" | "type" | "status" | "priority" | "xpSize" | "sprint";
 
+const PAGE_SIZE = 50;
+
 export const NodeTable = memo(function NodeTable({ nodes, onNodeClick }: NodeTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>("priority");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
 
   const filtered = useMemo(() => {
     if (!search) return nodes;
@@ -34,6 +37,9 @@ export const NodeTable = memo(function NodeTable({ nodes, onNodeClick }: NodeTab
       return sortDir === "asc" ? cmp : -cmp;
     });
   }, [filtered, sortKey, sortDir]);
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  const paged = useMemo(() => sorted.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE), [sorted, page]);
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -81,14 +87,14 @@ export const NodeTable = memo(function NodeTable({ nodes, onNodeClick }: NodeTab
             </tr>
           </thead>
           <tbody>
-            {sorted.length === 0 ? (
+            {paged.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-3 py-4 text-center text-[var(--color-text-muted)]">
                   No nodes found
                 </td>
               </tr>
             ) : (
-              sorted.map((node) => (
+              paged.map((node) => (
                 <tr
                   key={node.id}
                   onClick={() => onNodeClick(node)}
@@ -120,6 +126,28 @@ export const NodeTable = memo(function NodeTable({ nodes, onNodeClick }: NodeTab
           </tbody>
         </table>
       </div>
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-4 py-1.5 bg-[var(--color-bg-secondary)] border-t border-[var(--color-border)] text-xs text-[var(--color-text-muted)]">
+          <span>{sorted.length} nodes</span>
+          <div className="flex items-center gap-2">
+            <button
+              disabled={page === 0}
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              className="px-2 py-0.5 rounded border border-[var(--color-border)] disabled:opacity-30"
+            >
+              Prev
+            </button>
+            <span>{page + 1}/{totalPages}</span>
+            <button
+              disabled={page >= totalPages - 1}
+              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+              className="px-2 py-0.5 rounded border border-[var(--color-border)] disabled:opacity-30"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 });

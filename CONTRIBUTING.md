@@ -88,7 +88,7 @@ npm run test:coverage  # Coverage report
    ```bash
    npm run build && npm run lint && npm test
    ```
-2. Push your branch and open a PR against `main`
+2. Push your branch and open a PR against `master`
 3. Fill out the [PR template](.github/PULL_REQUEST_TEMPLATE.md)
 4. Wait for CI to pass and a maintainer review
 

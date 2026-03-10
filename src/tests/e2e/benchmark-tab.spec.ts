@@ -80,7 +80,8 @@ test.describe("Existing Tabs - Deeper Tests", () => {
   test("All tabs are present in navigation", async ({ page }) => {
     const tabs = ["Graph", "PRD & Backlog", "Code Graph", "Insights", "Benchmark"];
     for (const name of tabs) {
-      await expect(page.getByRole("button", { name })).toBeVisible();
+      const exact = name === "Graph"; // avoid matching "Code Graph"
+      await expect(page.getByRole("button", { name, exact })).toBeVisible();
     }
   });
 });

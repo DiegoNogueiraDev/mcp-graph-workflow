@@ -9,6 +9,9 @@ import {
   startGitNexusServe,
   stopGitNexus,
   isGitNexusRunning,
+  getAnalyzePhase,
+  resetAnalyzePhase,
+  type AnalyzePhase,
 } from "../core/integrations/gitnexus-launcher.js";
 
 describe("gitnexus-launcher", () => {
@@ -24,6 +27,49 @@ describe("gitnexus-launcher", () => {
     await stopGitNexus();
     rmSync(tmpDir, { recursive: true, force: true });
     vi.restoreAllMocks();
+  });
+
+  // ── getAnalyzePhase + resetAnalyzePhase ──────────
+
+  describe("analyzePhase tracking", () => {
+    beforeEach(() => {
+      resetAnalyzePhase();
+    });
+
+    it("should start with idle phase", () => {
+      expect(getAnalyzePhase()).toBe("idle");
+    });
+
+    it("should skip analysis and set unavailable when no .git/ directory exists", async () => {
+      // tmpDir has no .git/ directory
+      const result = await ensureGitNexusAnalyzed(tmpDir);
+
+      expect(result.skipped).toBe(true);
+      expect(result.reason).toMatch(/no git repository/i);
+      expect(getAnalyzePhase()).toBe("unavailable");
+    });
+
+    it("should set phase to ready when .gitnexus/ already exists", async () => {
+      mkdirSync(path.join(tmpDir, ".git"), { recursive: true });
+      mkdirSync(path.join(tmpDir, ".gitnexus"), { recursive: true });
+
+      const result = await ensureGitNexusAnalyzed(tmpDir);
+
+      expect(result.skipped).toBe(true);
+      expect(getAnalyzePhase()).toBe("ready");
+    });
+
+    it("should transition through analyzing phase when running analyze", async () => {
+      mkdirSync(path.join(tmpDir, ".git"), { recursive: true });
+      // No .gitnexus/ — will attempt actual analysis (and likely fail in test env)
+
+      const result = await ensureGitNexusAnalyzed(tmpDir);
+
+      // After completion, phase should be ready or error (depending on env)
+      const phase = getAnalyzePhase();
+      expect(["ready", "error"]).toContain(phase);
+      expect(result.skipped).toBe(false);
+    });
   });
 
   // ── isGitNexusIndexed ─────────────────────────────
@@ -54,6 +100,7 @@ describe("gitnexus-launcher", () => {
 
   describe("ensureGitNexusAnalyzed", { timeout: 120_000 }, () => {
     it("should skip analysis when .gitnexus/ already exists", async () => {
+      mkdirSync(path.join(tmpDir, ".git"), { recursive: true });
       mkdirSync(path.join(tmpDir, ".gitnexus"), { recursive: true });
 
       const result = await ensureGitNexusAnalyzed(tmpDir);

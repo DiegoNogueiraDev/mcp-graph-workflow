@@ -1,4 +1,4 @@
-import type { GraphDocument, GraphEdge, GraphNode, GraphStats, IntegrationStatus, GitNexusStatus, SerenaMemory } from "./types";
+import type { GraphDocument, GraphEdge, GraphNode, GraphStats, IntegrationStatus, GitNexusStatus, SerenaMemory, AnalyzeResult, ServeResult } from "./types";
 
 const BASE = "/api/v1";
 
@@ -122,6 +122,12 @@ export const apiClient = {
       method: "POST",
       body: JSON.stringify({ symbol }),
     }),
+
+  // GitNexus on-demand actions
+  triggerAnalyze: () =>
+    request<AnalyzeResult>("/gitnexus/analyze", { method: "POST" }),
+  triggerServe: () =>
+    request<ServeResult>("/gitnexus/serve", { method: "POST" }),
 
   // Serena Memories
   getSerenaMemories: () => request<SerenaMemory[]>("/integrations/serena/memories"),

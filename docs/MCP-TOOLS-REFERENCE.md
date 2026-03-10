@@ -1,6 +1,6 @@
 # MCP Tools Reference
 
-> 25 tools organized in 6 categories — complete parameter reference.
+> 26 tools organized in 6 categories — complete parameter reference.
 
 ## Summary
 

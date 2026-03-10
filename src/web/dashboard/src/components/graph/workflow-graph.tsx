@@ -1,29 +1,37 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useDeferredValue, useRef } from "react";
 import {
   ReactFlow,
   Background,
   Controls,
-  MiniMap,
   useNodesState,
   useEdgesState,
   type Node,
   type Edge,
+  type Connection,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
 import type { GraphDocument, GraphNode, NodeStatus, NodeType } from "@/lib/types";
+import { filterTopLevelNodes } from "@/lib/graph-filters";
 import { WorkflowNode } from "./workflow-node";
 import { WorkflowEdge } from "./workflow-edge";
 import { FilterPanel } from "./filter-panel";
 import { NodeDetailPanel } from "./node-detail-panel";
 import { NodeTable } from "./node-table";
-import { toFlowNodes, toFlowEdges, applyDagreLayout, type WorkflowNodeData, type WorkflowEdgeData } from "./graph-utils";
+import { EdgeCreateDialog } from "./edge-create-dialog";
+import { toFlowNodes, toFlowEdges, applyDagreLayout, shouldSkipLayout, type WorkflowNodeData, type WorkflowEdgeData } from "./graph-utils";
 
 const nodeTypes = { workflowNode: WorkflowNode };
 const edgeTypes = { workflowEdge: WorkflowEdge };
+const proOptions = { hideAttribution: true };
 
 interface WorkflowGraphProps {
   graph: GraphDocument;
+}
+
+interface PendingConnection {
+  fromId: string;
+  toId: string;
 }
 
 export function WorkflowGraph({ graph }: WorkflowGraphProps): React.JSX.Element {
@@ -33,23 +41,42 @@ export function WorkflowGraph({ graph }: WorkflowGraphProps): React.JSX.Element 
   const [direction, setDirection] = useState<"TB" | "LR">("TB");
   const [filterStatuses, setFilterStatuses] = useState<Set<string>>(new Set());
   const [filterTypes, setFilterTypes] = useState<Set<string>>(new Set());
+  const [showFullGraph, setShowFullGraph] = useState(false);
+  const [pendingConnection, setPendingConnection] = useState<PendingConnection | null>(null);
+
+  // Defer filter values so checkbox updates are visually immediate
+  const deferredStatuses = useDeferredValue(filterStatuses);
+  const deferredTypes = useDeferredValue(filterTypes);
+  const deferredDirection = useDeferredValue(direction);
+
+  // Track previous layout node IDs to skip redundant Dagre runs
+  const prevLayoutIdsRef = useRef<string[] | null>(null);
 
   const applyLayout = useCallback(
     (statuses: Set<string>, types: Set<string>, dir: "TB" | "LR") => {
+      const baseNodes = filterTopLevelNodes(graph.nodes, showFullGraph);
       const filters = { statuses, types };
-      const flowNodes = toFlowNodes(graph.nodes, filters);
-      const visibleIds = new Set(flowNodes.map((n) => n.id));
+      const flowNodes = toFlowNodes(baseNodes, filters);
+      const nextIds = flowNodes.map((n) => n.id);
+
+      // Skip Dagre if visible node IDs haven't changed
+      if (shouldSkipLayout(prevLayoutIdsRef.current, nextIds) && dir === deferredDirection) {
+        return;
+      }
+      prevLayoutIdsRef.current = nextIds;
+
+      const visibleIds = new Set(nextIds);
       const flowEdges = toFlowEdges(graph.edges, visibleIds);
       const layout = applyDagreLayout(flowNodes, flowEdges, dir);
       setNodes(layout.nodes);
       setEdges(layout.edges);
     },
-    [graph, setNodes, setEdges],
+    [graph, setNodes, setEdges, deferredDirection, showFullGraph],
   );
 
   useEffect(() => {
-    applyLayout(filterStatuses, filterTypes, direction);
-  }, [graph, applyLayout, filterStatuses, filterTypes, direction]);
+    applyLayout(deferredStatuses, deferredTypes, deferredDirection);
+  }, [graph, applyLayout, deferredStatuses, deferredTypes, deferredDirection]);
 
   const handleNodeClick = useCallback(
     (_: React.MouseEvent, node: Node<WorkflowNodeData>) => {
@@ -60,6 +87,25 @@ export function WorkflowGraph({ graph }: WorkflowGraphProps): React.JSX.Element 
 
   const handleTableNodeClick = useCallback((node: GraphNode) => {
     setSelectedNode(node);
+  }, []);
+
+  const handleNodeNavigate = useCallback(
+    (nodeId: string) => {
+      const target = graph.nodes.find((n) => n.id === nodeId);
+      if (target) setSelectedNode(target);
+    },
+    [graph.nodes],
+  );
+
+  const handleConnect = useCallback((connection: Connection) => {
+    if (connection.source && connection.target && connection.source !== connection.target) {
+      setPendingConnection({ fromId: connection.source, toId: connection.target });
+    }
+  }, []);
+
+  const handleEdgeCreated = useCallback(() => {
+    setPendingConnection(null);
+    // SSE will trigger a graph refresh automatically
   }, []);
 
   const toggleStatus = useCallback((status: NodeStatus) => {
@@ -86,12 +132,21 @@ export function WorkflowGraph({ graph }: WorkflowGraphProps): React.JSX.Element 
   }, []);
 
   const visibleNodes = useMemo(() => {
-    return graph.nodes.filter((n) => {
+    const base = filterTopLevelNodes(graph.nodes, showFullGraph);
+    return base.filter((n) => {
       if (filterStatuses.size && !filterStatuses.has(n.status)) return false;
       if (filterTypes.size && !filterTypes.has(n.type)) return false;
       return true;
     });
-  }, [graph.nodes, filterStatuses, filterTypes]);
+  }, [graph.nodes, filterStatuses, filterTypes, showFullGraph]);
+
+  // Resolve titles for pending connection dialog
+  const pendingFromTitle = pendingConnection
+    ? graph.nodes.find((n) => n.id === pendingConnection.fromId)?.title
+    : undefined;
+  const pendingToTitle = pendingConnection
+    ? graph.nodes.find((n) => n.id === pendingConnection.toId)?.title
+    : undefined;
 
   return (
     <div className="flex flex-col h-full">
@@ -103,6 +158,9 @@ export function WorkflowGraph({ graph }: WorkflowGraphProps): React.JSX.Element 
         onTypeToggle={toggleType}
         onDirectionChange={setDirection}
         onClear={clearFilters}
+        showFullGraph={showFullGraph}
+        totalNodeCount={graph.nodes.length}
+        onShowFullGraphChange={setShowFullGraph}
       />
 
       <div className="flex flex-1 min-h-0">
@@ -121,21 +179,18 @@ export function WorkflowGraph({ graph }: WorkflowGraphProps): React.JSX.Element 
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
               onNodeClick={handleNodeClick}
+              onConnect={handleConnect}
               nodeTypes={nodeTypes}
               edgeTypes={edgeTypes}
+              nodesDraggable={false}
+              nodesConnectable={true}
               fitView
               minZoom={0.1}
               maxZoom={2}
-              proOptions={{ hideAttribution: true }}
+              proOptions={proOptions}
             >
               <Background gap={16} size={1} />
               <Controls showInteractive={false} />
-              <MiniMap
-                nodeStrokeWidth={3}
-                pannable
-                zoomable
-                style={{ background: "var(--color-bg-secondary)" }}
-              />
             </ReactFlow>
           )}
         </div>
@@ -143,12 +198,26 @@ export function WorkflowGraph({ graph }: WorkflowGraphProps): React.JSX.Element 
         {selectedNode && (
           <NodeDetailPanel
             node={selectedNode}
+            edges={graph.edges}
+            allNodes={graph.nodes}
             onClose={() => setSelectedNode(null)}
+            onNodeNavigate={handleNodeNavigate}
           />
         )}
       </div>
 
       <NodeTable nodes={visibleNodes} onNodeClick={handleTableNodeClick} />
+
+      {pendingConnection && (
+        <EdgeCreateDialog
+          fromId={pendingConnection.fromId}
+          toId={pendingConnection.toId}
+          fromTitle={pendingFromTitle}
+          toTitle={pendingToTitle}
+          onCreated={handleEdgeCreated}
+          onCancel={() => setPendingConnection(null)}
+        />
+      )}
     </div>
   );
 }

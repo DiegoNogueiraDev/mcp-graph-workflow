@@ -76,11 +76,51 @@ export function toFlowEdges(
     });
 }
 
+/**
+ * Deterministic numeric hash for layout cache key.
+ * Avoids O(n) string concatenation — uses incremental char-code hashing.
+ */
+export function computeLayoutKey(nodeIds: string[], edgePairs: string[], direction: string): number {
+  let hash = 0;
+  const parts = [direction, ...nodeIds, "|", ...edgePairs];
+  for (const part of parts) {
+    for (let i = 0; i < part.length; i++) {
+      hash = ((hash << 5) - hash + part.charCodeAt(i)) | 0;
+    }
+  }
+  return hash;
+}
+
+/**
+ * Returns true if layout recalculation can be skipped (same visible node IDs).
+ */
+export function shouldSkipLayout(prevIds: string[] | null, nextIds: string[]): boolean {
+  if (prevIds === null) return false;
+  if (prevIds.length !== nextIds.length) return false;
+  for (let i = 0; i < prevIds.length; i++) {
+    if (prevIds[i] !== nextIds[i]) return false;
+  }
+  return true;
+}
+
+// Layout cache to avoid expensive Dagre recalculation on tab switches
+let layoutCache: {
+  key: number;
+  result: { nodes: Node<WorkflowNodeData>[]; edges: Edge<WorkflowEdgeData>[] };
+} | null = null;
+
 export function applyDagreLayout(
   nodes: Node<WorkflowNodeData>[],
   edges: Edge<WorkflowEdgeData>[],
   direction: "TB" | "LR" = "TB",
 ): { nodes: Node<WorkflowNodeData>[]; edges: Edge<WorkflowEdgeData>[] } {
+  const nodeIds = nodes.map((n) => n.id);
+  const edgePairs = edges.map((e) => `${e.source}-${e.target}`);
+  const cacheKey = computeLayoutKey(nodeIds, edgePairs, direction);
+  if (layoutCache && layoutCache.key === cacheKey) {
+    return layoutCache.result;
+  }
+
   const g = new dagre.graphlib.Graph();
   g.setDefaultEdgeLabel(() => ({}));
   g.setGraph({ rankdir: direction, ranksep: 60, nodesep: 40 });
@@ -106,7 +146,9 @@ export function applyDagreLayout(
     };
   });
 
-  return { nodes: layoutedNodes, edges };
+  const result = { nodes: layoutedNodes, edges };
+  layoutCache = { key: cacheKey, result };
+  return result;
 }
 
 export { NODE_TYPE_COLORS, STATUS_COLORS };

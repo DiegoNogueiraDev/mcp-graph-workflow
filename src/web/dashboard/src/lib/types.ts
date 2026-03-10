@@ -115,6 +115,7 @@ export interface GitNexusStatus {
   running: boolean;
   port: number;
   url?: string;
+  analyzePhase?: "idle" | "analyzing" | "ready" | "unavailable" | "error";
 }
 
 export interface CodeSymbol {
@@ -146,4 +147,18 @@ export interface ImpactResult {
 export interface SerenaMemory {
   name: string;
   content: string;
+}
+
+// ── GitNexus on-demand action results ───────────
+
+export interface AnalyzeResult {
+  skipped: boolean;
+  success?: boolean;
+  reason: string;
+}
+
+export interface ServeResult {
+  started: boolean;
+  message: string;
+  port?: number;
 }

@@ -16,6 +16,31 @@ const GITNEXUS_DIR = ".gitnexus";
 
 let serveProcess: ChildProcess | null = null;
 
+export type AnalyzePhase = "idle" | "analyzing" | "ready" | "unavailable" | "error";
+
+let analyzePhase: AnalyzePhase = "idle";
+
+/**
+ * Get the current analyze phase.
+ */
+export function getAnalyzePhase(): AnalyzePhase {
+  return analyzePhase;
+}
+
+/**
+ * Reset analyze phase to idle (for testing).
+ */
+export function resetAnalyzePhase(): void {
+  analyzePhase = "idle";
+}
+
+/**
+ * Check if the given path is inside a git repository.
+ */
+export function isGitRepo(basePath: string): boolean {
+  return existsSync(path.join(basePath, ".git"));
+}
+
 export interface AnalyzeResult {
   skipped: boolean;
   success?: boolean;
@@ -55,11 +80,20 @@ export async function isGitNexusRunning(port: number): Promise<boolean> {
  * Skips if `.gitnexus/` already exists.
  */
 export async function ensureGitNexusAnalyzed(basePath: string): Promise<AnalyzeResult> {
+  // Check if we're in a git repository first
+  if (!isGitRepo(basePath)) {
+    analyzePhase = "unavailable";
+    logger.info("No git repository found, skipping GitNexus analysis", { basePath });
+    return { skipped: true, reason: "No git repository found" };
+  }
+
   if (isGitNexusIndexed(basePath)) {
+    analyzePhase = "ready";
     logger.info("GitNexus index already exists, skipping analysis", { basePath });
     return { skipped: true, reason: "Already indexed" };
   }
 
+  analyzePhase = "analyzing";
   logger.info("Running GitNexus analyze", { basePath });
 
   try {
@@ -68,10 +102,12 @@ export async function ensureGitNexusAnalyzed(basePath: string): Promise<AnalyzeR
       cwd: basePath,
     });
 
+    analyzePhase = "ready";
     logger.success("GitNexus analysis complete", { basePath });
     return { skipped: false, success: true, reason: "Analysis completed" };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    analyzePhase = "error";
     logger.warn("GitNexus analysis failed", { basePath, error: message });
     return { skipped: false, success: false, reason: `Analysis failed: ${message}` };
   }

@@ -4,7 +4,7 @@
 
 ```
         /\
-       /  \       E2E (Playwright) — 5 browser specs
+       /  \       E2E (Playwright) — 7 browser specs
       /    \      Full user flows against real server
      /------\
     /        \    Integration — API + store + pipeline tests
@@ -14,7 +14,7 @@
 /________________\ Single module, in-memory data, minimal fixtures
 ```
 
-**Total:** ~610 Vitest test cases across 67 files + 5 Playwright E2E specs
+**Total:** ~630 Vitest test cases across 69 files + 7 Playwright E2E specs
 
 ## Running Tests
 
@@ -126,7 +126,7 @@ npm run test:all            # Vitest + Playwright
 
 | File | Cases | Coverage |
 |------|-------|----------|
-| `mcp-tools.test.ts` | 34 | All 31 MCP tools |
+| `mcp-tools.test.ts` | 34 | All 26 MCP tools |
 | `mcp-tool-validation.test.ts` | 8 | Parameter validation |
 
 ### CLI
@@ -162,6 +162,12 @@ npm run test:all            # Vitest + Playwright
 | `e2e-integration.test.ts` | 7 | Cross-module integration |
 | `import-dedup.test.ts` | 8 | Import deduplication |
 
+### Dashboard Utilities
+
+| File | Cases | Coverage |
+|------|-------|----------|
+| `graph-utils.test.ts` | 24 | toFlowNodes, toFlowEdges, computeLayoutKey, shouldSkipLayout |
+
 ### Benchmark
 
 | File | Cases | Coverage |
@@ -188,6 +194,8 @@ Benchmarks:
 | `import-modal.spec.ts` | Import dialog functionality |
 | `prd-backlog-tab.spec.ts` | Backlog tab display |
 | `sse-events.spec.ts` | Real-time event streaming |
+| `graph-filters-perf.spec.ts` | Graph tab filter performance |
+| `benchmark-tab.spec.ts` | Benchmark tab display and metrics |
 | `tabs.spec.ts` | Tab navigation and switching |
 
 ## Writing New Tests
