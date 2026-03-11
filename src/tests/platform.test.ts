@@ -1,34 +1,33 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 
 describe("platform utilities", () => {
   const originalPlatform = process.platform;
 
   afterEach(() => {
     vi.restoreAllMocks();
-    // Restore process.platform
+    vi.resetModules();
     Object.defineProperty(process, "platform", { value: originalPlatform });
   });
 
   describe("whichCommand", () => {
     it("should return 'which' on non-Windows", async () => {
+      vi.resetModules();
       Object.defineProperty(process, "platform", { value: "darwin" });
-      // Re-import to pick up the new platform value
       const mod = await import("../core/utils/platform.js");
-      // IS_WINDOWS is evaluated at module load, so test the function logic directly
       expect(mod.whichCommand()).toBe("which");
     });
 
     it("should return 'where' on Windows", async () => {
-      // Since IS_WINDOWS is set at module load time, we test the function behavior
-      // by checking that whichCommand returns the correct value for the current platform
+      vi.resetModules();
+      Object.defineProperty(process, "platform", { value: "win32" });
       const mod = await import("../core/utils/platform.js");
-      const expected = process.platform === "win32" ? "where" : "which";
-      expect(mod.whichCommand()).toBe(expected);
+      expect(mod.whichCommand()).toBe("where");
     });
   });
 
   describe("killProcess", () => {
     it("should call SIGTERM on Unix", async () => {
+      vi.resetModules();
       Object.defineProperty(process, "platform", { value: "darwin" });
       const mod = await import("../core/utils/platform.js");
 
@@ -43,6 +42,7 @@ describe("platform utilities", () => {
     });
 
     it("should not throw when process is already killed", async () => {
+      vi.resetModules();
       const mod = await import("../core/utils/platform.js");
 
       const mockProc = {
@@ -56,6 +56,7 @@ describe("platform utilities", () => {
     });
 
     it("should not throw when process is null", async () => {
+      vi.resetModules();
       const mod = await import("../core/utils/platform.js");
       expect(() => mod.killProcess(null as unknown as import("node:child_process").ChildProcess)).not.toThrow();
     });
@@ -63,13 +64,23 @@ describe("platform utilities", () => {
 
   describe("IS_WINDOWS", () => {
     it("should be a boolean", async () => {
+      vi.resetModules();
       const mod = await import("../core/utils/platform.js");
       expect(typeof mod.IS_WINDOWS).toBe("boolean");
     });
 
-    it("should match current platform check", async () => {
+    it("should be true on Windows", async () => {
+      vi.resetModules();
+      Object.defineProperty(process, "platform", { value: "win32" });
       const mod = await import("../core/utils/platform.js");
-      expect(mod.IS_WINDOWS).toBe(process.platform === "win32");
+      expect(mod.IS_WINDOWS).toBe(true);
+    });
+
+    it("should be false on non-Windows", async () => {
+      vi.resetModules();
+      Object.defineProperty(process, "platform", { value: "darwin" });
+      const mod = await import("../core/utils/platform.js");
+      expect(mod.IS_WINDOWS).toBe(false);
     });
   });
 });
