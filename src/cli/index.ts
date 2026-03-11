@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 export {};
 
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
+const pkg = require("../../package.json") as { name: string; version: string };
+
 // Smart entry point: detect if called by an MCP client (piped stdin, no args)
 // or as an interactive CLI (TTY stdin or explicit subcommand/flags).
 const isMcpClient = !process.stdin.isTTY && process.argv.length <= 2;
@@ -9,6 +14,10 @@ if (isMcpClient) {
   // Delegate to MCP stdio server — the client expects JSON-RPC over stdin/stdout
   await import("../mcp/stdio.js");
 } else {
+  // Check for updates (non-blocking, background check)
+  const updateNotifier = (await import("update-notifier")).default;
+  updateNotifier({ pkg }).notify();
+
   // Interactive CLI with Commander.js
   const { Command } = await import("commander");
   const { serveCommand } = await import("./commands/serve.js");
@@ -24,7 +33,7 @@ if (isMcpClient) {
     .description(
       "Local-first PRD to task graph — transforms text into executable structure",
     )
-    .version("1.0.0");
+    .version(pkg.version);
 
   program.addCommand(serveCommand());
   program.addCommand(importCommand());
