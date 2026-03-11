@@ -246,22 +246,47 @@ export class SqliteStore {
 
   // ── Project ──────────────────────────────────────
 
-  initProject(name: string = "Local MCP Graph"): GraphProject {
-    if (this.projectId) {
+  initProject(name?: string): GraphProject {
+    // If no name provided and project already active, return current
+    if (this.projectId && !name) {
       return this.getProject()!;
     }
 
+    // If name provided, check if same as current project
+    if (this.projectId && name) {
+      const current = this.getProject()!;
+      if (current.name === name) {
+        return current;
+      }
+      // Check if a project with this name already exists
+      const existing = this.db
+        .prepare("SELECT * FROM projects WHERE name = ?")
+        .get(name) as ProjectRow | undefined;
+      if (existing) {
+        this.projectId = existing.id;
+        logger.info("Project activated by name", { name, projectId: existing.id });
+        return {
+          id: existing.id,
+          name: existing.name,
+          createdAt: existing.created_at,
+          updatedAt: existing.updated_at,
+        };
+      }
+    }
+
+    // No active project, or different name — create new
+    const projectName = name || "Local MCP Graph";
     const id = generateId("proj");
     const timestamp = now();
     this.db
       .prepare(
         "INSERT INTO projects (id, name, created_at, updated_at) VALUES (?, ?, ?, ?)",
       )
-      .run(id, name, timestamp, timestamp);
+      .run(id, projectName, timestamp, timestamp);
 
     this.projectId = id;
-    logger.info(`Project initialized: ${name} (${id})`);
-    return { id, name, createdAt: timestamp, updatedAt: timestamp };
+    logger.info(`Project initialized: ${projectName} (${id})`);
+    return { id, name: projectName, createdAt: timestamp, updatedAt: timestamp };
   }
 
   getProject(): GraphProject | null {

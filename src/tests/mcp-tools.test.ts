@@ -37,11 +37,17 @@ describe("MCP Tool Logic", () => {
       expect(project.name).toBe("Local MCP Graph");
     });
 
-    it("returns existing project on duplicate init", () => {
+    it("creates new project on init with different name", () => {
       const first = store.initProject("First");
       const second = store.initProject("Second");
+      expect(second.id).not.toBe(first.id);
+      expect(second.name).toBe("Second");
+    });
+
+    it("returns existing project on init with same name", () => {
+      const first = store.initProject("First");
+      const second = store.initProject("First");
       expect(second.id).toBe(first.id);
-      expect(second.name).toBe("First"); // keeps original name
     });
   });
 

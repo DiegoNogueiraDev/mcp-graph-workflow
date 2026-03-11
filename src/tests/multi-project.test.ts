@@ -20,9 +20,6 @@ describe("Multi-project support", () => {
 
     it("should return all projects", () => {
       store.initProject("Project A");
-
-      // Create a second project by resetting projectId
-      (store as unknown as { projectId: string | null }).projectId = null;
       store.initProject("Project B");
 
       const projects = store.listProjects();
@@ -35,9 +32,6 @@ describe("Multi-project support", () => {
   describe("activateProject", () => {
     it("should switch active project", () => {
       const projectA = store.initProject("Project A");
-
-      // Create a second project
-      (store as unknown as { projectId: string | null }).projectId = null;
       const projectB = store.initProject("Project B");
 
       // Active project should be B (last initialized)
@@ -70,6 +64,34 @@ describe("Multi-project support", () => {
     });
   });
 
+  describe("initProject with existing project", () => {
+    it("should create a new project when called with a different name", () => {
+      store.initProject("Project A");
+      const projectB = store.initProject("Project B");
+
+      expect(projectB.name).toBe("Project B");
+      expect(store.getProject()!.name).toBe("Project B");
+
+      const projects = store.listProjects();
+      expect(projects).toHaveLength(2);
+    });
+
+    it("should return existing project when called with same name", () => {
+      const first = store.initProject("Same Name");
+      const second = store.initProject("Same Name");
+
+      expect(second.id).toBe(first.id);
+      expect(store.listProjects()).toHaveLength(1);
+    });
+
+    it("should return existing project when called with no name", () => {
+      const first = store.initProject("Existing");
+      const second = store.initProject();
+
+      expect(second.id).toBe(first.id);
+    });
+  });
+
   describe("project isolation", () => {
     it("should only return nodes for the active project", () => {
       const projectA = store.initProject("Project A");
@@ -84,7 +106,6 @@ describe("Multi-project support", () => {
       });
 
       // Switch to project B
-      (store as unknown as { projectId: string | null }).projectId = null;
       store.initProject("Project B");
       store.insertNode({
         id: "node_b1",

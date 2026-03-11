@@ -24,9 +24,16 @@ describe("SqliteStore", () => {
     expect(project!.name).toBe("Test Project");
   });
 
-  it("returns existing project on duplicate init", () => {
+  it("creates new project on init with different name", () => {
     const first = store.getProject();
     const second = store.initProject("Another Name");
+    expect(second.id).not.toBe(first!.id);
+    expect(second.name).toBe("Another Name");
+  });
+
+  it("returns existing project on init with same name", () => {
+    const first = store.getProject();
+    const second = store.initProject("Test Project");
     expect(second.id).toBe(first!.id);
   });
 

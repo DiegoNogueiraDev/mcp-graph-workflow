@@ -58,10 +58,19 @@ describe("API /api/v1/project", () => {
       store.close();
     });
 
-    it("should return existing project on duplicate init", async () => {
+    it("should create new project on init with different name", async () => {
       const res = await request(ctx.app)
         .post("/api/v1/project/init")
         .send({ name: "Another Name" });
+
+      expect(res.status).toBe(201);
+      expect(res.body.name).toBe("Another Name");
+    });
+
+    it("should return existing project on init with same name", async () => {
+      const res = await request(ctx.app)
+        .post("/api/v1/project/init")
+        .send({ name: "Test Project" });
 
       expect(res.status).toBe(201);
       expect(res.body.name).toBe("Test Project");
