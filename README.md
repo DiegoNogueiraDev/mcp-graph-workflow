@@ -148,9 +148,16 @@ npm run test:all    # Everything
 | [Test Guide](docs/TEST-GUIDE.md) | Test pyramid and best practices |
 | [Lifecycle](docs/LIFECYCLE.md) | 8-phase dev methodology |
 
-## Contributing
+## Support the Project
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). TDD is mandatory — write the failing test first.
+If this tool is useful to you, consider supporting its development:
+
+- **Star this repo** — it helps others discover the project
+- **Share** — tell your team, post on X/LinkedIn, write about it
+- **Contribute** — see [CONTRIBUTING.md](CONTRIBUTING.md). TDD is mandatory — write the failing test first
+- **Sponsor** — [GitHub Sponsors](https://github.com/sponsors/DiegoNogueiraDev)
+
+[![Star History Chart](https://api.star-history.com/svg?repos=DiegoNogueiraDev/mcp-graph-workflow&type=Date)](https://star-history.com/#DiegoNogueiraDev/mcp-graph-workflow&Date)
 
 ## License
 
