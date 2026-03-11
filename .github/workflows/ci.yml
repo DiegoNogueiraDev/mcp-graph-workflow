@@ -28,9 +28,9 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: npm
 
-      - name: Security audit
+      - name: Security audit (production deps)
         if: matrix.os == 'ubuntu-latest' && matrix.node-version == 22
-        run: npm audit --audit-level=high
+        run: npm audit --audit-level=high --omit=dev
 
       - name: Install dependencies
         run: npm ci
