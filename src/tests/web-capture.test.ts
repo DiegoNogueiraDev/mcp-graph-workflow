@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from "vitest";
-import { captureWebPage, type CaptureOptions, type CaptureResult } from "../core/capture/web-capture.js";
+import { describe, it, expect } from "vitest";
+import { captureWebPage, type CaptureOptions } from "../core/capture/web-capture.js";
 
 // Web capture tests require Playwright browser binaries.
 // These are integration tests — skip if Playwright is not available.

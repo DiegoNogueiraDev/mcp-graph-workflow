@@ -5,7 +5,6 @@ import { tmpdir } from "node:os";
 
 import {
   buildEnrichedContext,
-  type EnrichedContext,
 } from "../core/integrations/enriched-context.js";
 
 describe("enriched-context", () => {

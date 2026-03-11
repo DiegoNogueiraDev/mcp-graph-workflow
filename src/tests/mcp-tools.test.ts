@@ -235,7 +235,7 @@ describe("MCP Tool Logic", () => {
   describe("add_node", () => {
     it("creates a node via insertNode", () => {
       store.initProject();
-      const timestamp = now();
+      const _timestamp = now();
       const node = makeNode({ title: "Created via add_node" });
       store.insertNode(node);
 

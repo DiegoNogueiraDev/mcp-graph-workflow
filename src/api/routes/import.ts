@@ -1,6 +1,5 @@
 import { Router } from "express";
 import multer from "multer";
-import path from "node:path";
 import { unlink } from "node:fs/promises";
 import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import { readFileContent, isSupportedFormat } from "../../core/parser/file-reader.js";
@@ -8,7 +7,10 @@ import { extractEntities } from "../../core/parser/extract.js";
 import { convertToGraph } from "../../core/importer/prd-to-graph.js";
 import { logger } from "../../core/utils/logger.js";
 
-const upload = multer({ dest: "/tmp/mcp-graph-uploads/" });
+const upload = multer({
+  dest: "/tmp/mcp-graph-uploads/",
+  limits: { fileSize: 10 * 1024 * 1024 },
+});
 
 export function createImportRouter(store: SqliteStore): Router {
   const router = Router();

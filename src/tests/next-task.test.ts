@@ -7,7 +7,6 @@ import {
   makeTask,
   makeDoneTask,
   makeBlockedTask,
-  makeSubtask,
 } from "./helpers/factories.js";
 
 function makeDoc(nodes: GraphNode[], edges: GraphEdge[] = []): GraphDocument {

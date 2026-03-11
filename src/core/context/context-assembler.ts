@@ -6,8 +6,8 @@
 
 import type { SqliteStore } from "../store/sqlite-store.js";
 import { KnowledgeStore } from "../store/knowledge-store.js";
-import { buildTieredContext, type ContextTier, type TieredContext } from "./tiered-context.js";
-import { compressWithBm25, type RankedChunk } from "./bm25-compressor.js";
+import { buildTieredContext, type ContextTier } from "./tiered-context.js";
+import { compressWithBm25 } from "./bm25-compressor.js";
 import { estimateTokens } from "./token-estimator.js";
 import { logger } from "../utils/logger.js";
 

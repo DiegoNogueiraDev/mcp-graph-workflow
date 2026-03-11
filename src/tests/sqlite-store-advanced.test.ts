@@ -4,7 +4,7 @@
  */
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { SqliteStore } from "../core/store/sqlite-store.js";
-import { makeNode, makeEdge } from "./helpers/factories.js";
+import { makeNode } from "./helpers/factories.js";
 
 describe("SqliteStore advanced methods", () => {
   let store: SqliteStore;
@@ -67,7 +67,7 @@ describe("SqliteStore advanced methods", () => {
 
   describe("clearImportedNodes", () => {
     it("should delete nodes from a specific source file", () => {
-      const n1 = makeNode({ source: { file: "prd.md" } as never });
+      const _n1 = makeNode({ source: { file: "prd.md" } as never });
       // Insert via bulkInsert which supports source_file
       const nodeWithSource = makeNode();
       store.insertNode(nodeWithSource);

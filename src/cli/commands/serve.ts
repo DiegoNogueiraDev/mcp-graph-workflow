@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { loadConfig } from "../../core/config/config-loader.js";
+import { logger } from "../../core/utils/logger.js";
 
 export function serveCommand(): Command {
   return new Command("serve")
@@ -8,7 +8,7 @@ export function serveCommand(): Command {
     .action(async (opts: { port: string }) => {
       const port = parseInt(opts.port, 10);
       if (isNaN(port) || port < 1 || port > 65535) {
-        console.error("Error: Invalid port number");
+        logger.error("Invalid port number");
         process.exit(1);
       }
 

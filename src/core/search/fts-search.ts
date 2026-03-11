@@ -56,7 +56,7 @@ export function searchNodes(
 
   const resultMap = new Map<string, GraphNode>();
   for (const r of ftsResults) {
-    const { score, ...node } = r;
+    const { score: _score, ...node } = r;
     resultMap.set(node.id, node as GraphNode);
   }
 

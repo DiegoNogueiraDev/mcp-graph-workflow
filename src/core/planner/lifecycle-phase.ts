@@ -50,7 +50,7 @@ export function detectCurrentPhase(doc: GraphDocument): LifecyclePhase {
   }
 
   const doneTasks = tasks.filter((n) => n.status === "done");
-  const allDone = nodes.every((n) => n.status === "done" || !TASK_TYPES.has(n.type) && DESIGN_ONLY_TYPES.has(n.type));
+  const _allDone = nodes.every((n) => n.status === "done" || !TASK_TYPES.has(n.type) && DESIGN_ONLY_TYPES.has(n.type));
 
   if (doneTasks.length === tasks.length && tasks.length > 0) {
     return "REVIEW";

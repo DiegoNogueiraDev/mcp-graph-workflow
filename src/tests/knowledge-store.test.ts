@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { SqliteStore } from "../core/store/sqlite-store.js";
 import { KnowledgeStore, contentHash } from "../core/store/knowledge-store.js";
-import type { KnowledgeSourceType } from "../schemas/knowledge.schema.js";
 
 describe("KnowledgeStore", () => {
   let sqliteStore: SqliteStore;

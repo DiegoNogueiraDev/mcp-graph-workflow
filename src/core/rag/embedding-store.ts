@@ -6,7 +6,6 @@
 
 import type Database from "better-sqlite3";
 import type { SqliteStore } from "../store/sqlite-store.js";
-import { logger } from "../utils/logger.js";
 
 export interface EmbeddingEntry {
   id: string;

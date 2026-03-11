@@ -3,6 +3,7 @@ import path from "node:path";
 import { readPdfBuffer } from "./read-pdf.js";
 import { readHtmlContent } from "./read-html.js";
 import { logger } from "../utils/logger.js";
+import { ValidationError } from "../utils/errors.js";
 
 const SUPPORTED_EXTENSIONS = new Set([".md", ".txt", ".pdf", ".html", ".htm"]);
 
@@ -25,8 +26,9 @@ export async function readFileContent(
   const ext = path.extname(name).toLowerCase();
 
   if (!SUPPORTED_EXTENSIONS.has(ext)) {
-    throw new Error(
+    throw new ValidationError(
       `Unsupported file format: "${ext}". Supported: ${[...SUPPORTED_EXTENSIONS].join(", ")}`,
+      [`unsupported extension: ${ext}`],
     );
   }
 

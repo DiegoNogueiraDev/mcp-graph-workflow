@@ -4,7 +4,7 @@ import { KnowledgeStore } from "../core/store/knowledge-store.js";
 import { findEnhancedNextTask } from "../core/planner/enhanced-next.js";
 import { generateId } from "../core/utils/id.js";
 import { now } from "../core/utils/time.js";
-import type { GraphNode, GraphEdge } from "../core/graph/graph-types.js";
+import type { GraphNode } from "../core/graph/graph-types.js";
 
 function makeNode(overrides?: Partial<GraphNode>): GraphNode {
   const ts = now();

@@ -4,9 +4,7 @@
  */
 
 import type { SqliteStore } from "../store/sqlite-store.js";
-import type { GraphNode } from "../graph/graph-types.js";
 import { KnowledgeStore } from "../store/knowledge-store.js";
-import type { KnowledgeDocument } from "../../schemas/knowledge.schema.js";
 import { searchNodes } from "../search/fts-search.js";
 import { buildTaskContext, type TaskContext } from "./compact-context.js";
 import { estimateTokens } from "./token-estimator.js";

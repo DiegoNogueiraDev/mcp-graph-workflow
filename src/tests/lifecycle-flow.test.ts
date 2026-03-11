@@ -19,8 +19,8 @@ const FIXTURE_PRD = path.resolve(
 
 describe("Lifecycle Flow", () => {
   let store: SqliteStore;
-  let importedNodesCount: number;
-  let importedEdgesCount: number;
+  let _importedNodesCount: number;
+  let _importedEdgesCount: number;
 
   beforeEach(async () => {
     store = SqliteStore.open(":memory:");
@@ -31,8 +31,8 @@ describe("Lifecycle Flow", () => {
     const extraction = extractEntities(content);
     const { nodes, edges, stats } = convertToGraph(extraction, sourceFileName);
 
-    importedNodesCount = stats.nodesCreated;
-    importedEdgesCount = stats.edgesCreated;
+    _importedNodesCount = stats.nodesCreated;
+    _importedEdgesCount = stats.edgesCreated;
 
     store.bulkInsert(nodes, edges);
     store.recordImport(sourceFileName, stats.nodesCreated, stats.edgesCreated);

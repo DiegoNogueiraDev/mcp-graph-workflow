@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { SqliteStore } from "../core/store/sqlite-store.js";
-import { buildTieredContext, type ContextTier } from "../core/context/tiered-context.js";
+import { buildTieredContext } from "../core/context/tiered-context.js";
 import { KnowledgeStore } from "../core/store/knowledge-store.js";
 import { generateId } from "../core/utils/id.js";
 import { now } from "../core/utils/time.js";

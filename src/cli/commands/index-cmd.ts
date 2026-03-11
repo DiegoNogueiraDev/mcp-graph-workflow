@@ -6,6 +6,11 @@ import { EmbeddingStore } from "../../core/rag/embedding-store.js";
 import { indexSerenaMemories } from "../../core/rag/serena-indexer.js";
 import { indexCachedDocs } from "../../core/rag/docs-indexer.js";
 import { indexAllEmbeddings } from "../../core/rag/rag-pipeline.js";
+import { logger } from "../../core/utils/logger.js";
+
+function output(msg: string): void {
+  process.stdout.write(msg + "\n");
+}
 
 export function indexCommand(): Command {
   return new Command("index")
@@ -29,21 +34,21 @@ export function indexCommand(): Command {
         const totalKnowledge = knowledgeStore.count();
 
         if (opts.json) {
-          console.log(JSON.stringify({
+          output(JSON.stringify({
             serena: serenaResult,
             docs: docsResult,
             embeddings: embeddingResult,
             totalKnowledge,
           }, null, 2));
         } else {
-          console.log("Knowledge indexing complete:");
-          console.log(`  Serena memories: ${serenaResult.memoriesFound} found, ${serenaResult.documentsIndexed} indexed`);
-          console.log(`  Docs cache: ${docsResult.docsFound} found, ${docsResult.documentsIndexed} indexed`);
-          console.log(`  Embeddings: ${embeddingResult.nodes} nodes + ${embeddingResult.knowledge} knowledge`);
-          console.log(`  Total knowledge documents: ${totalKnowledge}`);
+          output("Knowledge indexing complete:");
+          output(`  Serena memories: ${serenaResult.memoriesFound} found, ${serenaResult.documentsIndexed} indexed`);
+          output(`  Docs cache: ${docsResult.docsFound} found, ${docsResult.documentsIndexed} indexed`);
+          output(`  Embeddings: ${embeddingResult.nodes} nodes + ${embeddingResult.knowledge} knowledge`);
+          output(`  Total knowledge documents: ${totalKnowledge}`);
         }
       } catch (err) {
-        console.error(`Error: ${err instanceof Error ? err.message : String(err)}`);
+        logger.error(`Indexing failed: ${err instanceof Error ? err.message : String(err)}`);
         process.exit(1);
       } finally {
         store.close();

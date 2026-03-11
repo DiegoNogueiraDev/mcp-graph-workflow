@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { runValidation, type ValidateResult } from "../core/capture/validate-runner.js";
+import { runValidation } from "../core/capture/validate-runner.js";
 
 // Mock the web-capture module since Playwright is heavy
 vi.mock("../core/capture/web-capture.js", () => ({

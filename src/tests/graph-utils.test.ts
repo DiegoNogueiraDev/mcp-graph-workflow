@@ -1,5 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import type { Node, Edge } from "@xyflow/react";
+import { describe, it, expect } from "vitest";
 
 /**
  * Unit tests for graph-utils pure functions.

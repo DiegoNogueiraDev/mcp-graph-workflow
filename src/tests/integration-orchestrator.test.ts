@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { SqliteStore } from "../core/store/sqlite-store.js";
 import { GraphEventBus } from "../core/events/event-bus.js";
 import { KnowledgeStore } from "../core/store/knowledge-store.js";

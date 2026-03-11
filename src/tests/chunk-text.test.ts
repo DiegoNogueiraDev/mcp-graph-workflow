@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { chunkText, type TextChunk } from "../core/rag/chunk-text.js";
+import { chunkText } from "../core/rag/chunk-text.js";
 
 describe("chunkText", () => {
   // ── Empty / trivial input ──────────────────────
