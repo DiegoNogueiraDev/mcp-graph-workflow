@@ -7,7 +7,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-A local-first CLI tool (TypeScript) that converts PRD text files into persistent execution graphs (SQLite), with an integrated knowledge store, RAG pipeline, and multi-agent integration mesh — enabling structured, token-efficient agentic workflows. 26 MCP tools, 17 REST API routers, 630+ tests.
+A local-first CLI tool (TypeScript) that converts PRD text files into persistent execution graphs (SQLite), with an integrated knowledge store, RAG pipeline, and multi-agent integration mesh — enabling structured, token-efficient agentic workflows. 26 MCP tools, 17 REST API routers, 910+ tests.
 
 ## Table of Contents
 
@@ -40,7 +40,7 @@ A local-first CLI tool (TypeScript) that converts PRD text files into persistent
 - **Sprint Planning** — `plan_sprint` with velocity-based estimates, risk assessment, task ordering
 - **Integration Mesh** — Serena, GitNexus, Context7, Playwright working together via event bus
 - **Web Dashboard** — React + Tailwind CSS with interactive graph, backlog, code graph, and insights
-- **630+ Tests** — Unit, integration, E2E browser (Playwright), benchmarks
+- **890+ Tests** — Unit, integration, E2E browser (Playwright), benchmarks
 - **Cross-platform** — Windows, macOS, and Linux compatible
 
 ## Quick Start
@@ -131,7 +131,7 @@ src/
   mcp/               # MCP server (HTTP + Stdio) + 26 tool wrappers
   schemas/           # Zod v4 schemas (node, edge, graph, knowledge)
   web/dashboard/     # React + Tailwind + React Flow dashboard
-  tests/             # 69 Vitest files + 7 Playwright E2E specs
+  tests/             # 101 Vitest files + 11 Playwright E2E specs
 ```
 
 See [docs/ARCHITECTURE-GUIDE.md](docs/ARCHITECTURE-GUIDE.md) for the complete architecture guide.
@@ -311,7 +311,7 @@ npm run test:bench     # Benchmark tests
 npm run test:all       # All tests (unit + E2E)
 ```
 
-**630+ tests** across 69 Vitest files + 7 Playwright E2E specs covering: parser, store, knowledge, RAG, context compression, planner, integrations, API endpoints, MCP tools, CLI commands, and browser flows.
+**910+ tests** across 101 Vitest files + 11 Playwright E2E specs covering: parser, store, knowledge, RAG, context compression, planner, integrations, API endpoints, MCP tools, CLI commands, and browser flows.
 
 See [docs/TEST-GUIDE.md](docs/TEST-GUIDE.md) for the full testing guide.
 
@@ -364,6 +364,7 @@ See [docs/LIFECYCLE.md](docs/LIFECYCLE.md) for the full methodology guide.
 | [docs/INTEGRATIONS-GUIDE.md](docs/INTEGRATIONS-GUIDE.md) | Serena, GitNexus, Context7, Playwright |
 | [docs/TEST-GUIDE.md](docs/TEST-GUIDE.md) | Test pyramid, categories, best practices |
 | [docs/LIFECYCLE.md](docs/LIFECYCLE.md) | 8-phase development lifecycle + XP methodology |
+| [docs/GETTING-STARTED.md](docs/GETTING-STARTED.md) | Step-by-step guide for new users |
 
 ## Contributing
 

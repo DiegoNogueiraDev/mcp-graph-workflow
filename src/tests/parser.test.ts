@@ -137,6 +137,26 @@ describe("classifySectionTitle", () => {
   it("detects acceptance criteria sections", () => {
     expect(classifySectionTitle("Critérios de Aceite", 2).type).toBe("acceptance_criteria");
   });
+
+  it("detects constraint sections", () => {
+    expect(classifySectionTitle("Constraints", 2).type).toBe("constraint");
+    expect(classifySectionTitle("Restrição de Escopo", 2).type).toBe("constraint");
+  });
+
+  it("detects epic titles via keywords", () => {
+    expect(classifySectionTitle("Visão do Produto", 2).type).toBe("epic");
+    expect(classifySectionTitle("Project Vision", 2).type).toBe("epic");
+  });
+
+  it("returns unknown for non-matching level 2+ titles", () => {
+    expect(classifySectionTitle("Random Section", 2).type).toBe("unknown");
+  });
+
+  it("returns higher confidence for section titles than text", () => {
+    const titleResult = classifySectionTitle("Requisitos", 2);
+    const textResult = classifyText("Some requirement text");
+    expect(titleResult.confidence).toBeGreaterThanOrEqual(0.85);
+  });
 });
 
 describe("classifySection", () => {
@@ -212,6 +232,33 @@ describe("extractEntities", () => {
       const subtasks = taskBlock.items.filter((i) => i.type === "subtask");
       expect(subtasks.length).toBeGreaterThan(0);
     }
+  });
+
+  it("reclassifies unknown items in unknown sections", () => {
+    const prd = `## Miscellaneous
+- Deve ter persistência local
+- Risco de escalabilidade
+- Just a note
+`;
+    const result = extractEntities(prd);
+    const miscBlock = result.blocks.find((b) => b.title === "Miscellaneous");
+    expect(miscBlock).toBeDefined();
+    // "Deve ter" → requirement, "Risco de" → risk, "Just a note" → unknown
+    const types = miscBlock!.items.map((i) => i.type);
+    expect(types).toContain("requirement");
+    expect(types).toContain("risk");
+  });
+
+  it("does not promote items in non-task/non-epic sections", () => {
+    const prd = `## Requisitos
+- Deve processar rápido
+- Implementar cache
+`;
+    const result = extractEntities(prd);
+    const reqBlock = result.blocks.find((b) => b.type === "requirement");
+    // Items inside requirement section should NOT be promoted to subtask
+    const subtasks = reqBlock?.items.filter((i) => i.type === "subtask") ?? [];
+    expect(subtasks).toHaveLength(0);
   });
 
   it("produces correct summary counts", () => {

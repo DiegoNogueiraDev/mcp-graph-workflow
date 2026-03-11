@@ -1,5 +1,7 @@
 # Benchmark Results — mcp-graph MCP Tools
 
+> **Nota:** Estes resultados são de uma versão anterior (27/31 tools). A versão atual possui 26 tools consolidados (edge, snapshot, export). Os benchmarks podem ser re-executados com `npm run test:bench`.
+
 ## Metadata
 
 | Field | Value |

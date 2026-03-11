@@ -1,6 +1,6 @@
 # Caderno de Testes Reais — mcp-graph MCP Tools
 
-> 35 cenários, ~165 steps, 25/25 consolidated tools + 7 Playwright tools
+> 35 cenários, ~165 steps, 26/26 consolidated tools + 7 Playwright tools
 
 **Instruções:** Execute cada step sequencialmente. Capture IDs retornados e substitua nos placeholders `<ID>` dos steps seguintes. Cole o output real no campo "Actual" e marque o resultado.
 
@@ -10,7 +10,7 @@
 
 | Parte | Arquivo | Cenários | Foco |
 |-------|---------|----------|------|
-| **1** | [parte-1-mcp-tools.md](docs/notebooks/parte-1-mcp-tools.md) | 1-12 (~73 steps) | 25/25 MCP tools + 3 Playwright básicos |
+| **1** | [parte-1-mcp-tools.md](docs/notebooks/parte-1-mcp-tools.md) | 1-12 (~73 steps) | 26/26 MCP tools + 3 Playwright básicos |
 | **2** | [parte-2-playwright-e2e.md](docs/notebooks/parte-2-playwright-e2e.md) | 13-24 (~75 steps) | Benchmark E2E com Playwright (7 tools) |
 | **3** | [parte-3-advanced-features.md](docs/notebooks/parte-3-advanced-features.md) | 25-35 (~90 steps) | Multi-project, lifecycle, integration mesh, knowledge pipeline, test pyramid |
 

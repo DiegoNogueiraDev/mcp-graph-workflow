@@ -1,6 +1,8 @@
 # Parte 1: MCP Tools — Testes Reais
 
-> Cenários 1-12: Validação de todos os 25/25 consolidated MCP tools + 3 Playwright tools básicos.
+> Cenários 1-12: Validação de todos os 26/26 consolidated MCP tools + 3 Playwright tools básicos.
+>
+> **Nota:** Alguns cenários usam nomes pré-consolidação (`add_edge` → `edge`, `create_snapshot` → `snapshot`, `export_graph` → `export`). Os nomes atuais são os consolidados.
 > PRD fixture: `./sample-prd.txt`
 
 **Instruções:** Execute cada step sequencialmente. Capture IDs retornados e substitua nos placeholders `<ID>` dos steps seguintes. Cole o output real no campo "Actual" e marque o resultado.
@@ -1700,7 +1702,7 @@
 | 25 | `validate_task` | 10 |
 | 26 | `sync_stack_docs` | 11 |
 
-**Total: 25/25 consolidated tools (100%)** — reduced from 31 to 25 via tool consolidation (edge, snapshot, export)
+**Total: 26/26 consolidated tools (100%)** — reduced from 31 to 26 via tool consolidation (edge, snapshot, export)
 
 ### Cenário 12 — Playwright MCP Tools (External)
 

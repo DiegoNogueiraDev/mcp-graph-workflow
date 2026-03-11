@@ -5,8 +5,10 @@
 ## Base URL
 
 ```
-http://localhost:3377
+http://localhost:3000
 ```
+
+> **Nota:** E2E tests usam porta 3377 via test-server. A porta padrão do servidor é 3000.
 
 Start the server:
 

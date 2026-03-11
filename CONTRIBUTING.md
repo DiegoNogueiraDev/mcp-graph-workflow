@@ -71,6 +71,9 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions reference.
 npm test               # Unit + integration tests
 npm run test:watch     # Watch mode
 npm run test:coverage  # Coverage report
+npm run test:e2e       # Playwright browser tests
+npm run test:bench     # Performance benchmarks
+npm run test:all       # Unit + E2E combined
 ```
 
 ### Test Guidelines

@@ -1,6 +1,6 @@
 # Integrations Guide
 
-> Four MCP agents working together through an event-driven mesh.
+> Four external MCP agents (Serena, GitNexus, Context7, Playwright) coordinated by mcp-graph as the orchestrator — 5 MCPs total working together through an event-driven mesh.
 
 ## Overview
 
