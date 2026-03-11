@@ -123,6 +123,15 @@ export const apiClient = {
       body: JSON.stringify({ symbol }),
     }),
 
+  // GitNexus full code graph (all nodes + relations)
+  getFullCodeGraph: () =>
+    request("/gitnexus/query", {
+      method: "POST",
+      body: JSON.stringify({
+        query: "MATCH (n)-[r:CodeRelation]->(m) RETURN n.name AS src, n.filePath AS srcFile, r.type AS relType, m.name AS dst, m.filePath AS dstFile LIMIT 2000",
+      }),
+    }),
+
   // GitNexus on-demand actions
   triggerAnalyze: () =>
     request<AnalyzeResult>("/gitnexus/analyze", { method: "POST" }),

@@ -7,6 +7,7 @@ import { EmbeddingStore } from "../../core/rag/embedding-store.js";
 import { indexSerenaMemories } from "../../core/rag/serena-indexer.js";
 import { indexCachedDocs } from "../../core/rag/docs-indexer.js";
 import { indexAllEmbeddings } from "../../core/rag/rag-pipeline.js";
+import { logger } from "../../core/utils/logger.js";
 
 export function registerReindexKnowledge(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -23,6 +24,7 @@ export function registerReindexKnowledge(server: McpServer, store: SqliteStore):
         .describe("Which sources to reindex (default: all)"),
     },
     async ({ basePath, sources }) => {
+      logger.debug("tool:reindex_knowledge", {});
       const projectPath = basePath ?? process.cwd();
       const allSources = !sources || sources.length === 0;
       const knowledgeStore = new KnowledgeStore(store.getDb());
@@ -46,6 +48,7 @@ export function registerReindexKnowledge(server: McpServer, store: SqliteStore):
 
       results.totalKnowledge = knowledgeStore.count();
 
+      logger.info("tool:reindex_knowledge:ok", { totalKnowledge: results.totalKnowledge });
       return {
         content: [
           {

@@ -7,6 +7,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { logger } from "../utils/logger.js";
+import { whichCommand } from "../utils/platform.js";
 
 const execAsync = promisify(execFile);
 
@@ -23,7 +24,7 @@ export interface InstallResult {
  */
 export async function isCommandAvailable(command: string): Promise<boolean> {
   try {
-    await execAsync("which", [command]);
+    await execAsync(whichCommand(), [command]);
     return true;
   } catch {
     return false;

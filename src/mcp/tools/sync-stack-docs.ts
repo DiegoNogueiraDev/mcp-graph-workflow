@@ -7,6 +7,7 @@ import { DocsSyncer } from "../../core/docs/docs-syncer.js";
 import { createMcpContext7Fetcher } from "../../core/docs/mcp-context7-fetcher.js";
 import { detectStack } from "../../core/docs/stack-detector.js";
 import { indexCachedDocs } from "../../core/rag/docs-indexer.js";
+import { logger } from "../../core/utils/logger.js";
 
 export function registerSyncStackDocs(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -23,6 +24,7 @@ export function registerSyncStackDocs(server: McpServer, store: SqliteStore): vo
         .describe("Specific library names to sync (overrides auto-detection)"),
     },
     async ({ basePath, libraries }) => {
+      logger.debug("tool:sync_stack_docs", { basePath });
       const projectPath = basePath ?? process.cwd();
       const docsCacheStore = new DocsCacheStore(store.getDb());
       const knowledgeStore = new KnowledgeStore(store.getDb());
@@ -70,6 +72,7 @@ export function registerSyncStackDocs(server: McpServer, store: SqliteStore): vo
       // Index synced docs into knowledge store
       const indexResult = indexCachedDocs(knowledgeStore, docsCacheStore);
 
+      logger.info("tool:sync_stack_docs:ok", { librariesProcessed: results.length, knowledgeIndexed: indexResult.documentsIndexed });
       return {
         content: [{
           type: "text" as const,

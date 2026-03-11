@@ -48,20 +48,20 @@ export const ALL_TYPES: NodeType[] = [
 // ── Code Graph (GitNexus) ──────────────────────
 
 export const CODE_SYMBOL_COLORS: Record<string, string> = {
-  function: "#2196f3",
-  class: "#7c3aed",
-  method: "#10b981",
-  interface: "#06b6d4",
-  variable: "#f59e0b",
-  module: "#8b5cf6",
-  file: "#6c757d",
-  folder: "#9e9e9e",
+  function: "#4fc3f7",
+  class: "#ce93d8",
+  method: "#81c784",
+  interface: "#4dd0e1",
+  variable: "#ffd54f",
+  module: "#b39ddb",
+  file: "#90a4ae",
+  folder: "#78909c",
 };
 
 export const CODE_RELATION_COLORS: Record<string, string> = {
-  imports: "#6c757d",
-  calls: "#2196f3",
-  belongs_to: "#7c3aed",
-  extends: "#10b981",
-  implements: "#06b6d4",
+  imports: "#546e7a",
+  calls: "#4fc3f7",
+  belongs_to: "#ce93d8",
+  extends: "#81c784",
+  implements: "#4dd0e1",
 };

@@ -1,0 +1,277 @@
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { apiClient } from "@/lib/api-client";
+import type { SerenaMemory } from "@/lib/types";
+import { buildMemoryTree, type MemoryTreeNode } from "@/lib/memory-tree";
+
+// ── Main component ───────────────────────────────
+
+export function SerenaTab(): React.JSX.Element {
+  const [memories, setMemories] = useState<SerenaMemory[]>([]);
+  const [selectedMemory, setSelectedMemory] = useState<SerenaMemory | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const mems = await apiClient.getSerenaMemories().catch(() => []);
+      setMemories(mems);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full text-[var(--color-text-muted)]">
+        Loading Serena...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-full text-[var(--color-danger)]">
+        Failed to load: {error}
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full flex flex-col">
+      {/* Header bar */}
+      <div className="flex items-center gap-3 px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
+        <h2 className="text-sm font-semibold">Serena — Memories</h2>
+
+        <StatusBadge
+          label="Serena"
+          active={memories.length > 0}
+        />
+
+        <span className="text-[10px] text-[var(--color-text-muted)]">
+          {memories.length} memories
+        </span>
+      </div>
+
+      {/* 2-panel body: left file explorer + right content viewer */}
+      <div className="flex flex-1 min-h-0">
+        {/* Left: File Explorer */}
+        <FileExplorerPanel
+          memories={memories}
+          selectedMemory={selectedMemory}
+          onSelect={setSelectedMemory}
+        />
+
+        {/* Right: Memory Content Viewer */}
+        <div className="flex-1 min-w-0 overflow-auto">
+          <MemoryContentViewer selectedMemory={selectedMemory} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── StatusBadge ──────────────────────────────────
+
+function StatusBadge({
+  label,
+  active,
+}: {
+  label: string;
+  active: boolean;
+}): React.JSX.Element {
+  const color = active ? "var(--color-success)" : "var(--color-text-muted)";
+  const text = active ? "Active" : "No data";
+
+  return (
+    <span
+      className="text-[10px] font-medium px-2 py-0.5 rounded-full"
+      style={{ background: `${color}20`, color }}
+    >
+      {label}: {text}
+    </span>
+  );
+}
+
+// ── FileExplorerPanel ────────────────────────────
+
+function FileExplorerPanel({
+  memories,
+  selectedMemory,
+  onSelect,
+}: {
+  memories: SerenaMemory[];
+  selectedMemory: SerenaMemory | null;
+  onSelect: (mem: SerenaMemory) => void;
+}): React.JSX.Element {
+  const [search, setSearch] = useState("");
+  const [collapsed, setCollapsed] = useState(false);
+  const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
+
+  const filteredMemories = useMemo(() => {
+    if (!search.trim()) return memories;
+    const q = search.toLowerCase();
+    return memories.filter((m) => m.name.toLowerCase().includes(q));
+  }, [memories, search]);
+
+  const tree = useMemo(() => buildMemoryTree(filteredMemories), [filteredMemories]);
+
+  const togglePath = useCallback((path: string) => {
+    setExpandedPaths((prev) => {
+      const next = new Set(prev);
+      if (next.has(path)) next.delete(path);
+      else next.add(path);
+      return next;
+    });
+  }, []);
+
+  if (collapsed) {
+    return (
+      <div className="w-8 border-r border-[var(--color-border)] bg-[var(--color-bg-secondary)] flex flex-col items-center pt-2">
+        <button
+          onClick={() => setCollapsed(false)}
+          className="text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text)] rotate-90"
+          title="Expand file explorer"
+        >
+          Files
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-64 border-r border-[var(--color-border)] bg-[var(--color-bg-secondary)] flex flex-col overflow-hidden">
+      <div className="flex items-center justify-between px-2 py-1.5 border-b border-[var(--color-border)]">
+        <span className="text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">Files</span>
+        <button
+          onClick={() => setCollapsed(true)}
+          className="text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+          title="Collapse"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div className="px-2 py-1.5 border-b border-[var(--color-border)]">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search files..."
+          className="w-full text-[11px] px-2 py-1 rounded bg-[var(--color-bg)] border border-[var(--color-border)] focus:outline-none focus:border-[var(--color-accent)]"
+        />
+      </div>
+
+      <div className="flex-1 overflow-y-auto text-[11px]">
+        {memories.length === 0 ? (
+          <div className="px-2 py-4 text-center text-[var(--color-text-muted)]">
+            No Serena memories
+          </div>
+        ) : (
+          <TreeNodeList
+            nodes={tree}
+            depth={0}
+            expandedPaths={expandedPaths}
+            onToggle={togglePath}
+            selectedMemory={selectedMemory}
+            onSelect={onSelect}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── TreeNodeList ─────────────────────────────────
+
+function TreeNodeList({
+  nodes,
+  depth,
+  expandedPaths,
+  onToggle,
+  selectedMemory,
+  onSelect,
+}: {
+  nodes: MemoryTreeNode[];
+  depth: number;
+  expandedPaths: Set<string>;
+  onToggle: (path: string) => void;
+  selectedMemory: SerenaMemory | null;
+  onSelect: (mem: SerenaMemory) => void;
+}): React.JSX.Element {
+  return (
+    <>
+      {nodes.map((node) => {
+        const isFolder = node.children.length > 0;
+        const isExpanded = expandedPaths.has(node.path);
+        const isSelected = node.memory != null && selectedMemory?.name === node.memory.name;
+
+        return (
+          <div key={node.path}>
+            <button
+              onClick={() => {
+                if (isFolder) onToggle(node.path);
+                if (node.memory) onSelect(node.memory);
+              }}
+              className={`w-full text-left px-2 py-0.5 flex items-center gap-1 hover:bg-[var(--color-bg-tertiary)] transition-colors ${
+                isSelected ? "bg-[var(--color-accent)]15 text-[var(--color-accent)]" : "text-[var(--color-text)]"
+              }`}
+              style={{ paddingLeft: `${depth * 12 + 8}px` }}
+            >
+              {isFolder ? (
+                <span className="w-3 text-[9px] text-[var(--color-text-muted)]">
+                  {isExpanded ? "▾" : "▸"}
+                </span>
+              ) : (
+                <span className="w-3 text-[9px] text-[var(--color-text-muted)]">·</span>
+              )}
+              <span className="truncate">{node.name}</span>
+            </button>
+            {isFolder && isExpanded && (
+              <TreeNodeList
+                nodes={node.children}
+                depth={depth + 1}
+                expandedPaths={expandedPaths}
+                onToggle={onToggle}
+                selectedMemory={selectedMemory}
+                onSelect={onSelect}
+              />
+            )}
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+// ── MemoryContentViewer ──────────────────────────
+
+function MemoryContentViewer({ selectedMemory }: { selectedMemory: SerenaMemory | null }): React.JSX.Element {
+  if (!selectedMemory) {
+    return (
+      <div className="flex items-center justify-center h-full text-[var(--color-text-muted)]">
+        <div className="text-center">
+          <p className="text-sm mb-1">Select a memory from the explorer</p>
+          <p className="text-xs">Serena memories appear as navigable files</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4">
+      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[var(--color-border)]">
+        <span className="text-sm font-semibold">{selectedMemory.name}</span>
+      </div>
+      <pre className="text-xs whitespace-pre-wrap text-[var(--color-text-muted)] font-mono leading-relaxed">
+        {selectedMemory.content}
+      </pre>
+    </div>
+  );
+}

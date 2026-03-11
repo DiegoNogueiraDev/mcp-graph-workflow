@@ -6,6 +6,7 @@ import {
   detectCycles,
   findCriticalPath,
 } from "../../core/planner/dependency-chain.js";
+import { logger } from "../../core/utils/logger.js";
 
 export function registerDependencies(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -16,6 +17,7 @@ export function registerDependencies(server: McpServer, store: SqliteStore): voi
       nodeId: z.string().optional().describe("Node ID (required for 'blockers' mode)"),
     },
     async ({ mode, nodeId }) => {
+      logger.debug("tool:dependencies", { nodeId, mode });
       const doc = store.toGraphDocument();
 
       if (mode === "blockers") {
@@ -28,6 +30,7 @@ export function registerDependencies(server: McpServer, store: SqliteStore): voi
           };
         }
         const blockers = findTransitiveBlockers(doc, nodeId);
+        logger.info("tool:dependencies:ok", { mode: "blockers", nodeId, blockerCount: blockers.length });
         return {
           content: [
             { type: "text" as const, text: JSON.stringify({ ok: true, nodeId, blockers }, null, 2) },
@@ -37,6 +40,7 @@ export function registerDependencies(server: McpServer, store: SqliteStore): voi
 
       if (mode === "cycles") {
         const cycles = detectCycles(doc);
+        logger.info("tool:dependencies:ok", { mode: "cycles", cycleCount: cycles.length });
         return {
           content: [
             { type: "text" as const, text: JSON.stringify({ ok: true, cycles }, null, 2) },
@@ -46,6 +50,7 @@ export function registerDependencies(server: McpServer, store: SqliteStore): voi
 
       // critical_path
       const path = findCriticalPath(doc);
+      logger.info("tool:dependencies:ok", { mode: "critical_path", pathLength: path.length });
       return {
         content: [
           { type: "text" as const, text: JSON.stringify({ ok: true, criticalPath: path }, null, 2) },

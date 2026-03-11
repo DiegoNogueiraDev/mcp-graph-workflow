@@ -3,6 +3,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import { NodeTypeSchema, NodeStatusSchema, XpSizeSchema, PrioritySchema } from "../../schemas/node.schema.js";
 import { NodeNotFoundError } from "../../core/utils/errors.js";
+import { logger } from "../../core/utils/logger.js";
 
 export function registerUpdateNode(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -25,10 +26,12 @@ export function registerUpdateNode(server: McpServer, store: SqliteStore): void 
         .describe("New acceptance criteria"),
     },
     async ({ id, ...fields }) => {
+      logger.debug("tool:update_node", { id, fields: Object.keys(fields) });
       const updated = store.updateNode(id, fields);
 
       if (!updated) {
         const err = new NodeNotFoundError(id);
+        logger.warn("tool:update_node:fail", { error: err.message });
         return {
           content: [
             { type: "text" as const, text: JSON.stringify({ error: err.message }) },
@@ -37,6 +40,7 @@ export function registerUpdateNode(server: McpServer, store: SqliteStore): void 
         };
       }
 
+      logger.info("tool:update_node:ok", { id });
       return {
         content: [
           {

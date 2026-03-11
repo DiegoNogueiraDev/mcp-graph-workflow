@@ -58,6 +58,10 @@ export function findNextTask(doc: GraphDocument): NextTaskResult | null {
       return { node, pendingDeps: deps.length };
     });
     withDepCount.sort((a, b) => a.pendingDeps - b.pendingDeps);
+    logger.debug("next:all-blocked", {
+      eligibleCount: eligible.length,
+      bestPendingDeps: withDepCount[0].pendingDeps,
+    });
     return {
       node: withDepCount[0].node,
       reason: `Todas as tasks têm dependências pendentes. Esta tem menos (${withDepCount[0].pendingDeps}).`,
@@ -99,6 +103,14 @@ export function findNextTask(doc: GraphDocument): NextTaskResult | null {
   const reasons: string[] = ["desbloqueada"];
   if (best.priority <= 2) reasons.push("alta prioridade");
   if (best.xpSize && XP_SIZE_ORDER[best.xpSize] <= 2) reasons.push("baixa complexidade");
+
+  logger.debug("next:selected", {
+    nodeId: best.id,
+    title: best.title,
+    priority: best.priority,
+    candidatesCount: unblocked.length,
+    reason: reasons.join(", "),
+  });
 
   return {
     node: best,

@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import { buildTaskContext } from "../../core/context/compact-context.js";
+import { logger } from "../../core/utils/logger.js";
 
 export function registerStats(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -8,6 +9,7 @@ export function registerStats(server: McpServer, store: SqliteStore): void {
     "Show aggregate statistics for the project graph, including context compression metrics",
     {},
     async () => {
+      logger.debug("tool:stats", {});
       const stats = store.getStats();
       const project = store.getProject();
 
@@ -41,6 +43,7 @@ export function registerStats(server: McpServer, store: SqliteStore): void {
         }
       }
 
+      logger.info("tool:stats:ok", { totalNodes: stats.totalNodes, totalEdges: stats.totalEdges });
       return {
         content: [
           {

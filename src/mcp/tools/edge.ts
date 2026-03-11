@@ -6,6 +6,7 @@ import { RelationTypeSchema } from "../../schemas/edge.schema.js";
 import { NodeNotFoundError } from "../../core/utils/errors.js";
 import { generateId } from "../../core/utils/id.js";
 import { now } from "../../core/utils/time.js";
+import { logger } from "../../core/utils/logger.js";
 
 export function registerEdge(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -26,6 +27,7 @@ export function registerEdge(server: McpServer, store: SqliteStore): void {
       direction: z.enum(["from", "to", "both"]).optional().describe("Edge direction relative to nodeId (list only, default: both)"),
     },
     async ({ action, from, to, relationType, reason, weight, id, nodeId, direction }) => {
+      logger.debug("tool:edge", { action, from, to, relationType });
       if (action === "add") {
         if (!from || !to || !relationType) {
           return {
@@ -79,6 +81,7 @@ export function registerEdge(server: McpServer, store: SqliteStore): void {
 
         store.insertEdge(edge);
 
+        logger.info("tool:edge:ok", { action: "add", edgeId: edge.id, from, to, relationType });
         return {
           content: [
             { type: "text" as const, text: JSON.stringify({ ok: true, edge }, null, 2) },
@@ -106,6 +109,7 @@ export function registerEdge(server: McpServer, store: SqliteStore): void {
           };
         }
 
+        logger.info("tool:edge:ok", { action: "delete", deletedId: id });
         return {
           content: [
             { type: "text" as const, text: JSON.stringify({ ok: true, deletedId: id }, null, 2) },
@@ -144,6 +148,7 @@ export function registerEdge(server: McpServer, store: SqliteStore): void {
         edges = edges.filter((e) => e.relationType === (relationType as RelationType));
       }
 
+      logger.info("tool:edge:ok", { action: "list", total: edges.length });
       return {
         content: [
           { type: "text" as const, text: JSON.stringify({ total: edges.length, edges }, null, 2) },

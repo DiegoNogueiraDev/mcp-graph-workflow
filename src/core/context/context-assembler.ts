@@ -121,6 +121,21 @@ export function assembleContext(
 
   breakdown.knowledge = tokensUsed - knowledgeTokensBefore;
 
+  logger.debug("context:breakdown", {
+    graphTokens: breakdown.graph,
+    knowledgeTokens: breakdown.knowledge,
+    sections: sections.map((s) => `${s.name}:${s.tokens}`).join(", "),
+  });
+
+  if (tokensUsed > tokenBudget) {
+    logger.warn("context:budget-exceeded", { tokensUsed, tokenBudget, overage: tokensUsed - tokenBudget });
+  }
+
+  const truncatedSections = nodeIds.length - sections.filter((s) => s.source === "graph").length;
+  if (truncatedSections > 0) {
+    logger.warn("context:sections-truncated", { truncatedSections, reason: "token budget" });
+  }
+
   logger.info("Context assembled", {
     query: query.slice(0, 50),
     tier,

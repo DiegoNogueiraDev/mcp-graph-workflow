@@ -2,6 +2,7 @@ import { z } from "zod/v4";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import { NodeNotFoundError } from "../../core/utils/errors.js";
+import { logger } from "../../core/utils/logger.js";
 
 export function registerShow(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -9,9 +10,11 @@ export function registerShow(server: McpServer, store: SqliteStore): void {
     "Show detailed information about a specific node, including its edges and children",
     { id: z.string().describe("The node ID to inspect") },
     async ({ id }) => {
+      logger.debug("tool:show", { id });
       const node = store.getNodeById(id);
       if (!node) {
         const err = new NodeNotFoundError(id);
+        logger.warn("tool:show:fail", { error: err.message });
         return {
           content: [
             { type: "text" as const, text: JSON.stringify({ error: err.message }) },
@@ -24,6 +27,7 @@ export function registerShow(server: McpServer, store: SqliteStore): void {
       const edgesTo = store.getEdgesTo(id);
       const children = store.getChildNodes(id);
 
+      logger.info("tool:show:ok", { id, edgesOut: edgesFrom.length, edgesIn: edgesTo.length, children: children.length });
       return {
         content: [
           {

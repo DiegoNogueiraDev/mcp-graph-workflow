@@ -1,4 +1,5 @@
 import type Database from "better-sqlite3";
+import { logger } from "../utils/logger.js";
 
 interface Migration {
   version: number;
@@ -220,12 +221,14 @@ export function runMigrations(db: Database.Database): void {
   for (const migration of migrations) {
     if (applied.has(migration.version)) continue;
 
+    logger.info("migration:run", { version: migration.version, description: migration.description });
     db.transaction(() => {
       db.exec(migration.sql);
       db.prepare(
         "INSERT INTO _migrations (version, description, applied_at) VALUES (?, ?, ?)",
       ).run(migration.version, migration.description, new Date().toISOString());
     })();
+    logger.info("migration:ok", { version: migration.version });
   }
 }
 

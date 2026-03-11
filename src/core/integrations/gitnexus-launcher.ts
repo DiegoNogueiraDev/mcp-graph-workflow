@@ -16,6 +16,7 @@ import { promisify } from "node:util";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { logger } from "../utils/logger.js";
+import { IS_WINDOWS as IS_WIN, killProcess } from "../utils/platform.js";
 
 const execAsync = promisify(execFile);
 
@@ -87,7 +88,7 @@ export async function isGitNexusRunning(port: number): Promise<boolean> {
 
 // ── Binary resolution ─────────────────────────────────────
 
-const IS_WINDOWS = process.platform === "win32";
+const IS_WINDOWS = IS_WIN;
 
 function localBin(dir: string): string {
   const binName = IS_WINDOWS ? `${GITNEXUS_PKG}.cmd` : GITNEXUS_PKG;
@@ -282,11 +283,7 @@ export async function stopGitNexus(): Promise<void> {
 
   logger.info("Stopping GitNexus serve", { pid: serveProcess.pid });
 
-  try {
-    serveProcess.kill("SIGTERM");
-  } catch {
-    // Process may have already exited
-  }
+  killProcess(serveProcess);
 
   serveProcess = null;
 }

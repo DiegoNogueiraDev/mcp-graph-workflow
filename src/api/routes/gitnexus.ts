@@ -14,6 +14,12 @@ import {
   startGitNexusServe,
 } from "../../core/integrations/gitnexus-launcher.js";
 import { logger } from "../../core/utils/logger.js";
+import {
+  buildContextQuery,
+  buildImpactQuery,
+  parseContextResponse,
+  parseImpactResponse,
+} from "../../core/integrations/gitnexus-queries.js";
 
 const QueryBodySchema = z.object({ query: z.string().min(1) });
 const SymbolBodySchema = z.object({ symbol: z.string().min(1) });
@@ -36,7 +42,14 @@ async function proxyToGitNexus(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
-    const data = await res.json();
+
+    // Handle non-JSON responses (e.g. HTML 404 pages) gracefully
+    const contentType = res.headers.get("content-type") ?? "";
+    if (!contentType.includes("application/json")) {
+      return { ok: false, status: res.status, data: { error: `Non-JSON response from GitNexus (${res.status})` } };
+    }
+
+    const data: unknown = await res.json();
     return { ok: res.ok, status: res.status, data };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -123,7 +136,20 @@ export function createGitNexusRouter(options: GitNexusRouterOptions): Router {
         return;
       }
 
+      // Try direct proxy first, fallback to Cypher query
       const result = await proxyToGitNexus(gitnexusPort, "/api/context", { symbol: parsed.data.symbol });
+      if (result.status === 404) {
+        logger.debug("GitNexus /api/context returned 404, falling back to Cypher query", { symbol: parsed.data.symbol });
+        const cypher = buildContextQuery(parsed.data.symbol);
+        const cypherResult = await proxyToGitNexus(gitnexusPort, "/api/query", { cypher });
+        if (!cypherResult.ok) {
+          res.status(cypherResult.status).json(cypherResult.data);
+          return;
+        }
+        const contextData = parseContextResponse(cypherResult.data);
+        res.json(contextData);
+        return;
+      }
       res.status(result.status).json(result.data);
     } catch (err) {
       next(err);
@@ -145,7 +171,20 @@ export function createGitNexusRouter(options: GitNexusRouterOptions): Router {
         return;
       }
 
+      // Try direct proxy first, fallback to Cypher query
       const result = await proxyToGitNexus(gitnexusPort, "/api/impact", { symbol: parsed.data.symbol });
+      if (result.status === 404) {
+        logger.debug("GitNexus /api/impact returned 404, falling back to Cypher query", { symbol: parsed.data.symbol });
+        const cypher = buildImpactQuery(parsed.data.symbol);
+        const cypherResult = await proxyToGitNexus(gitnexusPort, "/api/query", { cypher });
+        if (!cypherResult.ok) {
+          res.status(cypherResult.status).json(cypherResult.data);
+          return;
+        }
+        const impactData = parseImpactResponse(cypherResult.data, parsed.data.symbol);
+        res.json(impactData);
+        return;
+      }
       res.status(result.status).json(result.data);
     } catch (err) {
       next(err);

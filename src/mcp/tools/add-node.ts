@@ -6,6 +6,7 @@ import { NodeTypeSchema, NodeStatusSchema, XpSizeSchema, PrioritySchema } from "
 import { NodeNotFoundError } from "../../core/utils/errors.js";
 import { generateId } from "../../core/utils/id.js";
 import { now } from "../../core/utils/time.js";
+import { logger } from "../../core/utils/logger.js";
 
 export function registerAddNode(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -27,6 +28,7 @@ export function registerAddNode(server: McpServer, store: SqliteStore): void {
       metadata: z.record(z.string(), z.unknown()).optional().describe("Custom metadata"),
     },
     async (args) => {
+      logger.debug("tool:add_node", { type: args.type, title: args.title, parentId: args.parentId });
       if (args.parentId) {
         const parent = store.getNodeById(args.parentId);
         if (!parent) {
@@ -79,6 +81,7 @@ export function registerAddNode(server: McpServer, store: SqliteStore): void {
         });
       }
 
+      logger.info("tool:add_node:ok", { nodeId: node.id, type: node.type });
       return {
         content: [
           {

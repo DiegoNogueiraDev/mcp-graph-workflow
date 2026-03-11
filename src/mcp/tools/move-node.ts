@@ -5,6 +5,7 @@ import { NodeNotFoundError } from "../../core/utils/errors.js";
 import { generateId } from "../../core/utils/id.js";
 import { now } from "../../core/utils/time.js";
 import type { RelationType } from "../../core/graph/graph-types.js";
+import { logger } from "../../core/utils/logger.js";
 
 export function registerMoveNode(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -15,6 +16,7 @@ export function registerMoveNode(server: McpServer, store: SqliteStore): void {
       newParentId: z.string().nullable().describe("New parent node ID (null to make root)"),
     },
     async ({ id, newParentId }) => {
+      logger.debug("tool:move_node", { nodeId: id, newParentId });
       const node = store.getNodeById(id);
       if (!node) {
         const err = new NodeNotFoundError(id);
@@ -106,6 +108,7 @@ export function registerMoveNode(server: McpServer, store: SqliteStore): void {
 
       const updated = store.getNodeById(id);
 
+      logger.info("tool:move_node:ok", { nodeId: id, from: oldParentId ?? null, to: newParentId });
       return {
         content: [
           {

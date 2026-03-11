@@ -456,6 +456,7 @@ export class SqliteStore {
 
   deleteNode(id: string): boolean {
     const pid = this.ensureProject();
+    logger.debug("tx:delete-node", { id });
 
     return this.db.transaction(() => {
       // Delete edges referencing this node
@@ -554,6 +555,7 @@ export class SqliteStore {
    */
   clearImportedNodes(sourceFile: string): { nodesDeleted: number; edgesDeleted: number } {
     const pid = this.ensureProject();
+    logger.debug("tx:clear-imported", { sourceFile });
 
     return this.db.transaction(() => {
       // Find node IDs from this source file
@@ -599,6 +601,7 @@ export class SqliteStore {
     const pid = this.ensureProject();
     logger.info(`Bulk insert: ${nodes.length} nodes, ${edges.length} edges`);
 
+    logger.debug("tx:bulk-insert:start");
     this.db.transaction(() => {
       for (const node of nodes) {
         const row = nodeToRow(node, pid);
@@ -629,6 +632,7 @@ export class SqliteStore {
           .run(row);
       }
     })();
+    logger.debug("tx:bulk-insert:done");
     this._eventBus?.emitTyped("import:completed", { nodesCreated: nodes.length, edgesCreated: edges.length });
   }
 
@@ -734,6 +738,7 @@ export class SqliteStore {
 
   bulkUpdateStatus(ids: string[], status: NodeStatus): { updated: string[]; notFound: string[] } {
     this.ensureProject();
+    logger.debug("tx:bulk-update-status", { count: ids.length, status });
     const updated: string[] = [];
     const notFound: string[] = [];
 
@@ -755,6 +760,7 @@ export class SqliteStore {
 
   restoreSnapshot(snapshotId: number): void {
     const pid = this.ensureProject();
+    logger.debug("tx:restore-snapshot", { snapshotId });
     const row = this.db
       .prepare("SELECT data FROM snapshots WHERE rowid = ? AND project_id = ?")
       .get(snapshotId, pid) as { data: string } | undefined;

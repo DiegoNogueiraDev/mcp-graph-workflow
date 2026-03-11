@@ -3,6 +3,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import { graphToMermaid } from "../../core/graph/mermaid-export.js";
 import type { NodeStatus, NodeType } from "../../core/graph/graph-types.js";
+import { logger } from "../../core/utils/logger.js";
 
 export function registerExport(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -17,9 +18,11 @@ export function registerExport(server: McpServer, store: SqliteStore): void {
       filterType: z.array(z.enum(["epic", "task", "subtask", "requirement", "constraint", "milestone", "acceptance_criteria", "risk", "decision"])).optional().describe("Only include nodes with these types"),
     },
     async ({ action, format, direction, filterStatus, filterType }) => {
+      logger.debug("tool:export", { format: action });
       const doc = store.toGraphDocument();
 
       if (action === "json") {
+        logger.info("tool:export:ok", { format: "json", nodes: doc.nodes.length });
         return {
           content: [
             { type: "text" as const, text: JSON.stringify(doc, null, 2) },
@@ -35,6 +38,7 @@ export function registerExport(server: McpServer, store: SqliteStore): void {
         filterType: filterType as NodeType[] | undefined,
       });
 
+      logger.info("tool:export:ok", { format: "mermaid", diagramFormat: format ?? "flowchart" });
       return {
         content: [
           { type: "text" as const, text: mermaid },

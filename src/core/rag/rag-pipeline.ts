@@ -206,6 +206,7 @@ export async function indexNodeEmbeddings(
   });
 
   // Build vocabulary and fit vectorizer
+  const t0 = performance.now();
   const vectorizer = new TfIdfVectorizer();
   vectorizer.fit(documents.map((d) => d.tokens));
   activeVectorizer = vectorizer;
@@ -225,6 +226,8 @@ export async function indexNodeEmbeddings(
     indexed++;
   }
 
+  const durationMs = Math.round(performance.now() - t0);
+  logger.debug("rag:fit+embed:nodes", { vocabSize: vectorizer.vocabSize, indexed, durationMs });
   logger.info(`Indexed ${indexed} node embeddings (vocab size: ${vectorizer.vocabSize})`);
   return indexed;
 }
@@ -275,6 +278,7 @@ export async function indexAllEmbeddings(
   }
 
   // Build unified vocabulary
+  const t0 = performance.now();
   const vectorizer = new TfIdfVectorizer();
   vectorizer.fit(allDocuments.map((d) => d.tokens));
   activeVectorizer = vectorizer;
@@ -299,6 +303,8 @@ export async function indexAllEmbeddings(
     else indexedKnowledge++;
   }
 
+  const durationMs = Math.round(performance.now() - t0);
+  logger.debug("rag:fit+embed:all", { vocabSize: vectorizer.vocabSize, indexedNodes, indexedKnowledge, durationMs });
   logger.info(
     `Indexed all embeddings (vocab size: ${vectorizer.vocabSize})`,
     { nodes: indexedNodes, knowledge: indexedKnowledge },
@@ -316,10 +322,12 @@ export async function semanticSearch(
   query: string,
   limit: number = 10,
 ): Promise<SimilarityResult[]> {
+  const t0 = performance.now();
   const vectorizer = activeVectorizer ?? new TfIdfVectorizer();
   const queryVector = vectorizer.embed(query);
   const results = embeddingStore.findSimilar(queryVector, limit);
+  const durationMs = Math.round(performance.now() - t0);
 
-  logger.debug(`Semantic search: query="${query}", results=${results.length}`);
+  logger.debug("rag:search", { query: query.slice(0, 80), resultCount: results.length, durationMs });
   return results;
 }

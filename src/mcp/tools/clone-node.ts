@@ -5,6 +5,7 @@ import type { GraphNode, RelationType } from "../../core/graph/graph-types.js";
 import { NodeNotFoundError } from "../../core/utils/errors.js";
 import { generateId } from "../../core/utils/id.js";
 import { now } from "../../core/utils/time.js";
+import { logger } from "../../core/utils/logger.js";
 
 function cloneSingle(
   store: SqliteStore,
@@ -82,6 +83,7 @@ export function registerCloneNode(server: McpServer, store: SqliteStore): void {
       newParentId: z.string().optional().describe("Parent ID for the cloned node"),
     },
     async ({ id, deep, newParentId }) => {
+      logger.debug("tool:clone_node", { sourceId: id, deep });
       const source = store.getNodeById(id);
       if (!source) {
         const err = new NodeNotFoundError(id);
@@ -112,6 +114,7 @@ export function registerCloneNode(server: McpServer, store: SqliteStore): void {
       if (deep) {
         const cloned: GraphNode[] = [];
         cloneDeep(store, id, parentForClone, timestamp, cloned);
+        logger.info("tool:clone_node:ok", { sourceId: id, deep: true, clonedCount: cloned.length });
         return {
           content: [
             {
@@ -123,6 +126,7 @@ export function registerCloneNode(server: McpServer, store: SqliteStore): void {
       }
 
       const clone = cloneSingle(store, source, parentForClone, timestamp);
+      logger.info("tool:clone_node:ok", { sourceId: id, deep: false, cloneId: clone.id });
       return {
         content: [
           {

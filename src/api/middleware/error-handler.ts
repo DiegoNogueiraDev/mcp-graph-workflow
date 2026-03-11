@@ -28,7 +28,7 @@ function mapErrorToStatus(err: Error): number {
 
 export function errorHandler(
   err: Error,
-  _req: Request,
+  req: Request,
   res: Response,
   _next: NextFunction,
 ): void {
@@ -42,7 +42,19 @@ export function errorHandler(
   }
 
   if (status >= 500) {
-    logger.error("Unhandled API error", { error: err.message, stack: err.stack });
+    logger.error("Unhandled API error", {
+      method: req.method,
+      path: req.path,
+      error: err.message,
+      stack: err.stack,
+    });
+  } else if (status >= 400) {
+    logger.warn("API client error", {
+      method: req.method,
+      path: req.path,
+      status,
+      error: err.message,
+    });
   }
 
   res.status(status).json(body);

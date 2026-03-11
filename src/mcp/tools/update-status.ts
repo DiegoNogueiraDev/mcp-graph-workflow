@@ -4,6 +4,7 @@ import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import type { NodeStatus } from "../../core/graph/graph-types.js";
 import { NodeStatusSchema } from "../../schemas/node.schema.js";
 import { NodeNotFoundError } from "../../core/utils/errors.js";
+import { logger } from "../../core/utils/logger.js";
 
 export function registerUpdateStatus(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -14,10 +15,12 @@ export function registerUpdateStatus(server: McpServer, store: SqliteStore): voi
       status: NodeStatusSchema.describe("The new status"),
     },
     async ({ id, status }) => {
+      logger.debug("tool:update_status", { id, status });
       const updated = store.updateNodeStatus(id, status as NodeStatus);
 
       if (!updated) {
         const err = new NodeNotFoundError(id);
+        logger.warn("tool:update_status:fail", { error: err.message });
         return {
           content: [
             { type: "text" as const, text: JSON.stringify({ error: err.message }) },
@@ -26,6 +29,7 @@ export function registerUpdateStatus(server: McpServer, store: SqliteStore): voi
         };
       }
 
+      logger.info("tool:update_status:ok", { id, status });
       return {
         content: [
           {

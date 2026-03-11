@@ -3,6 +3,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import type { NodeType, NodeStatus } from "../../core/graph/graph-types.js";
 import { NodeTypeSchema, NodeStatusSchema } from "../../schemas/node.schema.js";
+import { logger } from "../../core/utils/logger.js";
 
 export function registerList(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -14,6 +15,7 @@ export function registerList(server: McpServer, store: SqliteStore): void {
       sprint: z.string().optional().describe("Filter by sprint name"),
     },
     async ({ type, status, sprint }) => {
+      logger.debug("tool:list", { type, status, sprint });
       let nodes;
 
       if (type && status) {
@@ -49,6 +51,7 @@ export function registerList(server: McpServer, store: SqliteStore): void {
         parentId: n.parentId ?? null,
       }));
 
+      logger.info("tool:list:ok", { total: nodes.length });
       return {
         content: [
           {

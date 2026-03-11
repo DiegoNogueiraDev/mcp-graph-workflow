@@ -3,6 +3,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import { ragBuildContext } from "../../core/context/rag-context.js";
 import { assembleContext } from "../../core/context/context-assembler.js";
+import { logger } from "../../core/utils/logger.js";
 
 export function registerRagContext(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -23,6 +24,7 @@ export function registerRagContext(server: McpServer, store: SqliteStore): void 
         .describe("Context detail level: summary (~20 tok/node), standard (~150 tok/node), deep (~500+ tok/node). Default: standard"),
     },
     async ({ query, tokenBudget, detail }) => {
+      logger.debug("tool:rag_context", { query, tier: detail });
       const budget = tokenBudget ?? 4000;
 
       if (detail) {
@@ -32,6 +34,7 @@ export function registerRagContext(server: McpServer, store: SqliteStore): void 
           tier: detail,
         });
 
+        logger.info("tool:rag_context:ok", { query, tier: detail });
         return {
           content: [
             {
@@ -45,6 +48,7 @@ export function registerRagContext(server: McpServer, store: SqliteStore): void 
       // Default: use existing RAG context builder (backward compatible)
       const ctx = ragBuildContext(store, query, budget);
 
+      logger.info("tool:rag_context:ok", { query, tier: "standard" });
       return {
         content: [
           {

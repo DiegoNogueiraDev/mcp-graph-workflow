@@ -20,6 +20,7 @@ import { createRagRouter } from "./routes/rag.js";
 import { createKnowledgeRouter } from "./routes/knowledge.js";
 import { createBenchmarkRouter } from "./routes/benchmark.js";
 import { errorHandler } from "./middleware/error-handler.js";
+import { requestLogger } from "./middleware/request-logger.js";
 
 export interface ApiRouterOptions {
   store: SqliteStore;
@@ -35,6 +36,8 @@ export function createApiRouter(storeOrOptions: SqliteStore | ApiRouterOptions):
   const eventBus = "eventBus" in storeOrOptions ? storeOrOptions.eventBus : undefined;
 
   const router = Router();
+
+  router.use(requestLogger);
 
   router.use("/project", createProjectRouter(store));
   router.use("/nodes", createNodesRouter(store));

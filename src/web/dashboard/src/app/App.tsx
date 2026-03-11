@@ -11,7 +11,8 @@ import { CaptureModal } from "@/components/modals/capture-modal";
 // Lazy-load tabs
 const GraphTab = lazy(() => import("@/components/tabs/graph-tab").then((m) => ({ default: m.GraphTab })));
 const PrdBacklogTab = lazy(() => import("@/components/tabs/prd-backlog-tab").then((m) => ({ default: m.PrdBacklogTab })));
-const CodeGraphTab = lazy(() => import("@/components/tabs/code-graph-tab").then((m) => ({ default: m.CodeGraphTab })));
+const GitNexusTab = lazy(() => import("@/components/tabs/gitnexus-tab").then((m) => ({ default: m.GitNexusTab })));
+const SerenaTab = lazy(() => import("@/components/tabs/serena-tab").then((m) => ({ default: m.SerenaTab })));
 const InsightsTab = lazy(() => import("@/components/tabs/insights-tab").then((m) => ({ default: m.InsightsTab })));
 const BenchmarkTab = lazy(() => import("@/components/tabs/benchmark-tab").then((m) => ({ default: m.BenchmarkTab })));
 
@@ -65,7 +66,8 @@ function AppContent(): React.JSX.Element {
             <div style={{ display: activeTab === "prd-backlog" ? "contents" : "none" }}>
               {graph && <PrdBacklogTab graph={graph} />}
             </div>
-            {activeTab === "code-graph" && <CodeGraphTab />}
+            {activeTab === "gitnexus" && <GitNexusTab />}
+            {activeTab === "serena" && <SerenaTab />}
             {activeTab === "insights" && <InsightsTab />}
             {activeTab === "benchmark" && <BenchmarkTab />}
           </Suspense>

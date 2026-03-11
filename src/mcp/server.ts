@@ -73,13 +73,16 @@ if (config.integrations.gitnexusAutoStart) {
 }
 
 // ── Cleanup on shutdown ──────────────────────────────────
-function cleanup(): void {
+function cleanup(signal: string): void {
+  logger.info("server:shutdown", { signal });
   stopGitNexus().catch(() => {});
   store.close();
+  logger.info("server:shutdown:ok", { signal });
   process.exit(0);
 }
-process.on("SIGTERM", cleanup);
-process.on("SIGINT", cleanup);
+process.on("SIGTERM", () => cleanup("SIGTERM"));
+process.on("SIGINT", () => cleanup("SIGINT"));
+process.on("SIGHUP", () => cleanup("SIGHUP"));
 
 app.listen(PORT, () => {
   logger.info(`mcp-graph server listening on http://localhost:${PORT}/mcp`);

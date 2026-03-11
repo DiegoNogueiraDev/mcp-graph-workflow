@@ -1,15 +1,16 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { SigmaContainer, useLoadGraph, useSigma, useRegisterEvents } from "@react-sigma/core";
 import "@react-sigma/core/lib/style.css";
 import Graph from "graphology";
 import forceAtlas2 from "graphology-layout-forceatlas2";
 import { apiClient } from "@/lib/api-client";
-import type { GitNexusStatus, SerenaMemory, CodeGraphData, ImpactResult } from "@/lib/types";
+import type { GitNexusStatus, CodeGraphData, ImpactResult } from "@/lib/types";
 import { CODE_SYMBOL_COLORS, CODE_RELATION_COLORS } from "@/lib/constants";
-import { isCodeGraphData, isImpactResult } from "@/lib/code-graph-guards";
-import { buildMemoryTree, type MemoryTreeNode } from "@/lib/memory-tree";
+import { isCodeGraphData, isImpactResult, isCypherResult, isTabularData } from "@/lib/code-graph-guards";
+import { TabularResultView } from "@/components/query-results/tabular-result-view";
+import { JsonResultView } from "@/components/query-results/json-result-view";
 
-type ViewMode = "explorer" | "query" | "symbol";
+type GitNexusViewMode = "query" | "symbol";
 
 interface QueryResult {
   data: unknown;
@@ -17,17 +18,91 @@ interface QueryResult {
   error: string | null;
 }
 
+// Node kind mapping from GitNexus _label to our kinds
+const LABEL_TO_KIND: Record<string, string> = {
+  Function: "function",
+  Class: "class",
+  Method: "method",
+  Interface: "interface",
+  Variable: "variable",
+  Module: "module",
+  File: "file",
+  Folder: "folder",
+};
+
+// Build CodeGraphData from flat Cypher result rows
+interface CypherRow {
+  src: string;
+  srcFile?: string;
+  relType?: string;
+  dst: string;
+  dstFile?: string;
+}
+
+type SymbolKind = "function" | "class" | "method" | "interface" | "variable" | "module" | "file" | "folder";
+type RelationType = "imports" | "calls" | "belongs_to" | "extends" | "implements";
+
+const VALID_KINDS = new Set<string>(["function", "class", "method", "interface", "variable", "module", "file", "folder"]);
+const VALID_REL_TYPES = new Set<string>(["imports", "calls", "belongs_to", "extends", "implements"]);
+
+function toSymbolKind(kind: string): SymbolKind {
+  return VALID_KINDS.has(kind) ? kind as SymbolKind : "module";
+}
+
+function toRelationType(type: string): RelationType {
+  return VALID_REL_TYPES.has(type) ? type as RelationType : "imports";
+}
+
+function buildGraphFromCypherRows(rows: CypherRow[]): CodeGraphData {
+  const symbolMap = new Map<string, { name: string; kind: SymbolKind; file?: string }>();
+  const relations: Array<{ from: string; to: string; type: RelationType }> = [];
+
+  for (const row of rows) {
+    if (row.src && !symbolMap.has(row.src)) {
+      symbolMap.set(row.src, {
+        name: row.src,
+        kind: toSymbolKind(guessKind(row.src)),
+        file: row.srcFile ?? undefined,
+      });
+    }
+    if (row.dst && !symbolMap.has(row.dst)) {
+      symbolMap.set(row.dst, {
+        name: row.dst,
+        kind: toSymbolKind(guessKind(row.dst)),
+        file: row.dstFile ?? undefined,
+      });
+    }
+    if (row.src && row.dst && row.relType) {
+      relations.push({
+        from: row.src,
+        to: row.dst,
+        type: toRelationType(row.relType.toLowerCase()),
+      });
+    }
+  }
+
+  return {
+    symbols: Array.from(symbolMap.values()),
+    relations,
+  };
+}
+
+function guessKind(name: string): string {
+  if (name.endsWith(".ts") || name.endsWith(".js") || name.endsWith(".tsx")) return "file";
+  if (/^[A-Z][a-z]/.test(name) && !name.includes(".")) return "class";
+  if (/^[a-z]/.test(name) && !name.includes(".")) return "function";
+  return "module";
+}
+
 // ── Main component ───────────────────────────────
 
-export function CodeGraphTab(): React.JSX.Element {
+export function GitNexusTab(): React.JSX.Element {
   const [gitNexusStatus, setGitNexusStatus] = useState<GitNexusStatus | null>(null);
-  const [memories, setMemories] = useState<SerenaMemory[]>([]);
-  const [viewMode, setViewMode] = useState<ViewMode>("explorer");
+  const [viewMode, setViewMode] = useState<GitNexusViewMode>("query");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Selection state
-  const [selectedMemory, setSelectedMemory] = useState<SerenaMemory | null>(null);
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
 
   // Query state
@@ -39,8 +114,9 @@ export function CodeGraphTab(): React.JSX.Element {
   const [symbolContextData, setSymbolContextData] = useState<CodeGraphData | null>(null);
   const [impactData, setImpactData] = useState<ImpactResult | null>(null);
 
-  // Graph data for sigma (from queries or symbol context)
-  const [graphData, setGraphData] = useState<CodeGraphData | null>(null);
+  // Graph data for sigma — full codebase graph + optional context overlay
+  const [fullGraph, setFullGraph] = useState<CodeGraphData | null>(null);
+  const [contextGraph, setContextGraph] = useState<CodeGraphData | null>(null);
 
   // GitNexus on-demand action
   const [actionLoading, setActionLoading] = useState(false);
@@ -48,13 +124,22 @@ export function CodeGraphTab(): React.JSX.Element {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const [status, mems] = await Promise.all([
-        apiClient.getGitNexusStatus().catch(() => null),
-        apiClient.getSerenaMemories().catch(() => []),
-      ]);
-
+      const status = await apiClient.getGitNexusStatus().catch(() => null);
       setGitNexusStatus(status);
-      setMemories(mems);
+
+      // Load full code graph if GitNexus is running
+      if (status?.running) {
+        try {
+          const raw = await apiClient.getFullCodeGraph();
+          const result = raw as { result?: CypherRow[] };
+          if (result.result && Array.isArray(result.result)) {
+            const graphData = buildGraphFromCypherRows(result.result);
+            setFullGraph(graphData);
+          }
+        } catch {
+          // Full graph load failed — non-blocking
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load");
     } finally {
@@ -81,7 +166,7 @@ export function CodeGraphTab(): React.JSX.Element {
       const data = await apiClient.queryCodeGraph(queryInput);
       setQueryResult({ data, loading: false, error: null });
       if (isCodeGraphData(data)) {
-        setGraphData(data);
+        setContextGraph(data);
       }
     } catch (err) {
       setQueryResult({
@@ -98,7 +183,7 @@ export function CodeGraphTab(): React.JSX.Element {
       const data = await apiClient.getSymbolContext(symbol);
       if (isCodeGraphData(data)) {
         setSymbolContextData(data);
-        setGraphData(data);
+        setContextGraph(data);
       }
     } catch {
       // silently handle — user can try again
@@ -133,13 +218,14 @@ export function CodeGraphTab(): React.JSX.Element {
   const handleSymbolSelect = useCallback((symbolName: string) => {
     setSelectedSymbol(symbolName);
     setSymbolInput(symbolName);
+    setViewMode("symbol");
     void handleSymbolContext(symbolName);
   }, [handleSymbolContext]);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full text-[var(--color-text-muted)]">
-        Loading Code Intelligence...
+        Loading GitNexus...
       </div>
     );
   }
@@ -152,33 +238,32 @@ export function CodeGraphTab(): React.JSX.Element {
     );
   }
 
+  const gitNexusRunning = gitNexusStatus?.running ?? false;
+  // Use full graph as base, context graph highlights on top
+  const displayGraph = fullGraph ?? contextGraph;
+
   return (
     <div className="h-full flex flex-col">
       {/* Header bar */}
       <div className="flex items-center gap-3 px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
-        <h2 className="text-sm font-semibold">Code Intelligence</h2>
+        <h2 className="text-sm font-semibold">GitNexus — Code Intelligence</h2>
 
         <StatusBadge
           label="GitNexus"
           indexed={gitNexusStatus?.indexed ?? false}
-          running={gitNexusStatus?.running ?? false}
+          running={gitNexusRunning}
           onAction={handleAnalyzeAndStart}
           actionLoading={actionLoading}
         />
-        <StatusBadge
-          label="Serena"
-          indexed={memories.length > 0}
-          running={memories.length > 0}
-        />
 
-        {graphData && (
+        {displayGraph && (
           <span className="text-[10px] text-[var(--color-text-muted)]">
-            {graphData.symbols.length} symbols · {graphData.relations.length} relations
+            {displayGraph.symbols.length} symbols · {displayGraph.relations.length} relations
           </span>
         )}
 
         <div className="flex gap-1 ml-auto">
-          {(["explorer", "query", "symbol"] as ViewMode[]).map((mode) => (
+          {(["query", "symbol"] as GitNexusViewMode[]).map((mode) => (
             <button
               key={mode}
               onClick={() => setViewMode(mode)}
@@ -188,36 +273,23 @@ export function CodeGraphTab(): React.JSX.Element {
                   : "text-[var(--color-text-muted)] hover:bg-[var(--color-bg-tertiary)]"
               }`}
             >
-              {mode === "explorer" ? "Explorer" : mode === "query" ? "Query" : "Symbol"}
+              {mode === "query" ? "Query" : "Symbol"}
             </button>
           ))}
         </div>
       </div>
 
-      {/* 3-panel body */}
+      {/* 2-panel body: left controls/results + right graph */}
       <div className="flex flex-1 min-h-0">
-        {/* Left: File Explorer */}
-        <FileExplorerPanel
-          memories={memories}
-          selectedMemory={selectedMemory}
-          onSelect={(mem) => {
-            setSelectedMemory(mem);
-            setViewMode("explorer");
-          }}
-        />
-
-        {/* Center: Content panel */}
-        <div className="flex-1 min-w-0 border-r border-[var(--color-border)] overflow-auto">
-          {viewMode === "explorer" && (
-            <ExplorerContent selectedMemory={selectedMemory} />
-          )}
+        {/* Left: Query/Symbol panel (~30%) */}
+        <div className="w-[30%] min-w-[320px] border-r border-[var(--color-border)] overflow-auto">
           {viewMode === "query" && (
             <QueryContent
               queryInput={queryInput}
               onQueryChange={setQueryInput}
               onSubmit={handleQuery}
               result={queryResult}
-              gitNexusRunning={gitNexusStatus?.running ?? false}
+              gitNexusRunning={gitNexusRunning}
               onSymbolSelect={handleSymbolSelect}
             />
           )}
@@ -229,15 +301,16 @@ export function CodeGraphTab(): React.JSX.Element {
               onImpact={handleSymbolImpact}
               contextData={symbolContextData}
               impactData={impactData}
-              gitNexusRunning={gitNexusStatus?.running ?? false}
+              gitNexusRunning={gitNexusRunning}
               onSymbolSelect={handleSymbolSelect}
             />
           )}
         </div>
 
-        {/* Right: Symbol graph */}
-        <SymbolGraphPanel
-          graphData={graphData}
+        {/* Right: Sigma.js Cosmos Graph (~70%) */}
+        <CosmosGraphPanel
+          fullGraph={displayGraph}
+          contextGraph={contextGraph}
           selectedSymbol={selectedSymbol}
           onNodeClick={handleSymbolSelect}
         />
@@ -286,181 +359,6 @@ function StatusBadge({
   );
 }
 
-// ── FileExplorerPanel ────────────────────────────
-
-function FileExplorerPanel({
-  memories,
-  selectedMemory,
-  onSelect,
-}: {
-  memories: SerenaMemory[];
-  selectedMemory: SerenaMemory | null;
-  onSelect: (mem: SerenaMemory) => void;
-}): React.JSX.Element {
-  const [search, setSearch] = useState("");
-  const [collapsed, setCollapsed] = useState(false);
-  const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
-
-  const filteredMemories = useMemo(() => {
-    if (!search.trim()) return memories;
-    const q = search.toLowerCase();
-    return memories.filter((m) => m.name.toLowerCase().includes(q));
-  }, [memories, search]);
-
-  const tree = useMemo(() => buildMemoryTree(filteredMemories), [filteredMemories]);
-
-  const togglePath = useCallback((path: string) => {
-    setExpandedPaths((prev) => {
-      const next = new Set(prev);
-      if (next.has(path)) next.delete(path);
-      else next.add(path);
-      return next;
-    });
-  }, []);
-
-  if (collapsed) {
-    return (
-      <div className="w-8 border-r border-[var(--color-border)] bg-[var(--color-bg-secondary)] flex flex-col items-center pt-2">
-        <button
-          onClick={() => setCollapsed(false)}
-          className="text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text)] rotate-90"
-          title="Expand file explorer"
-        >
-          Files
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="w-56 border-r border-[var(--color-border)] bg-[var(--color-bg-secondary)] flex flex-col overflow-hidden">
-      <div className="flex items-center justify-between px-2 py-1.5 border-b border-[var(--color-border)]">
-        <span className="text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">Files</span>
-        <button
-          onClick={() => setCollapsed(true)}
-          className="text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
-          title="Collapse"
-        >
-          ✕
-        </button>
-      </div>
-
-      <div className="px-2 py-1.5 border-b border-[var(--color-border)]">
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search files..."
-          className="w-full text-[11px] px-2 py-1 rounded bg-[var(--color-bg)] border border-[var(--color-border)] focus:outline-none focus:border-[var(--color-accent)]"
-        />
-      </div>
-
-      <div className="flex-1 overflow-y-auto text-[11px]">
-        {memories.length === 0 ? (
-          <div className="px-2 py-4 text-center text-[var(--color-text-muted)]">
-            No Serena memories
-          </div>
-        ) : (
-          <TreeNodeList
-            nodes={tree}
-            depth={0}
-            expandedPaths={expandedPaths}
-            onToggle={togglePath}
-            selectedMemory={selectedMemory}
-            onSelect={onSelect}
-          />
-        )}
-      </div>
-    </div>
-  );
-}
-
-function TreeNodeList({
-  nodes,
-  depth,
-  expandedPaths,
-  onToggle,
-  selectedMemory,
-  onSelect,
-}: {
-  nodes: MemoryTreeNode[];
-  depth: number;
-  expandedPaths: Set<string>;
-  onToggle: (path: string) => void;
-  selectedMemory: SerenaMemory | null;
-  onSelect: (mem: SerenaMemory) => void;
-}): React.JSX.Element {
-  return (
-    <>
-      {nodes.map((node) => {
-        const isFolder = node.children.length > 0;
-        const isExpanded = expandedPaths.has(node.path);
-        const isSelected = node.memory != null && selectedMemory?.name === node.memory.name;
-
-        return (
-          <div key={node.path}>
-            <button
-              onClick={() => {
-                if (isFolder) onToggle(node.path);
-                if (node.memory) onSelect(node.memory);
-              }}
-              className={`w-full text-left px-2 py-0.5 flex items-center gap-1 hover:bg-[var(--color-bg-tertiary)] transition-colors ${
-                isSelected ? "bg-[var(--color-accent)]15 text-[var(--color-accent)]" : "text-[var(--color-text)]"
-              }`}
-              style={{ paddingLeft: `${depth * 12 + 8}px` }}
-            >
-              {isFolder ? (
-                <span className="w-3 text-[9px] text-[var(--color-text-muted)]">
-                  {isExpanded ? "▾" : "▸"}
-                </span>
-              ) : (
-                <span className="w-3 text-[9px] text-[var(--color-text-muted)]">·</span>
-              )}
-              <span className="truncate">{node.name}</span>
-            </button>
-            {isFolder && isExpanded && (
-              <TreeNodeList
-                nodes={node.children}
-                depth={depth + 1}
-                expandedPaths={expandedPaths}
-                onToggle={onToggle}
-                selectedMemory={selectedMemory}
-                onSelect={onSelect}
-              />
-            )}
-          </div>
-        );
-      })}
-    </>
-  );
-}
-
-// ── ExplorerContent ──────────────────────────────
-
-function ExplorerContent({ selectedMemory }: { selectedMemory: SerenaMemory | null }): React.JSX.Element {
-  if (!selectedMemory) {
-    return (
-      <div className="flex items-center justify-center h-full text-[var(--color-text-muted)]">
-        <div className="text-center">
-          <p className="text-sm mb-1">Select a file from the explorer</p>
-          <p className="text-xs">Serena memories appear as navigable files</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="p-4">
-      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[var(--color-border)]">
-        <span className="text-sm font-semibold">{selectedMemory.name}</span>
-      </div>
-      <pre className="text-xs whitespace-pre-wrap text-[var(--color-text-muted)] font-mono leading-relaxed">
-        {selectedMemory.content}
-      </pre>
-    </div>
-  );
-}
-
 // ── QueryContent ─────────────────────────────────
 
 function QueryContent({
@@ -494,7 +392,7 @@ function QueryContent({
           value={queryInput}
           onChange={(e) => onQueryChange(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && onSubmit()}
-          placeholder="e.g., find all functions in GraphStore"
+          placeholder="e.g., MATCH (n) RETURN n.name LIMIT 20"
           className="flex-1 text-sm px-3 py-2 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)] focus:outline-none focus:border-[var(--color-accent)]"
           disabled={!gitNexusRunning}
         />
@@ -537,13 +435,15 @@ function QueryResultRenderer({
     return <ImpactCard impact={data} onSymbolSelect={onSymbolSelect} />;
   }
 
-  return (
-    <div className="p-4 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
-      <pre className="text-xs whitespace-pre-wrap overflow-x-auto">
-        {JSON.stringify(data, null, 2)}
-      </pre>
-    </div>
-  );
+  if (isCypherResult(data)) {
+    return <TabularResultView data={data.result} />;
+  }
+
+  if (isTabularData(data)) {
+    return <TabularResultView data={data} />;
+  }
+
+  return <JsonResultView data={data} />;
 }
 
 // ── SymbolsTable ─────────────────────────────────
@@ -756,21 +656,26 @@ function SymbolContent({
   );
 }
 
-// ── SymbolGraphPanel (Sigma.js WebGL) ────────────
+// ── Cosmos Graph Panel (Sigma.js WebGL) ──────────
 
-function SymbolGraphPanel({
-  graphData,
+function CosmosGraphPanel({
+  fullGraph,
+  contextGraph,
   selectedSymbol,
   onNodeClick,
 }: {
-  graphData: CodeGraphData | null;
+  fullGraph: CodeGraphData | null;
+  contextGraph: CodeGraphData | null;
   selectedSymbol: string | null;
   onNodeClick: (symbolName: string) => void;
 }): React.JSX.Element {
-  if (!graphData || graphData.symbols.length === 0) {
+  // Track hovered node for starburst effect
+  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+
+  if (!fullGraph || fullGraph.symbols.length === 0) {
     return (
-      <div className="flex-1 min-w-[300px] bg-[#0d1117] flex items-center justify-center">
-        <div className="text-center text-[#8b949e]">
+      <div className="flex-1 min-w-[300px] flex items-center justify-center" style={{ background: "#06060f" }}>
+        <div className="text-center text-[#3a3a5a]">
           <p className="text-sm mb-1">No symbol graph</p>
           <p className="text-xs">Query or select a symbol to see its graph</p>
         </div>
@@ -778,109 +683,364 @@ function SymbolGraphPanel({
     );
   }
 
+  // Build highlighted node set from context graph
+  const highlightedNodes = new Set<string>();
+  if (contextGraph) {
+    for (const sym of contextGraph.symbols) {
+      highlightedNodes.add(sym.name);
+    }
+  }
+
+  // The "active" node is either hovered or selected — drives starburst
+  const activeNode = hoveredNode ?? selectedSymbol;
+
   return (
-    <div className="flex-1 min-w-[300px] bg-[#0d1117] relative">
-      {/* Legend */}
-      <div className="absolute top-2 left-2 z-10 flex flex-wrap gap-1">
+    <div className="flex-1 min-w-[300px] relative" style={{ background: "#06060f" }}>
+      {/* Legend — floating translucent */}
+      <div className="absolute top-2 left-2 z-10 flex flex-wrap gap-1 rounded-lg px-2 py-1.5" style={{ background: "#06060fdd" }}>
         {Object.entries(CODE_SYMBOL_COLORS).map(([kind, color]) => (
           <span
             key={kind}
-            className="text-[9px] font-medium px-1.5 py-0.5 rounded"
-            style={{ background: `${color}30`, color }}
+            className="text-[8px] font-medium px-1.5 py-0.5 rounded-full"
+            style={{ background: `${color}20`, color, textShadow: `0 0 8px ${color}` }}
           >
             {kind}
           </span>
         ))}
       </div>
 
+      {/* Node count overlay */}
+      <div className="absolute bottom-2 right-2 z-10 text-[9px]" style={{ color: "#3a3a5a" }}>
+        {fullGraph.symbols.length} nodes · {fullGraph.relations.length} edges
+      </div>
+
       <SigmaContainer
-        style={{ width: "100%", height: "100%" }}
+        style={{ width: "100%", height: "100%", background: "#06060f" }}
         settings={{
-          defaultNodeColor: "#9e9e9e",
-          defaultEdgeColor: "#6c757d",
-          labelColor: { color: "#c9d1d9" },
-          labelSize: 10,
-          labelRenderedSizeThreshold: 8,
+          defaultNodeColor: "#3a3a5a",
+          defaultEdgeColor: "#151525",
+          stagePadding: 40,
+          labelColor: { color: "#c0c0e0" },
+          labelSize: 11,
+          labelFont: "monospace",
+          labelWeight: "bold",
+          labelRenderedSizeThreshold: 10,
+          labelDensity: 0.5,
           renderLabels: true,
           renderEdgeLabels: false,
           enableEdgeEvents: false,
+          defaultEdgeType: "line",
+          defaultDrawNodeHover: drawNodeHover,
+          defaultDrawNodeLabel: drawNodeLabel,
+          minEdgeThickness: 0.3,
+          minCameraRatio: 0.05,
+          maxCameraRatio: 10,
+          zIndex: true,
         }}
       >
-        <GraphLoader graphData={graphData} selectedSymbol={selectedSymbol} />
-        <GraphEvents onNodeClick={onNodeClick} />
+        <CosmosGraphLoader
+          fullGraph={fullGraph}
+          highlightedNodes={highlightedNodes}
+          selectedSymbol={selectedSymbol}
+        />
+        <GraphEvents
+          onNodeClick={onNodeClick}
+          onNodeHover={setHoveredNode}
+          activeNode={activeNode}
+          highlightedNodes={highlightedNodes}
+        />
       </SigmaContainer>
     </div>
   );
 }
 
-function GraphLoader({
-  graphData,
+// Custom label renderer — glowing text like the reference prints
+function drawNodeLabel(
+  context: CanvasRenderingContext2D,
+  data: { x: number; y: number; size: number; color: string; label?: string | null },
+  settings: { labelFont: string; labelSize: number; labelWeight: string },
+): void {
+  const { x, y, size, color, label } = data;
+  if (!label) return;
+
+  const fontSize = settings.labelSize;
+  context.font = `${settings.labelWeight} ${fontSize}px ${settings.labelFont}`;
+
+  // Glow behind text
+  context.shadowColor = color;
+  context.shadowBlur = 6;
+  context.fillStyle = "#d0d0f0";
+  context.fillText(label, x + size * 1.5, y + fontSize / 3);
+  context.shadowBlur = 0;
+}
+
+// Custom hover renderer — dramatic glow halo + starburst feel
+function drawNodeHover(
+  context: CanvasRenderingContext2D,
+  data: { x: number; y: number; size: number; color: string; label?: string | null },
+): void {
+  const { x, y, size, color, label } = data;
+
+  // Large outer glow — like a nebula
+  const gradient = context.createRadialGradient(x, y, size * 0.5, x, y, size * 6);
+  gradient.addColorStop(0, color + "80");
+  gradient.addColorStop(0.3, color + "30");
+  gradient.addColorStop(0.6, color + "10");
+  gradient.addColorStop(1, color + "00");
+
+  context.beginPath();
+  context.arc(x, y, size * 6, 0, Math.PI * 2);
+  context.fillStyle = gradient;
+  context.fill();
+
+  // Bright core
+  context.beginPath();
+  context.arc(x, y, size * 1.5, 0, Math.PI * 2);
+  context.fillStyle = color;
+  context.fill();
+
+  // White-hot center
+  context.beginPath();
+  context.arc(x, y, size * 0.5, 0, Math.PI * 2);
+  context.fillStyle = "#ffffff";
+  context.fill();
+
+  // Label with glow
+  if (label) {
+    context.font = "bold 13px monospace";
+    context.shadowColor = color;
+    context.shadowBlur = 12;
+    context.fillStyle = "#ffffff";
+    context.fillText(label, x + size * 2, y + 4);
+    context.shadowBlur = 0;
+  }
+}
+
+function CosmosGraphLoader({
+  fullGraph,
+  highlightedNodes,
   selectedSymbol,
 }: {
-  graphData: CodeGraphData;
+  fullGraph: CodeGraphData;
+  highlightedNodes: Set<string>;
   selectedSymbol: string | null;
 }): null {
   const loadGraph = useLoadGraph();
   const sigma = useSigma();
 
   useEffect(() => {
-    const g = new Graph();
+    const g = new Graph({ type: "directed", multi: false, allowSelfLoops: false });
 
-    for (const sym of graphData.symbols) {
+    // Add all nodes with base attributes
+    for (const sym of fullGraph.symbols) {
       if (!g.hasNode(sym.name)) {
+        const baseColor = CODE_SYMBOL_COLORS[sym.kind] ?? "#6a6a8a";
+
         g.addNode(sym.name, {
           label: sym.name,
-          size: 8,
-          color: CODE_SYMBOL_COLORS[sym.kind] ?? "#9e9e9e",
-          x: Math.random() * 100,
-          y: Math.random() * 100,
+          size: 3,
+          color: baseColor,
+          // Store base color for reducers
+          baseColor,
+          kind: sym.kind,
+          x: Math.random() * 200 - 100,
+          y: Math.random() * 200 - 100,
         });
       }
     }
 
-    for (const rel of graphData.relations) {
-      if (g.hasNode(rel.from) && g.hasNode(rel.to) && !g.hasEdge(rel.from, rel.to)) {
+    // Add all edges with type stored for reducers — deduplicate by source→target
+    const seenEdges = new Set<string>();
+    for (const rel of fullGraph.relations) {
+      const edgeKey = `${rel.from}\0${rel.to}`;
+      if (!g.hasNode(rel.from) || !g.hasNode(rel.to) || rel.from === rel.to || seenEdges.has(edgeKey)) continue;
+      seenEdges.add(edgeKey);
+      const baseEdgeColor = CODE_RELATION_COLORS[rel.type] ?? "#2a2a50";
+      try {
         g.addEdge(rel.from, rel.to, {
-          color: CODE_RELATION_COLORS[rel.type] ?? "#6c757d",
-          size: 1,
+          color: baseEdgeColor + "35",
+          size: 0.4,
+          baseColor: baseEdgeColor,
+          relType: rel.type,
         });
+      } catch {
+        // Skip duplicate edges silently
       }
     }
 
-    // Apply ForceAtlas2 layout synchronously
+    // ForceAtlas2 layout — organic clustering
     if (g.order > 0) {
       forceAtlas2.assign(g, {
-        iterations: 100,
+        iterations: g.order > 500 ? 250 : 180,
         settings: {
-          gravity: 1,
-          scalingRatio: 2,
-          barnesHutOptimize: g.order > 100,
+          gravity: 0.3,
+          scalingRatio: g.order > 200 ? 8 : 4,
+          barnesHutOptimize: g.order > 50,
+          barnesHutTheta: 0.5,
+          strongGravityMode: false,
+          slowDown: 3,
+          adjustSizes: true,
+          linLogMode: true, // Better cluster separation
+          outboundAttractionDistribution: true,
         },
       });
     }
 
     loadGraph(g);
 
-    // Highlight selected node
-    if (selectedSymbol && g.hasNode(selectedSymbol)) {
-      sigma.getGraph().setNodeAttribute(selectedSymbol, "size", 14);
-      sigma.getGraph().setNodeAttribute(selectedSymbol, "highlighted", true);
-    }
-  }, [graphData, selectedSymbol, loadGraph, sigma]);
+    // Degree-based sizing after layout
+    const graph = sigma.getGraph();
+    graph.forEachNode((node) => {
+      const degree = graph.degree(node);
+      // Smaller base, bigger range — like real star magnitudes
+      const degreeSize = Math.min(10, Math.max(1.5, 1.5 + Math.pow(degree, 0.6) * 0.8));
+      graph.setNodeAttribute(node, "size", degreeSize);
+    });
+  }, [fullGraph, loadGraph, sigma]);
+
+  // Update node appearance when highlights/selection change
+  useEffect(() => {
+    const graph = sigma.getGraph();
+    const hasHighlights = highlightedNodes.size > 0;
+
+    graph.forEachNode((node) => {
+      const baseColor = (graph.getNodeAttribute(node, "baseColor") as string) ?? "#6a6a8a";
+      const degree = graph.degree(node);
+      const isHighlighted = highlightedNodes.has(node);
+      const isSelected = node === selectedSymbol;
+      const isDimmed = hasHighlights && !isHighlighted;
+
+      // Size
+      if (isSelected) {
+        graph.setNodeAttribute(node, "size", 14);
+        graph.setNodeAttribute(node, "zIndex", 2);
+      } else if (isHighlighted) {
+        const sz = Math.min(10, Math.max(5, 5 + Math.sqrt(degree) * 1.2));
+        graph.setNodeAttribute(node, "size", sz);
+        graph.setNodeAttribute(node, "zIndex", 1);
+      } else {
+        const sz = Math.min(10, Math.max(1.5, 1.5 + Math.pow(degree, 0.6) * 0.8));
+        graph.setNodeAttribute(node, "size", sz);
+        graph.setNodeAttribute(node, "zIndex", 0);
+      }
+
+      // Color
+      if (isSelected) {
+        graph.setNodeAttribute(node, "color", "#ffffff");
+      } else if (isDimmed) {
+        graph.setNodeAttribute(node, "color", baseColor + "30");
+      } else {
+        graph.setNodeAttribute(node, "color", baseColor);
+      }
+    });
+
+    // Update edges — starburst for selected, highlight for context
+    graph.forEachEdge((edge, _attr, source, target) => {
+      const baseEdgeColor = (graph.getEdgeAttribute(edge, "baseColor") as string) ?? "#2a2a50";
+      const sourceHighlighted = highlightedNodes.has(source);
+      const targetHighlighted = highlightedNodes.has(target);
+      const isStarburst = selectedSymbol != null && (source === selectedSymbol || target === selectedSymbol);
+      const isContextEdge = sourceHighlighted && targetHighlighted;
+      const isDimmedEdge = hasHighlights && !isContextEdge && !isStarburst;
+
+      if (isStarburst) {
+        // Bright radiating lines from selected node — starburst effect
+        graph.setEdgeAttribute(edge, "color", baseEdgeColor + "f0");
+        graph.setEdgeAttribute(edge, "size", 3);
+        graph.setEdgeAttribute(edge, "zIndex", 2);
+      } else if (isContextEdge) {
+        graph.setEdgeAttribute(edge, "color", baseEdgeColor + "90");
+        graph.setEdgeAttribute(edge, "size", 1.5);
+        graph.setEdgeAttribute(edge, "zIndex", 1);
+      } else if (isDimmedEdge) {
+        graph.setEdgeAttribute(edge, "color", "#08081520");
+        graph.setEdgeAttribute(edge, "size", 0.15);
+        graph.setEdgeAttribute(edge, "zIndex", 0);
+      } else {
+        // Default: faint constellation lines
+        graph.setEdgeAttribute(edge, "color", baseEdgeColor + "35");
+        graph.setEdgeAttribute(edge, "size", 0.4);
+        graph.setEdgeAttribute(edge, "zIndex", 0);
+      }
+    });
+
+    sigma.refresh();
+  }, [highlightedNodes, selectedSymbol, sigma]);
 
   return null;
 }
 
-function GraphEvents({ onNodeClick }: { onNodeClick: (name: string) => void }): null {
+function GraphEvents({
+  onNodeClick,
+  onNodeHover,
+  activeNode,
+  highlightedNodes,
+}: {
+  onNodeClick: (name: string) => void;
+  onNodeHover: (name: string | null) => void;
+  activeNode: string | null;
+  highlightedNodes: Set<string>;
+}): null {
   const registerEvents = useRegisterEvents();
+  const sigma = useSigma();
 
   useEffect(() => {
     registerEvents({
       clickNode: (event) => {
         onNodeClick(event.node);
       },
+      enterNode: (event) => {
+        onNodeHover(event.node);
+      },
+      leaveNode: () => {
+        onNodeHover(null);
+      },
     });
-  }, [registerEvents, onNodeClick]);
+  }, [registerEvents, onNodeClick, onNodeHover]);
+
+  // Dynamic starburst on hover via reducers
+  useEffect(() => {
+    const graph = sigma.getGraph();
+
+    if (activeNode && graph.hasNode(activeNode)) {
+      // Build neighbor set for the active node
+      const neighbors = new Set<string>(graph.neighbors(activeNode));
+      neighbors.add(activeNode);
+
+      sigma.setSetting("nodeReducer", (node, data) => {
+        if (node === activeNode) {
+          return { ...data, color: "#ffffff", size: (data.size ?? 3) * 1.3, zIndex: 3 };
+        }
+        if (neighbors.has(node)) {
+          return { ...data, zIndex: 2 };
+        }
+        if (highlightedNodes.size === 0) {
+          // Dim everything else when hovering
+          const baseColor = graph.getNodeAttribute(node, "baseColor") as string ?? "#6a6a8a";
+          return { ...data, color: baseColor + "25", zIndex: 0 };
+        }
+        return data;
+      });
+
+      sigma.setSetting("edgeReducer", (edge, data) => {
+        const source = graph.source(edge);
+        const target = graph.target(edge);
+        const isConnected = source === activeNode || target === activeNode;
+        if (isConnected) {
+          const baseEdgeColor = graph.getEdgeAttribute(edge, "baseColor") as string ?? "#4a4a7a";
+          return { ...data, color: baseEdgeColor + "f0", size: 3, zIndex: 2 };
+        }
+        if (highlightedNodes.size === 0) {
+          return { ...data, color: "#0a0a15", size: 0.15, zIndex: 0 };
+        }
+        return data;
+      });
+    } else {
+      // Clear reducers when nothing is active
+      sigma.setSetting("nodeReducer", null);
+      sigma.setSetting("edgeReducer", null);
+    }
+  }, [activeNode, highlightedNodes, sigma]);
 
   return null;
 }

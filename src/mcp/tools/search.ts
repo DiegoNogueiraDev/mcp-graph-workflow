@@ -2,6 +2,7 @@ import { z } from "zod/v4";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import { searchNodes } from "../../core/search/fts-search.js";
+import { logger } from "../../core/utils/logger.js";
 
 export function registerSearch(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -22,6 +23,7 @@ export function registerSearch(server: McpServer, store: SqliteStore): void {
         .describe("Apply TF-IDF reranking for better relevance (default: false)"),
     },
     async ({ query, limit, rerank }) => {
+      logger.debug("tool:search", { query, limit });
       const results = searchNodes(store, query, { limit: limit ?? 20, rerank: rerank ?? false });
 
       const items = results.map((r) => ({
@@ -34,6 +36,7 @@ export function registerSearch(server: McpServer, store: SqliteStore): void {
         snippet: r.node.description?.slice(0, 200) ?? null,
       }));
 
+      logger.info("tool:search:ok", { query, total: items.length });
       return {
         content: [
           {

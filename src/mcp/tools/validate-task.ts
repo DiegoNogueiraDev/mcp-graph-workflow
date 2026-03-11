@@ -4,6 +4,7 @@ import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import { runValidation } from "../../core/capture/validate-runner.js";
 import { KnowledgeStore } from "../../core/store/knowledge-store.js";
 import { indexCapture } from "../../core/rag/capture-indexer.js";
+import { logger } from "../../core/utils/logger.js";
 
 export function registerValidateTask(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -26,6 +27,7 @@ export function registerValidateTask(server: McpServer, store: SqliteStore): voi
         .describe("Associate validation with a graph node"),
     },
     async ({ url, compareUrl, selector, nodeId }) => {
+      logger.debug("tool:validate_task", { nodeId });
       const result = await runValidation(url, { compareUrl, selector });
 
       // Index captured content into knowledge store
@@ -55,6 +57,7 @@ export function registerValidateTask(server: McpServer, store: SqliteStore): voi
         };
       }
 
+      logger.info("tool:validate_task:ok", { nodeId, url });
       return {
         content: [{
           type: "text" as const,

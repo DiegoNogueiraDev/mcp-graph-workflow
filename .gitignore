@@ -15,7 +15,8 @@ build/
 *.swp
 *.swo
 *~
-
+.claude/rules
+.claude/*
 # OS
 .DS_Store
 Thumbs.db

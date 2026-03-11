@@ -5,6 +5,7 @@ import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import { readPrdFile } from "../../core/parser/read-file.js";
 import { extractEntities } from "../../core/parser/extract.js";
 import { convertToGraph } from "../../core/importer/prd-to-graph.js";
+import { logger } from "../../core/utils/logger.js";
 
 export function registerImportPrd(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -19,6 +20,7 @@ export function registerImportPrd(server: McpServer, store: SqliteStore): void {
         .describe("Force re-import: delete nodes from previous import of this file before importing"),
     },
     async ({ filePath, force }) => {
+      logger.info("tool:import_prd", { filePath, force });
       // 1. Read and parse
       const { content, absolutePath, sizeBytes } = await readPrdFile(filePath);
       const sourceFileName = path.basename(absolutePath);
@@ -52,10 +54,12 @@ export function registerImportPrd(server: McpServer, store: SqliteStore): void {
       }
 
       // 4. Extract entities
+      logger.debug("tool:import_prd:extract", { sourceFileName, sizeBytes });
       const extraction = extractEntities(content);
 
       // 5. Convert to graph
       const { nodes, edges, stats } = convertToGraph(extraction, sourceFileName);
+      logger.debug("tool:import_prd:converted", { nodes: nodes.length, edges: edges.length });
 
       // 6. Bulk insert into SQLite (atomic)
       store.bulkInsert(nodes, edges);
@@ -65,6 +69,12 @@ export function registerImportPrd(server: McpServer, store: SqliteStore): void {
 
       // 8. Snapshot after import
       store.createSnapshot();
+
+      logger.info("tool:import_prd:ok", {
+        sourceFile: sourceFileName,
+        nodesCreated: stats.nodesCreated,
+        edgesCreated: stats.edgesCreated,
+      });
 
       return {
         content: [

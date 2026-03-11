@@ -1,4 +1,5 @@
 import { logger } from "../utils/logger.js";
+import { whichCommand } from "../utils/platform.js";
 
 export interface ToolInfo {
   installed: boolean;
@@ -23,7 +24,8 @@ async function probeHttp(url: string, timeoutMs: number = 2000): Promise<boolean
     const res = await fetch(url, { signal: controller.signal });
     clearTimeout(timer);
     return res.ok || res.status < 500;
-  } catch {
+  } catch (err) {
+    logger.debug("probe:http:fail", { url, error: err instanceof Error ? err.message : String(err) });
     return false;
   }
 }
@@ -36,9 +38,10 @@ async function isCommandInstalled(command: string): Promise<boolean> {
     const { execFile } = await import("node:child_process");
     const { promisify } = await import("node:util");
     const exec = promisify(execFile);
-    await exec("which", [command]);
+    await exec(whichCommand(), [command]);
     return true;
-  } catch {
+  } catch (err) {
+    logger.debug("probe:command:fail", { command, error: err instanceof Error ? err.message : String(err) });
     return false;
   }
 }
@@ -53,7 +56,8 @@ async function readSerenaMemories(basePath: string): Promise<string[]> {
     const memoriesDir = path.join(basePath, ".serena", "memories");
     const files = await readdir(memoriesDir);
     return files.filter((f) => f.endsWith(".md")).map((f) => f.replace(/\.md$/, ""));
-  } catch {
+  } catch (err) {
+    logger.debug("serena:memories:fail", { error: err instanceof Error ? err.message : String(err) });
     return [];
   }
 }
@@ -67,7 +71,8 @@ async function isSerenaConfigured(basePath: string): Promise<boolean> {
     const { access } = await import("node:fs/promises");
     await access(path.join(basePath, ".serena"));
     return true;
-  } catch {
+  } catch (err) {
+    logger.debug("serena:config:fail", { basePath, error: err instanceof Error ? err.message : String(err) });
     return false;
   }
 }
