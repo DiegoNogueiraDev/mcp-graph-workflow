@@ -17,7 +17,7 @@
     "dashboard:dev": "cd src/web/dashboard && npm run dev",
     "dashboard:build": "cd src/web/dashboard && npm run build",
     "build": "tsc && npm run dashboard:build && npm run copy-dashboard",
-    "copy-dashboard": "mkdir -p dist/web/dashboard && cp -r src/web/dashboard/dist dist/web/dashboard/",
+    "copy-dashboard": "node -e \"const fs=require('fs');fs.cpSync('src/web/dashboard/dist','dist/web/dashboard/dist',{recursive:true})\"",
     "start": "node dist/mcp/server.js",
     "test": "vitest run",
     "test:watch": "vitest",
