@@ -38,10 +38,14 @@ out/
 .turbo/
 *.tsbuildinfo
 .cache/
+src/web/dashboard/dist/
+src/web/dashboard/.next/
+src/web/dashboard/node_modules/
 
 # === TESTES (artefatos) ===
 coverage/
 test-results/
+test-screenshots/
 playwright-report/
 .nyc_output/
 **/*.spec.ts
@@ -110,6 +114,8 @@ Thumbs.db
 # === MCP/FERRAMENTAS ===
 .playwright-mcp/
 .mcp-graph/
+.gitnexus/
+workflow-graph/
 *.db
 *.db-shm
 *.db-wal
