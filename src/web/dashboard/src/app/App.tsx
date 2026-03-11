@@ -16,6 +16,7 @@ const GitNexusTab = lazy(() => import("@/components/tabs/gitnexus-tab").then((m)
 const SerenaTab = lazy(() => import("@/components/tabs/serena-tab").then((m) => ({ default: m.SerenaTab })));
 const InsightsTab = lazy(() => import("@/components/tabs/insights-tab").then((m) => ({ default: m.InsightsTab })));
 const BenchmarkTab = lazy(() => import("@/components/tabs/benchmark-tab").then((m) => ({ default: m.BenchmarkTab })));
+const LogsTab = lazy(() => import("@/components/tabs/logs-tab").then((m) => ({ default: m.LogsTab })));
 
 function LoadingFallback(): React.JSX.Element {
   return (
@@ -72,6 +73,7 @@ function AppContent(): React.JSX.Element {
               {activeTab === "serena" && <SerenaTab />}
               {activeTab === "insights" && <InsightsTab />}
               {activeTab === "benchmark" && <BenchmarkTab />}
+              {activeTab === "logs" && <LogsTab />}
             </Suspense>
           )}
         </main>

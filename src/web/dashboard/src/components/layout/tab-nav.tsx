@@ -1,6 +1,6 @@
 import { memo } from "react";
 
-export type TabId = "graph" | "prd-backlog" | "gitnexus" | "serena" | "insights" | "benchmark";
+export type TabId = "graph" | "prd-backlog" | "gitnexus" | "serena" | "insights" | "benchmark" | "logs";
 
 interface TabNavProps {
   activeTab: TabId;
@@ -14,6 +14,7 @@ const TABS: Array<{ id: TabId; label: string }> = [
   { id: "serena", label: "Serena" },
   { id: "insights", label: "Insights" },
   { id: "benchmark", label: "Benchmark" },
+  { id: "logs", label: "Logs" },
 ];
 
 export const TabNav = memo(function TabNav({ activeTab, onTabChange }: TabNavProps) {

@@ -149,6 +149,18 @@ export interface SerenaMemory {
   content: string;
 }
 
+// ── Log types ────────────────────────────────────
+
+export type LogLevel = "info" | "warn" | "error" | "success" | "debug";
+
+export interface LogEntry {
+  id: number;
+  level: LogLevel;
+  message: string;
+  context?: Record<string, unknown>;
+  timestamp: string;
+}
+
 // ── GitNexus on-demand action results ───────────
 
 export interface AnalyzeResult {

@@ -1,4 +1,4 @@
-import type { GraphDocument, GraphEdge, GraphNode, GraphStats, IntegrationStatus, GitNexusStatus, SerenaMemory, AnalyzeResult, ServeResult } from "./types";
+import type { GraphDocument, GraphEdge, GraphNode, GraphStats, IntegrationStatus, GitNexusStatus, SerenaMemory, AnalyzeResult, ServeResult, LogEntry } from "./types";
 
 const BASE = "/api/v1";
 
@@ -146,4 +146,15 @@ export const apiClient = {
 
   // Serena Memories
   getSerenaMemories: () => request<SerenaMemory[]>("/integrations/serena/memories"),
+
+  // Logs
+  getLogs: (params?: { level?: string; since?: number; search?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.level) qs.set("level", params.level);
+    if (params?.since !== undefined) qs.set("since", String(params.since));
+    if (params?.search) qs.set("search", params.search);
+    const query = qs.toString();
+    return request<{ logs: LogEntry[]; total: number }>(`/logs${query ? "?" + query : ""}`);
+  },
+  clearLogs: () => request<null>("/logs", { method: "DELETE" }),
 };

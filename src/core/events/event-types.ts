@@ -7,7 +7,8 @@ export type GraphEventType =
   | "import:completed"
   | "bulk:updated"
   | "knowledge:indexed"
-  | "knowledge:deleted";
+  | "knowledge:deleted"
+  | "log:entry";
 
 export interface GraphEvent {
   type: GraphEventType;
@@ -58,4 +59,9 @@ export interface KnowledgeIndexedEvent extends GraphEvent {
 export interface KnowledgeDeletedEvent extends GraphEvent {
   type: "knowledge:deleted";
   payload: { source: string; documentsDeleted: number };
+}
+
+export interface LogEntryEvent extends GraphEvent {
+  type: "log:entry";
+  payload: { id: number; level: string; message: string; context?: Record<string, unknown> };
 }
