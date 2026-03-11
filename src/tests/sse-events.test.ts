@@ -6,6 +6,7 @@ import { GraphEventBus } from "../core/events/event-bus.js";
 import { createApiRouter } from "../api/router.js";
 import { generateId } from "../core/utils/id.js";
 import { now } from "../core/utils/time.js";
+import { setLogListener } from "../core/utils/logger.js";
 import http from "node:http";
 import { makeNode } from "./helpers/factories.js";
 
@@ -37,6 +38,7 @@ describe("SSE Events", () => {
   });
 
   afterEach(async () => {
+    setLogListener(null);
     store.close();
     eventBus.removeAllListeners();
     await new Promise<void>((resolve) => server.close(() => resolve()));
@@ -71,7 +73,9 @@ describe("SSE Events", () => {
 
   it("should emit events for store mutations via event bus", () => {
     const received: string[] = [];
-    eventBus.on("*", (e) => received.push(e.type));
+    eventBus.on("*", (e) => {
+      if (e.type !== "log:entry") received.push(e.type);
+    });
 
     store.insertNode(makeNode({ title: "A" }));
     const nodeB = makeNode({ title: "B" });

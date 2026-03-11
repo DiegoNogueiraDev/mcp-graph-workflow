@@ -19,8 +19,10 @@ import { createGitNexusRouter } from "./routes/gitnexus.js";
 import { createRagRouter } from "./routes/rag.js";
 import { createKnowledgeRouter } from "./routes/knowledge.js";
 import { createBenchmarkRouter } from "./routes/benchmark.js";
+import { createLogsRouter } from "./routes/logs.js";
 import { errorHandler } from "./middleware/error-handler.js";
 import { requestLogger } from "./middleware/request-logger.js";
+import { setLogListener } from "../core/utils/logger.js";
 
 export interface ApiRouterOptions {
   store: SqliteStore;
@@ -54,9 +56,30 @@ export function createApiRouter(storeOrOptions: SqliteStore | ApiRouterOptions):
   router.use("/rag", createRagRouter(store));
   router.use("/knowledge", createKnowledgeRouter(store));
   router.use("/benchmark", createBenchmarkRouter(store));
+  router.use("/logs", createLogsRouter());
 
   if (eventBus) {
     router.use("/events", createEventsRouter(eventBus));
+
+    let emitting = false;
+    setLogListener((entry) => {
+      if (emitting) return;
+      emitting = true;
+      try {
+        eventBus.emit({
+          type: "log:entry" as const,
+          timestamp: entry.timestamp,
+          payload: {
+            id: entry.id,
+            level: entry.level,
+            message: entry.message,
+            ...(entry.context ? { context: entry.context } : {}),
+          },
+        });
+      } finally {
+        emitting = false;
+      }
+    });
   }
 
   router.use(errorHandler);
