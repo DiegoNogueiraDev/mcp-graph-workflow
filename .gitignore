@@ -8,6 +8,7 @@ node_modules/
 # Build
 dist/
 build/
+workflow-graph/
 
 # IDE
 .idea/
@@ -27,6 +28,7 @@ Thumbs.db
 .env.*
 
 # MCP / Local Tools
+workflow-graph/
 .mcp-graph/
 *.db
 *.db-shm

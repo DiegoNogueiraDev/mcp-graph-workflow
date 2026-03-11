@@ -1,5 +1,6 @@
 import { useState, useCallback, lazy, Suspense } from "react";
 import { ThemeProvider } from "@/providers/theme-provider";
+import { ProjectProvider } from "@/providers/project-provider";
 import { Header } from "@/components/layout/header";
 import { TabNav, type TabId } from "@/components/layout/tab-nav";
 import { useGraphData } from "@/hooks/use-graph-data";
@@ -42,49 +43,51 @@ function AppContent(): React.JSX.Element {
   }, [handleRefresh]));
 
   return (
-    <div className="h-screen flex flex-col">
-      <Header
-        stats={stats}
-        onImport={() => setImportOpen(true)}
-        onCapture={() => setCaptureOpen(true)}
-      />
-      <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
+    <ProjectProvider onProjectChange={handleRefresh}>
+      <div className="h-screen flex flex-col">
+        <Header
+          stats={stats}
+          onImport={() => setImportOpen(true)}
+          onCapture={() => setCaptureOpen(true)}
+        />
+        <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
 
-      <main className="flex-1 min-h-0 overflow-hidden">
-        {loading ? (
-          <LoadingFallback />
-        ) : error ? (
-          <div className="flex items-center justify-center h-full text-[var(--color-danger)]">
-            {error}
-          </div>
-        ) : (
-          <Suspense fallback={<LoadingFallback />}>
-            {/* Keep-alive: hide with CSS instead of unmounting to avoid expensive re-renders */}
-            <div style={{ display: activeTab === "graph" ? "contents" : "none" }}>
-              {graph && <GraphTab graph={graph} />}
+        <main className="flex-1 min-h-0 overflow-hidden">
+          {loading ? (
+            <LoadingFallback />
+          ) : error ? (
+            <div className="flex items-center justify-center h-full text-[var(--color-danger)]">
+              {error}
             </div>
-            <div style={{ display: activeTab === "prd-backlog" ? "contents" : "none" }}>
-              {graph && <PrdBacklogTab graph={graph} />}
-            </div>
-            {activeTab === "gitnexus" && <GitNexusTab />}
-            {activeTab === "serena" && <SerenaTab />}
-            {activeTab === "insights" && <InsightsTab />}
-            {activeTab === "benchmark" && <BenchmarkTab />}
-          </Suspense>
-        )}
-      </main>
+          ) : (
+            <Suspense fallback={<LoadingFallback />}>
+              {/* Keep-alive: hide with CSS instead of unmounting to avoid expensive re-renders */}
+              <div style={{ display: activeTab === "graph" ? "contents" : "none" }}>
+                {graph && <GraphTab graph={graph} />}
+              </div>
+              <div style={{ display: activeTab === "prd-backlog" ? "contents" : "none" }}>
+                {graph && <PrdBacklogTab graph={graph} />}
+              </div>
+              {activeTab === "gitnexus" && <GitNexusTab />}
+              {activeTab === "serena" && <SerenaTab />}
+              {activeTab === "insights" && <InsightsTab />}
+              {activeTab === "benchmark" && <BenchmarkTab />}
+            </Suspense>
+          )}
+        </main>
 
-      <ImportModal
-        open={importOpen}
-        onClose={() => setImportOpen(false)}
-        onImported={handleRefresh}
-      />
-      <CaptureModal
-        open={captureOpen}
-        onClose={() => setCaptureOpen(false)}
-        onImported={handleRefresh}
-      />
-    </div>
+        <ImportModal
+          open={importOpen}
+          onClose={() => setImportOpen(false)}
+          onImported={handleRefresh}
+        />
+        <CaptureModal
+          open={captureOpen}
+          onClose={() => setCaptureOpen(false)}
+          onImported={handleRefresh}
+        />
+      </div>
+    </ProjectProvider>
   );
 }
 

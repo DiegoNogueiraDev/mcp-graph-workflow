@@ -1,5 +1,6 @@
 import { memo } from "react";
 import { useTheme } from "@/providers/theme-provider";
+import { ProjectSelector } from "./project-selector";
 import type { GraphStats } from "@/lib/types";
 
 interface HeaderProps {
@@ -15,11 +16,12 @@ export const Header = memo(function Header({ stats, onImport, onCapture }: Heade
   const total = stats?.totalNodes ?? 0;
 
   return (
-    <header className="flex items-center justify-between px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
+    <header className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
       <div className="flex items-center gap-3">
         <h1 className="text-lg font-bold text-[var(--color-accent)]">
           mcp-graph
         </h1>
+        <ProjectSelector />
         {total > 0 && (
           <span className="text-sm text-[var(--color-text-muted)]">
             {done}/{total} done
@@ -31,12 +33,14 @@ export const Header = memo(function Header({ stats, onImport, onCapture }: Heade
         <button
           onClick={onImport}
           className="px-3 py-1.5 text-sm bg-[var(--color-accent)] text-white rounded hover:bg-[var(--color-accent-light)] transition-colors"
+          aria-label="Import PRD file"
         >
           Import PRD
         </button>
         <button
           onClick={onCapture}
           className="px-3 py-1.5 text-sm border border-[var(--color-border)] rounded hover:bg-[var(--color-bg-tertiary)] transition-colors"
+          aria-label="Capture web content"
         >
           Capture
         </button>
@@ -44,6 +48,7 @@ export const Header = memo(function Header({ stats, onImport, onCapture }: Heade
           onClick={toggleTheme}
           className="px-2 py-1.5 text-sm border border-[var(--color-border)] rounded hover:bg-[var(--color-bg-tertiary)] transition-colors"
           title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+          aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
         >
           {theme === "dark" ? "☀" : "☾"}
         </button>

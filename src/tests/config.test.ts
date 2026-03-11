@@ -38,7 +38,7 @@ describe("Config layer", () => {
     const config = loadConfig(tmpDir);
 
     expect(config.port).toBe(3000);
-    expect(config.dbPath).toBe(".mcp-graph");
+    expect(config.dbPath).toBe("workflow-graph");
     expect(config.integrations.gitnexusPort).toBe(3737);
   });
 
@@ -97,7 +97,7 @@ describe("Config layer", () => {
     const config = loadConfig(tmpDir);
 
     expect(config.port).toBe(3000);
-    expect(config.dbPath).toBe(".mcp-graph");
+    expect(config.dbPath).toBe("workflow-graph");
     expect(config.basePath).toBeUndefined();
     expect(config.integrations.gitnexusPort).toBe(3737);
   });

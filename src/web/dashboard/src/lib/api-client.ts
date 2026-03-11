@@ -38,9 +38,15 @@ export const apiClient = {
   request,
 
   // Project
-  getProject: () => request<{ name: string }>("/project"),
+  getProject: () => request<{ name: string; id: string }>("/project"),
   initProject: (name: string) =>
     request("/project/init", { method: "POST", body: JSON.stringify({ name }) }),
+  getProjects: () =>
+    request<{ total: number; projects: Array<{ id: string; name: string; createdAt: string; updatedAt: string }> }>("/project/list"),
+  getActiveProject: () =>
+    request<{ id: string; name: string; createdAt: string; updatedAt: string }>("/project/active"),
+  activateProject: (id: string) =>
+    request<{ ok: boolean; project: { id: string; name: string } }>(`/project/${id}/activate`, { method: "POST" }),
 
   // Nodes
   getNodes: (params: Record<string, string> = {}) => {

@@ -1,5 +1,5 @@
 import Database from "better-sqlite3";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, existsSync, renameSync } from "node:fs";
 import path from "node:path";
 import type {
   GraphDocument,
@@ -20,8 +20,7 @@ import { GraphNodeSchema } from "../../schemas/node.schema.js";
 import { GraphEdgeSchema } from "../../schemas/edge.schema.js";
 import { z } from "zod/v4";
 
-const STORE_DIR = ".mcp-graph";
-const DB_FILE = "graph.db";
+import { STORE_DIR, LEGACY_STORE_DIR, DB_FILE } from "../utils/constants.js";
 
 // ── Row types (SQLite ↔ JS) ─────────────────────────────
 
@@ -188,8 +187,13 @@ export class SqliteStore {
   }
 
   /**
-   * Open (or create) a store at basePath/.mcp-graph/graph.db.
+   * Open (or create) a store at basePath/workflow-graph/graph.db.
    * Pass ":memory:" for in-memory testing.
+   *
+   * Handles automatic migration from legacy `.mcp-graph/` directory:
+   * - If only `.mcp-graph/` exists → rename to `workflow-graph/`
+   * - If both exist → use `workflow-graph/`, log warning
+   * - If neither → create `workflow-graph/`
    */
   static open(basePath: string = process.cwd()): SqliteStore {
     let db: Database.Database;
@@ -197,9 +201,23 @@ export class SqliteStore {
     if (basePath === ":memory:") {
       db = new Database(":memory:");
     } else {
-      const dir = path.join(basePath, STORE_DIR);
-      mkdirSync(dir, { recursive: true });
-      db = new Database(path.join(dir, DB_FILE));
+      const newDir = path.join(basePath, STORE_DIR);
+      const legacyDir = path.join(basePath, LEGACY_STORE_DIR);
+      const legacyExists = existsSync(legacyDir);
+      const newExists = existsSync(newDir);
+
+      if (legacyExists && !newExists) {
+        renameSync(legacyDir, newDir);
+        logger.info("Migrated store directory", { from: LEGACY_STORE_DIR, to: STORE_DIR });
+      } else if (legacyExists && newExists) {
+        logger.warn("Both legacy and new store directories exist, using new", {
+          legacy: LEGACY_STORE_DIR,
+          active: STORE_DIR,
+        });
+      }
+
+      mkdirSync(newDir, { recursive: true });
+      db = new Database(path.join(newDir, DB_FILE));
     }
 
     configureDb(db);
@@ -258,6 +276,36 @@ export class SqliteStore {
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     };
+  }
+
+  /** Alias for getProject — returns the currently active project. */
+  getActiveProject(): GraphProject | null {
+    return this.getProject();
+  }
+
+  /** List all projects in the database. */
+  listProjects(): GraphProject[] {
+    const rows = this.db
+      .prepare("SELECT * FROM projects ORDER BY created_at")
+      .all() as ProjectRow[];
+    return rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    }));
+  }
+
+  /** Switch the active project. Throws if project ID does not exist. */
+  activateProject(projectId: string): void {
+    const row = this.db
+      .prepare("SELECT id FROM projects WHERE id = ?")
+      .get(projectId) as { id: string } | undefined;
+    if (!row) {
+      throw new ValidationError(`Project not found: ${projectId}`, []);
+    }
+    this.projectId = projectId;
+    logger.info("Project activated", { projectId });
   }
 
   private ensureProject(): string {

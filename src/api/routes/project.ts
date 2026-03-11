@@ -10,6 +10,7 @@ const InitProjectBodySchema = z.object({
 export function createProjectRouter(store: SqliteStore): Router {
   const router = Router();
 
+  // GET /project — current active project
   router.get("/", (_req, res, next) => {
     try {
       const project = store.getProject();
@@ -23,6 +24,7 @@ export function createProjectRouter(store: SqliteStore): Router {
     }
   });
 
+  // POST /project/init — initialize a new project
   router.post(
     "/init",
     validateBody(InitProjectBodySchema),
@@ -35,6 +37,41 @@ export function createProjectRouter(store: SqliteStore): Router {
       }
     },
   );
+
+  // GET /project/active — alias for GET /project
+  router.get("/active", (_req, res, next) => {
+    try {
+      const project = store.getActiveProject();
+      if (!project) {
+        res.status(404).json({ error: "No active project" });
+        return;
+      }
+      res.json(project);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // GET /project/list — list all projects
+  router.get("/list", (_req, res, next) => {
+    try {
+      const projects = store.listProjects();
+      res.json({ total: projects.length, projects });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // POST /project/:id/activate — switch active project
+  router.post("/:id/activate", (req, res, next) => {
+    try {
+      store.activateProject(req.params.id);
+      const project = store.getProject();
+      res.json({ ok: true, project });
+    } catch (err) {
+      next(err);
+    }
+  });
 
   return router;
 }

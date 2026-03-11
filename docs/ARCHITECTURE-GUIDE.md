@@ -231,7 +231,7 @@ See [Integrations Guide](./INTEGRATIONS-GUIDE.md) for the full integrations docu
 - **knowledge_documents** table with FTS5 + SHA-256 dedup
 - **embeddings** table for TF-IDF vectors
 
-Data stored in `.mcp-graph/graph.db` (local, gitignored).
+Data stored in `workflow-graph/graph.db` (local, gitignored). Legacy `.mcp-graph/` directories are auto-migrated.
 
 ### Layer 6: Web Dashboard — `src/web/dashboard/`
 

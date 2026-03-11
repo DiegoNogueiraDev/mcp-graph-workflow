@@ -4,10 +4,12 @@ import { SqliteStore } from "../core/store/sqlite-store.js";
 import { logger } from "../core/utils/logger.js";
 import { buildMcpServersConfig } from "../core/integrations/mcp-servers-config.js";
 import { installAllMcpDeps } from "../core/integrations/mcp-deps-installer.js";
+import { generateClaudeMdSection, generateCopilotInstructions, applySection } from "../core/config/ai-memory-generator.js";
+
+import { STORE_DIR } from "../core/utils/constants.js";
 
 const MCP_CONFIG_FILE = ".mcp.json";
-const STORE_DIR = ".mcp-graph";
-const GITIGNORE_ENTRY = ".mcp-graph/";
+const GITIGNORE_ENTRY = "workflow-graph/";
 
 function resolveCommand(): string {
   // Check if running via npx/global — use package name
@@ -49,9 +51,6 @@ function writeVscodeMcpJson(projectDir: string): void {
   mkdirSync(vscodeDir, { recursive: true });
   const vscodeMcpPath = path.join(vscodeDir, "mcp.json");
 
-  const command = resolveCommand();
-  const args = resolveArgs();
-
   let existing: Record<string, unknown> = {};
   if (existsSync(vscodeMcpPath)) {
     try {
@@ -61,12 +60,16 @@ function writeVscodeMcpJson(projectDir: string): void {
     }
   }
 
+  // Use buildMcpServersConfig to get all 5 MCPs, then convert to VS Code format
+  const mcpConfig = buildMcpServersConfig();
   const servers = (existing.servers ?? {}) as Record<string, unknown>;
-  servers["mcp-graph"] = { type: "stdio", command, args };
+  for (const [name, entry] of Object.entries(mcpConfig.mcpServers)) {
+    servers[name] = { type: "stdio", command: entry.command, args: entry.args };
+  }
 
   const config = { ...existing, servers };
   writeFileSync(vscodeMcpPath, JSON.stringify(config, null, 2) + "\n", "utf-8");
-  logger.info(".vscode/mcp.json configured", { path: vscodeMcpPath });
+  logger.info(".vscode/mcp.json configured with all MCP servers", { path: vscodeMcpPath });
 }
 
 function ensureGitignore(projectDir: string): void {
@@ -101,6 +104,38 @@ function initStore(projectDir: string): void {
   logger.info("Database initialized", { dir: STORE_DIR });
 }
 
+function generateAndWriteClaudeMd(projectDir: string): void {
+  const projectName = path.basename(projectDir);
+  const claudeMdPath = path.join(projectDir, "CLAUDE.md");
+  const section = generateClaudeMdSection(projectName);
+
+  let existing = "";
+  if (existsSync(claudeMdPath)) {
+    existing = readFileSync(claudeMdPath, "utf-8");
+  }
+
+  const result = applySection(existing, section);
+  writeFileSync(claudeMdPath, result, "utf-8");
+  logger.info("CLAUDE.md updated with mcp-graph instructions", { path: claudeMdPath });
+}
+
+function generateAndWriteCopilotInstructions(projectDir: string): void {
+  const projectName = path.basename(projectDir);
+  const githubDir = path.join(projectDir, ".github");
+  mkdirSync(githubDir, { recursive: true });
+  const copilotPath = path.join(githubDir, "copilot-instructions.md");
+  const section = generateCopilotInstructions(projectName);
+
+  let existing = "";
+  if (existsSync(copilotPath)) {
+    existing = readFileSync(copilotPath, "utf-8");
+  }
+
+  const result = applySection(existing, section);
+  writeFileSync(copilotPath, result, "utf-8");
+  logger.info("copilot-instructions.md updated", { path: copilotPath });
+}
+
 export async function runInit(projectDir: string): Promise<void> {
   logger.info("mcp-graph init", { dir: projectDir });
 
@@ -124,6 +159,10 @@ export async function runInit(projectDir: string): Promise<void> {
       unavailable: failed.map((r) => `${r.name}: ${r.message}`).join("; "),
     });
   }
+
+  // Generate AI instruction files (idempotent)
+  generateAndWriteClaudeMd(projectDir);
+  generateAndWriteCopilotInstructions(projectDir);
 
   logger.success("mcp-graph initialized", {
     dir: projectDir,

@@ -280,7 +280,7 @@ Create a `mcp-graph.config.json` in the project root:
 ```json
 {
   "port": 3000,
-  "dbPath": ".mcp-graph",
+  "dbPath": "workflow-graph",
   "integrations": {
     "gitnexusPort": 3737,
     "gitnexusAutoStart": true
