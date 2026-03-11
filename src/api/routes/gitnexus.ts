@@ -101,7 +101,7 @@ export function createGitNexusRouter(options: GitNexusRouterOptions): Router {
         return;
       }
 
-      const result = await proxyToGitNexus(gitnexusPort, "/api/query", { query: parsed.data.query });
+      const result = await proxyToGitNexus(gitnexusPort, "/api/query", { cypher: parsed.data.query });
       res.status(result.status).json(result.data);
     } catch (err) {
       next(err);

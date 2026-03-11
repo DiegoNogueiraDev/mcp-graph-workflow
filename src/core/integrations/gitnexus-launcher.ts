@@ -2,19 +2,28 @@
  * GitNexus lifecycle manager.
  * Handles analyze, serve (as child process), and cleanup.
  * All operations are local-only — no data sent externally.
+ *
+ * Binary resolution order:
+ *   1. Local node_modules/.bin/gitnexus (target project)
+ *   2. Local node_modules/.bin/gitnexus (mcp-graph install dir)
+ *   3. Global `gitnexus` on PATH
+ *   4. Auto-install via `npm install --no-save gitnexus` in target project, then use local bin
  */
 
 import { existsSync } from "node:fs";
 import { execFile, spawn, type ChildProcess } from "node:child_process";
 import { promisify } from "node:util";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { logger } from "../utils/logger.js";
 
 const execAsync = promisify(execFile);
 
 const GITNEXUS_DIR = ".gitnexus";
+const GITNEXUS_PKG = "gitnexus";
 
 let serveProcess: ChildProcess | null = null;
+let resolvedBin: string | null = null;
 
 export type AnalyzePhase = "idle" | "analyzing" | "ready" | "unavailable" | "error";
 
@@ -32,6 +41,7 @@ export function getAnalyzePhase(): AnalyzePhase {
  */
 export function resetAnalyzePhase(): void {
   analyzePhase = "idle";
+  resolvedBin = null;
 }
 
 /**
@@ -75,12 +85,98 @@ export async function isGitNexusRunning(port: number): Promise<boolean> {
   }
 }
 
+// ── Binary resolution ─────────────────────────────────────
+
+const IS_WINDOWS = process.platform === "win32";
+
+function localBin(dir: string): string {
+  const binName = IS_WINDOWS ? `${GITNEXUS_PKG}.cmd` : GITNEXUS_PKG;
+  return path.join(dir, "node_modules", ".bin", binName);
+}
+
+function mcpGraphRoot(): string {
+  const thisFile = fileURLToPath(import.meta.url);
+  // src/core/integrations/gitnexus-launcher.ts → project root (3 levels up)
+  return path.resolve(path.dirname(thisFile), "..", "..", "..");
+}
+
+async function whichGitNexus(): Promise<string | null> {
+  const cmd = IS_WINDOWS ? "where" : "which";
+  try {
+    const { stdout } = await execAsync(cmd, [GITNEXUS_PKG]);
+    const bin = stdout.trim().split(/\r?\n/)[0];
+    return bin.length > 0 ? bin : null;
+  } catch {
+    return null;
+  }
+}
+
+async function installGitNexus(basePath: string): Promise<boolean> {
+  logger.info("Auto-installing gitnexus in target project", { basePath });
+  try {
+    await execAsync("npm", ["install", "--no-save", GITNEXUS_PKG], {
+      cwd: basePath,
+      timeout: 120_000,
+    });
+    logger.success("gitnexus installed successfully", { basePath });
+    return true;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.warn("Failed to auto-install gitnexus", { error: msg });
+    return false;
+  }
+}
+
+/**
+ * Resolve the gitnexus binary path.
+ * Caches result after first successful resolution.
+ */
+export async function resolveGitNexusBin(basePath: string): Promise<string | null> {
+  if (resolvedBin && existsSync(resolvedBin)) return resolvedBin;
+
+  // 1. Local bin in target project
+  const targetBin = localBin(basePath);
+  if (existsSync(targetBin)) {
+    resolvedBin = targetBin;
+    logger.debug("GitNexus resolved: target project local bin", { bin: targetBin });
+    return resolvedBin;
+  }
+
+  // 2. Local bin in mcp-graph install directory
+  const mcpBin = localBin(mcpGraphRoot());
+  if (existsSync(mcpBin)) {
+    resolvedBin = mcpBin;
+    logger.debug("GitNexus resolved: mcp-graph local bin", { bin: mcpBin });
+    return resolvedBin;
+  }
+
+  // 3. Global binary on PATH
+  const globalBin = await whichGitNexus();
+  if (globalBin) {
+    resolvedBin = globalBin;
+    logger.debug("GitNexus resolved: global binary", { bin: globalBin });
+    return resolvedBin;
+  }
+
+  // 4. Auto-install in target project
+  const installed = await installGitNexus(basePath);
+  if (installed && existsSync(targetBin)) {
+    resolvedBin = targetBin;
+    logger.debug("GitNexus resolved: auto-installed local bin", { bin: targetBin });
+    return resolvedBin;
+  }
+
+  logger.warn("GitNexus binary not found and auto-install failed");
+  return null;
+}
+
+// ── Core operations ─────────────────────────────────────
+
 /**
  * Ensure codebase is analyzed by GitNexus.
  * Skips if `.gitnexus/` already exists.
  */
 export async function ensureGitNexusAnalyzed(basePath: string): Promise<AnalyzeResult> {
-  // Check if we're in a git repository first
   if (!isGitRepo(basePath)) {
     analyzePhase = "unavailable";
     logger.info("No git repository found, skipping GitNexus analysis", { basePath });
@@ -93,12 +189,22 @@ export async function ensureGitNexusAnalyzed(basePath: string): Promise<AnalyzeR
     return { skipped: true, reason: "Already indexed" };
   }
 
+  const bin = await resolveGitNexusBin(basePath);
+  if (!bin) {
+    analyzePhase = "error";
+    return {
+      skipped: false,
+      success: false,
+      reason: "GitNexus binary not found. Install with: npm install gitnexus",
+    };
+  }
+
   analyzePhase = "analyzing";
-  logger.info("Running GitNexus analyze", { basePath });
+  logger.info("Running GitNexus analyze", { basePath, bin });
 
   try {
-    await execAsync("npx", ["-y", "gitnexus", "analyze", basePath], {
-      timeout: 300_000, // 5 min max for large codebases
+    await execAsync(bin, ["analyze", basePath], {
+      timeout: 300_000,
       cwd: basePath,
     });
 
@@ -118,27 +224,29 @@ export async function ensureGitNexusAnalyzed(basePath: string): Promise<AnalyzeR
  * Returns immediately after spawning — does not wait for readiness.
  */
 export async function startGitNexusServe(basePath: string, port: number): Promise<ServeResult> {
-  // Don't serve if not indexed
   if (!isGitNexusIndexed(basePath)) {
     logger.info("GitNexus not indexed, skipping serve", { basePath });
     return { started: false, message: "Codebase not indexed. Run gitnexus analyze first." };
   }
 
-  // Don't start if already running
   const alreadyRunning = await isGitNexusRunning(port);
   if (alreadyRunning) {
     logger.info("GitNexus already running", { port });
     return { started: true, message: `GitNexus already running on port ${port}`, port };
   }
 
-  // Don't start if we already spawned a process
   if (serveProcess && !serveProcess.killed) {
     logger.info("GitNexus serve process already spawned", { pid: serveProcess.pid });
     return { started: true, message: "GitNexus serve process already active", port };
   }
 
+  const bin = await resolveGitNexusBin(basePath);
+  if (!bin) {
+    return { started: false, message: "GitNexus binary not found. Install with: npm install gitnexus" };
+  }
+
   try {
-    serveProcess = spawn("npx", ["-y", "gitnexus", "serve", "--port", String(port)], {
+    serveProcess = spawn(bin, ["serve", "--port", String(port)], {
       cwd: basePath,
       stdio: "pipe",
       detached: false,
