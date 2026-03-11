@@ -14,7 +14,7 @@ import { convertToGraph } from "../../core/importer/prd-to-graph.js";
 import { logger } from "../../core/utils/logger.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const publicDir = path.join(__dirname, "..", "..", "web", "public");
+const publicDir = path.join(__dirname, "..", "..", "web", "dashboard", "dist");
 const fixtureDir = path.join(__dirname, "..", "fixtures");
 
 const PORT = 3377;

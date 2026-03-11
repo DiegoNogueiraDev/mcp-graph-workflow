@@ -1,0 +1,149 @@
+# PRD: mcp-graph — Self-Test Benchmark Suite
+
+## Overview
+Build a comprehensive benchmark and validation suite for the mcp-graph project itself, covering the graph engine, dashboard UI, and integration mesh.
+
+## Constraints
+- TypeScript 5.x strict mode, ESM only
+- Node.js >= 18, no external infra
+- Vitest for unit/integration, Playwright for E2E
+- SQLite in-memory for test isolation
+- All tests must complete in < 60s total
+
+## Risks
+- Large graph datasets may slow ReactFlow rendering
+- SSE connections may timeout during long test runs
+- Playwright browser startup adds ~3s overhead per spec
+
+---
+
+## Epic 1: Graph Engine Validation
+
+### Task 1.1: SQLite Store CRUD Benchmark
+- **Size:** M
+- **Priority:** high
+- **Depends on:** none
+- **Acceptance Criteria:**
+  - Measure insert/read/update/delete throughput for 1000 nodes
+  - Verify transaction isolation with concurrent operations
+  - Assert query performance < 50ms for filtered reads
+  - Validate FTS5 search returns ranked results
+
+### Task 1.2: PRD Parser Accuracy Test
+- **Size:** S
+- **Priority:** high
+- **Depends on:** none
+- **Acceptance Criteria:**
+  - Parse 5 different PRD formats (markdown, plain text, mixed)
+  - Verify entity extraction accuracy > 95%
+  - Validate parent-child relationships are preserved
+  - Assert edge creation for explicit dependencies
+
+### Task 1.3: Context Compression Benchmark
+- **Size:** L
+- **Priority:** medium
+- **Depends on:** Task 1.1
+- **Acceptance Criteria:**
+  - Measure compression ratio for tasks with 0, 1, 5, 10 dependencies
+  - Verify token budget enforcement (hard cap)
+  - Assert BM25 scoring produces relevant context
+  - Compare tiered vs flat compression performance
+
+### Task 1.4: Dependency Chain Resolution
+- **Size:** M
+- **Priority:** high
+- **Depends on:** Task 1.1, Task 1.2
+- **Acceptance Criteria:**
+  - Resolve chains up to 10 levels deep
+  - Detect and report circular dependencies
+  - Verify topological sort correctness
+  - Assert blocked task identification accuracy
+
+---
+
+## Epic 2: Dashboard UI Validation
+
+### Task 2.1: ReactFlow Graph Rendering
+- **Size:** L
+- **Priority:** high
+- **Depends on:** Task 1.1
+- **Acceptance Criteria:**
+  - Render graph with 50+ nodes without performance degradation
+  - Verify node positioning (dagre layout)
+  - Assert edge connections match dependency data
+  - Validate zoom/pan interactions work smoothly
+
+### Task 2.2: Tab Navigation and Data Consistency
+- **Size:** M
+- **Priority:** high
+- **Depends on:** Task 2.1
+- **Acceptance Criteria:**
+  - All 5 tabs load without errors
+  - Node counts consistent across Graph, Insights, Benchmark tabs
+  - Progress bar in PRD & Backlog matches completion percentage
+  - Theme toggle works across all tabs
+
+### Task 2.3: Search and Filter System
+- **Size:** M
+- **Priority:** medium
+- **Depends on:** Task 2.1
+- **Acceptance Criteria:**
+  - Text search filters table in real-time
+  - Type filters (epic, task, milestone) work independently
+  - Status filters (backlog, ready, in_progress, done) combine with type
+  - Clear button resets all filters
+  - Sort by column headers works for all columns
+
+### Task 2.4: Real-time Updates via SSE
+- **Size:** L
+- **Priority:** high
+- **Depends on:** Task 2.1
+- **Acceptance Criteria:**
+  - Dashboard receives SSE events within 2s of API changes
+  - Node creation via API reflects in graph immediately
+  - Status updates propagate to all tabs
+  - Edge creation updates relationship panel
+
+---
+
+## Epic 3: Integration Mesh Validation
+
+### Task 3.1: Serena Code Intelligence
+- **Size:** XL
+- **Priority:** medium
+- **Depends on:** Task 2.2
+- **Acceptance Criteria:**
+  - Code Graph tab shows Serena status badge
+  - Explorer mode displays file tree
+  - Symbol search returns relevant code symbols
+  - Memory count badge updates correctly
+
+### Task 3.2: GitNexus On-Demand Activation
+- **Size:** M
+- **Priority:** medium
+- **Depends on:** Task 2.2
+- **Acceptance Criteria:**
+  - GitNexus badge shows "Inactive" by default
+  - "Analyze & Start" button triggers activation
+  - After activation, badge shows "Active" with stats
+  - Git graph data populates Code Graph tab
+
+### Task 3.3: Context7 Documentation Sync
+- **Size:** S
+- **Priority:** low
+- **Depends on:** Task 1.1
+- **Acceptance Criteria:**
+  - sync_stack_docs detects project dependencies
+  - Documentation cache stores fetched docs
+  - RAG pipeline includes doc context in queries
+  - Cache invalidation works for updated deps
+
+### Task 3.4: End-to-End Pipeline Validation
+- **Size:** XL
+- **Priority:** high
+- **Depends on:** Task 3.1, Task 3.2, Task 3.3
+- **Acceptance Criteria:**
+  - Import PRD → navigate all tabs → verify data consistency
+  - CRUD operations via API reflected in dashboard
+  - Cross-tab data matches MCP stats output
+  - Full benchmark run produces valid token economy metrics
