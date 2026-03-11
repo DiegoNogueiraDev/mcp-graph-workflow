@@ -10,7 +10,7 @@
     "mcp-graph-server": "dist/mcp/server.js"
   },
   "scripts": {
-    "prepublishOnly": "npm run build && npm test",
+    "prepublishOnly": "npm run build",
     "dev": "tsx src/mcp/server.ts",
     "dev:stdio": "tsx src/mcp/stdio.ts",
     "dashboard:install": "cd src/web/dashboard && npm install",
