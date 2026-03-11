@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.2.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v4.1.0...mcp-graph-v4.2.0) (2026-03-11)
+
+
+### Features
+
+* add real-time logs tab to dashboard ([#15](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/issues/15)) ([345fa20](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/345fa20ffc3db812bfeb81d93d5fbd5ef5302194))
+
 ## [4.1.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v4.0.0...mcp-graph-v4.1.0) (2026-03-11)
 
 
