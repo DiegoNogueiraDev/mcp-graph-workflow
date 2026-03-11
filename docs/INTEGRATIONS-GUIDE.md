@@ -11,6 +11,21 @@
 | **Context7** | Library documentation fetching | Stack-aware docs sync, API reference lookup |
 | **Playwright** | Browser automation, web capture | Task validation, A/B testing, content capture |
 
+## MCP Client Compatibility
+
+mcp-graph works with any MCP client that supports stdio transport:
+
+| Client | Config File | Status |
+|--------|-------------|--------|
+| **GitHub Copilot** (VS Code) | `.vscode/mcp.json` | Tested |
+| **Claude Code** | `.mcp.json` | Tested |
+| **Cursor** | `.mcp.json` | Tested |
+| **Windsurf** | Client-specific | Compatible (stdio) |
+| **Zed** | Client-specific | Compatible (stdio) |
+| **IntelliJ / JetBrains** | `.mcp.json` | Compatible (stdio) |
+
+All clients use the same command: `npx -y @diegonogueiradev_/mcp-graph`. The entry point auto-detects whether it's being called by an MCP client (piped stdin) or as a CLI (interactive terminal).
+
 ## Integration Orchestrator
 
 **File:** `src/core/integrations/integration-orchestrator.ts`

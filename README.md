@@ -15,7 +15,25 @@
 
 ## Quick Start
 
-### As MCP Server (Claude Code / Cursor)
+### GitHub Copilot (VS Code)
+
+Create `.vscode/mcp.json` in your project:
+
+```json
+{
+  "servers": {
+    "mcp-graph": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@diegonogueiradev_/mcp-graph"]
+    }
+  }
+}
+```
+
+Enable **Agent Mode** in Copilot Chat, then use the tools: `init → import_prd → next → context → update_status`
+
+### Claude Code / Cursor / IntelliJ
 
 Add to `.mcp.json`:
 
@@ -24,13 +42,19 @@ Add to `.mcp.json`:
   "mcpServers": {
     "mcp-graph": {
       "command": "npx",
-      "args": ["@diegonogueiradev_/mcp-graph"]
+      "args": ["-y", "@diegonogueiradev_/mcp-graph"]
     }
   }
 }
 ```
 
-Then use the tools: `init → import_prd → next → context → update_status`
+### Windsurf / Zed / Other MCP Clients
+
+Use stdio transport with:
+
+```
+npx -y @diegonogueiradev_/mcp-graph
+```
 
 ### From Source
 
@@ -60,7 +84,7 @@ npm run dev        # HTTP + dashboard at localhost:3000
 | **AI Engineers** | Structured agentic workflows with token-efficient context |
 | **Tech Leads** | PRD decomposition into trackable, dependency-aware task graphs |
 | **Solo Developers** | Project planning with AI-powered suggestions and progress tracking |
-| **Teams using Claude/Cursor** | MCP-native tool integration for AI-assisted development |
+| **Teams using Copilot/Claude/Cursor** | MCP-native tool integration for AI-assisted development |
 
 ## Dashboard
 

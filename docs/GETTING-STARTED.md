@@ -8,20 +8,52 @@ Step-by-step guide for new users. For API reference, see [MCP-TOOLS-REFERENCE.md
 
 ### Via MCP Server (recommended)
 
-Add to your Claude Code `.mcp.json` or Cursor MCP config:
+Requirements: Node.js >= 18.
+
+#### GitHub Copilot (VS Code)
+
+Create `.vscode/mcp.json` in your project root:
+
+```json
+{
+  "servers": {
+    "mcp-graph": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@diegonogueiradev_/mcp-graph"]
+    }
+  }
+}
+```
+
+Then open **Copilot Chat** in Agent Mode (`@workspace` or Ctrl+Shift+I) — the 26 MCP tools will be available automatically.
+
+#### Claude Code / Cursor / IntelliJ (JetBrains)
+
+Add to `.mcp.json` in your project root:
 
 ```json
 {
   "mcpServers": {
     "mcp-graph": {
       "command": "npx",
-      "args": ["@diegonogueiradev_/mcp-graph"]
+      "args": ["-y", "@diegonogueiradev_/mcp-graph"]
     }
   }
 }
 ```
 
-Requirements: Node.js >= 18.
+> **IntelliJ/JetBrains**: Go to Settings → Tools → AI Assistant → Model Context Protocol (MCP) and add the server. Uses the same `.mcp.json` format. Requires IntelliJ 2025.1+.
+
+#### Windsurf / Zed / Other MCP Clients
+
+Any MCP client that supports stdio transport can connect using:
+
+```
+npx -y @diegonogueiradev_/mcp-graph
+```
+
+Refer to your client's documentation for the exact config format.
 
 ### From Source (development)
 
@@ -304,6 +336,14 @@ Requires installation: `npx playwright install`. Used by `validate_task` for vis
 
 - Run: `reindex_knowledge` to rebuild indexes
 - Check if knowledge entries exist: `search { query: "*" }`
+
+### "MCP tools not appearing in my editor"
+
+- **Copilot**: Ensure you're in Agent Mode (Ctrl+Shift+I or `@workspace`). Check `.vscode/mcp.json` syntax.
+- **Claude Code**: Run `claude mcp list` to verify the server is registered. Check `.mcp.json` in project root.
+- **Cursor**: Check `.mcp.json` in project root. Restart the editor after config changes.
+- **IntelliJ**: Requires 2025.1+. Go to Settings → Tools → AI Assistant → MCP. Verify `.mcp.json` exists in project root.
+- **General**: Run `npx -y @diegonogueiradev_/mcp-graph --help` to verify the package installs correctly. If it shows CLI help, the package is working — your MCP client should connect automatically via stdio.
 
 ---
 

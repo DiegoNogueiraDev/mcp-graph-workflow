@@ -1,22 +1,36 @@
 #!/usr/bin/env node
-import { Command } from "commander";
-import { serveCommand } from "./commands/serve.js";
-import { importCommand } from "./commands/import-cmd.js";
-import { statsCommand } from "./commands/stats.js";
-import { initCommand } from "./commands/init.js";
-import { indexCommand } from "./commands/index-cmd.js";
+export {};
 
-const program = new Command();
+// Smart entry point: detect if called by an MCP client (piped stdin, no args)
+// or as an interactive CLI (TTY stdin or explicit subcommand/flags).
+const isMcpClient = !process.stdin.isTTY && process.argv.length <= 2;
 
-program
-  .name("mcp-graph")
-  .description("Local-first PRD to task graph — transforms text into executable structure")
-  .version("1.0.0");
+if (isMcpClient) {
+  // Delegate to MCP stdio server — the client expects JSON-RPC over stdin/stdout
+  await import("../mcp/stdio.js");
+} else {
+  // Interactive CLI with Commander.js
+  const { Command } = await import("commander");
+  const { serveCommand } = await import("./commands/serve.js");
+  const { importCommand } = await import("./commands/import-cmd.js");
+  const { statsCommand } = await import("./commands/stats.js");
+  const { initCommand } = await import("./commands/init.js");
+  const { indexCommand } = await import("./commands/index-cmd.js");
 
-program.addCommand(serveCommand());
-program.addCommand(importCommand());
-program.addCommand(statsCommand());
-program.addCommand(initCommand());
-program.addCommand(indexCommand());
+  const program = new Command();
 
-program.parse();
+  program
+    .name("mcp-graph")
+    .description(
+      "Local-first PRD to task graph — transforms text into executable structure",
+    )
+    .version("1.0.0");
+
+  program.addCommand(serveCommand());
+  program.addCommand(importCommand());
+  program.addCommand(statsCommand());
+  program.addCommand(initCommand());
+  program.addCommand(indexCommand());
+
+  program.parse();
+}
