@@ -1,7 +1,7 @@
 import { Router } from "express";
 import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import { getIntegrationsStatus } from "../../core/integrations/tool-status.js";
-import { listSerenaMemories, readSerenaMemory, readAllSerenaMemories } from "../../core/integrations/serena-reader.js";
+import { readSerenaMemory, readAllSerenaMemories } from "../../core/integrations/serena-reader.js";
 import { buildEnrichedContext } from "../../core/integrations/enriched-context.js";
 import { KnowledgeStore } from "../../core/store/knowledge-store.js";
 

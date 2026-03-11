@@ -28,8 +28,6 @@ export interface ApiRouterOptions {
   eventBus?: GraphEventBus;
 }
 
-export function createApiRouter(options: ApiRouterOptions): Router;
-export function createApiRouter(store: SqliteStore): Router;
 export function createApiRouter(storeOrOptions: SqliteStore | ApiRouterOptions): Router {
   const store = "store" in storeOrOptions ? storeOrOptions.store : storeOrOptions;
   const basePath = "basePath" in storeOrOptions ? (storeOrOptions.basePath ?? process.cwd()) : process.cwd();

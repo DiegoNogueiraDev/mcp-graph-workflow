@@ -7,7 +7,7 @@ import { Router } from "express";
 import { z } from "zod/v4";
 import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import { EmbeddingStore } from "../../core/rag/embedding-store.js";
-import { indexNodeEmbeddings, indexAllEmbeddings, semanticSearch } from "../../core/rag/rag-pipeline.js";
+import { indexAllEmbeddings, semanticSearch } from "../../core/rag/rag-pipeline.js";
 import { logger } from "../../core/utils/logger.js";
 
 const RagQuerySchema = z.object({

@@ -11,7 +11,7 @@ import { STORE_DIR } from "../core/utils/constants.js";
 const MCP_CONFIG_FILE = ".mcp.json";
 const GITIGNORE_ENTRY = "workflow-graph/";
 
-function resolveCommand(): string {
+function _resolveCommand(): string {
   // Check if running via npx/global — use package name
   // Check if running from node_modules — use relative path
   const binPath = process.argv[1];
@@ -21,7 +21,7 @@ function resolveCommand(): string {
   return "npx";
 }
 
-function resolveArgs(): string[] {
+function _resolveArgs(): string[] {
   const binPath = process.argv[1];
   if (binPath && binPath.includes("node_modules")) {
     return ["-y", "@mcp-graph-workflow/mcp-graph"];

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { SqliteStore } from "../core/store/sqlite-store.js";
-import { DocsCacheStore, type CachedDoc } from "../core/docs/docs-cache-store.js";
+import { DocsCacheStore } from "../core/docs/docs-cache-store.js";
 
 describe("DocsCacheStore", () => {
   let sqliteStore: SqliteStore;

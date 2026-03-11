@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod/v4";
 import type { SqliteStore } from "../../core/store/sqlite-store.js";
-import { GraphEdgeSchema, RelationTypeSchema } from "../../schemas/edge.schema.js";
+import { GraphEdgeSchema } from "../../schemas/edge.schema.js";
 import { validateBody } from "../middleware/validate.js";
 import { generateId } from "../../core/utils/id.js";
 import { now } from "../../core/utils/time.js";

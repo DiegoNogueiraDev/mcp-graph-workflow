@@ -37,7 +37,7 @@ export async function indexSerenaMemories(
     const chunks = chunkText(memory.content);
 
     for (const chunk of chunks) {
-      const doc = knowledgeStore.insert({
+      knowledgeStore.insert({
         sourceType: "serena",
         sourceId: `serena:${memory.name}`,
         title: chunks.length > 1

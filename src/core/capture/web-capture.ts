@@ -1,4 +1,5 @@
 import { logger } from "../utils/logger.js";
+import { ValidationError } from "../utils/errors.js";
 import { extractContent, type ExtractionResult } from "./content-extractor.js";
 
 export interface CaptureOptions {
@@ -25,18 +26,18 @@ export async function captureWebPage(
   options?: CaptureOptions,
 ): Promise<CaptureResult> {
   if (!url) {
-    throw new Error("URL is required");
+    throw new ValidationError("URL is required", ["url is empty or undefined"]);
   }
 
   let parsed: URL;
   try {
     parsed = new URL(url);
   } catch {
-    throw new Error(`Invalid URL: ${url}`);
+    throw new ValidationError(`Invalid URL: ${url}`, [`"${url}" is not a valid URL`]);
   }
 
   if (!["http:", "https:"].includes(parsed.protocol)) {
-    throw new Error(`Only HTTP and HTTPS URLs are supported, got: ${parsed.protocol}`);
+    throw new ValidationError(`Only HTTP and HTTPS URLs are supported, got: ${parsed.protocol}`, [`unsupported protocol: ${parsed.protocol}`]);
   }
 
   const timeout = options?.timeout ?? 30_000;
@@ -49,8 +50,9 @@ export async function captureWebPage(
     const pw = await import("playwright");
     chromium = pw.chromium;
   } catch {
-    throw new Error(
+    throw new ValidationError(
       "Playwright is not installed. Run 'npx playwright install chromium' to enable web capture.",
+      ["playwright dependency missing"],
     );
   }
 

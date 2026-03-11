@@ -1,5 +1,10 @@
 import { Command } from "commander";
 import { SqliteStore } from "../../core/store/sqlite-store.js";
+import { logger } from "../../core/utils/logger.js";
+
+function output(msg: string): void {
+  process.stdout.write(msg + "\n");
+}
 
 export function statsCommand(): Command {
   return new Command("stats")
@@ -14,22 +19,22 @@ export function statsCommand(): Command {
         const project = store.getProject();
 
         if (opts.json) {
-          console.log(JSON.stringify({ project: project?.name, ...stats }, null, 2));
+          output(JSON.stringify({ project: project?.name, ...stats }, null, 2));
         } else {
-          console.log(`Project: ${project?.name ?? "(not initialized)"}`);
-          console.log(`Total nodes: ${stats.totalNodes}`);
-          console.log(`By type:`);
+          output(`Project: ${project?.name ?? "(not initialized)"}`);
+          output(`Total nodes: ${stats.totalNodes}`);
+          output(`By type:`);
           for (const [type, count] of Object.entries(stats.byType ?? {})) {
-            console.log(`  ${type}: ${count}`);
+            output(`  ${type}: ${count}`);
           }
-          console.log(`By status:`);
+          output(`By status:`);
           for (const [status, count] of Object.entries(stats.byStatus ?? {})) {
-            console.log(`  ${status}: ${count}`);
+            output(`  ${status}: ${count}`);
           }
-          console.log(`Total edges: ${stats.totalEdges}`);
+          output(`Total edges: ${stats.totalEdges}`);
         }
       } catch (err) {
-        console.error(`Error: ${err instanceof Error ? err.message : String(err)}`);
+        logger.error(`Stats failed: ${err instanceof Error ? err.message : String(err)}`);
         process.exit(1);
       } finally {
         store.close();

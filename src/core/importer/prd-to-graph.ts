@@ -148,7 +148,6 @@ export function convertToGraph(
 ): ConversionResult {
   const nodes: GraphNode[] = [];
   const edges: GraphEdge[] = [];
-  let blockedTasks = 0;
 
   // Pass 1: Create nodes from top-level blocks
   for (const block of extraction.blocks) {
@@ -232,7 +231,7 @@ export function convertToGraph(
   const dependentNodeIds = new Set(
     edges.filter((e) => e.relationType === "depends_on").map((e) => e.from),
   );
-  blockedTasks = dependentNodeIds.size;
+  const blockedTasks = dependentNodeIds.size;
 
   const inferredDeps = edges.filter((e) => e.metadata?.inferred).length;
 

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { mkdirSync, rmSync } from "node:fs";
 import path from "node:path";
 import { tmpdir } from "node:os";

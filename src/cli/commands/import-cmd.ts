@@ -6,6 +6,10 @@ import { extractEntities } from "../../core/parser/extract.js";
 import { convertToGraph } from "../../core/importer/prd-to-graph.js";
 import { logger } from "../../core/utils/logger.js";
 
+function output(msg: string): void {
+  process.stdout.write(msg + "\n");
+}
+
 export function importCommand(): Command {
   return new Command("import")
     .description("Import a PRD file into the graph")
@@ -28,10 +32,10 @@ export function importCommand(): Command {
         store.bulkInsert(graph.nodes, graph.edges);
         store.createSnapshot();
 
-        console.log(`Imported: ${graph.nodes.length} nodes, ${graph.edges.length} edges`);
-        console.log(`Source: ${filePath}`);
+        output(`Imported: ${graph.nodes.length} nodes, ${graph.edges.length} edges`);
+        output(`Source: ${filePath}`);
       } catch (err) {
-        console.error(`Import failed: ${err instanceof Error ? err.message : String(err)}`);
+        logger.error(`Import failed: ${err instanceof Error ? err.message : String(err)}`);
         process.exit(1);
       } finally {
         store.close();

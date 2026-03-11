@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { serveCommand } from "../cli/commands/serve.js";
 
 describe("serveCommand", () => {
@@ -21,7 +21,7 @@ describe("serveCommand", () => {
 
   it("should have default port 3000", () => {
     const cmd = serveCommand();
-    const portOption = cmd.opts();
+    const _portOption = cmd.opts();
 
     // Before parsing, opts returns defaults from option definition
     // The default is set via Commander option string "3000"

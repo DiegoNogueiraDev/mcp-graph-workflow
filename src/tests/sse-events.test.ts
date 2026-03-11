@@ -43,7 +43,7 @@ describe("SSE Events", () => {
   });
 
   it("should emit node:created event via SSE when a node is inserted", async () => {
-    const events: string[] = [];
+    const _events: string[] = [];
 
     // Connect to SSE
     const response = await fetch(`http://localhost:${port}/api/v1/events`);

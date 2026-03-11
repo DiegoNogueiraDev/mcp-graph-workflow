@@ -6,7 +6,6 @@ import { extractEntities } from "../core/parser/extract.js";
 import { convertToGraph } from "../core/importer/prd-to-graph.js";
 import { makeNode, makeEdge } from "./helpers/factories.js";
 import { generateId } from "../core/utils/id.js";
-import { now } from "../core/utils/time.js";
 
 describe("MCP Tool Validation Logic", () => {
   let store: SqliteStore;

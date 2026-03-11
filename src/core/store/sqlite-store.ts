@@ -67,11 +67,7 @@ interface EdgeRow {
   created_at: string;
 }
 
-interface StatsRow {
-  type: string;
-  status: string;
-  count: number;
-}
+
 
 // ── Mapping helpers ──────────────────────────────────────
 

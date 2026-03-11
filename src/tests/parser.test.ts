@@ -154,7 +154,7 @@ describe("classifySectionTitle", () => {
 
   it("returns higher confidence for section titles than text", () => {
     const titleResult = classifySectionTitle("Requisitos", 2);
-    const textResult = classifyText("Some requirement text");
+    const _textResult = classifyText("Some requirement text");
     expect(titleResult.confidence).toBeGreaterThanOrEqual(0.85);
   });
 });

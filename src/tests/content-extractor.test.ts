@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { extractContent, type ExtractionResult } from "../core/capture/content-extractor.js";
+import { extractContent } from "../core/capture/content-extractor.js";
 
 describe("extractContent", () => {
   it("should extract text from simple HTML", async () => {

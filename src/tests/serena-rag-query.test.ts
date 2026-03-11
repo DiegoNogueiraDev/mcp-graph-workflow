@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { SqliteStore } from "../core/store/sqlite-store.js";
 import { KnowledgeStore } from "../core/store/knowledge-store.js";
 import { EmbeddingStore } from "../core/rag/embedding-store.js";
-import { indexAllEmbeddings, semanticSearch } from "../core/rag/rag-pipeline.js";
-import { querySerenaMemories, type SerenaRagResult } from "../core/rag/serena-rag-query.js";
+import { indexAllEmbeddings } from "../core/rag/rag-pipeline.js";
+import { querySerenaMemories } from "../core/rag/serena-rag-query.js";
 
 describe("SerenaRagQuery", () => {
   let store: SqliteStore;

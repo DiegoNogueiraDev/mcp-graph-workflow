@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { mkdirSync, rmSync, existsSync } from "node:fs";
+import { mkdirSync, rmSync } from "node:fs";
 import path from "node:path";
 import { tmpdir } from "node:os";
 
@@ -11,7 +11,6 @@ import {
   isGitNexusRunning,
   getAnalyzePhase,
   resetAnalyzePhase,
-  type AnalyzePhase,
 } from "../core/integrations/gitnexus-launcher.js";
 
 describe("gitnexus-launcher", () => {

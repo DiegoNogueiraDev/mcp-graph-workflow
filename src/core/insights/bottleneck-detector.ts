@@ -1,4 +1,4 @@
-import type { GraphDocument, GraphNode } from "../graph/graph-types.js";
+import type { GraphDocument } from "../graph/graph-types.js";
 import { findCriticalPath } from "../planner/dependency-chain.js";
 import { logger } from "../utils/logger.js";
 
