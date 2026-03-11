@@ -48,7 +48,7 @@ body:
     id: version
     attributes:
       label: mcp-graph Version
-      description: "Output of `npx @diegonogueiradev_/mcp-graph --version`"
+      description: "Output of `npx @mcp-graph-workflow/mcp-graph --version`"
       placeholder: "2.1.0"
     validations:
       required: true

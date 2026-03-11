@@ -24,7 +24,7 @@ mcp-graph works with any MCP client that supports stdio transport:
 | **Zed** | Client-specific | Compatible (stdio) |
 | **IntelliJ / JetBrains** | `.mcp.json` | Compatible (stdio) |
 
-All clients use the same command: `npx -y @diegonogueiradev_/mcp-graph`. The entry point auto-detects whether it's being called by an MCP client (piped stdin) or as a CLI (interactive terminal).
+All clients use the same command: `npx -y @mcp-graph-workflow/mcp-graph`. The entry point auto-detects whether it's being called by an MCP client (piped stdin) or as a CLI (interactive terminal).
 
 ## Integration Orchestrator
 

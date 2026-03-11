@@ -1,7 +1,7 @@
-# @diegonogueiradev_/mcp-graph
+# @mcp-graph-workflow/mcp-graph
 
 [![CI](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/actions/workflows/ci.yml/badge.svg)](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/actions/workflows/ci.yml)
-[![npm version](https://img.shields.io/npm/v/%40diegonogueiradev_%2Fmcp-graph)](https://www.npmjs.com/package/@diegonogueiradev_/mcp-graph)
+[![npm version](https://img.shields.io/npm/v/%40diegonogueiradev_%2Fmcp-graph)](https://www.npmjs.com/package/@mcp-graph-workflow/mcp-graph)
 [![Node.js](https://img.shields.io/node/v/%40diegonogueiradev_%2Fmcp-graph)](https://nodejs.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -25,7 +25,7 @@ Create `.vscode/mcp.json` in your project:
     "mcp-graph": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@diegonogueiradev_/mcp-graph"]
+      "args": ["-y", "@mcp-graph-workflow/mcp-graph"]
     }
   }
 }
@@ -42,7 +42,7 @@ Add to `.mcp.json`:
   "mcpServers": {
     "mcp-graph": {
       "command": "npx",
-      "args": ["-y", "@diegonogueiradev_/mcp-graph"]
+      "args": ["-y", "@mcp-graph-workflow/mcp-graph"]
     }
   }
 }
@@ -53,7 +53,7 @@ Add to `.mcp.json`:
 Use stdio transport with:
 
 ```
-npx -y @diegonogueiradev_/mcp-graph
+npx -y @mcp-graph-workflow/mcp-graph
 ```
 
 ### From Source

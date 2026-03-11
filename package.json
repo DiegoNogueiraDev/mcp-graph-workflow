@@ -1,6 +1,6 @@
 {
-  "name": "@diegonogueiradev_/mcp-graph",
-  "version": "2.1.0",
+  "name": "@mcp-graph-workflow/mcp-graph",
+  "version": "3.0.0",
   "description": "MCP local-first PRD to task graph — transforms text into executable structure",
   "type": "module",
   "main": "dist/index.js",
@@ -50,6 +50,9 @@
   "homepage": "https://github.com/DiegoNogueiraDev/mcp-graph-workflow#readme",
   "bugs": {
     "url": "https://github.com/DiegoNogueiraDev/mcp-graph-workflow/issues"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "engines": {
     "node": ">=20.0.0"

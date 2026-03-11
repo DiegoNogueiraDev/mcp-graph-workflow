@@ -27,7 +27,7 @@ function getDefaultServers(): Record<McpServerName, McpServerEntry> {
   return {
     "mcp-graph": {
       command: "npx",
-      args: ["-y", "@diegonogueiradev_/mcp-graph"],
+      args: ["-y", "@mcp-graph-workflow/mcp-graph"],
     },
     gitnexus: {
       command: "npx",

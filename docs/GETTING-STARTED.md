@@ -20,7 +20,7 @@ Create `.vscode/mcp.json` in your project root:
     "mcp-graph": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@diegonogueiradev_/mcp-graph"]
+      "args": ["-y", "@mcp-graph-workflow/mcp-graph"]
     }
   }
 }
@@ -37,7 +37,7 @@ Add to `.mcp.json` in your project root:
   "mcpServers": {
     "mcp-graph": {
       "command": "npx",
-      "args": ["-y", "@diegonogueiradev_/mcp-graph"]
+      "args": ["-y", "@mcp-graph-workflow/mcp-graph"]
     }
   }
 }
@@ -50,7 +50,7 @@ Add to `.mcp.json` in your project root:
 Any MCP client that supports stdio transport can connect using:
 
 ```
-npx -y @diegonogueiradev_/mcp-graph
+npx -y @mcp-graph-workflow/mcp-graph
 ```
 
 Refer to your client's documentation for the exact config format.
@@ -343,7 +343,7 @@ Requires installation: `npx playwright install`. Used by `validate_task` for vis
 - **Claude Code**: Run `claude mcp list` to verify the server is registered. Check `.mcp.json` in project root.
 - **Cursor**: Check `.mcp.json` in project root. Restart the editor after config changes.
 - **IntelliJ**: Requires 2025.1+. Go to Settings → Tools → AI Assistant → MCP. Verify `.mcp.json` exists in project root.
-- **General**: Run `npx -y @diegonogueiradev_/mcp-graph --help` to verify the package installs correctly. If it shows CLI help, the package is working — your MCP client should connect automatically via stdio.
+- **General**: Run `npx -y @mcp-graph-workflow/mcp-graph --help` to verify the package installs correctly. If it shows CLI help, the package is working — your MCP client should connect automatically via stdio.
 
 ---
 

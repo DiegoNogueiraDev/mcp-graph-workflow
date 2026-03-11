@@ -24,7 +24,7 @@ function resolveCommand(): string {
 function resolveArgs(): string[] {
   const binPath = process.argv[1];
   if (binPath && binPath.includes("node_modules")) {
-    return ["-y", "@diegonogueiradev_/mcp-graph"];
+    return ["-y", "@mcp-graph-workflow/mcp-graph"];
   }
   return ["-y", "mcp-graph"];
 }
