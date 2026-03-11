@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.1.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v4.0.0...mcp-graph-v4.1.0) (2026-03-11)
+
+
+### Features
+
+* CI security pipeline, ESLint + security plugin, code quality ([#10](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/issues/10)) ([742490a](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/742490afdae5c0f9116ce18d3295abea2fbee376))
+
+
+### Bug Fixes
+
+* platform tests use vi.resetModules for cross-platform support ([f279342](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/f279342c2460cc153bb1189b0b27ef8de1948212))
+* update npm and node badges to correct scope ([1bf3404](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/1bf3404a0b189add3ce9347aa13f41f81fefcf82))
+* use cross-platform copy-dashboard script for Windows CI ([c2792e5](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/c2792e540e712f077d208aaa4145b74b0168fd4c))
+
 ## [4.0.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v3.0.0...mcp-graph-v4.0.0) (2026-03-11)
 
 
