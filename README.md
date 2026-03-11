@@ -6,6 +6,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![npm downloads](https://img.shields.io/npm/dm/%40mcp-graph-workflow%2Fmcp-graph)](https://www.npmjs.com/package/@mcp-graph-workflow/mcp-graph)
+[![GitHub stars](https://img.shields.io/github/stars/DiegoNogueiraDev/mcp-graph-workflow)](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/DiegoNogueiraDev/mcp-graph-workflow)](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/network)
 
 **Automate project planning from PRD to execution.** Local-first CLI that converts product requirement documents into structured task graphs with AI-powered context, semantic search, and multi-agent orchestration.
 
