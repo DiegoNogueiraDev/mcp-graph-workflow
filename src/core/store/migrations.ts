@@ -199,6 +199,19 @@ const migrations: Migration[] = [
       END;
     `,
   },
+  {
+    version: 5,
+    description: "Project settings key-value store for lifecycle overrides",
+    sql: `
+      CREATE TABLE IF NOT EXISTS project_settings (
+        project_id  TEXT NOT NULL REFERENCES projects(id),
+        key         TEXT NOT NULL,
+        value       TEXT NOT NULL,
+        updated_at  TEXT NOT NULL,
+        PRIMARY KEY (project_id, key)
+      );
+    `,
+  },
 ];
 
 export function runMigrations(db: Database.Database): void {

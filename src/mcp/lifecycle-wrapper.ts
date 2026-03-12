@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { SqliteStore } from "../core/store/sqlite-store.js";
 import type { GraphDocument } from "../core/graph/graph-types.js";
-import { detectCurrentPhase, getPhaseGuidance, type LifecyclePhase } from "../core/planner/lifecycle-phase.js";
+import { detectCurrentPhase, getPhaseGuidance, detectWarnings, type LifecyclePhase, type LifecycleWarning } from "../core/planner/lifecycle-phase.js";
 import { logger } from "../core/utils/logger.js";
 
 export interface LifecycleBlock {
@@ -9,20 +9,34 @@ export interface LifecycleBlock {
   reminder: string;
   suggestedNext: string[];
   principles: string[];
+  warnings: LifecycleWarning[];
+}
+
+export interface LifecycleBlockOptions {
+  toolName?: string;
+  hasSnapshots?: boolean;
+  phaseOverride?: LifecyclePhase | null;
 }
 
 /**
  * Build the _lifecycle block to append to MCP tool responses.
  */
-export function buildLifecycleBlock(doc: GraphDocument): LifecycleBlock {
-  const phase = detectCurrentPhase(doc);
+export function buildLifecycleBlock(doc: GraphDocument, options?: LifecycleBlockOptions): LifecycleBlock {
+  const phase = detectCurrentPhase(doc, {
+    hasSnapshots: options?.hasSnapshots,
+    phaseOverride: options?.phaseOverride,
+  });
   const guidance = getPhaseGuidance(phase);
+  const warnings = options?.toolName
+    ? detectWarnings(doc, phase, options.toolName)
+    : [];
 
   return {
     phase,
     reminder: guidance.reminder,
     suggestedNext: guidance.suggestedTools,
     principles: guidance.principles,
+    warnings,
   };
 }
 
@@ -74,7 +88,14 @@ export function wrapToolsWithLifecycle(server: McpServer, store: SqliteStore): v
 
       try {
         const doc = store.toGraphDocument();
-        const lifecycleBlock = buildLifecycleBlock(doc);
+        const phaseOverrideValue = store.getProjectSetting("lifecycle_phase_override");
+        const snapshots = store.listSnapshots();
+
+        const lifecycleBlock = buildLifecycleBlock(doc, {
+          toolName: name,
+          hasSnapshots: snapshots.length > 0,
+          phaseOverride: phaseOverrideValue ? phaseOverrideValue as LifecyclePhase : null,
+        });
 
         // Append lifecycle as an additional text content item
         if (result && Array.isArray(result.content)) {
