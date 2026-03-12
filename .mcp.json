@@ -14,7 +14,7 @@
         "--context",
         "claude-code",
         "--project",
-        "/home/diegonogueira/Documentos/mcp-graph-workflow"
+        "."
       ]
     },
     "playwright": {
