@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { buildLifecycleBlock } from "../mcp/lifecycle-wrapper.js";
+import { detectWarnings } from "../core/planner/lifecycle-phase.js";
 import type { GraphDocument } from "../core/graph/graph-types.js";
 
 function makeDoc(nodes: Array<{ type: string; status: string; sprint?: string | null }> = []): GraphDocument {
@@ -41,7 +42,7 @@ describe("buildLifecycleBlock", () => {
     expect(block.phase).toBe("ANALYZE");
   });
 
-  it("should include all required fields", () => {
+  it("should include all required fields including warnings", () => {
     const doc = makeDoc([{ type: "task", status: "backlog" }]);
     const block = buildLifecycleBlock(doc);
 
@@ -49,5 +50,61 @@ describe("buildLifecycleBlock", () => {
     expect(block).toHaveProperty("reminder");
     expect(block).toHaveProperty("suggestedNext");
     expect(block).toHaveProperty("principles");
+    expect(block).toHaveProperty("warnings");
+    expect(block.warnings).toBeInstanceOf(Array);
+  });
+});
+
+describe("detectWarnings", () => {
+  it("should warn when update_status is called in ANALYZE phase", () => {
+    const doc = makeDoc();
+    const warnings = detectWarnings(doc, "ANALYZE", "update_status");
+
+    expect(warnings.length).toBeGreaterThan(0);
+    expect(warnings.some((w) => w.code === "premature_status_change")).toBe(true);
+    const prematureWarning = warnings.find((w) => w.code === "premature_status_change")!;
+    expect(prematureWarning.severity).toBe("warning");
+  });
+
+  it("should warn when update_status is called in PLAN without sprint", () => {
+    const doc = makeDoc([
+      { type: "task", status: "backlog" },
+    ]);
+    const warnings = detectWarnings(doc, "PLAN", "update_status");
+
+    expect(warnings.some((w) => w.code === "no_sprint_assigned")).toBe(true);
+  });
+
+  it("should emit info when tool is not in suggestedTools for current phase", () => {
+    const doc = makeDoc([{ type: "task", status: "in_progress", sprint: "s1" }]);
+    const warnings = detectWarnings(doc, "IMPLEMENT", "export");
+
+    expect(warnings.some((w) => w.code === "tool_not_recommended" && w.severity === "info")).toBe(true);
+  });
+
+  it("should return empty warnings when workflow is correct", () => {
+    const doc = makeDoc([{ type: "task", status: "in_progress", sprint: "s1" }]);
+    const warnings = detectWarnings(doc, "IMPLEMENT", "next");
+
+    expect(warnings).toHaveLength(0);
+  });
+
+  it("should warn when task done without acceptance_criteria in IMPLEMENT phase", () => {
+    const doc = makeDoc([
+      { type: "task", status: "done", sprint: "s1" },
+    ]);
+    const warnings = detectWarnings(doc, "IMPLEMENT", "update_status");
+
+    expect(warnings.some((w) => w.code === "no_acceptance_criteria")).toBe(true);
+  });
+
+  it("should not warn about acceptance_criteria when they exist", () => {
+    const doc = makeDoc([
+      { type: "task", status: "done", sprint: "s1" },
+      { type: "acceptance_criteria", status: "done" },
+    ]);
+    const warnings = detectWarnings(doc, "IMPLEMENT", "update_status");
+
+    expect(warnings.some((w) => w.code === "no_acceptance_criteria")).toBe(false);
   });
 });

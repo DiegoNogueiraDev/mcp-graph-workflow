@@ -775,6 +775,28 @@ export class SqliteStore {
     return { totalNodes, totalEdges, byType, byStatus };
   }
 
+  // ── Project Settings ──────────────────────────
+
+  getProjectSetting(key: string): string | null {
+    const pid = this.ensureProject();
+    const row = this.db
+      .prepare("SELECT value FROM project_settings WHERE project_id = ? AND key = ?")
+      .get(pid, key) as { value: string } | undefined;
+    return row?.value ?? null;
+  }
+
+  setProjectSetting(key: string, value: string): void {
+    const pid = this.ensureProject();
+    const timestamp = new Date().toISOString();
+    this.db
+      .prepare(
+        `INSERT INTO project_settings (project_id, key, value, updated_at)
+         VALUES (?, ?, ?, ?)
+         ON CONFLICT(project_id, key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+      )
+      .run(pid, key, value, timestamp);
+  }
+
   // ── Full-text search ─────────────────────────────
 
   /**

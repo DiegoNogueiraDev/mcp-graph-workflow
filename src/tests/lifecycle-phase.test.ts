@@ -93,6 +93,71 @@ describe("detectCurrentPhase", () => {
     ]);
     expect(detectCurrentPhase(doc)).toBe("IMPLEMENT");
   });
+
+  it("should return DESIGN when acceptance_criteria nodes exist without tasks", () => {
+    const doc = makeDoc([
+      { type: "requirement", status: "backlog" },
+      { type: "acceptance_criteria", status: "backlog" },
+    ]);
+    expect(detectCurrentPhase(doc)).toBe("DESIGN");
+  });
+
+  it("should return IMPLEMENT (not DESIGN) when both design and in_progress task nodes exist", () => {
+    const doc = makeDoc([
+      { type: "requirement", status: "backlog" },
+      { type: "task", status: "in_progress", sprint: "sprint-1" },
+    ]);
+    expect(detectCurrentPhase(doc)).toBe("IMPLEMENT");
+  });
+
+  it("should handle blocked tasks as non-done for VALIDATE threshold", () => {
+    const doc = makeDoc([
+      { type: "task", status: "done", sprint: "s1" },
+      { type: "task", status: "done", sprint: "s1" },
+      { type: "task", status: "blocked", sprint: "s1" },
+    ]);
+    // 2/3 done = 66% → VALIDATE
+    expect(detectCurrentPhase(doc)).toBe("VALIDATE");
+  });
+
+  it("should return override phase when phaseOverride is provided", () => {
+    const doc = makeDoc([
+      { type: "task", status: "in_progress" },
+    ]);
+    expect(detectCurrentPhase(doc, { phaseOverride: "LISTENING" })).toBe("LISTENING");
+  });
+
+  it("should ignore null phaseOverride and use auto-detection", () => {
+    const doc = makeDoc([
+      { type: "task", status: "in_progress" },
+    ]);
+    expect(detectCurrentPhase(doc, { phaseOverride: null })).toBe("IMPLEMENT");
+  });
+
+  it("should return HANDOFF when all tasks done and snapshots exist", () => {
+    const doc = makeDoc([
+      { type: "task", status: "done" },
+      { type: "task", status: "done" },
+    ]);
+    expect(detectCurrentPhase(doc, { hasSnapshots: true })).toBe("HANDOFF");
+  });
+
+  it("should return REVIEW (not HANDOFF) when all tasks done but no snapshots", () => {
+    const doc = makeDoc([
+      { type: "task", status: "done" },
+    ]);
+    expect(detectCurrentPhase(doc, { hasSnapshots: false })).toBe("REVIEW");
+  });
+
+  it("should return LISTENING when all tasks done and new requirement nodes added after last done task", () => {
+    const doneTime = "2025-01-01T00:00:00Z";
+    const laterTime = "2025-01-02T00:00:00Z";
+    const doc = makeDoc([
+      { type: "task", status: "done", updatedAt: doneTime },
+      { type: "requirement", status: "backlog", createdAt: laterTime },
+    ]);
+    expect(detectCurrentPhase(doc)).toBe("LISTENING");
+  });
 });
 
 describe("getPhaseGuidance", () => {

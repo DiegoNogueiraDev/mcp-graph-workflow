@@ -26,6 +26,7 @@ import { registerReindexKnowledge } from "./reindex-knowledge.js";
 import { registerSyncStackDocs } from "./sync-stack-docs.js";
 import { registerValidateTask } from "./validate-task.js";
 import { registerPlanSprint } from "./plan-sprint.js";
+import { registerSetPhase } from "./set-phase.js";
 import { wrapToolsWithLifecycle } from "../lifecycle-wrapper.js";
 
 export function registerAllTools(server: McpServer, store: SqliteStore): void {
@@ -55,6 +56,7 @@ export function registerAllTools(server: McpServer, store: SqliteStore): void {
   registerSyncStackDocs(server, store);
   registerValidateTask(server, store);
   registerPlanSprint(server, store);
+  registerSetPhase(server, store);
 
   // Wrap all registered tool responses with lifecycle context
   wrapToolsWithLifecycle(server, store);

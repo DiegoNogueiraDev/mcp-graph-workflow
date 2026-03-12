@@ -273,6 +273,32 @@ describe("SqliteStore", () => {
     });
   });
 
+  // ── Project Settings ───────────────────────
+
+  describe("project settings", () => {
+    it("should return null for non-existent setting", () => {
+      expect(store.getProjectSetting("nonexistent")).toBeNull();
+    });
+
+    it("should store and retrieve a setting", () => {
+      store.setProjectSetting("lifecycle_phase_override", "IMPLEMENT");
+      expect(store.getProjectSetting("lifecycle_phase_override")).toBe("IMPLEMENT");
+    });
+
+    it("should overwrite existing setting", () => {
+      store.setProjectSetting("lifecycle_phase_override", "IMPLEMENT");
+      store.setProjectSetting("lifecycle_phase_override", "REVIEW");
+      expect(store.getProjectSetting("lifecycle_phase_override")).toBe("REVIEW");
+    });
+
+    it("should isolate settings per project", () => {
+      store.setProjectSetting("key1", "value1");
+      const project2 = store.initProject("Project 2");
+      store.activateProject(project2.id);
+      expect(store.getProjectSetting("key1")).toBeNull();
+    });
+  });
+
   // ── Snapshots (restore) ─────────────────────
 
   describe("snapshot restore", () => {
