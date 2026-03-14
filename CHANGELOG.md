@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.4.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v4.3.1...mcp-graph-v4.4.0) (2026-03-14)
+
+
+### Features
+
+* auto-open dashboard in browser when MCP starts via stdio ([ed7fcf0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/ed7fcf04d600354fe649d1a2caaaaa55f0792926))
+
+
+### Bug Fixes
+
+* prevent data loss + auto-open dashboard on MCP start ([19ea018](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/19ea018b4f793a419cef9cfb56a84e7d5fc0cdad))
+* prevent initProject from creating duplicate projects ([50bd7a8](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/50bd7a80cfdc2b0f35d83de5aeab1f78931f783b))
+
 ## [4.3.1](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v4.3.0...mcp-graph-v4.3.1) (2026-03-12)
 
 
