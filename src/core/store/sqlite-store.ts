@@ -270,8 +270,40 @@ export class SqliteStore {
       }
     }
 
-    // No active project, or different name — create new
+    // No active project, or different name — check if project already exists by name
     const projectName = name || "Local MCP Graph";
+    const existing = this.db
+      .prepare("SELECT * FROM projects WHERE name = ?")
+      .get(projectName) as ProjectRow | undefined;
+    if (existing) {
+      this.projectId = existing.id;
+      logger.info("Project activated by name", { name: projectName, projectId: existing.id });
+      return {
+        id: existing.id,
+        name: existing.name,
+        createdAt: existing.created_at,
+        updatedAt: existing.updated_at,
+      };
+    }
+
+    // If no name provided but a project exists in DB, reuse it
+    if (!name) {
+      const anyProject = this.db
+        .prepare("SELECT * FROM projects LIMIT 1")
+        .get() as ProjectRow | undefined;
+      if (anyProject) {
+        this.projectId = anyProject.id;
+        logger.info("Project activated (existing)", { name: anyProject.name, projectId: anyProject.id });
+        return {
+          id: anyProject.id,
+          name: anyProject.name,
+          createdAt: anyProject.created_at,
+          updatedAt: anyProject.updated_at,
+        };
+      }
+    }
+
+    // Truly no project exists — create new
     const id = generateId("proj");
     const timestamp = now();
     this.db
