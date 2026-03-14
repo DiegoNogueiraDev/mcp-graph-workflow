@@ -1,19 +1,12 @@
 #!/usr/bin/env node
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import express from "express";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { SqliteStore } from "../core/store/sqlite-store.js";
 import { registerAllTools } from "./tools/index.js";
-import { createApiRouter } from "../api/router.js";
 import { GraphEventBus } from "../core/events/event-bus.js";
 import { logger } from "../core/utils/logger.js";
 import { loadConfig } from "../core/config/config-loader.js";
 import { ensureGitNexusAnalyzed, startGitNexusServe, stopGitNexus } from "../core/integrations/gitnexus-launcher.js";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const publicDir = path.join(__dirname, "..", "web", "dashboard", "dist");
+import { createApp } from "./app-factory.js";
 
 const config = loadConfig();
 const PORT = config.port;
@@ -31,28 +24,8 @@ const mcp = new McpServer(
 
 registerAllTools(mcp, store);
 
-// ── Express + Streamable HTTP transport ──────────────────
-const app = express();
-app.use(express.json());
-
-app.post("/mcp", async (req, res) => {
-  const transport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: undefined, // stateless
-  });
-  await mcp.connect(transport);
-  await transport.handleRequest(req, res, req.body);
-});
-
-// REST API
-app.use("/api/v1", createApiRouter({ store, basePath: process.cwd(), eventBus }));
-
-// Static files (dashboard)
-app.use(express.static(publicDir));
-
-// Health check
-app.get("/health", (_req, res) => {
-  res.json({ ok: true, server: "mcp-graph" });
-});
+// ── Express app ──────────────────────────────────────────
+const app = createApp({ store, basePath: process.cwd(), eventBus, mcp });
 
 // ── GitNexus auto-start ──────────────────────────────────
 if (config.integrations.gitnexusAutoStart) {
