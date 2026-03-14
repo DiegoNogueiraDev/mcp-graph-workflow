@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { SigmaContainer, useLoadGraph, useSigma, useRegisterEvents } from "@react-sigma/core";
 import "@react-sigma/core/lib/style.css";
 import Graph from "graphology";
@@ -9,6 +9,13 @@ import { CODE_SYMBOL_COLORS, CODE_RELATION_COLORS } from "@/lib/constants";
 import { isCodeGraphData, isImpactResult, isCypherResult, isTabularData } from "@/lib/code-graph-guards";
 import { TabularResultView } from "@/components/query-results/tabular-result-view";
 import { JsonResultView } from "@/components/query-results/json-result-view";
+
+// Strip existing alpha from 9-char hex (#RRGGBBAA) before appending new alpha.
+// Safari's Canvas2D throws on invalid gradient colors like "#RRGGBBAA80".
+function safeColor(color: string, alpha: string): string {
+  const base = color.length === 9 ? color.slice(0, 7) : color;
+  return base + alpha;
+}
 
 type GitNexusViewMode = "query" | "symbol";
 
@@ -683,13 +690,14 @@ function CosmosGraphPanel({
     );
   }
 
-  // Build highlighted node set from context graph
-  const highlightedNodes = new Set<string>();
-  if (contextGraph) {
-    for (const sym of contextGraph.symbols) {
-      highlightedNodes.add(sym.name);
+  // Build highlighted node set from context graph (memoized to avoid re-renders)
+  const highlightedNodes = useMemo(() => {
+    const s = new Set<string>();
+    if (contextGraph) {
+      for (const sym of contextGraph.symbols) s.add(sym.name);
     }
-  }
+    return s;
+  }, [contextGraph]);
 
   // The "active" node is either hovered or selected — drives starburst
   const activeNode = hoveredNode ?? selectedSymbol;
@@ -783,10 +791,10 @@ function drawNodeHover(
 
   // Large outer glow — like a nebula
   const gradient = context.createRadialGradient(x, y, size * 0.5, x, y, size * 6);
-  gradient.addColorStop(0, color + "80");
-  gradient.addColorStop(0.3, color + "30");
-  gradient.addColorStop(0.6, color + "10");
-  gradient.addColorStop(1, color + "00");
+  gradient.addColorStop(0, safeColor(color, "80"));
+  gradient.addColorStop(0.3, safeColor(color, "30"));
+  gradient.addColorStop(0.6, safeColor(color, "10"));
+  gradient.addColorStop(1, safeColor(color, "00"));
 
   context.beginPath();
   context.arc(x, y, size * 6, 0, Math.PI * 2);
@@ -858,7 +866,7 @@ function CosmosGraphLoader({
       const baseEdgeColor = CODE_RELATION_COLORS[rel.type] ?? "#2a2a50";
       try {
         g.addEdge(rel.from, rel.to, {
-          color: baseEdgeColor + "35",
+          color: safeColor(baseEdgeColor, "35"),
           size: 0.4,
           baseColor: baseEdgeColor,
           relType: rel.type,
@@ -928,7 +936,7 @@ function CosmosGraphLoader({
       if (isSelected) {
         graph.setNodeAttribute(node, "color", "#ffffff");
       } else if (isDimmed) {
-        graph.setNodeAttribute(node, "color", baseColor + "30");
+        graph.setNodeAttribute(node, "color", safeColor(baseColor, "30"));
       } else {
         graph.setNodeAttribute(node, "color", baseColor);
       }
@@ -945,11 +953,11 @@ function CosmosGraphLoader({
 
       if (isStarburst) {
         // Bright radiating lines from selected node — starburst effect
-        graph.setEdgeAttribute(edge, "color", baseEdgeColor + "f0");
+        graph.setEdgeAttribute(edge, "color", safeColor(baseEdgeColor, "f0"));
         graph.setEdgeAttribute(edge, "size", 3);
         graph.setEdgeAttribute(edge, "zIndex", 2);
       } else if (isContextEdge) {
-        graph.setEdgeAttribute(edge, "color", baseEdgeColor + "90");
+        graph.setEdgeAttribute(edge, "color", safeColor(baseEdgeColor, "90"));
         graph.setEdgeAttribute(edge, "size", 1.5);
         graph.setEdgeAttribute(edge, "zIndex", 1);
       } else if (isDimmedEdge) {
@@ -958,7 +966,7 @@ function CosmosGraphLoader({
         graph.setEdgeAttribute(edge, "zIndex", 0);
       } else {
         // Default: faint constellation lines
-        graph.setEdgeAttribute(edge, "color", baseEdgeColor + "35");
+        graph.setEdgeAttribute(edge, "color", safeColor(baseEdgeColor, "35"));
         graph.setEdgeAttribute(edge, "size", 0.4);
         graph.setEdgeAttribute(edge, "zIndex", 0);
       }
@@ -1017,7 +1025,7 @@ function GraphEvents({
         if (highlightedNodes.size === 0) {
           // Dim everything else when hovering
           const baseColor = graph.getNodeAttribute(node, "baseColor") as string ?? "#6a6a8a";
-          return { ...data, color: baseColor + "25", zIndex: 0 };
+          return { ...data, color: safeColor(baseColor, "25"), zIndex: 0 };
         }
         return data;
       });
@@ -1028,7 +1036,7 @@ function GraphEvents({
         const isConnected = source === activeNode || target === activeNode;
         if (isConnected) {
           const baseEdgeColor = graph.getEdgeAttribute(edge, "baseColor") as string ?? "#4a4a7a";
-          return { ...data, color: baseEdgeColor + "f0", size: 3, zIndex: 2 };
+          return { ...data, color: safeColor(baseEdgeColor, "f0"), size: 3, zIndex: 2 };
         }
         if (highlightedNodes.size === 0) {
           return { ...data, color: "#0a0a15", size: 0.15, zIndex: 0 };

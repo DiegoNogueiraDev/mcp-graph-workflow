@@ -1,4 +1,4 @@
-import { useState, useCallback, lazy, Suspense } from "react";
+import React, { useState, useCallback, lazy, Suspense } from "react";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { ProjectProvider } from "@/providers/project-provider";
 import { Header } from "@/components/layout/header";
@@ -17,6 +17,35 @@ const SerenaTab = lazy(() => import("@/components/tabs/serena-tab").then((m) => 
 const InsightsTab = lazy(() => import("@/components/tabs/insights-tab").then((m) => ({ default: m.InsightsTab })));
 const BenchmarkTab = lazy(() => import("@/components/tabs/benchmark-tab").then((m) => ({ default: m.BenchmarkTab })));
 const LogsTab = lazy(() => import("@/components/tabs/logs-tab").then((m) => ({ default: m.LogsTab })));
+
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  state = { hasError: false, error: null as Error | null };
+
+  static getDerivedStateFromError(error: Error): { hasError: boolean; error: Error } {
+    return { hasError: true, error };
+  }
+
+  render(): React.ReactNode {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full gap-4 text-[var(--color-text-muted)]">
+          <p className="text-sm">Something went wrong.</p>
+          <p className="text-xs text-[var(--color-danger)]">{this.state.error?.message}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="text-xs px-3 py-1.5 rounded-lg bg-[var(--color-accent)] text-white hover:opacity-90 transition-opacity"
+          >
+            Reload
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function LoadingFallback(): React.JSX.Element {
   return (
@@ -61,20 +90,22 @@ function AppContent(): React.JSX.Element {
               {error}
             </div>
           ) : (
-            <Suspense fallback={<LoadingFallback />}>
-              {/* Keep-alive: hide with CSS instead of unmounting to avoid expensive re-renders */}
-              <div style={{ display: activeTab === "graph" ? "contents" : "none" }}>
-                {graph && <GraphTab graph={graph} />}
-              </div>
-              <div style={{ display: activeTab === "prd-backlog" ? "contents" : "none" }}>
-                {graph && <PrdBacklogTab graph={graph} />}
-              </div>
-              {activeTab === "gitnexus" && <GitNexusTab />}
-              {activeTab === "serena" && <SerenaTab />}
-              {activeTab === "insights" && <InsightsTab />}
-              {activeTab === "benchmark" && <BenchmarkTab />}
-              {activeTab === "logs" && <LogsTab />}
-            </Suspense>
+            <ErrorBoundary>
+              <Suspense fallback={<LoadingFallback />}>
+                {/* Keep-alive: hide with CSS instead of unmounting to avoid expensive re-renders */}
+                <div style={{ display: activeTab === "graph" ? "contents" : "none" }}>
+                  {graph && <GraphTab graph={graph} />}
+                </div>
+                <div style={{ display: activeTab === "prd-backlog" ? "contents" : "none" }}>
+                  {graph && <PrdBacklogTab graph={graph} />}
+                </div>
+                {activeTab === "gitnexus" && <GitNexusTab />}
+                {activeTab === "serena" && <SerenaTab />}
+                {activeTab === "insights" && <InsightsTab />}
+                {activeTab === "benchmark" && <BenchmarkTab />}
+                {activeTab === "logs" && <LogsTab />}
+              </Suspense>
+            </ErrorBoundary>
           )}
         </main>
 
