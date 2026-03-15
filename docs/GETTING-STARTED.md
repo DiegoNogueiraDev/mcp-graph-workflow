@@ -171,19 +171,27 @@ mcp-graph serve --port 3000   # or: npm run dev
 
 Open `http://localhost:3000`.
 
-### 5 Tabs
+> Para o guia completo do dashboard, veja **[DASHBOARD-GUIDE.md](DASHBOARD-GUIDE.md)**.
+
+### 7 Tabs
 
 1. **Graph** — Interactive diagram (React Flow), filters, node table, detail panel
 2. **PRD & Backlog** — Imported PRDs with progress tracking
-3. **Code Graph** — GitNexus code dependency visualization
-4. **Insights** — Bottleneck detection, velocity metrics, reports
-5. **Benchmark** — Performance benchmark results
+3. **GitNexus** — Code dependency visualization (requires GitNexus)
+4. **Serena** — Code analysis memories (requires Serena MCP)
+5. **Insights** — Bottleneck detection, velocity metrics, reports
+6. **Benchmark** — Context compression performance metrics
+7. **Logs** — Real-time server logs with filtering
 
-### Features
+### Key Features
 
-- Dark/light theme toggle
-- Real-time updates via SSE (Server-Sent Events)
-- Filters by type, status, sprint, priority
+- **Open Folder** — Switch between project databases without restarting the server
+- **Import PRD** — Upload .md, .txt, .pdf, .html files to generate the execution graph
+- **Capture** — Extract web page content via Playwright
+- **Multi-project** — Switch projects within the same DB or swap entire DBs
+- **Real-time updates** via SSE (Server-Sent Events)
+- **Filters** by type, status, sprint, priority
+- **Dark/light theme** toggle
 
 ---
 

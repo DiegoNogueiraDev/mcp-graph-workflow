@@ -9,7 +9,7 @@ describe("API /api/v1/gitnexus", () => {
   beforeEach(() => {
     app = express();
     app.use(express.json());
-    app.use("/api/v1/gitnexus", createGitNexusRouter({ basePath: "/tmp/fake-project" }));
+    app.use("/api/v1/gitnexus", createGitNexusRouter({ getBasePath: () => "/tmp/fake-project" }));
   });
 
   // ── GET /status ───────────────────────────────

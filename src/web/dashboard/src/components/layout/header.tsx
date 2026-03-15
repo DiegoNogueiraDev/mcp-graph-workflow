@@ -7,9 +7,10 @@ interface HeaderProps {
   stats: GraphStats | null;
   onImport: () => void;
   onCapture: () => void;
+  onOpenFolder: () => void;
 }
 
-export const Header = memo(function Header({ stats, onImport, onCapture }: HeaderProps) {
+export const Header = memo(function Header({ stats, onImport, onCapture, onOpenFolder }: HeaderProps) {
   const { theme, toggleTheme } = useTheme();
 
   const done = stats?.byStatus?.done ?? 0;
@@ -30,6 +31,14 @@ export const Header = memo(function Header({ stats, onImport, onCapture }: Heade
       </div>
 
       <div className="flex items-center gap-2">
+        <button
+          onClick={onOpenFolder}
+          className="px-3 py-1.5 text-sm border border-[var(--color-border)] rounded hover:bg-[var(--color-bg-tertiary)] transition-colors"
+          aria-label="Open project folder"
+          title="Open a different project folder"
+        >
+          Open Folder
+        </button>
         <button
           onClick={onImport}
           className="px-3 py-1.5 text-sm bg-[var(--color-accent)] text-white rounded hover:bg-[var(--color-accent-light)] transition-colors"

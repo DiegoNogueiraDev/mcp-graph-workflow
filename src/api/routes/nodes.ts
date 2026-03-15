@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod/v4";
-import type { SqliteStore } from "../../core/store/sqlite-store.js";
+import type { StoreRef } from "../../core/store/store-manager.js";
 import type { NodeType, NodeStatus } from "../../core/graph/graph-types.js";
 import { NodeNotFoundError } from "../../core/utils/errors.js";
 import { NodeTypeSchema, NodeStatusSchema, GraphNodeSchema } from "../../schemas/node.schema.js";
@@ -28,7 +28,7 @@ const UpdateNodeBodySchema = z.object({
   metadata: z.record(z.string(), z.unknown()).nullable().optional(),
 });
 
-export function createNodesRouter(store: SqliteStore): Router {
+export function createNodesRouter(storeRef: StoreRef): Router {
   const router = Router();
 
   router.get("/", (req, res, next) => {
@@ -41,7 +41,7 @@ export function createNodesRouter(store: SqliteStore): Router {
           res.status(400).json({ error: `Invalid type: ${type as string}` });
           return;
         }
-        res.json(store.getNodesByType(parsed.data as NodeType));
+        res.json(storeRef.current.getNodesByType(parsed.data as NodeType));
         return;
       }
 
@@ -51,11 +51,11 @@ export function createNodesRouter(store: SqliteStore): Router {
           res.status(400).json({ error: `Invalid status: ${status as string}` });
           return;
         }
-        res.json(store.getNodesByStatus(parsed.data as NodeStatus));
+        res.json(storeRef.current.getNodesByStatus(parsed.data as NodeStatus));
         return;
       }
 
-      res.json(store.getAllNodes());
+      res.json(storeRef.current.getAllNodes());
     } catch (err) {
       next(err);
     }
@@ -64,7 +64,7 @@ export function createNodesRouter(store: SqliteStore): Router {
   router.get("/:id", (req, res, next) => {
     try {
       const id = req.params.id as string;
-      const node = store.getNodeById(id);
+      const node = storeRef.current.getNodeById(id);
       if (!node) {
         throw new NodeNotFoundError(id);
       }
@@ -86,7 +86,7 @@ export function createNodesRouter(store: SqliteStore): Router {
           createdAt: timestamp,
           updatedAt: timestamp,
         };
-        store.insertNode(node);
+        storeRef.current.insertNode(node);
         res.status(201).json(node);
       } catch (err) {
         next(err);
@@ -99,10 +99,10 @@ export function createNodesRouter(store: SqliteStore): Router {
       const id = req.params.id as string;
       const { status, ...fields } = req.body;
 
-      let updated = store.updateNode(id, fields);
+      let updated = storeRef.current.updateNode(id, fields);
 
       if (status !== undefined) {
-        updated = store.updateNodeStatus(id, status);
+        updated = storeRef.current.updateNodeStatus(id, status);
       }
 
       if (!updated && Object.keys(req.body).length > 0) {
@@ -110,7 +110,7 @@ export function createNodesRouter(store: SqliteStore): Router {
       }
 
       if (!updated) {
-        const existing = store.getNodeById(id);
+        const existing = storeRef.current.getNodeById(id);
         if (!existing) throw new NodeNotFoundError(id);
         res.json(existing);
         return;
@@ -125,7 +125,7 @@ export function createNodesRouter(store: SqliteStore): Router {
   router.delete("/:id", (req, res, next) => {
     try {
       const id = req.params.id as string;
-      const deleted = store.deleteNode(id);
+      const deleted = storeRef.current.deleteNode(id);
       if (!deleted) {
         throw new NodeNotFoundError(id);
       }

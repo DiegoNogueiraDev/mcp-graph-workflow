@@ -5,7 +5,7 @@
 
 import { Router } from "express";
 import { z } from "zod/v4";
-import type { SqliteStore } from "../../core/store/sqlite-store.js";
+import type { StoreRef } from "../../core/store/store-manager.js";
 import { KnowledgeStore } from "../../core/store/knowledge-store.js";
 import { KnowledgeSourceTypeSchema } from "../../schemas/knowledge.schema.js";
 import { chunkText } from "../../core/rag/chunk-text.js";
@@ -24,9 +24,20 @@ const SearchSchema = z.object({
   limit: z.number().int().positive().optional(),
 });
 
-export function createKnowledgeRouter(store: SqliteStore): Router {
+export function createKnowledgeRouter(storeRef: StoreRef): Router {
   const router = Router();
-  const knowledgeStore = new KnowledgeStore(store.getDb());
+
+  /** Lazy knowledge store — re-creates when the underlying DB changes. */
+  let _cachedDb: unknown = null;
+  let _knowledgeStore: KnowledgeStore = new KnowledgeStore(storeRef.current.getDb());
+  function getKnowledgeStore(): KnowledgeStore {
+    const db = storeRef.current.getDb();
+    if (db !== _cachedDb) {
+      _cachedDb = db;
+      _knowledgeStore = new KnowledgeStore(db);
+    }
+    return _knowledgeStore;
+  }
 
   // ── POST / — upload a knowledge document ─────
   router.post("/", (req, res, next) => {
@@ -39,6 +50,7 @@ export function createKnowledgeRouter(store: SqliteStore): Router {
 
       const { title, content, sourceType, sourceId, metadata } = parsed.data;
       const chunks = chunkText(content);
+      const knowledgeStore = getKnowledgeStore();
 
       const docs = knowledgeStore.insertChunks(
         chunks.map((chunk) => ({
@@ -69,6 +81,7 @@ export function createKnowledgeRouter(store: SqliteStore): Router {
       const sourceType = req.query.sourceType as string | undefined;
       const limit = req.query.limit ? Number(req.query.limit) : undefined;
       const offset = req.query.offset ? Number(req.query.offset) : undefined;
+      const knowledgeStore = getKnowledgeStore();
 
       const validSourceType = sourceType
         ? KnowledgeSourceTypeSchema.safeParse(sourceType)
@@ -101,6 +114,7 @@ export function createKnowledgeRouter(store: SqliteStore): Router {
       }
 
       const { query, limit } = parsed.data;
+      const knowledgeStore = getKnowledgeStore();
       const results = knowledgeStore.search(query, limit ?? 20);
 
       res.json({
@@ -116,6 +130,7 @@ export function createKnowledgeRouter(store: SqliteStore): Router {
   // ── GET /:id — get a knowledge document ──────
   router.get("/:id", (req, res, next) => {
     try {
+      const knowledgeStore = getKnowledgeStore();
       const doc = knowledgeStore.getById(req.params.id);
       if (!doc) {
         res.status(404).json({ error: "Knowledge document not found" });
@@ -130,6 +145,7 @@ export function createKnowledgeRouter(store: SqliteStore): Router {
   // ── DELETE /:id — delete a knowledge document ─
   router.delete("/:id", (req, res, next) => {
     try {
+      const knowledgeStore = getKnowledgeStore();
       const deleted = knowledgeStore.delete(req.params.id);
       if (!deleted) {
         res.status(404).json({ error: "Knowledge document not found" });
@@ -144,6 +160,7 @@ export function createKnowledgeRouter(store: SqliteStore): Router {
   // ── GET /stats — knowledge store stats ────────
   router.get("/stats/summary", (_req, res, next) => {
     try {
+      const knowledgeStore = getKnowledgeStore();
       const total = knowledgeStore.count();
       const bySource: Record<string, number> = {};
       const sourceTypes = ["upload", "serena", "code_context", "docs", "web_capture"] as const;

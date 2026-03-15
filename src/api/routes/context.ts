@@ -1,8 +1,8 @@
 import { Router } from "express";
-import type { SqliteStore } from "../../core/store/sqlite-store.js";
+import type { StoreRef } from "../../core/store/store-manager.js";
 import { buildTaskContext } from "../../core/context/compact-context.js";
 
-export function createContextRouter(store: SqliteStore): Router {
+export function createContextRouter(storeRef: StoreRef): Router {
   const router = Router();
 
   router.get("/preview", (req, res, next) => {
@@ -13,7 +13,7 @@ export function createContextRouter(store: SqliteStore): Router {
         return;
       }
 
-      const context = buildTaskContext(store, nodeId);
+      const context = buildTaskContext(storeRef.current, nodeId);
       if (!context) {
         res.status(404).json({ error: `Node not found: ${nodeId}` });
         return;

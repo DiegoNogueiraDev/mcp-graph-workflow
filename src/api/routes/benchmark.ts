@@ -1,14 +1,15 @@
 import { Router } from "express";
-import type { SqliteStore } from "../../core/store/sqlite-store.js";
+import type { StoreRef } from "../../core/store/store-manager.js";
 import { buildTaskContext } from "../../core/context/compact-context.js";
 import { estimateTokens } from "../../core/context/token-estimator.js";
 import { detectCycles } from "../../core/planner/dependency-chain.js";
 
-export function createBenchmarkRouter(store: SqliteStore): Router {
+export function createBenchmarkRouter(storeRef: StoreRef): Router {
   const router = Router();
 
   router.get("/", (_req, res, next) => {
     try {
+      const store = storeRef.current;
       const stats = store.getStats();
       const doc = store.toGraphDocument();
       const allNodes = doc.nodes;

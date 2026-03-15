@@ -27,7 +27,7 @@ const SymbolBodySchema = z.object({ symbol: z.string().min(1) });
 const DEFAULT_GITNEXUS_PORT = 3737;
 
 export interface GitNexusRouterOptions {
-  basePath: string;
+  getBasePath: () => string;
   gitnexusPort?: number;
 }
 
@@ -58,13 +58,13 @@ async function proxyToGitNexus(
 }
 
 export function createGitNexusRouter(options: GitNexusRouterOptions): Router {
-  const { basePath, gitnexusPort = DEFAULT_GITNEXUS_PORT } = options;
+  const { getBasePath, gitnexusPort = DEFAULT_GITNEXUS_PORT } = options;
   const router = Router();
 
   // ── GET /status ───────────────────────────────
   router.get("/status", async (_req, res, next) => {
     try {
-      const indexed = isGitNexusIndexed(basePath);
+      const indexed = isGitNexusIndexed(getBasePath());
       const running = await isGitNexusRunning(gitnexusPort);
 
       res.json({
@@ -82,7 +82,7 @@ export function createGitNexusRouter(options: GitNexusRouterOptions): Router {
   // ── POST /analyze ────────────────────────────────
   router.post("/analyze", async (_req, res, next) => {
     try {
-      const result = await ensureGitNexusAnalyzed(basePath);
+      const result = await ensureGitNexusAnalyzed(getBasePath());
       res.json(result);
     } catch (err) {
       next(err);
@@ -92,7 +92,7 @@ export function createGitNexusRouter(options: GitNexusRouterOptions): Router {
   // ── POST /serve ─────────────────────────────────
   router.post("/serve", async (_req, res, next) => {
     try {
-      const result = await startGitNexusServe(basePath, gitnexusPort);
+      const result = await startGitNexusServe(getBasePath(), gitnexusPort);
       res.json(result);
     } catch (err) {
       next(err);
