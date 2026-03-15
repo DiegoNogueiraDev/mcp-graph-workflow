@@ -10,6 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Bug Fixes
 
+* reset release manifest to re-trigger 5.0.3 publish ([6358944](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/6358944bb542c3e1ef47dbeac26141a8938522f1))
+* sanitize all color paths in GitNexus nodeReducer and clean stale dashboard bundles ([ea95fc4](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/ea95fc43451adcfdc64f341612a28aeb7958a889))
+
+## [5.0.3](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.0.2...mcp-graph-v5.0.3) (2026-03-15)
+
+
+### Bug Fixes
+
 * sanitize all color paths in GitNexus nodeReducer and clean stale dashboard bundles ([ea95fc4](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/ea95fc43451adcfdc64f341612a28aeb7958a889))
 
 ## [5.0.2](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.0.1...mcp-graph-v5.0.2) (2026-03-15)
