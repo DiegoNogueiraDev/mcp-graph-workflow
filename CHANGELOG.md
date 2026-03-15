@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.4](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.0.3...mcp-graph-v5.0.4) (2026-03-15)
+
+
+### Bug Fixes
+
+* allow dashboard to swap project DB at runtime via Open Folder ([#31](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/issues/31)) ([a4d4ea7](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/a4d4ea795a699eb09aa6545ec8cb834ec6f3cd67))
+
 ## [5.0.3](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.0.2...mcp-graph-v5.0.3) (2026-03-15)
 
 
