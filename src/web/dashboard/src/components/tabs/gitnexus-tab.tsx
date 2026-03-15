@@ -10,10 +10,10 @@ import { isCodeGraphData, isImpactResult, isCypherResult, isTabularData } from "
 import { TabularResultView } from "@/components/query-results/tabular-result-view";
 import { JsonResultView } from "@/components/query-results/json-result-view";
 
-// Strip existing alpha from 9-char hex (#RRGGBBAA) before appending new alpha.
-// Safari's Canvas2D throws on invalid gradient colors like "#RRGGBBAA80".
+// Strip existing alpha from hex colors longer than 7 chars (#RRGGBBAA, etc.)
+// before appending new alpha. Safari's Canvas2D throws on invalid gradient colors.
 function safeColor(color: string, alpha: string): string {
-  const base = color.length === 9 ? color.slice(0, 7) : color;
+  const base = color.startsWith("#") && color.length > 7 ? color.slice(0, 7) : color;
   return base + alpha;
 }
 
