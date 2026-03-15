@@ -20,8 +20,8 @@ export function createRagRouter(storeRef: StoreRef): Router {
   const router = Router();
 
   /** Lazy embedding store — re-creates when the underlying store changes. */
-  let _cachedStore: SqliteStore | null = null;
-  let _embeddingStore: EmbeddingStore | null = null;
+  let _cachedStore: SqliteStore = storeRef.current;
+  let _embeddingStore: EmbeddingStore = new EmbeddingStore(_cachedStore);
   let indexed = false;
 
   function getEmbeddingStore(): EmbeddingStore {
@@ -30,7 +30,7 @@ export function createRagRouter(storeRef: StoreRef): Router {
       _embeddingStore = new EmbeddingStore(_cachedStore);
       indexed = false;
     }
-    return _embeddingStore!;
+    return _embeddingStore;
   }
 
   // ── POST /query — semantic search ─────────────

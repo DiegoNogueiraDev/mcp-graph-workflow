@@ -29,14 +29,14 @@ export function createKnowledgeRouter(storeRef: StoreRef): Router {
 
   /** Lazy knowledge store — re-creates when the underlying DB changes. */
   let _cachedDb: unknown = null;
-  let _knowledgeStore: KnowledgeStore | null = null;
+  let _knowledgeStore: KnowledgeStore = new KnowledgeStore(storeRef.current.getDb());
   function getKnowledgeStore(): KnowledgeStore {
     const db = storeRef.current.getDb();
     if (db !== _cachedDb) {
       _cachedDb = db;
       _knowledgeStore = new KnowledgeStore(db);
     }
-    return _knowledgeStore!;
+    return _knowledgeStore;
   }
 
   // ── POST / — upload a knowledge document ─────

@@ -18,14 +18,14 @@ export function createDocsCacheRouter(storeRef: StoreRef): Router {
 
   /** Lazy cache store — re-creates when the underlying DB changes. */
   let _cachedDb: unknown = null;
-  let _cacheStore: DocsCacheStore | null = null;
+  let _cacheStore: DocsCacheStore = new DocsCacheStore(storeRef.current.getDb());
   function getCacheStore(): DocsCacheStore {
     const db = storeRef.current.getDb();
     if (db !== _cachedDb) {
       _cachedDb = db;
       _cacheStore = new DocsCacheStore(db);
     }
-    return _cacheStore!;
+    return _cacheStore;
   }
 
   router.get("/", (req, res, next) => {
