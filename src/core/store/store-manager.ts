@@ -1,10 +1,9 @@
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import { SqliteStore } from "./sqlite-store.js";
 import { STORE_DIR, LEGACY_STORE_DIR, DB_FILE } from "../utils/constants.js";
 import { logger } from "../utils/logger.js";
-import type { GraphEventBus } from "../events/event-bus.js";
 
 /** Mutable reference to the current SqliteStore — shared across route closures. */
 export interface StoreRef {

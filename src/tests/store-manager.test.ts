@@ -1,11 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { mkdirSync, existsSync, writeFileSync, readFileSync, rmSync } from "node:fs";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { mkdirSync, existsSync, readFileSync, rmSync } from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import { StoreManager } from "../core/store/store-manager.js";
 import { SqliteStore } from "../core/store/sqlite-store.js";
 import { GraphEventBus } from "../core/events/event-bus.js";
-import { STORE_DIR, DB_FILE } from "../core/utils/constants.js";
+import { STORE_DIR } from "../core/utils/constants.js";
 
 function createTempProject(name: string): string {
   const dir = path.join(os.tmpdir(), `mcp-graph-test-${name}-${Date.now()}`);
@@ -176,7 +176,6 @@ describe("StoreManager", () => {
     const path1 = createTempProject("load");
     tempDirs.push(path1);
     manager.swap(path1);
-    const recentFile = manager.recentFilePath;
     manager.close();
 
     // Create new manager — should load from disk
