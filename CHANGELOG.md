@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.1](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.0.0...mcp-graph-v5.0.1) (2026-03-15)
+
+
+### Bug Fixes
+
+* prevent GitNexus tab blank screen on node click in Safari ([0d734a0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/0d734a0cc86c9267ac866412dca76abeebe20c29))
+* prevent GitNexus tab blank screen on node click in Safari ([8056adc](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/8056adcbc8738477e5558d7ca67a627a5e60632f))
+
 ## [5.0.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v4.4.0...mcp-graph-v5.0.0) (2026-03-14)
 
 
