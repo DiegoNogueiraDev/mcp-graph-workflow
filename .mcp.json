@@ -2,7 +2,10 @@
   "mcpServers": {
     "mcp-graph": {
       "command": "npx",
-      "args": ["tsx", "src/mcp/stdio.ts"]
+      "args": [
+        "-y",
+        "@mcp-graph-workflow/mcp-graph"
+      ]
     },
     "serena": {
       "command": "uvx",
@@ -11,8 +14,6 @@
         "git+https://github.com/oraios/serena",
         "serena",
         "start-mcp-server",
-        "--context",
-        "claude-code",
         "--project",
         "."
       ]
@@ -20,9 +21,7 @@
     "playwright": {
       "command": "npx",
       "args": [
-        "@playwright/mcp@latest",
-        "--headless",
-        "--ignore-https-errors"
+        "@playwright/mcp@latest"
       ]
     },
     "context7": {
@@ -30,6 +29,14 @@
       "args": [
         "-y",
         "@upstash/context7-mcp"
+      ]
+    },
+    "gitnexus": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "gitnexus",
+        "mcp"
       ]
     }
   }
