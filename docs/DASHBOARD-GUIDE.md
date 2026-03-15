@@ -70,7 +70,7 @@ Abra `http://localhost:3000` no navegador. O dashboard conecta automaticamente v
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ [mcp-graph]  Project Alpha  1/3 done  [Open Folder] [Import PRD] [Capture] [☀] │  ← Header
+│ [mcp-graph]  My Project  1/3 done  [Open Folder] [Import PRD] [Capture] [☀] │  ← Header
 ├─────────────────────────────────────────────────────────────┤
 │ Graph | PRD & Backlog | GitNexus | Serena | Insights | Benchmark | Logs        │  ← Tabs
 ├─────────────────────────────────────────────────────────────┤
@@ -84,7 +84,7 @@ Abra `http://localhost:3000` no navegador. O dashboard conecta automaticamente v
 
 | Elemento | Descrição |
 |----------|-----------|
-| **Nome do projeto** | Projeto ativo no momento (ex: "Project Alpha") |
+| **Nome do projeto** | Projeto ativo no momento (ex: "My Project") |
 | **X/Y done** | Progresso: nodes concluídos / total |
 | **Open Folder** | Trocar o projeto ativo (muda o DB sem reiniciar) |
 | **Import PRD** | Importar arquivo PRD (.md, .txt, .pdf, .html) |
