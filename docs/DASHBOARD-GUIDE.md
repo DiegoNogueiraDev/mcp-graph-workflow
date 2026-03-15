@@ -4,6 +4,57 @@ Guia completo do dashboard web do mcp-graph. Para referência da API REST, veja 
 
 ---
 
+## Primeiro Uso
+
+### Onde ficam os dados?
+
+Cada projeto tem seus dados em uma pasta `workflow-graph/graph.db` dentro do diretório do projeto:
+
+```
+meu-projeto/
+  ├── src/
+  ├── package.json
+  └── workflow-graph/       ← criado automaticamente
+      └── graph.db          ← banco SQLite local
+```
+
+### Passo a passo
+
+**1. Inicialize o projeto** (se ainda não fez):
+
+```bash
+cd ~/meu-projeto
+npx @mcp-graph-workflow/mcp-graph init
+```
+
+Isso cria a pasta `workflow-graph/graph.db` no diretório atual.
+
+**2. Importe um PRD ou crie nodes** via MCP tools no seu editor (Copilot, Claude Code, Cursor).
+
+**3. Abra o dashboard:**
+
+```bash
+cd ~/meu-projeto
+npx @mcp-graph-workflow/mcp-graph serve
+```
+
+Abra `http://localhost:3000`.
+
+> **Importante:** O `serve` sempre abre o banco do diretório onde foi executado. Se o dashboard mostrar "Graph not initialized", verifique se você está no diretório correto e se rodou `init`.
+
+### Trocar para outro projeto
+
+Se você tem vários projetos com `workflow-graph/`, use **Open Folder** no dashboard para trocar sem reiniciar o servidor:
+
+1. Clique **Open Folder** no header
+2. Clique **Browse directories...**
+3. Navegue até o diretório do outro projeto — pastas com dados aparecem com badge **graph**
+4. Clique **Open**
+
+O dashboard atualiza instantaneamente com os dados do outro projeto.
+
+---
+
 ## Iniciando o Dashboard
 
 ```bash
