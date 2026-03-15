@@ -961,7 +961,7 @@ function CosmosGraphLoader({
         graph.setEdgeAttribute(edge, "size", 1.5);
         graph.setEdgeAttribute(edge, "zIndex", 1);
       } else if (isDimmedEdge) {
-        graph.setEdgeAttribute(edge, "color", "#08081520");
+        graph.setEdgeAttribute(edge, "color", safeColor("#080815", "20"));
         graph.setEdgeAttribute(edge, "size", 0.15);
         graph.setEdgeAttribute(edge, "zIndex", 0);
       } else {
@@ -1020,14 +1020,18 @@ function GraphEvents({
           return { ...data, color: "#ffffff", size: (data.size ?? 3) * 1.3, zIndex: 3 };
         }
         if (neighbors.has(node)) {
-          return { ...data, zIndex: 2 };
+          const baseColor = graph.getNodeAttribute(node, "baseColor") as string ?? "#6a6a8a";
+          return { ...data, color: baseColor.startsWith("#") && baseColor.length > 7 ? baseColor.slice(0, 7) : baseColor, zIndex: 2 };
         }
         if (highlightedNodes.size === 0) {
           // Dim everything else when hovering
           const baseColor = graph.getNodeAttribute(node, "baseColor") as string ?? "#6a6a8a";
           return { ...data, color: safeColor(baseColor, "25"), zIndex: 0 };
         }
-        return data;
+        {
+          const baseColor = (data.color as string) ?? "#6a6a8a";
+          return { ...data, color: baseColor.startsWith("#") && baseColor.length > 7 ? baseColor.slice(0, 7) : baseColor };
+        }
       });
 
       sigma.setSetting("edgeReducer", (edge, data) => {
