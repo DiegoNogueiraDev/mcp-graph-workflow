@@ -1,20 +1,20 @@
 #!/usr/bin/env node
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { SqliteStore } from "../core/store/sqlite-store.js";
 import { registerAllTools } from "./tools/index.js";
 import { GraphEventBus } from "../core/events/event-bus.js";
 import { logger } from "../core/utils/logger.js";
 import { loadConfig } from "../core/config/config-loader.js";
 import { ensureGitNexusAnalyzed, startGitNexusServe, stopGitNexus } from "../core/integrations/gitnexus-launcher.js";
 import { createApp } from "./app-factory.js";
+import { StoreManager } from "../core/store/store-manager.js";
 
 const config = loadConfig();
 const PORT = config.port;
 
-// ── Store + Event Bus ────────────────────────────────────
-const store = SqliteStore.open(process.cwd());
+// ── Store Manager + Event Bus ────────────────────────────
+const storeManager = StoreManager.create(process.cwd());
 const eventBus = new GraphEventBus();
-store.eventBus = eventBus;
+storeManager.store.eventBus = eventBus;
 
 // ── MCP Server ───────────────────────────────────────────
 const mcp = new McpServer(
@@ -22,10 +22,16 @@ const mcp = new McpServer(
   { capabilities: { tools: {} } },
 );
 
-registerAllTools(mcp, store);
+registerAllTools(mcp, storeManager.store);
 
 // ── Express app ──────────────────────────────────────────
-const app = createApp({ store, basePath: process.cwd(), eventBus, mcp });
+const app = createApp({
+  store: storeManager.store,
+  basePath: process.cwd(),
+  eventBus,
+  mcp,
+  storeManager,
+});
 
 // ── GitNexus auto-start ──────────────────────────────────
 if (config.integrations.gitnexusAutoStart) {
@@ -49,7 +55,7 @@ if (config.integrations.gitnexusAutoStart) {
 function cleanup(signal: string): void {
   logger.info("server:shutdown", { signal });
   stopGitNexus().catch(() => {});
-  store.close();
+  storeManager.close();
   logger.info("server:shutdown:ok", { signal });
   process.exit(0);
 }

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import multer from "multer";
 import { unlink } from "node:fs/promises";
-import type { SqliteStore } from "../../core/store/sqlite-store.js";
+import type { StoreRef } from "../../core/store/store-manager.js";
 import { readFileContent, isSupportedFormat } from "../../core/parser/file-reader.js";
 import { extractEntities } from "../../core/parser/extract.js";
 import { convertToGraph } from "../../core/importer/prd-to-graph.js";
@@ -12,7 +12,7 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 },
 });
 
-export function createImportRouter(store: SqliteStore): Router {
+export function createImportRouter(storeRef: StoreRef): Router {
   const router = Router();
 
   router.post(
@@ -34,6 +34,8 @@ export function createImportRouter(store: SqliteStore): Router {
       }
 
       try {
+        const store = storeRef.current;
+
         // Ensure project is initialized
         if (!store.getProject()) {
           store.initProject();

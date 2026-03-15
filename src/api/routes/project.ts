@@ -1,19 +1,19 @@
 import { Router } from "express";
 import { z } from "zod/v4";
-import type { SqliteStore } from "../../core/store/sqlite-store.js";
+import type { StoreRef } from "../../core/store/store-manager.js";
 import { validateBody } from "../middleware/validate.js";
 
 const InitProjectBodySchema = z.object({
   name: z.string().min(1).optional(),
 });
 
-export function createProjectRouter(store: SqliteStore): Router {
+export function createProjectRouter(storeRef: StoreRef): Router {
   const router = Router();
 
   // GET /project — current active project
   router.get("/", (_req, res, next) => {
     try {
-      const project = store.getProject();
+      const project = storeRef.current.getProject();
       if (!project) {
         res.status(404).json({ error: "No project initialized" });
         return;
@@ -30,7 +30,7 @@ export function createProjectRouter(store: SqliteStore): Router {
     validateBody(InitProjectBodySchema),
     (req, res, next) => {
       try {
-        const project = store.initProject(req.body.name);
+        const project = storeRef.current.initProject(req.body.name);
         res.status(201).json(project);
       } catch (err) {
         next(err);
@@ -41,7 +41,7 @@ export function createProjectRouter(store: SqliteStore): Router {
   // GET /project/active — alias for GET /project
   router.get("/active", (_req, res, next) => {
     try {
-      const project = store.getActiveProject();
+      const project = storeRef.current.getActiveProject();
       if (!project) {
         res.status(404).json({ error: "No active project" });
         return;
@@ -55,7 +55,7 @@ export function createProjectRouter(store: SqliteStore): Router {
   // GET /project/list — list all projects
   router.get("/list", (_req, res, next) => {
     try {
-      const projects = store.listProjects();
+      const projects = storeRef.current.listProjects();
       res.json({ total: projects.length, projects });
     } catch (err) {
       next(err);
@@ -65,8 +65,8 @@ export function createProjectRouter(store: SqliteStore): Router {
   // POST /project/:id/activate — switch active project
   router.post("/:id/activate", (req, res, next) => {
     try {
-      store.activateProject(req.params.id);
-      const project = store.getProject();
+      storeRef.current.activateProject(req.params.id);
+      const project = storeRef.current.getProject();
       res.json({ ok: true, project });
     } catch (err) {
       next(err);

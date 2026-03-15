@@ -1,4 +1,4 @@
-import type { GraphDocument, GraphEdge, GraphNode, GraphStats, IntegrationStatus, GitNexusStatus, SerenaMemory, AnalyzeResult, ServeResult, LogEntry } from "./types";
+import type { GraphDocument, GraphEdge, GraphNode, GraphStats, IntegrationStatus, GitNexusStatus, SerenaMemory, AnalyzeResult, ServeResult, LogEntry, FolderInfo, OpenFolderResult, BrowseResult } from "./types";
 
 const BASE = "/api/v1";
 
@@ -146,6 +146,16 @@ export const apiClient = {
 
   // Serena Memories
   getSerenaMemories: () => request<SerenaMemory[]>("/integrations/serena/memories"),
+
+  // Folder
+  getFolder: () => request<FolderInfo>("/folder"),
+  openFolder: (path: string) =>
+    request<OpenFolderResult>("/folder/open", {
+      method: "POST",
+      body: JSON.stringify({ path }),
+    }),
+  browseFolder: (path: string) =>
+    request<BrowseResult>(`/folder/browse?path=${encodeURIComponent(path)}`),
 
   // Logs
   getLogs: (params?: { level?: string; since?: number; search?: string }) => {

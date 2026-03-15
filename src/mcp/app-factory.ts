@@ -5,6 +5,7 @@ import type { Express } from "express";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import type { SqliteStore } from "../core/store/sqlite-store.js";
+import type { StoreManager } from "../core/store/store-manager.js";
 import type { GraphEventBus } from "../core/events/event-bus.js";
 import { createApiRouter } from "../api/router.js";
 
@@ -16,10 +17,11 @@ export interface AppFactoryOptions {
   basePath: string;
   eventBus: GraphEventBus;
   mcp?: McpServer;
+  storeManager?: StoreManager;
 }
 
 export function createApp(options: AppFactoryOptions): Express {
-  const { store, basePath, eventBus, mcp } = options;
+  const { store, basePath, eventBus, mcp, storeManager } = options;
 
   const app = express();
   app.use(express.json());
@@ -36,7 +38,7 @@ export function createApp(options: AppFactoryOptions): Express {
   }
 
   // REST API
-  app.use("/api/v1", createApiRouter({ store, basePath, eventBus }));
+  app.use("/api/v1", createApiRouter({ store, basePath, eventBus, storeManager }));
 
   // Static files (dashboard)
   app.use(express.static(publicDir));

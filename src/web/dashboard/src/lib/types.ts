@@ -161,6 +161,33 @@ export interface LogEntry {
   timestamp: string;
 }
 
+// ── Folder / Open Folder ─────────────────────────
+
+export interface FolderInfo {
+  currentPath: string;
+  recentFolders: string[];
+}
+
+export interface BrowseEntry {
+  name: string;
+  path: string;
+  isDirectory: boolean;
+  hasGraph: boolean;
+}
+
+export interface BrowseResult {
+  path: string;
+  parent: string;
+  entries: BrowseEntry[];
+}
+
+export interface OpenFolderResult {
+  ok: boolean;
+  basePath?: string;
+  error?: string;
+  recentFolders?: string[];
+}
+
 // ── GitNexus on-demand action results ───────────
 
 export interface AnalyzeResult {

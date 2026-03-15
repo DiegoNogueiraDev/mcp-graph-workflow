@@ -1,6 +1,7 @@
 import { Router } from "express";
 import type { SqliteStore } from "../core/store/sqlite-store.js";
 import type { GraphEventBus } from "../core/events/event-bus.js";
+import type { StoreRef } from "../core/store/store-manager.js";
 import { createProjectRouter } from "./routes/project.js";
 import { createNodesRouter } from "./routes/nodes.js";
 import { createEdgesRouter } from "./routes/edges.js";
@@ -20,6 +21,7 @@ import { createRagRouter } from "./routes/rag.js";
 import { createKnowledgeRouter } from "./routes/knowledge.js";
 import { createBenchmarkRouter } from "./routes/benchmark.js";
 import { createLogsRouter } from "./routes/logs.js";
+import { createFolderRouter } from "./routes/folder.js";
 import { errorHandler } from "./middleware/error-handler.js";
 import { requestLogger } from "./middleware/request-logger.js";
 import { setLogListener } from "../core/utils/logger.js";
@@ -28,6 +30,9 @@ export interface ApiRouterOptions {
   store: SqliteStore;
   basePath?: string;
   eventBus?: GraphEventBus;
+  storeRef?: StoreRef;
+  getBasePath?: () => string;
+  storeManager?: import("../core/store/store-manager.js").StoreManager;
 }
 
 export function createApiRouter(storeOrOptions: SqliteStore | ApiRouterOptions): Router {
@@ -35,28 +40,41 @@ export function createApiRouter(storeOrOptions: SqliteStore | ApiRouterOptions):
   const basePath = "basePath" in storeOrOptions ? (storeOrOptions.basePath ?? process.cwd()) : process.cwd();
   const eventBus = "eventBus" in storeOrOptions ? storeOrOptions.eventBus : undefined;
 
+  // StoreRef: if a storeManager was provided, use its storeRef; otherwise create a static ref
+  const storeManager = "storeManager" in storeOrOptions ? storeOrOptions.storeManager : undefined;
+  const storeRef: StoreRef = storeManager?.storeRef ?? ("storeRef" in storeOrOptions && storeOrOptions.storeRef
+    ? storeOrOptions.storeRef
+    : { current: store });
+  const getBasePath: () => string = storeManager?.getBasePathFn ?? ("getBasePath" in storeOrOptions && storeOrOptions.getBasePath
+    ? storeOrOptions.getBasePath
+    : () => basePath);
+
   const router = Router();
 
   router.use(requestLogger);
 
-  router.use("/project", createProjectRouter(store));
-  router.use("/nodes", createNodesRouter(store));
-  router.use("/edges", createEdgesRouter(store));
-  router.use("/stats", createStatsRouter(store));
-  router.use("/search", createSearchRouter(store));
-  router.use("/graph", createGraphRouter(store));
-  router.use("/import", createImportRouter(store));
-  router.use("/integrations", createIntegrationsRouter(store, basePath));
-  router.use("/insights", createInsightsRouter(store, basePath));
-  router.use("/skills", createSkillsRouter(basePath));
+  router.use("/project", createProjectRouter(storeRef));
+  router.use("/nodes", createNodesRouter(storeRef));
+  router.use("/edges", createEdgesRouter(storeRef));
+  router.use("/stats", createStatsRouter(storeRef));
+  router.use("/search", createSearchRouter(storeRef));
+  router.use("/graph", createGraphRouter(storeRef));
+  router.use("/import", createImportRouter(storeRef));
+  router.use("/integrations", createIntegrationsRouter(storeRef, getBasePath));
+  router.use("/insights", createInsightsRouter(storeRef, getBasePath));
+  router.use("/skills", createSkillsRouter(getBasePath));
   router.use("/capture", createCaptureRouter());
-  router.use("/docs", createDocsCacheRouter(store));
-  router.use("/context", createContextRouter(store));
-  router.use("/gitnexus", createGitNexusRouter({ basePath }));
-  router.use("/rag", createRagRouter(store));
-  router.use("/knowledge", createKnowledgeRouter(store));
-  router.use("/benchmark", createBenchmarkRouter(store));
+  router.use("/docs", createDocsCacheRouter(storeRef));
+  router.use("/context", createContextRouter(storeRef));
+  router.use("/gitnexus", createGitNexusRouter({ getBasePath }));
+  router.use("/rag", createRagRouter(storeRef));
+  router.use("/knowledge", createKnowledgeRouter(storeRef));
+  router.use("/benchmark", createBenchmarkRouter(storeRef));
   router.use("/logs", createLogsRouter());
+
+  if (storeManager) {
+    router.use("/folder", createFolderRouter(storeManager));
+  }
 
   if (eventBus) {
     router.use("/events", createEventsRouter(eventBus));

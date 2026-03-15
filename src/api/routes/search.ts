@@ -1,7 +1,7 @@
 import { Router } from "express";
-import type { SqliteStore } from "../../core/store/sqlite-store.js";
+import type { StoreRef } from "../../core/store/store-manager.js";
 
-export function createSearchRouter(store: SqliteStore): Router {
+export function createSearchRouter(storeRef: StoreRef): Router {
   const router = Router();
 
   router.get("/", (req, res, next) => {
@@ -18,7 +18,7 @@ export function createSearchRouter(store: SqliteStore): Router {
         return;
       }
 
-      const results = store.searchNodes(q, limit);
+      const results = storeRef.current.searchNodes(q, limit);
       res.json(results);
     } catch (err) {
       next(err);

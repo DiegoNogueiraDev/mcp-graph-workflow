@@ -1,14 +1,14 @@
 import { Router } from "express";
-import type { SqliteStore } from "../../core/store/sqlite-store.js";
+import type { StoreRef } from "../../core/store/store-manager.js";
 import type { NodeStatus, NodeType } from "../../core/graph/graph-types.js";
 import { graphToMermaid } from "../../core/graph/mermaid-export.js";
 
-export function createGraphRouter(store: SqliteStore): Router {
+export function createGraphRouter(storeRef: StoreRef): Router {
   const router = Router();
 
   router.get("/", (_req, res, next) => {
     try {
-      const doc = store.toGraphDocument();
+      const doc = storeRef.current.toGraphDocument();
       res.json(doc);
     } catch (err) {
       next(err);
@@ -17,7 +17,7 @@ export function createGraphRouter(store: SqliteStore): Router {
 
   router.get("/mermaid", (req, res, next) => {
     try {
-      const doc = store.toGraphDocument();
+      const doc = storeRef.current.toGraphDocument();
 
       const format = (req.query.format as string) ?? "flowchart";
       const direction = (req.query.direction as string) ?? "TD";

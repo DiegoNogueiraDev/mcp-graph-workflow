@@ -1,6 +1,6 @@
 # REST API Reference
 
-> 17 routers, 44 endpoints — all served from `mcp-graph serve`.
+> 18 routers, 47 endpoints — all served from `mcp-graph serve`.
 
 ## Base URL
 
@@ -328,6 +328,67 @@ Get symbol context from GitNexus.
 Get impact analysis for a symbol.
 
 **Body:** `{ "symbol": "string" }`
+
+---
+
+## Folder
+
+### `GET /folder`
+
+Get current project folder path and recent folders list.
+
+**Response:**
+```json
+{
+  "currentPath": "/home/user/my-project",
+  "recentFolders": ["/home/user/project-a", "/home/user/project-b"]
+}
+```
+
+### `POST /folder/open`
+
+Switch the active project folder at runtime (hot-swap the database).
+
+**Body:** `{ "path": "/home/user/other-project" }`
+
+**Response (200):**
+```json
+{
+  "ok": true,
+  "basePath": "/home/user/other-project",
+  "recentFolders": ["..."]
+}
+```
+
+**Error (400):**
+```json
+{
+  "ok": false,
+  "error": "Directory does not exist: /invalid/path"
+}
+```
+
+> The previous store is safely closed only after the new one opens successfully. If opening fails, the original project remains active — no data is lost.
+
+### `GET /folder/browse?path=/home/user`
+
+Browse directories at a given path. Returns only directories (no files, no hidden dirs). Directories containing a graph database are flagged with `hasGraph: true` and sorted first.
+
+**Query:** `path` (required)
+
+**Response (200):**
+```json
+{
+  "path": "/home/user",
+  "parent": "/home",
+  "entries": [
+    { "name": "my-project", "path": "/home/user/my-project", "isDirectory": true, "hasGraph": true },
+    { "name": "other-dir", "path": "/home/user/other-dir", "isDirectory": true, "hasGraph": false }
+  ]
+}
+```
+
+**Error (400):** Directory does not exist or is not readable.
 
 ---
 

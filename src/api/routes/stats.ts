@@ -1,12 +1,12 @@
 import { Router } from "express";
-import type { SqliteStore } from "../../core/store/sqlite-store.js";
+import type { StoreRef } from "../../core/store/store-manager.js";
 
-export function createStatsRouter(store: SqliteStore): Router {
+export function createStatsRouter(storeRef: StoreRef): Router {
   const router = Router();
 
   router.get("/", (_req, res, next) => {
     try {
-      res.json(store.getStats());
+      res.json(storeRef.current.getStats());
     } catch (err) {
       next(err);
     }

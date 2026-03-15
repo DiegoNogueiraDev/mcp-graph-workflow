@@ -8,6 +8,7 @@ import { useStats } from "@/hooks/use-stats";
 import { useSSE } from "@/hooks/use-sse";
 import { ImportModal } from "@/components/modals/import-modal";
 import { CaptureModal } from "@/components/modals/capture-modal";
+import { OpenFolderModal } from "@/components/modals/open-folder-modal";
 
 // Lazy-load tabs
 const GraphTab = lazy(() => import("@/components/tabs/graph-tab").then((m) => ({ default: m.GraphTab })));
@@ -59,6 +60,7 @@ function AppContent(): React.JSX.Element {
   const [activeTab, setActiveTab] = useState<TabId>("graph");
   const [importOpen, setImportOpen] = useState(false);
   const [captureOpen, setCaptureOpen] = useState(false);
+  const [openFolderOpen, setOpenFolderOpen] = useState(false);
 
   const { graph, loading, error, refresh } = useGraphData();
   const { stats, refresh: refreshStats } = useStats();
@@ -79,6 +81,7 @@ function AppContent(): React.JSX.Element {
           stats={stats}
           onImport={() => setImportOpen(true)}
           onCapture={() => setCaptureOpen(true)}
+          onOpenFolder={() => setOpenFolderOpen(true)}
         />
         <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
 
@@ -118,6 +121,11 @@ function AppContent(): React.JSX.Element {
           open={captureOpen}
           onClose={() => setCaptureOpen(false)}
           onImported={handleRefresh}
+        />
+        <OpenFolderModal
+          open={openFolderOpen}
+          onClose={() => setOpenFolderOpen(false)}
+          onFolderChanged={handleRefresh}
         />
       </div>
     </ProjectProvider>

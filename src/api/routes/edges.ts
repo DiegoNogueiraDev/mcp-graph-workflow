@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod/v4";
-import type { SqliteStore } from "../../core/store/sqlite-store.js";
+import type { StoreRef } from "../../core/store/store-manager.js";
 import { GraphEdgeSchema } from "../../schemas/edge.schema.js";
 import { validateBody } from "../middleware/validate.js";
 import { generateId } from "../../core/utils/id.js";
@@ -10,12 +10,12 @@ const CreateEdgeBodySchema = GraphEdgeSchema.omit({ id: true, createdAt: true })
   id: z.string().optional(),
 });
 
-export function createEdgesRouter(store: SqliteStore): Router {
+export function createEdgesRouter(storeRef: StoreRef): Router {
   const router = Router();
 
   router.get("/", (_req, res, next) => {
     try {
-      res.json(store.getAllEdges());
+      res.json(storeRef.current.getAllEdges());
     } catch (err) {
       next(err);
     }
@@ -31,7 +31,7 @@ export function createEdgesRouter(store: SqliteStore): Router {
           id: req.body.id ?? generateId("edge"),
           createdAt: now(),
         };
-        store.insertEdge(edge);
+        storeRef.current.insertEdge(edge);
         res.status(201).json(edge);
       } catch (err) {
         next(err);
@@ -42,7 +42,7 @@ export function createEdgesRouter(store: SqliteStore): Router {
   router.delete("/:id", (req, res, next) => {
     try {
       const id = req.params.id as string;
-      const deleted = store.deleteEdge(id);
+      const deleted = storeRef.current.deleteEdge(id);
       if (!deleted) {
         res.status(404).json({ error: `Edge not found: ${id}` });
         return;

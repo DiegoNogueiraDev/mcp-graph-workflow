@@ -1,5 +1,5 @@
 import { Router } from "express";
-import type { SqliteStore } from "../../core/store/sqlite-store.js";
+import type { StoreRef } from "../../core/store/store-manager.js";
 import { DocsCacheStore } from "../../core/docs/docs-cache-store.js";
 import { DocsSyncer, type Context7Fetcher } from "../../core/docs/docs-syncer.js";
 
@@ -13,12 +13,24 @@ function getFreshness(fetchedAt: string): "fresh" | "aging" | "stale" {
   return "stale";
 }
 
-export function createDocsCacheRouter(store: SqliteStore): Router {
+export function createDocsCacheRouter(storeRef: StoreRef): Router {
   const router = Router();
-  const cacheStore = new DocsCacheStore(store.getDb());
+
+  /** Lazy cache store — re-creates when the underlying DB changes. */
+  let _cachedDb: unknown = null;
+  let _cacheStore: DocsCacheStore | null = null;
+  function getCacheStore(): DocsCacheStore {
+    const db = storeRef.current.getDb();
+    if (db !== _cachedDb) {
+      _cachedDb = db;
+      _cacheStore = new DocsCacheStore(db);
+    }
+    return _cacheStore!;
+  }
 
   router.get("/", (req, res, next) => {
     try {
+      const cacheStore = getCacheStore();
       const lib = req.query.lib as string | undefined;
 
       if (lib) {
@@ -46,6 +58,7 @@ export function createDocsCacheRouter(store: SqliteStore): Router {
 
   router.get("/:libId", (req, res, next) => {
     try {
+      const cacheStore = getCacheStore();
       const doc = cacheStore.getDoc(req.params.libId);
       if (!doc) {
         res.status(404).json({ error: `Doc not found: ${req.params.libId}` });
@@ -59,15 +72,13 @@ export function createDocsCacheRouter(store: SqliteStore): Router {
 
   router.post("/sync", async (req, res, next) => {
     try {
+      const cacheStore = getCacheStore();
       const { lib } = req.body as { lib?: string };
       if (!lib) {
         res.status(400).json({ error: "Missing 'lib' in request body" });
         return;
       }
 
-      // Create a no-op fetcher that returns a placeholder — real Context7 integration
-      // requires MCP client connection which is not available in the REST API context.
-      // The sync endpoint stores the lib name for future MCP-based sync.
       const placeholderFetcher: Context7Fetcher = {
         async resolveLibraryId(name: string): Promise<string> {
           return `context7:${name}`;
