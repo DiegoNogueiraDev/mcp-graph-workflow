@@ -1,6 +1,6 @@
 {
   "name": "@mcp-graph-workflow/mcp-graph",
-  "version": "5.0.1",
+  "version": "5.0.2",
   "description": "MCP local-first PRD to task graph — transforms text into executable structure",
   "type": "module",
   "main": "dist/index.js",
@@ -78,6 +78,7 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
+    "@mcp-graph-workflow/mcp-graph": "^5.0.1",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "better-sqlite3": "^12.6.2",
     "cheerio": "^1.2.0",
