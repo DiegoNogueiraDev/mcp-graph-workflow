@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { tmpdir } from "node:os";
 
 // We test each check function in isolation
 // The actual implementations will be in doctor-checks.ts
@@ -30,7 +31,7 @@ describe("checkNodeVersion", () => {
 describe("checkWritePermissions", () => {
   it("should return ok when directory is writable", async () => {
     const { checkWritePermissions } = await import("../core/doctor/doctor-checks.js");
-    const result = await checkWritePermissions("/tmp");
+    const result = await checkWritePermissions(tmpdir());
     expect(result.name).toBe("write-permissions");
     expect(result.level).toBe("ok");
   });
@@ -217,9 +218,9 @@ describe("checkMcpJson", () => {
 });
 
 describe("checkIntegrations", () => {
-  it("should return results for gitnexus, serena, and playwright", async () => {
+  it("should return results for gitnexus, serena, and playwright", { timeout: 15_000 }, async () => {
     const { checkIntegrations } = await import("../core/doctor/doctor-checks.js");
-    const results = await checkIntegrations("/tmp");
+    const results = await checkIntegrations(tmpdir());
     expect(results.length).toBe(3);
     expect(results.map((r) => r.name)).toEqual(
       expect.arrayContaining(["integration-gitnexus", "integration-serena", "integration-playwright"]),

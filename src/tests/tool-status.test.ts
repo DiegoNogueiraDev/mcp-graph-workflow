@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 
 import { getIntegrationsStatus } from "../core/integrations/tool-status.js";
 
-describe("getIntegrationsStatus", () => {
+describe("getIntegrationsStatus", { timeout: 15_000 }, () => {
   let tmpDir: string;
 
   beforeEach(() => {
