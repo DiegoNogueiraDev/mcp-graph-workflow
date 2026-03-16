@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.1](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.1.0...mcp-graph-v5.1.1) (2026-03-16)
+
+
+### Bug Fixes
+
+* relax findNextTask benchmark threshold for slow CI runners ([4184f11](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/4184f11574a3397c5a937e35e9319dc73e00fca9))
+
 ## [5.1.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.0.5...mcp-graph-v5.1.0) (2026-03-16)
 
 
