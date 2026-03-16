@@ -1,7 +1,6 @@
 import { Router } from "express";
 import type { StoreRef } from "../../core/store/store-manager.js";
 import { buildTaskContext } from "../../core/context/compact-context.js";
-import { estimateTokens } from "../../core/context/token-estimator.js";
 import { detectCycles } from "../../core/planner/dependency-chain.js";
 
 export function createBenchmarkRouter(storeRef: StoreRef): Router {
@@ -31,7 +30,7 @@ export function createBenchmarkRouter(storeRef: StoreRef): Router {
         const ctx = buildTaskContext(store, node.id);
         if (!ctx) continue;
 
-        const rawTokens = estimateTokens(String(ctx.metrics.originalChars));
+        const rawTokens = Math.ceil(ctx.metrics.originalChars / 4);
         perTaskMetrics.push({
           id: node.id,
           title: node.title,

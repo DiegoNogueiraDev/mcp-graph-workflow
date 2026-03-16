@@ -34,7 +34,7 @@ export function BenchmarkTab(): React.JSX.Element {
             label="Avg Compress"
           />
           <MetricCard
-            value={tokenEconomy.avgTokensPerTask.toLocaleString()}
+            value={tokenEconomy.sampleSize > 0 ? Math.round(tokenEconomy.totalTokensSaved / tokenEconomy.sampleSize).toLocaleString() : "0"}
             label="Tokens Saved/Task"
           />
           <MetricCard
