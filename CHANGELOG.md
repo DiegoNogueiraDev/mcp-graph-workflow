@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.3](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.1.2...mcp-graph-v5.1.3) (2026-03-16)
+
+
+### Bug Fixes
+
+* add checkout step before gh pr merge in release workflow ([4e3aeac](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/4e3aeac57920f8ee4adcc7d0db91362a9af4d7ec))
+* extract PR number from release-please JSON output ([759d985](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/759d985e1ab06415e6d049cce919422fa862b4c2))
+* fallback to direct merge when no branch protection rules exist ([472eeb6](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/472eeb6c310ffa7f925cb72ae747c9d3bcdf2008))
+* replace non-null assertion with explicit guard in docs-cache-store ([f7a1d86](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/f7a1d8694fb6e557e4819a5a8e343f6cd8a2c2d1))
+
 ## [5.1.2](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.1.1...mcp-graph-v5.1.2) (2026-03-16)
 
 
