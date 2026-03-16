@@ -26,7 +26,10 @@ jobs:
 
       - name: Auto-merge release PR
         if: steps.release.outputs.pr
-        run: gh pr merge ${{ fromJSON(steps.release.outputs.pr).number }} --auto --squash --delete-branch
+        run: |
+          PR=${{ fromJSON(steps.release.outputs.pr).number }}
+          gh pr merge "$PR" --auto --squash --delete-branch || \
+            gh pr merge "$PR" --squash --delete-branch
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
