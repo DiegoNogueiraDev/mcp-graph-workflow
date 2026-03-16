@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.0.5...mcp-graph-v5.1.0) (2026-03-16)
+
+
+### Features
+
+* add `mcp-graph doctor` command and lifecycle MCP agent suggestions ([13b31b4](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/13b31b499424d8a44461a02543e9553cf6dfc86a))
+
+
+### Bug Fixes
+
+* make doctor and tool-status tests cross-platform (Windows CI) ([8c786c1](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/8c786c1048c84a3bcfd8f79cbe534036f2b5a01b))
+
 ## [5.0.5](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.0.4...mcp-graph-v5.0.5) (2026-03-16)
 
 
