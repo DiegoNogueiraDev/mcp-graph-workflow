@@ -28,10 +28,9 @@ jobs:
         if: steps.release.outputs.pr
         run: |
           PR=${{ fromJSON(steps.release.outputs.pr).number }}
-          gh pr merge "$PR" --auto --squash --delete-branch || \
-            gh pr merge "$PR" --squash --delete-branch
+          gh pr merge "$PR" --auto --squash --delete-branch
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_PAT }}
 
   publish:
     needs: release-please
