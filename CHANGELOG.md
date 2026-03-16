@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.5](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.0.4...mcp-graph-v5.0.5) (2026-03-16)
+
+
+### Bug Fixes
+
+* correct token savings calculation in benchmark ([1f94e56](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/1f94e565f52eaef6c2d5d523a1e9fa3bad296190))
+
 ## [5.0.4](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.0.3...mcp-graph-v5.0.4) (2026-03-15)
 
 
