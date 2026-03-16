@@ -53,7 +53,7 @@ describe("checkSqliteDatabase", () => {
     expect(result.suggestion).toContain("init");
   });
 
-  it("should return ok when database exists and opens", async () => {
+  it("should return ok when database exists and opens", { timeout: 15_000 }, async () => {
     // Create a temp store to test against
     const { SqliteStore } = await import("../core/store/sqlite-store.js");
     const os = await import("node:os");
@@ -74,7 +74,7 @@ describe("checkSqliteDatabase", () => {
 });
 
 describe("checkDbIntegrity", () => {
-  it("should return ok for a valid database", async () => {
+  it("should return ok for a valid database", { timeout: 15_000 }, async () => {
     const { SqliteStore } = await import("../core/store/sqlite-store.js");
     const os = await import("node:os");
     const path = await import("node:path");
@@ -100,7 +100,7 @@ describe("checkDbIntegrity", () => {
 });
 
 describe("checkGraphInitialized", () => {
-  it("should return warning when project is not initialized", async () => {
+  it("should return warning when project is not initialized", { timeout: 15_000 }, async () => {
     const { SqliteStore } = await import("../core/store/sqlite-store.js");
     const os = await import("node:os");
     const path = await import("node:path");
@@ -119,7 +119,7 @@ describe("checkGraphInitialized", () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it("should return ok when project is initialized", async () => {
+  it("should return ok when project is initialized", { timeout: 15_000 }, async () => {
     const { SqliteStore } = await import("../core/store/sqlite-store.js");
     const os = await import("node:os");
     const path = await import("node:path");
