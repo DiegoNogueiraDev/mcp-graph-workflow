@@ -21,6 +21,9 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
+      - uses: actions/checkout@v6
+        if: steps.release.outputs.pr
+
       - name: Auto-merge release PR
         if: steps.release.outputs.pr
         run: gh pr merge ${{ fromJSON(steps.release.outputs.pr).number }} --auto --squash --delete-branch
