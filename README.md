@@ -77,7 +77,8 @@ npm run dev        # HTTP + dashboard at localhost:3000
 - **Semantic Search + RAG** — Full-text BM25 search + TF-IDF embeddings, 100% local
 - **Sprint Planning** — Velocity metrics, capacity-based planning, risk assessment
 - **Web Dashboard** — Interactive graph visualization, backlog tracking, code intelligence, insights
-- **Multi-Agent Mesh** — Serena + GitNexus + Context7 + Playwright coordinated via event bus
+- **Multi-Agent Mesh** — Serena + GitNexus + Context7 + Playwright coordinated via event bus, with phase-aware MCP suggestions
+- **Environment Doctor** — `mcp-graph doctor` validates Node.js, SQLite, permissions, integrations, and suggests fixes
 - **Local-First** — SQLite persistence, zero external dependencies, cross-platform
 
 ## Who is this for?
@@ -115,7 +116,7 @@ mcp-graph serve --port 3000    # or: npm run dev
 |---|---|---|
 | **MCP Tools** | 26 | [MCP-TOOLS-REFERENCE.md](docs/MCP-TOOLS-REFERENCE.md) |
 | **REST Endpoints** | 44 (17 routers) | [REST-API-REFERENCE.md](docs/REST-API-REFERENCE.md) |
-| **CLI Commands** | 5 | `init`, `import`, `index`, `stats`, `serve` |
+| **CLI Commands** | 6 | `init`, `import`, `index`, `stats`, `serve`, `doctor` |
 
 ## Integrations
 

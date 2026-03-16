@@ -215,6 +215,35 @@ Tracks availability and health of all integrated tools:
 - Context7: available / unavailable
 - Playwright: installed / not installed
 
+## Doctor Command
+
+The `mcp-graph doctor` CLI command validates the health of all integrations and the execution environment:
+
+```bash
+mcp-graph doctor          # Human-readable output with ✓/⚠/✗
+mcp-graph doctor --json   # Structured JSON report
+```
+
+Checks performed:
+- Node.js version (>= 20)
+- Write permissions on `workflow-graph/`
+- SQLite database exists and passes integrity check
+- Graph project initialized
+- Config file valid
+- Dashboard build present
+- `.mcp.json` exists and valid
+- GitNexus installed/running
+- Serena configured
+- Playwright available
+
+Exit code: 0 if all critical checks pass, 1 otherwise.
+
+## Lifecycle MCP Suggestions
+
+The lifecycle wrapper (`_lifecycle` block appended to every MCP tool response) now includes `suggestedMcpAgents` — contextual recommendations for which external MCPs to use in the current phase.
+
+This enables AI agents to automatically leverage the right integration at the right time without manual prompting. See [Lifecycle](./LIFECYCLE.md#sugestões-de-mcps-externos-por-fase-lifecycle-wrapper) for the full mapping.
+
 ## Related Documentation
 
 - [Knowledge Pipeline](./KNOWLEDGE-PIPELINE.md) — How knowledge flows from sources to LLM context

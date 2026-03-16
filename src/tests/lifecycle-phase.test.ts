@@ -185,4 +185,45 @@ describe("getPhaseGuidance", () => {
     expect(guidance.suggestedTools).toContain("context");
     expect(guidance.suggestedTools).toContain("update_status");
   });
+
+  it("should include suggestedMcpAgents for IMPLEMENT phase", () => {
+    const guidance = getPhaseGuidance("IMPLEMENT");
+    expect(guidance.suggestedMcpAgents).toBeDefined();
+    expect(guidance.suggestedMcpAgents!.length).toBeGreaterThan(0);
+    const names = guidance.suggestedMcpAgents!.map((a) => a.name);
+    expect(names).toContain("serena");
+    expect(names).toContain("gitnexus");
+    expect(names).toContain("context7");
+  });
+
+  it("should include suggestedMcpAgents for DESIGN phase with serena and gitnexus", () => {
+    const guidance = getPhaseGuidance("DESIGN");
+    expect(guidance.suggestedMcpAgents).toBeDefined();
+    const names = guidance.suggestedMcpAgents!.map((a) => a.name);
+    expect(names).toContain("serena");
+    expect(names).toContain("gitnexus");
+  });
+
+  it("should include suggestedMcpAgents for VALIDATE phase with playwright", () => {
+    const guidance = getPhaseGuidance("VALIDATE");
+    expect(guidance.suggestedMcpAgents).toBeDefined();
+    const names = guidance.suggestedMcpAgents!.map((a) => a.name);
+    expect(names).toContain("playwright");
+    expect(names).toContain("gitnexus");
+  });
+
+  it("should have no suggestedMcpAgents for ANALYZE and LISTENING phases", () => {
+    for (const phase of ["ANALYZE", "LISTENING"] as LifecyclePhase[]) {
+      const guidance = getPhaseGuidance(phase);
+      expect(guidance.suggestedMcpAgents ?? []).toHaveLength(0);
+    }
+  });
+
+  it("should include tools array in McpAgentSuggestion", () => {
+    const guidance = getPhaseGuidance("IMPLEMENT");
+    const serena = guidance.suggestedMcpAgents!.find((a) => a.name === "serena");
+    expect(serena).toBeDefined();
+    expect(serena!.tools).toBeDefined();
+    expect(serena!.tools!.length).toBeGreaterThan(0);
+  });
 });

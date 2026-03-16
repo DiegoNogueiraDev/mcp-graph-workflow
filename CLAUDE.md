@@ -32,9 +32,10 @@ npm run lint           # eslint
 
 ```
 src/
-  cli/               # Commander.js commands (5) — thin orchestration, NO business logic
+  cli/               # Commander.js commands (6) — thin orchestration, NO business logic
   core/
     capture/         # web-capture, validate-runner, content-extractor
+    doctor/          # doctor-checks, doctor-runner, doctor-types (environment validation)
     config/          # config-schema, config-loader
     context/         # compact, tiered, bm25-compressor, context-assembler, rag-context, token-estimator
     docs/            # stack-detector, mcp-context7-fetcher, docs-cache-store, docs-syncer
@@ -361,6 +362,8 @@ next → context → [implementar com TDD] → update_status → next
 ```bash
 npx mcp-graph stats          # Estatísticas do grafo
 npx mcp-graph list            # Listar nodes
+npx mcp-graph doctor          # Validar ambiente de execução
+npx mcp-graph doctor --json   # Diagnóstico em JSON estruturado
 npx mcp-graph serve --port 3000  # Dashboard visual
 ```
 <!-- mcp-graph:end -->

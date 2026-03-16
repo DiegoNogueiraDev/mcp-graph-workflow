@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { SqliteStore } from "../core/store/sqlite-store.js";
 import type { GraphDocument } from "../core/graph/graph-types.js";
-import { detectCurrentPhase, getPhaseGuidance, detectWarnings, type LifecyclePhase, type LifecycleWarning } from "../core/planner/lifecycle-phase.js";
+import { detectCurrentPhase, getPhaseGuidance, detectWarnings, type LifecyclePhase, type LifecycleWarning, type McpAgentSuggestion } from "../core/planner/lifecycle-phase.js";
 import { logger } from "../core/utils/logger.js";
 
 export interface LifecycleBlock {
@@ -10,6 +10,7 @@ export interface LifecycleBlock {
   suggestedNext: string[];
   principles: string[];
   warnings: LifecycleWarning[];
+  suggestedMcpAgents?: McpAgentSuggestion[];
 }
 
 export interface LifecycleBlockOptions {
@@ -37,6 +38,9 @@ export function buildLifecycleBlock(doc: GraphDocument, options?: LifecycleBlock
     suggestedNext: guidance.suggestedTools,
     principles: guidance.principles,
     warnings,
+    ...(guidance.suggestedMcpAgents && guidance.suggestedMcpAgents.length > 0
+      ? { suggestedMcpAgents: guidance.suggestedMcpAgents }
+      : {}),
   };
 }
 

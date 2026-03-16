@@ -575,7 +575,7 @@ graph TD
 
 | Fase | Comando | Propósito |
 |------|---------|-----------|
-| **Início** | `list`, `stats` | Verificar estado atual |
+| **Início** | `list`, `stats`, `doctor` | Verificar estado atual e saúde do ambiente |
 | **PLAN** | `import_prd` | Parse PRD → nodes + edges |
 | **PLAN** | `plan_sprint` | Sprint planning com velocity e riscos |
 | **PLAN** | `decompose` | Detectar tasks para breakdown |
@@ -593,6 +593,38 @@ graph TD
 | **REVIEW** | `export_graph`, `export_mermaid` | Exportar para visualização |
 | **HANDOFF** | `bulk_update_status → done` | Fechar PRD |
 | **LISTENING** | `add_node` | Registrar feedback |
+
+---
+
+## Sugestões de MCPs Externos por Fase (Lifecycle Wrapper)
+
+O lifecycle wrapper (`_lifecycle` block) agora sugere automaticamente MCPs externos contextuais via `suggestedMcpAgents`. Cada fase do ciclo indica quais agents usar e com quais tools:
+
+| Fase | Serena | GitNexus | Context7 | Playwright |
+|------|--------|----------|----------|------------|
+| **ANALYZE** | — | — | — | — |
+| **DESIGN** | `find_symbol`, `get_symbols_overview` | `impact`, `context` | — | — |
+| **PLAN** | — | — | `resolve-library-id`, `query-docs` | — |
+| **IMPLEMENT** | `find_symbol`, `replace_symbol_body`, `find_referencing_symbols` | `impact`, `detect_changes`, `context` | `query-docs` | — |
+| **VALIDATE** | — | `detect_changes` | — | `browser_navigate`, `browser_snapshot`, `browser_click` |
+| **REVIEW** | `find_referencing_symbols` | `impact`, `detect_changes` | — | — |
+| **HANDOFF** | — | `detect_changes` | — | — |
+| **LISTENING** | — | — | — | — |
+
+Exemplo de `_lifecycle` response com sugestões MCP:
+
+```json
+{
+  "_lifecycle": {
+    "phase": "IMPLEMENT",
+    "suggestedMcpAgents": [
+      { "name": "serena", "action": "Edição semântica de symbols", "tools": ["find_symbol", "replace_symbol_body"] },
+      { "name": "gitnexus", "action": "Impact analysis antes de editar", "tools": ["impact", "detect_changes"] },
+      { "name": "context7", "action": "Consultar API docs das libs", "tools": ["query-docs"] }
+    ]
+  }
+}
+```
 
 ---
 

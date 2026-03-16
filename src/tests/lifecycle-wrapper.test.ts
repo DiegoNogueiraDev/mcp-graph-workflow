@@ -108,3 +108,36 @@ describe("detectWarnings", () => {
     expect(warnings.some((w) => w.code === "no_acceptance_criteria")).toBe(false);
   });
 });
+
+describe("buildLifecycleBlock suggestedMcpAgents", () => {
+  it("should include suggestedMcpAgents for IMPLEMENT phase", () => {
+    const doc = makeDoc([{ type: "task", status: "in_progress", sprint: "s1" }]);
+    const block = buildLifecycleBlock(doc);
+    expect(block.phase).toBe("IMPLEMENT");
+    expect(block.suggestedMcpAgents).toBeDefined();
+    expect(block.suggestedMcpAgents!.length).toBeGreaterThan(0);
+    const names = block.suggestedMcpAgents!.map((a) => a.name);
+    expect(names).toContain("serena");
+    expect(names).toContain("gitnexus");
+  });
+
+  it("should not include suggestedMcpAgents for ANALYZE phase", () => {
+    const doc = makeDoc();
+    const block = buildLifecycleBlock(doc);
+    expect(block.phase).toBe("ANALYZE");
+    expect(block.suggestedMcpAgents ?? []).toHaveLength(0);
+  });
+
+  it("should include playwright for VALIDATE phase", () => {
+    const doc = makeDoc([
+      { type: "task", status: "done", sprint: "s1" },
+      { type: "task", status: "done", sprint: "s1" },
+      { type: "task", status: "ready", sprint: "s1" },
+    ]);
+    const block = buildLifecycleBlock(doc);
+    expect(block.phase).toBe("VALIDATE");
+    expect(block.suggestedMcpAgents).toBeDefined();
+    const names = block.suggestedMcpAgents!.map((a) => a.name);
+    expect(names).toContain("playwright");
+  });
+});
