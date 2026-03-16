@@ -150,6 +150,7 @@ npm run test:all    # Everything
 | [Knowledge Pipeline](docs/KNOWLEDGE-PIPELINE.md) | RAG, embeddings, context assembly |
 | [Integrations](docs/INTEGRATIONS-GUIDE.md) | Serena, GitNexus, Context7, Playwright |
 | [Test Guide](docs/TEST-GUIDE.md) | Test pyramid and best practices |
+| [PRD Writing Guide](docs/PRD-WRITING-GUIDE.md) | How to write PRDs that import correctly |
 | [Lifecycle](docs/LIFECYCLE.md) | 8-phase dev methodology |
 
 ## Support the Project
