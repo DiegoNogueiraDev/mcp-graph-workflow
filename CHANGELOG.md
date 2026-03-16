@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.4](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.1.3...mcp-graph-v5.1.4) (2026-03-16)
+
+
+### Bug Fixes
+
+* auto-merge any pending release PR regardless of release-please output ([5e190a8](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/5e190a85509b1f3d32b0d830600fbdb62f92fb44))
+* use PAT for release PR auto-merge to trigger publish workflow ([b6d9aa2](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/b6d9aa226240c922a7cabe881c873eb4704edc4b))
+* use PAT for release-please action to create releases with branch protection ([6640192](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/6640192500fa469490bf1e6715cba572afa25cda))
+
 ## [5.1.3](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.1.2...mcp-graph-v5.1.3) (2026-03-16)
 
 
