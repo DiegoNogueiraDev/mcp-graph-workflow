@@ -10,6 +10,7 @@ import { buildTieredContext, type ContextTier } from "./tiered-context.js";
 import { compressWithBm25 } from "./bm25-compressor.js";
 import { estimateTokens } from "./token-estimator.js";
 import { logger } from "../utils/logger.js";
+import type { LifecyclePhase } from "../planner/lifecycle-phase.js";
 
 export interface AssembledContext {
   /** The query used to assemble context */
@@ -43,6 +44,8 @@ export interface AssemblerOptions {
   nodeIds?: string[];
   /** Max knowledge chunks to include (default: 5) */
   maxKnowledgeChunks?: number;
+  /** Current lifecycle phase for phase-aware knowledge boosting */
+  phase?: LifecyclePhase;
 }
 
 /**
@@ -91,12 +94,15 @@ export function assembleContext(
 
   breakdown.graph = tokensUsed;
 
-  // Section 2: Knowledge context (BM25-compressed)
+  // Section 2: Knowledge context (BM25-compressed, phase-aware)
   const knowledgeTokensBefore = tokensUsed;
+  const phase = options?.phase;
 
   try {
     const knowledgeStore = new KnowledgeStore(store.getDb());
-    const kResults = knowledgeStore.search(query, maxKnowledgeChunks * 2);
+    const kResults = phase
+      ? knowledgeStore.searchWithPhaseBoost(query, phase, maxKnowledgeChunks * 2)
+      : knowledgeStore.search(query, maxKnowledgeChunks * 2);
 
     if (kResults.length > 0) {
       const chunks = kResults.map((r) => `[${r.sourceType}] ${r.title}: ${r.content}`);

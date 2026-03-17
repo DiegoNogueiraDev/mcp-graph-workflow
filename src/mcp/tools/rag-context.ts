@@ -3,6 +3,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import { ragBuildContext } from "../../core/context/rag-context.js";
 import { assembleContext } from "../../core/context/context-assembler.js";
+import { detectCurrentPhase, type LifecyclePhase } from "../../core/planner/lifecycle-phase.js";
 import { logger } from "../../core/utils/logger.js";
 
 export function registerRagContext(server: McpServer, store: SqliteStore): void {
@@ -27,14 +28,28 @@ export function registerRagContext(server: McpServer, store: SqliteStore): void 
       logger.debug("tool:rag_context", { query, tier: detail });
       const budget = tokenBudget ?? 4000;
 
+      // Detect current lifecycle phase for phase-aware knowledge boosting
+      let currentPhase: LifecyclePhase | undefined;
+      try {
+        const doc = store.toGraphDocument();
+        const phaseOverride = store.getProjectSetting("lifecycle_phase_override");
+        currentPhase = detectCurrentPhase(doc, {
+          phaseOverride: phaseOverride ? phaseOverride as LifecyclePhase : null,
+        });
+      } catch {
+        // Phase detection may fail if no project loaded — proceed without phase
+        logger.debug("tool:rag_context:phase_detection_skipped");
+      }
+
       if (detail) {
-        // Use tiered context assembler
+        // Use tiered context assembler with phase awareness
         const ctx = assembleContext(store, query, {
           tokenBudget: budget,
           tier: detail,
+          phase: currentPhase,
         });
 
-        logger.info("tool:rag_context:ok", { query, tier: detail });
+        logger.info("tool:rag_context:ok", { query, tier: detail, phase: currentPhase });
         return {
           content: [
             {
@@ -45,10 +60,10 @@ export function registerRagContext(server: McpServer, store: SqliteStore): void 
         };
       }
 
-      // Default: use existing RAG context builder (backward compatible)
-      const ctx = ragBuildContext(store, query, budget);
+      // Default: use existing RAG context builder with phase awareness
+      const ctx = ragBuildContext(store, query, budget, currentPhase);
 
-      logger.info("tool:rag_context:ok", { query, tier: "standard" });
+      logger.info("tool:rag_context:ok", { query, tier: "standard", phase: currentPhase });
       return {
         content: [
           {

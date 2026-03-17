@@ -12,7 +12,15 @@ import {
   type McpAgentSuggestion,
   type StrictnessMode,
 } from "../core/planner/lifecycle-phase.js";
+import { KnowledgeStore } from "../core/store/knowledge-store.js";
 import { logger } from "../core/utils/logger.js";
+
+export interface PhaseKnowledgeSnippet {
+  title: string;
+  sourceType: string;
+  snippet: string;
+  phase?: string;
+}
 
 export interface LifecycleBlock {
   phase: LifecyclePhase;
@@ -21,6 +29,7 @@ export interface LifecycleBlock {
   principles: string[];
   warnings: LifecycleWarning[];
   suggestedMcpAgents?: McpAgentSuggestion[];
+  phaseKnowledge?: PhaseKnowledgeSnippet[];
 }
 
 export interface LifecycleBlockOptions {
@@ -28,10 +37,12 @@ export interface LifecycleBlockOptions {
   hasSnapshots?: boolean;
   phaseOverride?: LifecyclePhase | null;
   mode?: StrictnessMode;
+  store?: SqliteStore;
 }
 
 /**
  * Build the _lifecycle block to append to MCP tool responses.
+ * Optionally includes top-3 knowledge snippets relevant to the current phase.
  */
 export function buildLifecycleBlock(doc: GraphDocument, options?: LifecycleBlockOptions): LifecycleBlock {
   const phase = detectCurrentPhase(doc, {
@@ -43,6 +54,27 @@ export function buildLifecycleBlock(doc: GraphDocument, options?: LifecycleBlock
     ? detectWarnings(doc, phase, options.toolName, options?.mode)
     : [];
 
+  // Fetch top-3 phase-relevant knowledge snippets
+  let phaseKnowledge: PhaseKnowledgeSnippet[] | undefined;
+  if (options?.store) {
+    try {
+      const knowledgeStore = new KnowledgeStore(options.store.getDb());
+      const phaseQuery = `phase ${phase} context`;
+      const results = knowledgeStore.searchWithPhaseBoost(phaseQuery, phase, 3);
+      if (results.length > 0) {
+        phaseKnowledge = results.map((r) => ({
+          title: r.title,
+          sourceType: r.sourceType,
+          snippet: r.content.length > 200 ? r.content.slice(0, 200) + "..." : r.content,
+          phase: (r.metadata?.phase as string) ?? undefined,
+        }));
+      }
+    } catch {
+      // Knowledge search may fail — not critical
+      logger.debug("lifecycle-wrapper: phase knowledge search skipped");
+    }
+  }
+
   return {
     phase,
     reminder: guidance.reminder,
@@ -52,6 +84,7 @@ export function buildLifecycleBlock(doc: GraphDocument, options?: LifecycleBlock
     ...(guidance.suggestedMcpAgents && guidance.suggestedMcpAgents.length > 0
       ? { suggestedMcpAgents: guidance.suggestedMcpAgents }
       : {}),
+    ...(phaseKnowledge && phaseKnowledge.length > 0 ? { phaseKnowledge } : {}),
   };
 }
 
@@ -197,6 +230,7 @@ export function wrapToolsWithLifecycle(server: McpServer, store: SqliteStore): v
           hasSnapshots: snapshots.length > 0,
           phaseOverride: phaseOverrideValue ? phaseOverrideValue as LifecyclePhase : null,
           mode,
+          store,
         });
 
         // Append lifecycle as an additional text content item

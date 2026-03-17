@@ -1,7 +1,9 @@
 import { z } from "zod/v4";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { SqliteStore } from "../../core/store/sqlite-store.js";
-import { detectCurrentPhase, getPhaseGuidance, validatePhaseTransition, type StrictnessMode } from "../../core/planner/lifecycle-phase.js";
+import { detectCurrentPhase, getPhaseGuidance, validatePhaseTransition, type LifecyclePhase, type StrictnessMode } from "../../core/planner/lifecycle-phase.js";
+import { KnowledgeStore } from "../../core/store/knowledge-store.js";
+import { generateAndIndexPhaseSummary } from "../../core/rag/phase-summary.js";
 import { logger } from "../../core/utils/logger.js";
 
 const VALID_PHASES = ["ANALYZE", "DESIGN", "PLAN", "IMPLEMENT", "VALIDATE", "REVIEW", "HANDOFF", "LISTENING", "auto"] as const;
@@ -91,10 +93,27 @@ export function registerSetPhase(server: McpServer, store: SqliteStore): void {
         }
       }
 
+      // Generate phase summary when transitioning between different phases
+      let phaseSummaryIndexed = false;
+      if (currentPhase !== phase) {
+        try {
+          const knowledgeStore = new KnowledgeStore(store.getDb());
+          const summaryResult = generateAndIndexPhaseSummary(
+            knowledgeStore,
+            doc,
+            currentPhase as LifecyclePhase,
+            phase,
+          );
+          phaseSummaryIndexed = summaryResult.indexed;
+        } catch (err) {
+          logger.warn("tool:set_phase:summary_failed", { error: String(err) });
+        }
+      }
+
       store.setProjectSetting("lifecycle_phase_override", phase);
       const guidance = getPhaseGuidance(phase);
 
-      logger.info("tool:set_phase:ok", { action: "override", phase, mode: currentMode });
+      logger.info("tool:set_phase:ok", { action: "override", phase, mode: currentMode, phaseSummaryIndexed });
       return {
         content: [
           {
@@ -105,6 +124,7 @@ export function registerSetPhase(server: McpServer, store: SqliteStore): void {
               phase,
               mode: currentMode,
               reminder: guidance.reminder,
+              phaseSummaryIndexed,
             }, null, 2),
           },
         ],

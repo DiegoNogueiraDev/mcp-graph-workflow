@@ -9,6 +9,7 @@ import { searchNodes } from "../search/fts-search.js";
 import { buildTaskContext, type TaskContext } from "./compact-context.js";
 import { estimateTokens } from "./token-estimator.js";
 import { logger } from "../utils/logger.js";
+import type { LifecyclePhase } from "../planner/lifecycle-phase.js";
 
 export interface KnowledgeSummary {
   id: string;
@@ -46,14 +47,16 @@ interface RagNodeSummary {
  *
  * 1. Search for relevant nodes via FTS5
  * 2. Expand subgraph context for top results via buildTaskContext
- * 3. Manage token budget to stay within limits
+ * 3. Search knowledge store with optional phase-aware boosting
+ * 4. Manage token budget to stay within limits
  */
 export function ragBuildContext(
   store: SqliteStore,
   query: string,
   tokenBudget: number = 4000,
+  phase?: LifecyclePhase,
 ): RagContext {
-  logger.info(`RAG context: query="${query}", budget=${tokenBudget} tokens`);
+  logger.info(`RAG context: query="${query}", budget=${tokenBudget} tokens, phase=${phase ?? "none"}`);
 
   // Stage 1: Search for relevant nodes with TF-IDF reranking
   const searchResults = searchNodes(store, query, { limit: 10, rerank: true });
@@ -72,11 +75,13 @@ export function ragBuildContext(
     return summary;
   });
 
-  // Stage 2: Search knowledge store for additional context
+  // Stage 2: Search knowledge store with optional phase-aware boosting
   const knowledgeStore = new KnowledgeStore(store.getDb());
   let knowledgeResults: KnowledgeSummary[] = [];
   try {
-    const kResults = knowledgeStore.search(query, 5);
+    const kResults = phase
+      ? knowledgeStore.searchWithPhaseBoost(query, phase, 5)
+      : knowledgeStore.search(query, 5);
     knowledgeResults = kResults.map((r) => ({
       id: r.id,
       sourceType: r.sourceType,
