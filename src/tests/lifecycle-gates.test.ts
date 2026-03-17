@@ -3,6 +3,7 @@ import {
   validatePhaseTransition,
   checkToolGate,
   checkStatusGate,
+  getPhaseGuidance,
   type LifecyclePhase,
 } from "../core/planner/lifecycle-phase.js";
 import type { GraphDocument, GraphNode, GraphEdge } from "../core/graph/graph-types.js";
@@ -71,16 +72,69 @@ describe("validatePhaseTransition", () => {
     expect(result.unmetConditions.length).toBeGreaterThan(0);
   });
 
-  it("should allow DESIGN → PLAN when decision exists", () => {
+  it("should block DESIGN → PLAN when only decision exists (no constraint)", () => {
     const doc = makeDoc([{ type: "decision", status: "backlog" }]);
     const result = validatePhaseTransition(doc, "DESIGN", "PLAN");
-    expect(result.allowed).toBe(true);
+    expect(result.allowed).toBe(false);
+    expect(result.unmetConditions.some((c) => c.includes("constraint"))).toBe(true);
   });
 
-  it("should allow DESIGN → PLAN when constraint exists", () => {
+  it("should block DESIGN → PLAN when only constraint exists (no decision)", () => {
     const doc = makeDoc([{ type: "constraint", status: "backlog" }]);
     const result = validatePhaseTransition(doc, "DESIGN", "PLAN");
+    expect(result.allowed).toBe(false);
+    expect(result.unmetConditions.some((c) => c.includes("decision"))).toBe(true);
+  });
+
+  it("should allow DESIGN → PLAN when all required checks pass", () => {
+    const doc = makeDoc(
+      [
+        { id: "req1", type: "requirement", status: "backlog" },
+        {
+          id: "dec1", type: "decision", status: "backlog",
+          description: "## Status\nAccepted\n## Context\nX\n## Decision\nY\n## Consequences\nZ",
+        },
+        { id: "con1", type: "constraint", status: "backlog" },
+      ],
+      [
+        { from: "req1", to: "dec1", relationType: "implements" },
+        { from: "req1", to: "con1", relationType: "related_to" },
+      ],
+    );
+    const result = validatePhaseTransition(doc, "DESIGN", "PLAN");
     expect(result.allowed).toBe(true);
+    expect(result.unmetConditions).toHaveLength(0);
+  });
+
+  it("should block DESIGN → PLAN when ADR grade is below C", () => {
+    const doc = makeDoc(
+      [
+        { id: "req1", type: "requirement" },
+        { id: "dec1", type: "decision", description: "No ADR sections" },
+        { id: "con1", type: "constraint" },
+      ],
+      [
+        { from: "req1", to: "dec1", relationType: "implements" },
+        { from: "req1", to: "con1", relationType: "related_to" },
+      ],
+    );
+    const result = validatePhaseTransition(doc, "DESIGN", "PLAN");
+    expect(result.allowed).toBe(false);
+    expect(result.unmetConditions.some((c) => c.includes("ADR"))).toBe(true);
+  });
+
+  it("should block DESIGN → PLAN when requirements are orphans", () => {
+    const doc = makeDoc([
+      { id: "req1", type: "requirement" },
+      {
+        id: "dec1", type: "decision",
+        description: "## Status\nAccepted\n## Context\nX\n## Decision\nY\n## Consequences\nZ",
+      },
+      { id: "con1", type: "constraint" },
+    ]);
+    const result = validatePhaseTransition(doc, "DESIGN", "PLAN");
+    expect(result.allowed).toBe(false);
+    expect(result.unmetConditions.some((c) => c.includes("edge"))).toBe(true);
   });
 
   it("should block PLAN → IMPLEMENT when no tasks have sprint", () => {
@@ -99,9 +153,11 @@ describe("validatePhaseTransition", () => {
     expect(result.allowed).toBe(true);
   });
 
+  // ── IMPLEMENT → VALIDATE (composite gate) ──
+
   it("should block IMPLEMENT → VALIDATE when less than 50% done", () => {
     const doc = makeDoc([
-      { type: "task", status: "done", sprint: "s1" },
+      { type: "task", status: "done", sprint: "s1", acceptanceCriteria: ["Given X When Y Then Z"] },
       { type: "task", status: "backlog", sprint: "s1" },
       { type: "task", status: "backlog", sprint: "s1" },
     ]);
@@ -116,12 +172,12 @@ describe("validatePhaseTransition", () => {
     ]);
     const result = validatePhaseTransition(doc, "IMPLEMENT", "VALIDATE");
     expect(result.allowed).toBe(false);
-    expect(result.unmetConditions.some((c) => c.includes("acceptance criteria"))).toBe(true);
+    expect(result.unmetConditions.some((c) => c.toLowerCase().includes("acceptance criteria"))).toBe(true);
   });
 
-  it("should allow IMPLEMENT → VALIDATE when ≥50% done and AC exist", () => {
+  it("should allow IMPLEMENT → VALIDATE when all required checks pass", () => {
     const doc = makeDoc([
-      { type: "task", status: "done", sprint: "s1", acceptanceCriteria: ["criterion 1"] },
+      { type: "task", status: "done", sprint: "s1", acceptanceCriteria: ["Given X When Y Then Z"], createdAt: "2025-01-01T00:00:00Z", updatedAt: "2025-01-02T00:00:00Z" },
       { type: "task", status: "backlog", sprint: "s1" },
     ]);
     const result = validatePhaseTransition(doc, "IMPLEMENT", "VALIDATE");
@@ -130,7 +186,7 @@ describe("validatePhaseTransition", () => {
 
   it("should allow IMPLEMENT → VALIDATE with acceptance_criteria node type", () => {
     const doc = makeDoc([
-      { type: "task", status: "done", sprint: "s1" },
+      { type: "task", status: "done", sprint: "s1", acceptanceCriteria: ["Given X When Y Then Z"], createdAt: "2025-01-01T00:00:00Z", updatedAt: "2025-01-02T00:00:00Z" },
       { type: "task", status: "backlog", sprint: "s1" },
       { type: "acceptance_criteria", status: "backlog" },
     ]);
@@ -138,9 +194,52 @@ describe("validatePhaseTransition", () => {
     expect(result.allowed).toBe(true);
   });
 
+  it("should block IMPLEMENT → VALIDATE when done task has blocked dependency", () => {
+    const doc = makeDoc(
+      [
+        { id: "t1", type: "task", status: "done", sprint: "s1", acceptanceCriteria: ["Given X When Y Then Z"] },
+        { id: "t2", type: "task", status: "backlog", sprint: "s1" },
+      ],
+      [{ from: "t1", to: "t2", relationType: "depends_on" }],
+    );
+    const result = validatePhaseTransition(doc, "IMPLEMENT", "VALIDATE");
+    expect(result.allowed).toBe(false);
+    expect(result.unmetConditions.some((c) => c.includes("integridade"))).toBe(true);
+  });
+
+  it("should include testable AC warning in unmetConditions when done tasks lack testable AC", () => {
+    const doc = makeDoc([
+      {
+        type: "task", status: "done", sprint: "s1",
+        acceptanceCriteria: ["Make it nice"],
+        createdAt: "2025-01-01T00:00:00Z", updatedAt: "2025-01-02T00:00:00Z",
+      },
+      { type: "task", status: "backlog", sprint: "s1" },
+    ]);
+    const result = validatePhaseTransition(doc, "IMPLEMENT", "VALIDATE");
+    // The gate may or may not be allowed (depends on composite checks),
+    // but unmetConditions should mention testable AC
+    expect(result.unmetConditions.some((c) => c.includes("testável") || c.includes("testable"))).toBe(true);
+  });
+
+  it("should not include testable AC warning when done tasks have testable AC", () => {
+    const doc = makeDoc([
+      {
+        type: "task", status: "done", sprint: "s1",
+        acceptanceCriteria: ["Given valid input, When submitted, Then should return 200"],
+        createdAt: "2025-01-01T00:00:00Z", updatedAt: "2025-01-02T00:00:00Z",
+      },
+      { type: "task", status: "backlog", sprint: "s1" },
+    ]);
+    const result = validatePhaseTransition(doc, "IMPLEMENT", "VALIDATE");
+    expect(result.unmetConditions.some((c) => c.includes("testável") || c.includes("testable"))).toBe(false);
+  });
+
+  // ── VALIDATE → REVIEW (composite gate) ──
+
   it("should block VALIDATE → REVIEW when less than 80% done", () => {
     const doc = makeDoc([
-      { type: "task", status: "done", sprint: "s1" },
+      { type: "task", status: "done", sprint: "s1", acceptanceCriteria: ["AC1"] },
       { type: "task", status: "backlog", sprint: "s1" },
       { type: "task", status: "backlog", sprint: "s1" },
     ]);
@@ -148,34 +247,65 @@ describe("validatePhaseTransition", () => {
     expect(result.allowed).toBe(false);
   });
 
-  it("should allow VALIDATE → REVIEW when ≥80% done", () => {
+  it("should allow VALIDATE → REVIEW when all required checks pass", () => {
     const doc = makeDoc([
-      { type: "task", status: "done" },
-      { type: "task", status: "done" },
-      { type: "task", status: "done" },
-      { type: "task", status: "done" },
+      { type: "task", status: "done", acceptanceCriteria: ["AC1"] },
+      { type: "task", status: "done", acceptanceCriteria: ["AC1"] },
+      { type: "task", status: "done", acceptanceCriteria: ["AC1"] },
+      { type: "task", status: "done", acceptanceCriteria: ["AC1"] },
       { type: "task", status: "backlog" },
     ]);
     const result = validatePhaseTransition(doc, "VALIDATE", "REVIEW");
     expect(result.allowed).toBe(true);
   });
 
+  // ── REVIEW → HANDOFF (composite gate) ──
+
   it("should block REVIEW → HANDOFF when not all tasks done", () => {
     const doc = makeDoc([
-      { type: "task", status: "done" },
+      { type: "task", status: "done", acceptanceCriteria: ["AC1"] },
       { type: "task", status: "in_progress" },
     ]);
     const result = validatePhaseTransition(doc, "REVIEW", "HANDOFF");
     expect(result.allowed).toBe(false);
   });
 
-  it("should allow REVIEW → HANDOFF when all tasks done", () => {
+  it("should allow REVIEW → HANDOFF when all required checks pass", () => {
+    const doc = makeDoc([
+      { type: "task", status: "done", acceptanceCriteria: ["AC1"] },
+      { type: "task", status: "done", acceptanceCriteria: ["AC1"] },
+    ]);
+    const result = validatePhaseTransition(doc, "REVIEW", "HANDOFF");
+    expect(result.allowed).toBe(true);
+  });
+
+  // ── HANDOFF → LISTENING (composite gate) ──
+
+  it("should block HANDOFF → LISTENING when tasks still in_progress", () => {
+    const doc = makeDoc([
+      { type: "task", status: "done" },
+      { type: "task", status: "in_progress" },
+    ]);
+    const result = validatePhaseTransition(doc, "HANDOFF", "LISTENING");
+    expect(result.allowed).toBe(false);
+  });
+
+  it("should allow HANDOFF → LISTENING when all tasks done and no blocked", () => {
     const doc = makeDoc([
       { type: "task", status: "done" },
       { type: "task", status: "done" },
     ]);
-    const result = validatePhaseTransition(doc, "REVIEW", "HANDOFF");
+    const result = validatePhaseTransition(doc, "HANDOFF", "LISTENING");
     expect(result.allowed).toBe(true);
+  });
+
+  it("should block HANDOFF → LISTENING when tasks are blocked", () => {
+    const doc = makeDoc([
+      { type: "task", status: "done" },
+      { type: "task", status: "blocked" },
+    ]);
+    const result = validatePhaseTransition(doc, "HANDOFF", "LISTENING");
+    expect(result.allowed).toBe(false);
   });
 
   it("should allow transitions with no defined gate", () => {
@@ -195,9 +325,9 @@ describe("checkToolGate", () => {
   });
 
   it("should return empty warnings for always-allowed tools in any phase", () => {
-    const alwaysAllowed = ["list", "show", "search", "stats", "export", "snapshot",
+    const alwaysAllowed = ["list", "show", "search", "metrics", "export", "snapshot",
       "add_node", "edge", "import_prd", "context", "rag_context", "next",
-      "sync_stack_docs", "reindex_knowledge", "dependencies", "set_phase"];
+      "sync_stack_docs", "reindex_knowledge", "analyze", "set_phase"];
     const doc = makeDoc();
     for (const tool of alwaysAllowed) {
       const warnings = checkToolGate(doc, "ANALYZE", tool);
@@ -243,31 +373,9 @@ describe("checkToolGate", () => {
     }
   });
 
-  it("should block velocity in ANALYZE and DESIGN", () => {
-    const doc = makeDoc();
-    for (const phase of ["ANALYZE", "DESIGN"] as LifecyclePhase[]) {
-      const warnings = checkToolGate(doc, phase, "velocity", "strict");
-      expect(warnings).toHaveLength(1);
-      expect(warnings[0].severity).toBe("error");
-    }
-  });
-
-  it("should block bulk_update_status in ANALYZE", () => {
-    const doc = makeDoc();
-    const warnings = checkToolGate(doc, "ANALYZE", "bulk_update_status", "strict");
-    expect(warnings).toHaveLength(1);
-    expect(warnings[0].severity).toBe("error");
-  });
-
   it("should block plan_sprint in ANALYZE", () => {
     const doc = makeDoc();
     const warnings = checkToolGate(doc, "ANALYZE", "plan_sprint", "strict");
-    expect(warnings).toHaveLength(1);
-  });
-
-  it("should block decompose in ANALYZE", () => {
-    const doc = makeDoc();
-    const warnings = checkToolGate(doc, "ANALYZE", "decompose", "strict");
     expect(warnings).toHaveLength(1);
   });
 
@@ -372,5 +480,57 @@ describe("checkStatusGate", () => {
     ]);
     const result = checkStatusGate(doc, "IMPLEMENT", "t1", "done");
     expect(result.warnings.find((w) => w.code === "done_without_acceptance_criteria")!.severity).toBe("error");
+  });
+
+  // ── DoD pre-check ──
+
+  it("should warn done_without_dod when task has unresolved blockers", () => {
+    const doc = makeDoc(
+      [
+        { id: "t1", type: "task", status: "in_progress", acceptanceCriteria: ["Should return 200"] },
+        { id: "t2", type: "task", status: "backlog" },
+      ],
+      [{ from: "t1", to: "t2", relationType: "depends_on" }],
+    );
+    const result = checkStatusGate(doc, "IMPLEMENT", "t1", "done", "strict");
+    expect(result.warnings.some((w) => w.code === "done_without_dod")).toBe(true);
+    // DoD is always warning severity (informational)
+    expect(result.warnings.find((w) => w.code === "done_without_dod")!.severity).toBe("warning");
+  });
+
+  it("should not warn done_without_dod when DoD is satisfied", () => {
+    const doc = makeDoc([
+      {
+        id: "t1", type: "task", status: "in_progress", xpSize: "S",
+        acceptanceCriteria: ["Given valid data, When submitted, Then should save and return 200"],
+      },
+    ]);
+    const result = checkStatusGate(doc, "IMPLEMENT", "t1", "done", "strict");
+    expect(result.warnings.some((w) => w.code === "done_without_dod")).toBe(false);
+  });
+
+  it("should not fire DoD check when node has no AC", () => {
+    const doc = makeDoc([
+      { id: "t1", type: "task", status: "in_progress", sprint: "s1" },
+    ]);
+    const result = checkStatusGate(doc, "IMPLEMENT", "t1", "done", "strict");
+    // Should have done_without_acceptance_criteria but NOT done_without_dod
+    expect(result.warnings.some((w) => w.code === "done_without_acceptance_criteria")).toBe(true);
+    expect(result.warnings.some((w) => w.code === "done_without_dod")).toBe(false);
+  });
+});
+
+// ── getPhaseGuidance ──
+
+describe("getPhaseGuidance", () => {
+  it("should include analyze in IMPLEMENT suggestedTools", () => {
+    const guidance = getPhaseGuidance("IMPLEMENT");
+    expect(guidance.suggestedTools).toContain("analyze");
+  });
+
+  it("should include next and context in IMPLEMENT suggestedTools", () => {
+    const guidance = getPhaseGuidance("IMPLEMENT");
+    expect(guidance.suggestedTools).toContain("next");
+    expect(guidance.suggestedTools).toContain("context");
   });
 });

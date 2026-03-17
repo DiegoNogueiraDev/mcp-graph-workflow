@@ -94,6 +94,9 @@ const NODE_WIDTH = 240;
 function toFlowNodes(
   nodes: GraphNode[],
   filters?: { statuses?: Set<string>; types?: Set<string> },
+  childrenMap?: Map<string, string[]>,
+  expandedIds?: Set<string>,
+  onExpand?: (nodeId: string) => void,
 ): Array<{ id: string; type: string; position: { x: number; y: number }; data: Record<string, unknown>; style: Record<string, unknown> }> {
   return nodes
     .filter((n) => {
@@ -101,24 +104,32 @@ function toFlowNodes(
       if (filters?.types?.size && !filters.types.has(n.type)) return false;
       return true;
     })
-    .map((n) => ({
-      id: n.id,
-      type: "workflowNode",
-      position: { x: 0, y: 0 },
-      data: {
-        label: n.title,
-        nodeType: n.type,
-        status: n.status,
-        priority: n.priority,
-        xpSize: n.xpSize,
-        sprint: n.sprint,
-        sourceNode: n,
-      },
-      style: {
-        width: NODE_WIDTH,
-        borderLeft: `4px solid ${NODE_TYPE_COLORS[n.type] || "#6c757d"}`,
-      },
-    }));
+    .map((n) => {
+      const children = childrenMap?.get(n.id);
+      const hasChildren = children != null && children.length > 0;
+      return {
+        id: n.id,
+        type: "workflowNode",
+        position: { x: 0, y: 0 },
+        data: {
+          label: n.title,
+          nodeType: n.type,
+          status: n.status,
+          priority: n.priority,
+          xpSize: n.xpSize,
+          sprint: n.sprint,
+          sourceNode: n,
+          hasChildren,
+          isExpanded: expandedIds?.has(n.id) ?? false,
+          childCount: children?.length ?? 0,
+          onExpand,
+        },
+        style: {
+          width: NODE_WIDTH,
+          borderLeft: `4px solid ${NODE_TYPE_COLORS[n.type] || "#6c757d"}`,
+        },
+      };
+    });
 }
 
 function toFlowEdges(
@@ -236,6 +247,47 @@ describe("toFlowNodes", () => {
   it("should return empty when all nodes are filtered out", () => {
     const result = toFlowNodes(nodes, { statuses: new Set(["nonexistent"]) });
     expect(result).toEqual([]);
+  });
+
+  it("should set hasChildren=true and childCount when childrenMap provided", () => {
+    const parentNodes = [
+      makeNode({ id: "epic1", type: "epic" }),
+      makeNode({ id: "task1", type: "task", parentId: "epic1" }),
+      makeNode({ id: "task2", type: "task", parentId: "epic1" }),
+    ];
+    const childrenMap = new Map([["epic1", ["task1", "task2"]]]);
+    const result = toFlowNodes(parentNodes, undefined, childrenMap);
+
+    const epicData = result.find((n) => n.id === "epic1")!.data;
+    expect(epicData.hasChildren).toBe(true);
+    expect(epicData.childCount).toBe(2);
+
+    const taskData = result.find((n) => n.id === "task1")!.data;
+    expect(taskData.hasChildren).toBe(false);
+    expect(taskData.childCount).toBe(0);
+  });
+
+  it("should set isExpanded based on expandedIds", () => {
+    const parentNodes = [makeNode({ id: "epic1" }), makeNode({ id: "epic2" })];
+    const childrenMap = new Map([["epic1", ["t1"]], ["epic2", ["t2"]]]);
+    const expandedIds = new Set(["epic1"]);
+    const result = toFlowNodes(parentNodes, undefined, childrenMap, expandedIds);
+
+    expect(result.find((n) => n.id === "epic1")!.data.isExpanded).toBe(true);
+    expect(result.find((n) => n.id === "epic2")!.data.isExpanded).toBe(false);
+  });
+
+  it("should pass onExpand callback through data", () => {
+    const cb = (_id: string): void => { /* noop */ };
+    const result = toFlowNodes([makeNode({ id: "n1" })], undefined, new Map(), new Set(), cb);
+    expect(result[0].data.onExpand).toBe(cb);
+  });
+
+  it("should default hasChildren=false and isExpanded=false without childrenMap", () => {
+    const result = toFlowNodes([makeNode({ id: "n1" })]);
+    expect(result[0].data.hasChildren).toBe(false);
+    expect(result[0].data.isExpanded).toBe(false);
+    expect(result[0].data.childCount).toBe(0);
   });
 });
 

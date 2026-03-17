@@ -74,10 +74,10 @@ describe("set_phase gate validation", () => {
       expect(result.allowed).toBe(false);
     });
 
-    it("should allow VALIDATE → REVIEW with 100% done", () => {
+    it("should allow VALIDATE → REVIEW with 100% done and AC", () => {
       const doc = makeDoc([
-        { type: "task", status: "done" },
-        { type: "task", status: "done" },
+        { type: "task", status: "done", acceptanceCriteria: ["AC1"] },
+        { type: "task", status: "done", acceptanceCriteria: ["AC1"] },
       ]);
       const result = validatePhaseTransition(doc, "VALIDATE", "REVIEW");
       expect(result.allowed).toBe(true);
@@ -85,7 +85,7 @@ describe("set_phase gate validation", () => {
 
     it("should block REVIEW → HANDOFF with incomplete tasks", () => {
       const doc = makeDoc([
-        { type: "task", status: "done" },
+        { type: "task", status: "done", acceptanceCriteria: ["AC1"] },
         { type: "task", status: "ready" },
       ]);
       const result = validatePhaseTransition(doc, "REVIEW", "HANDOFF");
@@ -130,7 +130,7 @@ describe("set_phase gate validation", () => {
         { type: "task", status: "backlog" },
       ]);
       const result = validatePhaseTransition(doc, "IMPLEMENT", "VALIDATE");
-      expect(result.unmetConditions.some((c) => c.includes("50%") || c.includes("25%"))).toBe(true);
+      expect(result.unmetConditions.some((c) => c.includes("50%") || c.includes("25%") || c.includes("meta"))).toBe(true);
     });
 
     it("should return null reason when gate passes", () => {

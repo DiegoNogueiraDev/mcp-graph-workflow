@@ -149,7 +149,7 @@ describe("Lifecycle Flow", () => {
 
   // ── HANDOFF ───────────────────────────────────────────
 
-  it("bulk_update_status fecha todas as tasks restantes", () => {
+  it("update_status (bulk) fecha todas as tasks restantes", () => {
     const tasks = store.getNodesByType("task");
     const subtasks = store.getNodesByType("subtask");
     const allTaskIds = [...tasks, ...subtasks].map((n) => n.id);

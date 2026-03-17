@@ -15,6 +15,14 @@ import {
   isCodeGraphData,
   isImpactResult,
 } from "../web/dashboard/src/lib/code-graph-guards.js";
+import {
+  buildChildrenMap,
+  getRootNodes,
+  getVisibleNodes,
+  buildHierarchyTree,
+  hasExpandableChildren,
+  getChildCount,
+} from "../web/dashboard/src/lib/graph-hierarchy.js";
 
 describe("Smoke: Dashboard Modules", () => {
   // ── graph-filters.ts ────────────────────────────
@@ -77,6 +85,43 @@ describe("Smoke: Dashboard Modules", () => {
     it("guards should return boolean", () => {
       expect(typeof isCodeGraphData(null)).toBe("boolean");
       expect(typeof isImpactResult(null)).toBe("boolean");
+    });
+  });
+
+  // ── graph-hierarchy.ts ────────────────────────────
+
+  describe("graph-hierarchy module", () => {
+    it("should export all hierarchy functions", () => {
+      expect(typeof buildChildrenMap).toBe("function");
+      expect(typeof getRootNodes).toBe("function");
+      expect(typeof getVisibleNodes).toBe("function");
+      expect(typeof buildHierarchyTree).toBe("function");
+      expect(typeof hasExpandableChildren).toBe("function");
+      expect(typeof getChildCount).toBe("function");
+    });
+
+    it("buildChildrenMap should not throw on empty input", () => {
+      expect(() => buildChildrenMap([], [])).not.toThrow();
+    });
+
+    it("getRootNodes should return array", () => {
+      expect(Array.isArray(getRootNodes([]))).toBe(true);
+    });
+
+    it("getVisibleNodes should return array", () => {
+      expect(Array.isArray(getVisibleNodes([], new Set(), new Map()))).toBe(true);
+    });
+
+    it("buildHierarchyTree should return array", () => {
+      expect(Array.isArray(buildHierarchyTree([], new Map()))).toBe(true);
+    });
+
+    it("hasExpandableChildren should return boolean", () => {
+      expect(typeof hasExpandableChildren("x", new Map())).toBe("boolean");
+    });
+
+    it("getChildCount should return number", () => {
+      expect(typeof getChildCount("x", new Map())).toBe("number");
     });
   });
 

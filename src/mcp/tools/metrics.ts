@@ -1,19 +1,44 @@
+import { z } from "zod/v4";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { SqliteStore } from "../../core/store/sqlite-store.js";
+import { calculateVelocity } from "../../core/planner/velocity.js";
 import { buildTaskContext } from "../../core/context/compact-context.js";
 import { logger } from "../../core/utils/logger.js";
 
-export function registerStats(server: McpServer, store: SqliteStore): void {
+export function registerMetrics(server: McpServer, store: SqliteStore): void {
   server.tool(
-    "stats",
-    "Show aggregate statistics for the project graph, including context compression metrics",
-    {},
-    async () => {
-      logger.debug("tool:stats", {});
+    "metrics",
+    "Show project metrics. Mode 'stats' returns aggregate graph statistics; mode 'velocity' returns sprint velocity metrics.",
+    {
+      mode: z.enum(["stats", "velocity"]).describe("Metrics mode: 'stats' for graph statistics, 'velocity' for sprint velocity"),
+      sprint: z.string().optional().describe("Filter velocity results to a specific sprint (only used in velocity mode)"),
+    },
+    async ({ mode, sprint }) => {
+      logger.debug("tool:metrics", { mode, sprint });
+
+      if (mode === "velocity") {
+        const doc = store.toGraphDocument();
+        const summary = calculateVelocity(doc);
+
+        if (sprint) {
+          summary.sprints = summary.sprints.filter((s) => s.sprint === sprint);
+        }
+
+        logger.info("tool:metrics:velocity:ok", { sprintCount: summary.sprints.length });
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify({ ok: true, mode: "velocity", ...summary }, null, 2),
+            },
+          ],
+        };
+      }
+
+      // mode === "stats"
       const stats = store.getStats();
       const project = store.getProject();
 
-      // Calculate average context reduction across all task/subtask nodes
       let contextReduction: { avgReductionPercent: number; sampleSize: number } | null = null;
 
       if (stats.totalNodes > 0) {
@@ -43,13 +68,15 @@ export function registerStats(server: McpServer, store: SqliteStore): void {
         }
       }
 
-      logger.info("tool:stats:ok", { totalNodes: stats.totalNodes, totalEdges: stats.totalEdges });
+      logger.info("tool:metrics:stats:ok", { totalNodes: stats.totalNodes, totalEdges: stats.totalEdges });
       return {
         content: [
           {
             type: "text" as const,
             text: JSON.stringify(
               {
+                ok: true,
+                mode: "stats",
                 project: project?.name ?? null,
                 ...stats,
                 contextReduction,

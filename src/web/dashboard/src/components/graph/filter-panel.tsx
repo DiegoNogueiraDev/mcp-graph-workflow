@@ -10,9 +10,10 @@ interface FilterPanelProps {
   onTypeToggle: (type: NodeType) => void;
   onDirectionChange: (dir: "TB" | "LR") => void;
   onClear: () => void;
-  showFullGraph: boolean;
+  visibleNodeCount: number;
   totalNodeCount: number;
-  onShowFullGraphChange: (show: boolean) => void;
+  onExpandAll: () => void;
+  onCollapseAll: () => void;
 }
 
 export const FilterPanel = memo(function FilterPanel({
@@ -23,9 +24,10 @@ export const FilterPanel = memo(function FilterPanel({
   onTypeToggle,
   onDirectionChange,
   onClear,
-  showFullGraph,
+  visibleNodeCount,
   totalNodeCount,
-  onShowFullGraphChange,
+  onExpandAll,
+  onCollapseAll,
 }: FilterPanelProps) {
   return (
     <div className="flex flex-wrap items-center gap-3 px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-xs">
@@ -85,18 +87,27 @@ export const FilterPanel = memo(function FilterPanel({
 
       <div className="w-px h-4 bg-[var(--color-border)]" />
 
-      <label className="flex items-center gap-1 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={showFullGraph}
-          onChange={() => onShowFullGraphChange(!showFullGraph)}
-          className="w-3 h-3"
-        />
-        <span>Show all nodes ({totalNodeCount})</span>
-      </label>
-      {showFullGraph && totalNodeCount > 200 && (
-        <span className="text-[var(--color-warning)] font-medium">Large graph — may be slow</span>
-      )}
+      <div className="flex items-center gap-1.5">
+        <button
+          onClick={onExpandAll}
+          className="px-2 py-0.5 rounded border border-[var(--color-border)] hover:bg-[var(--color-bg-tertiary)] transition-colors"
+          title={totalNodeCount > 100 ? `Warning: ${totalNodeCount} nodes — may be slow` : "Expand all nodes"}
+        >
+          Expand All
+        </button>
+        <button
+          onClick={onCollapseAll}
+          className="px-2 py-0.5 rounded border border-[var(--color-border)] hover:bg-[var(--color-bg-tertiary)] transition-colors"
+        >
+          Collapse All
+        </button>
+      </div>
+
+      <div className="w-px h-4 bg-[var(--color-border)]" />
+
+      <span className="text-[var(--color-text-muted)]">
+        Showing {visibleNodeCount} of {totalNodeCount}
+      </span>
 
       <button
         onClick={onClear}

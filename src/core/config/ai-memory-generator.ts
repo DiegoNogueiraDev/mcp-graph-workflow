@@ -12,25 +12,22 @@ const TOOL_REFERENCE = `| Tool | Quando usar |
 | \`import_prd\` | Importar PRD (texto/markdown) para o grafo |
 | \`list\` | Listar nodes do grafo (filtrar por tipo/status) |
 | \`show\` | Ver detalhes de um node específico |
-| \`next\` | Próxima task recomendada (prioridade + dependências) |
+| \`next\` | Próxima task recomendada (prioridade + dependências + knowledge coverage + TDD hints) |
 | \`context\` | Contexto comprimido da task (token-efficient) |
 | \`update_status\` | Mudar status de um node (backlog→ready→in_progress→done) |
 | \`add_node\` | Criar node manualmente |
 | \`update_node\` | Atualizar campos de um node |
 | \`delete_node\` | Remover node do grafo |
 | \`edge\` | Criar/remover relações entre nodes |
-| \`dependencies\` | Analisar cadeia de dependências |
-| \`decompose\` | Detectar tasks grandes e sugerir decomposição |
+| \`analyze\` | Analisar grafo (qualidade, escopo, riscos, dependências, decomposição) |
 | \`search\` | Busca full-text no grafo (FTS5 + BM25) |
 | \`rag_context\` | Contexto RAG com knowledge base |
 | \`plan_sprint\` | Gerar relatório de planejamento de sprint |
-| \`velocity\` | Métricas de velocidade por sprint |
-| \`stats\` | Estatísticas gerais do grafo |
+| \`metrics\` | Métricas do projeto (stats ou velocity) |
 | \`export\` | Exportar grafo (JSON ou Mermaid) |
 | \`snapshot\` | Criar/restaurar snapshots do grafo |
 | \`move_node\` | Mover node para outro parent |
 | \`clone_node\` | Clonar node com filhos |
-| \`bulk_update_status\` | Atualizar status de múltiplos nodes |
 | \`sync_stack_docs\` | Sincronizar docs das libs do projeto |
 | \`reindex_knowledge\` | Reindexar knowledge store |
 | \`validate_task\` | Validar task com browser (Playwright) |`;
@@ -38,11 +35,11 @@ const TOOL_REFERENCE = `| Tool | Quando usar |
 const LIFECYCLE_SUMMARY = `### Lifecycle (8 fases)
 
 1. **ANALYZE** — Criar PRD, definir requisitos (\`import_prd\`, \`add_node\`)
-2. **DESIGN** — Arquitetura, decisões técnicas (\`add_node\`, \`edge\`, \`decompose\`)
-3. **PLAN** — Sprint planning, decomposição (\`plan_sprint\`, \`decompose\`, \`sync_stack_docs\`)
-4. **IMPLEMENT** — TDD Red→Green→Refactor (\`next\`, \`context\`, \`update_status\`)
-5. **VALIDATE** — Testes E2E, critérios de aceitação (\`validate_task\`, \`velocity\`)
-6. **REVIEW** — Code review, blast radius (\`export\`, \`stats\`)
+2. **DESIGN** — Arquitetura, decisões técnicas (\`add_node\`, \`edge\`, \`analyze\`)
+3. **PLAN** — Sprint planning, decomposição (\`plan_sprint\`, \`analyze\`, \`sync_stack_docs\`)
+4. **IMPLEMENT** — TDD Red→Green→Refactor (\`next\`, \`context\`, \`update_status\`, \`analyze\` — modes: implement_done, tdd_check, progress)
+5. **VALIDATE** — Testes E2E, critérios de aceitação (\`validate_task\`, \`metrics\`)
+6. **REVIEW** — Code review, blast radius (\`export\`, \`metrics\`)
 7. **HANDOFF** — PR, documentação, entrega (\`export\`, \`snapshot\`)
 8. **LISTENING** — Feedback, novo ciclo (\`add_node\`, \`import_prd\`)`;
 

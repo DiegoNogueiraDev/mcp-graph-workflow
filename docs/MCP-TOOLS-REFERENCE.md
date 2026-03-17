@@ -1,6 +1,6 @@
 # MCP Tools Reference
 
-> 26 tools organized in 6 categories — complete parameter reference.
+> 25 tools organized in 6 categories — complete parameter reference.
 
 ## Summary
 
@@ -8,7 +8,7 @@
 |----------|-------|-------|
 | [Graph CRUD](#graph-crud) | init, import_prd, add_node, update_node, delete_node, edge, move_node, clone_node, export | 9 |
 | [Querying](#querying) | list, show, search, rag_context | 4 |
-| [Planning & Execution](#planning--execution) | next, update_status, bulk_update_status, decompose, velocity, dependencies, plan_sprint | 7 |
+| [Planning & Execution](#planning--execution) | next, update_status, decompose, velocity, dependencies, plan_sprint | 6 |
 | [Knowledge & RAG](#knowledge--rag) | context, reindex_knowledge, sync_stack_docs | 3 |
 | [Validation](#validation) | validate_task | 1 |
 | [Snapshots & Stats](#snapshots--stats) | stats, snapshot | 2 |
@@ -183,17 +183,8 @@ Update the status of a node.
 
 | Param | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `id` | string | Yes | — | Node ID to update |
+| `id` | string \| string[] | Yes | — | Node ID or array of IDs for bulk update |
 | `status` | NodeStatus | Yes | — | New status |
-
-### `bulk_update_status`
-
-Update the status of multiple nodes at once.
-
-| Param | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `ids` | string[] | Yes | — | Array of node IDs |
-| `status` | NodeStatus | Yes | — | New status to set |
 
 ### `decompose`
 
@@ -289,6 +280,44 @@ Manage graph snapshots: create, list, or restore.
 |-------|------|----------|---------|-------------|
 | `action` | "create"\|"list"\|"restore" | Yes | — | Action to perform |
 | `snapshotId` | number | No | — | Snapshot ID (required for restore) |
+
+---
+
+## Analysis (via `analyze` tool)
+
+The `analyze` tool is a gateway for all project analysis modes. Each mode provides a different lens on the graph.
+
+| Param | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `mode` | string | Yes | — | Analysis mode (see below) |
+| `nodeId` | string | No | — | Node ID or sprint filter depending on mode |
+
+### IMPLEMENT modes
+
+| Mode | Phase | Description |
+|------|-------|-------------|
+| `implement_done` | IMPLEMENT | Definition of Done checklist (8 checks: 4 required + 4 recommended). Requires `nodeId`. |
+| `tdd_check` | IMPLEMENT | TDD adherence report with testability score and suggested test specs from AC. Optional `nodeId` filter. |
+| `progress` | IMPLEMENT | Sprint burndown + velocity trend + blockers + critical path + ETA. Optional `nodeId` as sprint filter. |
+
+### Other modes
+
+| Mode | Phase | Description |
+|------|-------|-------------|
+| `prd_quality` | ANALYZE | PRD quality assessment (score + grade) |
+| `scope` | ANALYZE | Scope analysis: orphans, cycles, coverage |
+| `ready` | ANALYZE | Definition of Ready check |
+| `risk` | ANALYZE | Risk matrix assessment |
+| `blockers` | ANY | Transitive blockers for a node (requires `nodeId`) |
+| `cycles` | ANY | Dependency cycle detection |
+| `critical_path` | ANY | Critical path through dependency DAG |
+| `decompose` | PLAN | Detect large tasks needing decomposition |
+| `adr` | DESIGN | ADR validation quality |
+| `traceability` | DESIGN | Requirement→decision traceability matrix |
+| `coupling` | DESIGN | Fan-in/out coupling analysis |
+| `interfaces` | DESIGN | Interface-first quality check |
+| `tech_risk` | DESIGN | Technical risk scoring |
+| `design_ready` | DESIGN | DESIGN→PLAN gate readiness |
 
 ---
 

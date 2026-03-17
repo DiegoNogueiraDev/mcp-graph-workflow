@@ -330,6 +330,25 @@ sequenceDiagram
     MCP-->>A: TASK-002: "Criar auth router" (coverage: 0.6)
 ```
 
+**Ferramentas de análise IMPLEMENT (via `analyze`):**
+- `analyze(mode: "implement_done", nodeId)` — Definition of Done checklist (8 checks: 4 required + 4 recommended)
+- `analyze(mode: "tdd_check")` — TDD adherence report com suggested test specs por AC
+- `analyze(mode: "progress", sprint?)` — Sprint burndown + velocity trend + blockers + ETA
+
+**`next` tool enriquecido:** Retorna `knowledgeCoverage`, `velocityContext`, e `tddHints` (suggested test names from AC) junto com a task recomendada.
+
+**Definition of Done (DoD) — 8 checks:**
+| # | Check | Severity | Lógica |
+|---|-------|----------|--------|
+| 1 | `has_acceptance_criteria` | required | Task ou parent tem AC |
+| 2 | `ac_quality_pass` | required | AC score ≥ 60 (INVEST) |
+| 3 | `no_unresolved_blockers` | required | Sem depends_on para nodes não-done |
+| 4 | `status_flow_valid` | required | Passou por in_progress antes de done |
+| 5 | `has_description` | recommended | Task tem descrição não-vazia |
+| 6 | `not_oversized` | recommended | Não é L/XL sem subtasks |
+| 7 | `has_testable_ac` | recommended | ≥1 AC é testável |
+| 8 | `has_estimate` | recommended | xpSize ou estimateMinutes definido |
+
 **Princípio Anti-Vibe-Coding:** Se o AI sugere feature sem teste → RECUSAR. Sempre Red primeiro.
 
 ---
@@ -591,7 +610,7 @@ graph TD
 | **VALIDATE** | `validate_task` | Validação browser + A/B testing + indexação |
 | **REVIEW** | `POST /gitnexus/impact` | Verificar blast radius das mudanças no review |
 | **REVIEW** | `export_graph`, `export_mermaid` | Exportar para visualização |
-| **HANDOFF** | `bulk_update_status → done` | Fechar PRD |
+| **HANDOFF** | `update_status (bulk) → done` | Fechar PRD |
 | **LISTENING** | `add_node` | Registrar feedback |
 
 ---

@@ -51,17 +51,13 @@ function makeDoc(
 describe("checkToolGate default strict — all restricted tools", () => {
   const RESTRICTED_IN_ANALYZE: Array<{ tool: string; phase: LifecyclePhase }> = [
     { tool: "update_status", phase: "ANALYZE" },
-    { tool: "bulk_update_status", phase: "ANALYZE" },
     { tool: "plan_sprint", phase: "ANALYZE" },
-    { tool: "decompose", phase: "ANALYZE" },
   ];
 
   const RESTRICTED_MULTI_PHASE: Array<{ tool: string; phase: LifecyclePhase }> = [
     { tool: "validate_task", phase: "ANALYZE" },
     { tool: "validate_task", phase: "DESIGN" },
     { tool: "validate_task", phase: "PLAN" },
-    { tool: "velocity", phase: "ANALYZE" },
-    { tool: "velocity", phase: "DESIGN" },
   ];
 
   const ALL_RESTRICTED = [...RESTRICTED_IN_ANALYZE, ...RESTRICTED_MULTI_PHASE];
@@ -86,11 +82,8 @@ describe("checkToolGate default strict — all restricted tools", () => {
 describe("checkToolGate advisory opt-in regression", () => {
   const RESTRICTED: Array<{ tool: string; phase: LifecyclePhase }> = [
     { tool: "update_status", phase: "ANALYZE" },
-    { tool: "bulk_update_status", phase: "ANALYZE" },
     { tool: "plan_sprint", phase: "ANALYZE" },
     { tool: "validate_task", phase: "DESIGN" },
-    { tool: "velocity", phase: "ANALYZE" },
-    { tool: "decompose", phase: "ANALYZE" },
   ];
 
   it.each(RESTRICTED)(

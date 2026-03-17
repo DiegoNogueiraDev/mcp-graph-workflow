@@ -112,7 +112,7 @@ function buildBlockedResponse(
  * Extract node ID and new status from tool call args for status gate checks.
  */
 function extractStatusArgs(toolName: string, args: unknown[]): { nodeId?: string; newStatus?: string } {
-  if (toolName !== "update_status" && toolName !== "bulk_update_status") {
+  if (toolName !== "update_status") {
     return {};
   }
 
@@ -163,7 +163,7 @@ export function wrapToolsWithLifecycle(server: McpServer, store: SqliteStore): v
         // Check tool gate
         const gateWarnings = checkToolGate(doc, phase, name, mode);
 
-        // Check status-specific gate for update_status / bulk_update_status
+        // Check status-specific gate for update_status
         const statusArgs = extractStatusArgs(name, args);
         if (statusArgs.nodeId && statusArgs.newStatus) {
           const statusResult = checkStatusGate(doc, phase, statusArgs.nodeId, statusArgs.newStatus, mode);

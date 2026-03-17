@@ -4,14 +4,20 @@ import { STATUS_COLORS, NODE_TYPE_COLORS } from "@/lib/constants";
 
 interface NodeTableProps {
   nodes: GraphNode[];
+  allNodes?: GraphNode[];
   onNodeClick: (node: GraphNode) => void;
 }
 
-type SortKey = "title" | "type" | "status" | "priority" | "xpSize" | "sprint";
+type SortKey = "title" | "type" | "status" | "priority" | "xpSize" | "sprint" | "parentId";
 
 const PAGE_SIZE = 50;
 
-export const NodeTable = memo(function NodeTable({ nodes, onNodeClick }: NodeTableProps) {
+export const NodeTable = memo(function NodeTable({ nodes, allNodes = [], onNodeClick }: NodeTableProps) {
+  const parentMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const n of allNodes) map.set(n.id, n.title);
+    return map;
+  }, [allNodes]);
   const [sortKey, setSortKey] = useState<SortKey>("priority");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [search, setSearch] = useState("");
@@ -57,6 +63,7 @@ export const NodeTable = memo(function NodeTable({ nodes, onNodeClick }: NodeTab
     { key: "priority", label: "Priority" },
     { key: "xpSize", label: "Size" },
     { key: "sprint", label: "Sprint" },
+    { key: "parentId", label: "Parent" },
   ];
 
   return (
@@ -89,7 +96,7 @@ export const NodeTable = memo(function NodeTable({ nodes, onNodeClick }: NodeTab
           <tbody>
             {paged.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-3 py-4 text-center text-[var(--color-text-muted)]">
+                <td colSpan={7} className="px-3 py-4 text-center text-[var(--color-text-muted)]">
                   No nodes found
                 </td>
               </tr>
@@ -120,6 +127,9 @@ export const NodeTable = memo(function NodeTable({ nodes, onNodeClick }: NodeTab
                   <td className="px-3 py-1.5 text-center">{node.priority}</td>
                   <td className="px-3 py-1.5 text-center">{node.xpSize || "-"}</td>
                   <td className="px-3 py-1.5">{node.sprint || "-"}</td>
+                  <td className="px-3 py-1.5 max-w-[150px] truncate text-[var(--color-text-muted)]">
+                    {node.parentId ? (parentMap.get(node.parentId) ?? "-") : "-"}
+                  </td>
                 </tr>
               ))
             )}

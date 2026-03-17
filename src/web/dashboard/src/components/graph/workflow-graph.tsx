@@ -12,10 +12,11 @@ import {
 import "@xyflow/react/dist/style.css";
 
 import type { GraphDocument, GraphNode, NodeStatus, NodeType } from "@/lib/types";
-import { filterTopLevelNodes } from "@/lib/graph-filters";
+import { buildChildrenMap, getVisibleNodes, buildHierarchyTree } from "@/lib/graph-hierarchy";
 import { WorkflowNode } from "./workflow-node";
 import { WorkflowEdge } from "./workflow-edge";
 import { FilterPanel } from "./filter-panel";
+import { HierarchyTreePanel } from "./hierarchy-tree-panel";
 import { NodeDetailPanel } from "./node-detail-panel";
 import { NodeTable } from "./node-table";
 import { EdgeCreateDialog } from "./edge-create-dialog";
@@ -41,7 +42,7 @@ export function WorkflowGraph({ graph }: WorkflowGraphProps): React.JSX.Element 
   const [direction, setDirection] = useState<"TB" | "LR">("TB");
   const [filterStatuses, setFilterStatuses] = useState<Set<string>>(new Set());
   const [filterTypes, setFilterTypes] = useState<Set<string>>(new Set());
-  const [showFullGraph, setShowFullGraph] = useState(false);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [pendingConnection, setPendingConnection] = useState<PendingConnection | null>(null);
 
   // Defer filter values so checkbox updates are visually immediate
@@ -52,11 +53,45 @@ export function WorkflowGraph({ graph }: WorkflowGraphProps): React.JSX.Element 
   // Track previous layout node IDs to skip redundant Dagre runs
   const prevLayoutIdsRef = useRef<string[] | null>(null);
 
+  // Compute children map once per graph change
+  const childrenMap = useMemo(
+    () => buildChildrenMap(graph.nodes, graph.edges),
+    [graph.nodes, graph.edges],
+  );
+
+  // Hierarchy tree for sidebar
+  const hierarchyTree = useMemo(
+    () => buildHierarchyTree(graph.nodes, childrenMap),
+    [graph.nodes, childrenMap],
+  );
+
+  // Expand/collapse handlers
+  const handleNodeExpand = useCallback((nodeId: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(nodeId)) next.delete(nodeId);
+      else next.add(nodeId);
+      return next;
+    });
+  }, []);
+
+  const handleExpandAll = useCallback(() => {
+    const allParentIds = new Set<string>();
+    for (const [parentId] of childrenMap) {
+      allParentIds.add(parentId);
+    }
+    setExpandedIds(allParentIds);
+  }, [childrenMap]);
+
+  const handleCollapseAll = useCallback(() => {
+    setExpandedIds(new Set());
+  }, []);
+
   const applyLayout = useCallback(
     (statuses: Set<string>, types: Set<string>, dir: "TB" | "LR") => {
-      const baseNodes = filterTopLevelNodes(graph.nodes, showFullGraph);
+      const visibleGraphNodes = getVisibleNodes(graph.nodes, expandedIds, childrenMap);
       const filters = { statuses, types };
-      const flowNodes = toFlowNodes(baseNodes, filters);
+      const flowNodes = toFlowNodes(visibleGraphNodes, filters, childrenMap, expandedIds, handleNodeExpand);
       const nextIds = flowNodes.map((n) => n.id);
 
       // Skip Dagre if visible node IDs haven't changed
@@ -71,7 +106,7 @@ export function WorkflowGraph({ graph }: WorkflowGraphProps): React.JSX.Element 
       setNodes(layout.nodes);
       setEdges(layout.edges);
     },
-    [graph, setNodes, setEdges, deferredDirection, showFullGraph],
+    [graph, setNodes, setEdges, deferredDirection, expandedIds, childrenMap, handleNodeExpand],
   );
 
   useEffect(() => {
@@ -90,6 +125,14 @@ export function WorkflowGraph({ graph }: WorkflowGraphProps): React.JSX.Element 
   }, []);
 
   const handleNodeNavigate = useCallback(
+    (nodeId: string) => {
+      const target = graph.nodes.find((n) => n.id === nodeId);
+      if (target) setSelectedNode(target);
+    },
+    [graph.nodes],
+  );
+
+  const handleTreeSelectNode = useCallback(
     (nodeId: string) => {
       const target = graph.nodes.find((n) => n.id === nodeId);
       if (target) setSelectedNode(target);
@@ -131,14 +174,15 @@ export function WorkflowGraph({ graph }: WorkflowGraphProps): React.JSX.Element 
     setFilterTypes(new Set());
   }, []);
 
-  const visibleNodes = useMemo(() => {
-    const base = filterTopLevelNodes(graph.nodes, showFullGraph);
-    return base.filter((n) => {
+  // Visible nodes for the table (respects expansion + filters)
+  const visibleTableNodes = useMemo(() => {
+    const visible = getVisibleNodes(graph.nodes, expandedIds, childrenMap);
+    return visible.filter((n) => {
       if (filterStatuses.size && !filterStatuses.has(n.status)) return false;
       if (filterTypes.size && !filterTypes.has(n.type)) return false;
       return true;
     });
-  }, [graph.nodes, filterStatuses, filterTypes, showFullGraph]);
+  }, [graph.nodes, expandedIds, childrenMap, filterStatuses, filterTypes]);
 
   // Resolve titles for pending connection dialog
   const pendingFromTitle = pendingConnection
@@ -158,12 +202,21 @@ export function WorkflowGraph({ graph }: WorkflowGraphProps): React.JSX.Element 
         onTypeToggle={toggleType}
         onDirectionChange={setDirection}
         onClear={clearFilters}
-        showFullGraph={showFullGraph}
+        visibleNodeCount={visibleTableNodes.length}
         totalNodeCount={graph.nodes.length}
-        onShowFullGraphChange={setShowFullGraph}
+        onExpandAll={handleExpandAll}
+        onCollapseAll={handleCollapseAll}
       />
 
       <div className="flex flex-1 min-h-0">
+        <HierarchyTreePanel
+          tree={hierarchyTree}
+          expandedIds={expandedIds}
+          selectedNodeId={selectedNode?.id ?? null}
+          onToggleExpand={handleNodeExpand}
+          onSelectNode={handleTreeSelectNode}
+        />
+
         <div className="flex-1 relative">
           {graph.nodes.length === 0 ? (
             <div className="flex items-center justify-center h-full text-[var(--color-text-muted)]">
@@ -200,13 +253,14 @@ export function WorkflowGraph({ graph }: WorkflowGraphProps): React.JSX.Element 
             node={selectedNode}
             edges={graph.edges}
             allNodes={graph.nodes}
+            childrenMap={childrenMap}
             onClose={() => setSelectedNode(null)}
             onNodeNavigate={handleNodeNavigate}
           />
         )}
       </div>
 
-      <NodeTable nodes={visibleNodes} onNodeClick={handleTableNodeClick} />
+      <NodeTable nodes={visibleTableNodes} allNodes={graph.nodes} onNodeClick={handleTableNodeClick} />
 
       {pendingConnection && (
         <EdgeCreateDialog

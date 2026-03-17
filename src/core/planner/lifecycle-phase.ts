@@ -1,4 +1,11 @@
 import type { GraphDocument } from "../graph/graph-types.js";
+import { parseAc } from "../analyzer/ac-parser.js";
+import { checkDesignReadiness } from "../designer/definition-of-ready.js";
+import { checkDefinitionOfDone } from "../implementer/definition-of-done.js";
+import { checkValidationReadiness } from "../validator/definition-of-ready.js";
+import { checkReviewReadiness } from "../reviewer/review-readiness.js";
+import { checkHandoffReadiness } from "../handoff/delivery-checklist.js";
+import { checkListeningReadiness } from "../listener/feedback-readiness.js";
 
 export type LifecyclePhase =
   | "ANALYZE"
@@ -128,13 +135,13 @@ function hasNewFeedbackNodes(
 const GUIDANCE: Record<LifecyclePhase, PhaseGuidance> = {
   ANALYZE: {
     reminder: "Fase ANALYZE: Crie o PRD a partir da ideia. Defina requisitos, restrições e critérios de aceitação antes de qualquer código.",
-    suggestedTools: ["import_prd", "add_node", "search"],
+    suggestedTools: ["import_prd", "add_node", "analyze", "validate_ac", "search"],
     principles: ["Definir antes de construir", "PRD como contrato", "Requisitos claros e mensuráveis"],
   },
   DESIGN: {
-    reminder: "Fase DESIGN: Defina a arquitetura e tome decisões técnicas. Use análise de impacto antes de definir a estrutura.",
-    suggestedTools: ["add_node", "edge", "decompose", "export"],
-    principles: ["Skeleton & Organs", "Decisões arquiteturais documentadas", "Anti-one-shot"],
+    reminder: "Fase DESIGN: Defina a arquitetura e tome decisões técnicas. Use analyze para validar qualidade arquitetural.",
+    suggestedTools: ["add_node", "edge", "analyze", "export"],
+    principles: ["Skeleton & Organs", "ADR documentado", "Interface-first", "Traceability"],
     suggestedMcpAgents: [
       { name: "serena", action: "Análise semântica de symbols para entender arquitetura existente", tools: ["find_symbol", "get_symbols_overview"] },
       { name: "gitnexus", action: "Análise de impacto e blast radius da proposta arquitetural", tools: ["impact", "context"] },
@@ -142,7 +149,7 @@ const GUIDANCE: Record<LifecyclePhase, PhaseGuidance> = {
   },
   PLAN: {
     reminder: "Fase PLAN: Planeje o sprint, decomponha tasks grandes e sincronize documentação das libs.",
-    suggestedTools: ["plan_sprint", "decompose", "sync_stack_docs", "edge", "dependencies"],
+    suggestedTools: ["plan_sprint", "analyze", "sync_stack_docs", "edge"],
     principles: ["Decomposição atômica", "Sprint planning baseado em velocidade", "Dependências explícitas"],
     suggestedMcpAgents: [
       { name: "context7", action: "Consultar docs atualizadas das libs do stack", tools: ["resolve-library-id", "query-docs"] },
@@ -150,7 +157,7 @@ const GUIDANCE: Record<LifecyclePhase, PhaseGuidance> = {
   },
   IMPLEMENT: {
     reminder: "Fase IMPLEMENT: TDD obrigatório — Red → Green → Refactor. Escreva o teste ANTES da implementação. Use `context` para token-efficiency.",
-    suggestedTools: ["next", "context", "update_status", "rag_context", "validate_task"],
+    suggestedTools: ["next", "context", "update_status", "rag_context", "validate_task", "analyze"],
     principles: ["TDD Red→Green→Refactor", "Anti-one-shot", "Code detachment", "Decomposição atômica"],
     suggestedMcpAgents: [
       { name: "serena", action: "Edição semântica de symbols e navegação por referências", tools: ["find_symbol", "replace_symbol_body", "find_referencing_symbols"] },
@@ -160,8 +167,8 @@ const GUIDANCE: Record<LifecyclePhase, PhaseGuidance> = {
   },
   VALIDATE: {
     reminder: "Fase VALIDATE: Valide tasks completadas com testes E2E (Playwright). Verifique critérios de aceitação.",
-    suggestedTools: ["validate_task", "velocity", "stats", "list"],
-    principles: ["Validação automatizada", "Critérios de aceitação como contrato", "Zero tolerance para regressões"],
+    suggestedTools: ["validate_task", "metrics", "analyze", "list"],
+    principles: ["Validação automatizada", "Critérios de aceitação como contrato", "Zero tolerance para regressões", "AC quality como contrato", "Done integrity"],
     suggestedMcpAgents: [
       { name: "gitnexus", action: "Verificar escopo das mudanças com detect_changes", tools: ["detect_changes"] },
       { name: "playwright", action: "Testes E2E no browser, screenshots e validação visual", tools: ["browser_navigate", "browser_snapshot", "browser_click"] },
@@ -169,8 +176,8 @@ const GUIDANCE: Record<LifecyclePhase, PhaseGuidance> = {
   },
   REVIEW: {
     reminder: "Fase REVIEW: Revise o código, verifique blast radius e garanta que nada quebrou. Exporte o grafo para revisão.",
-    suggestedTools: ["export", "stats", "velocity", "dependencies"],
-    principles: ["Code review obrigatório", "Blast radius check", "Non-regression rule"],
+    suggestedTools: ["export", "metrics", "analyze"],
+    principles: ["Code review obrigatório", "Blast radius check", "Non-regression rule", "Velocity stability", "Scope integrity"],
     suggestedMcpAgents: [
       { name: "serena", action: "Verificar callers e referências dos symbols modificados", tools: ["find_referencing_symbols"] },
       { name: "gitnexus", action: "Blast radius final e verificação de escopo", tools: ["impact", "detect_changes"] },
@@ -178,16 +185,16 @@ const GUIDANCE: Record<LifecyclePhase, PhaseGuidance> = {
   },
   HANDOFF: {
     reminder: "Fase HANDOFF: Crie o PR, documente decisões e exporte o grafo. Prepare para entrega.",
-    suggestedTools: ["export", "snapshot", "stats", "velocity"],
-    principles: ["Documentação como entrega", "Grafo exportado", "Knowledge base atualizada"],
+    suggestedTools: ["export", "snapshot", "metrics", "analyze"],
+    principles: ["Documentação como entrega", "Grafo exportado", "Knowledge base atualizada", "Doc completeness", "Knowledge captured"],
     suggestedMcpAgents: [
       { name: "gitnexus", action: "Scope check final antes do PR", tools: ["detect_changes"] },
     ],
   },
   LISTENING: {
     reminder: "Fase LISTENING: Colete feedback e adicione novos nodes ao grafo. Inicie novo ciclo se necessário.",
-    suggestedTools: ["add_node", "import_prd", "search", "list"],
-    principles: ["Feedback contínuo", "Iteração incremental", "CLAUDE.md como spec evolutiva"],
+    suggestedTools: ["add_node", "import_prd", "search", "list", "analyze"],
+    principles: ["Feedback contínuo", "Iteração incremental", "CLAUDE.md como spec evolutiva", "Backlog health", "Tech debt tracking"],
   },
 };
 
@@ -226,11 +233,13 @@ const PHASE_GATES: Partial<Record<`${LifecyclePhase}_to_${LifecyclePhase}`, Phas
     };
   },
   DESIGN_to_PLAN: (doc) => {
-    const hasDecisionOrConstraint = doc.nodes.some((n) => n.type === "decision" || n.type === "constraint");
+    const report = checkDesignReadiness(doc);
     return {
-      allowed: hasDecisionOrConstraint,
-      reason: hasDecisionOrConstraint ? null : "Nenhum decision ou constraint encontrado",
-      unmetConditions: hasDecisionOrConstraint ? [] : ["Criar pelo menos 1 node tipo 'decision' ou 'constraint'"],
+      allowed: report.ready,
+      reason: report.ready ? null : report.summary,
+      unmetConditions: report.checks
+        .filter((c) => c.severity === "required" && !c.passed)
+        .map((c) => c.details),
     };
   },
   PLAN_to_IMPLEMENT: (doc) => {
@@ -243,47 +252,60 @@ const PHASE_GATES: Partial<Record<`${LifecyclePhase}_to_${LifecyclePhase}`, Phas
     };
   },
   IMPLEMENT_to_VALIDATE: (doc) => {
+    const report = checkValidationReadiness(doc);
+
+    // Additional recommended check: ≥50% done tasks have testable AC
     const tasks = doc.nodes.filter((n) => TASK_TYPES.has(n.type));
     const doneTasks = tasks.filter((n) => n.status === "done");
-    const halfDone = tasks.length > 0 && doneTasks.length >= tasks.length * 0.5;
-    const hasAC = doc.nodes.some((n) => n.type === "acceptance_criteria" || (n.acceptanceCriteria && n.acceptanceCriteria.length > 0));
-    const conditions: string[] = [];
-    if (!halfDone) conditions.push(`Pelo menos 50% das tasks devem estar done (atual: ${tasks.length > 0 ? Math.round((doneTasks.length / tasks.length) * 100) : 0}%)`);
-    if (!hasAC) conditions.push("Definir acceptance criteria para validação");
+    const doneWithTestableAc = doneTasks.filter((n) => {
+      const acs = n.acceptanceCriteria ?? [];
+      return acs.some((ac) => parseAc(ac).isTestable);
+    });
+    const testableRatio = doneTasks.length > 0 ? doneWithTestableAc.length / doneTasks.length : 0;
+
+    const conditions = report.checks
+      .filter((c) => c.severity === "required" && !c.passed)
+      .map((c) => c.details);
+
+    // Testable AC is recommended (warning), not required
+    if (testableRatio < 0.5 && doneTasks.length > 0) {
+      conditions.push(`Recomendado: ≥50% das done tasks com AC testável (atual: ${Math.round(testableRatio * 100)}%)`);
+    }
+
     return {
-      allowed: halfDone && hasAC,
-      reason: conditions.length > 0 ? conditions.join("; ") : null,
+      allowed: report.ready,
+      reason: report.ready ? null : report.summary,
       unmetConditions: conditions,
     };
   },
   VALIDATE_to_REVIEW: (doc) => {
-    const tasks = doc.nodes.filter((n) => TASK_TYPES.has(n.type));
-    const doneTasks = tasks.filter((n) => n.status === "done");
-    const enough = tasks.length > 0 && doneTasks.length >= tasks.length * 0.8;
+    const report = checkReviewReadiness(doc);
     return {
-      allowed: enough,
-      reason: enough ? null : `Pelo menos 80% das tasks devem estar done (atual: ${tasks.length > 0 ? Math.round((doneTasks.length / tasks.length) * 100) : 0}%)`,
-      unmetConditions: enough ? [] : [`Completar tasks: ${doneTasks.length}/${tasks.length} done`],
+      allowed: report.ready,
+      reason: report.ready ? null : report.summary,
+      unmetConditions: report.checks
+        .filter((c) => c.severity === "required" && !c.passed)
+        .map((c) => c.details),
     };
   },
   REVIEW_to_HANDOFF: (doc) => {
-    const tasks = doc.nodes.filter((n) => TASK_TYPES.has(n.type));
-    const allDone = tasks.length > 0 && tasks.every((n) => n.status === "done");
+    const report = checkHandoffReadiness(doc);
     return {
-      allowed: allDone,
-      reason: allDone ? null : "Nem todas as tasks estão done",
-      unmetConditions: allDone ? [] : ["Todas as tasks devem estar com status 'done'"],
+      allowed: report.ready,
+      reason: report.ready ? null : report.summary,
+      unmetConditions: report.checks
+        .filter((c) => c.severity === "required" && !c.passed)
+        .map((c) => c.details),
     };
   },
   HANDOFF_to_LISTENING: (doc) => {
-    // This gate is checked via options.hasSnapshots in the wrapper
-    // Here we just check if there are any done tasks (minimal gate)
-    const tasks = doc.nodes.filter((n) => TASK_TYPES.has(n.type));
-    const allDone = tasks.length > 0 && tasks.every((n) => n.status === "done");
+    const report = checkListeningReadiness(doc);
     return {
-      allowed: allDone,
-      reason: allDone ? null : "Todas as tasks devem estar done antes de LISTENING",
-      unmetConditions: allDone ? [] : ["Completar todas as tasks"],
+      allowed: report.ready,
+      reason: report.ready ? null : report.summary,
+      unmetConditions: report.checks
+        .filter((c) => c.severity === "required" && !c.passed)
+        .map((c) => c.details),
     };
   },
 };
@@ -311,17 +333,14 @@ export function validatePhaseTransition(
 
 const TOOL_PHASE_RESTRICTIONS: Record<string, Set<LifecyclePhase>> = {
   update_status: new Set(["ANALYZE"]),
-  bulk_update_status: new Set(["ANALYZE"]),
   plan_sprint: new Set(["ANALYZE"]),
   validate_task: new Set(["ANALYZE", "DESIGN", "PLAN"]),
-  decompose: new Set(["ANALYZE"]),
-  velocity: new Set(["ANALYZE", "DESIGN"]),
 };
 
 const ALWAYS_ALLOWED_TOOLS = new Set([
-  "init", "set_phase", "list", "show", "search", "stats", "export", "snapshot",
+  "init", "set_phase", "list", "show", "search", "metrics", "export", "snapshot",
   "add_node", "edge", "import_prd", "context", "rag_context", "next",
-  "sync_stack_docs", "reindex_knowledge", "dependencies",
+  "sync_stack_docs", "reindex_knowledge", "analyze", "validate_ac",
 ]);
 
 /**
@@ -386,6 +405,22 @@ export function checkStatusGate(
         message: `Node "${nodeId}" marcado como done sem acceptance criteria definidos.`,
         severity,
       });
+    }
+
+    // DoD pre-check — lightweight Definition of Done validation
+    // Only fire for nodes that have AC (the no-AC case is already handled above)
+    if (hasAC || parentHasAC || globalAC) {
+      const dodReport = checkDefinitionOfDone(doc, nodeId);
+      if (!dodReport.ready) {
+        const failedRequired = dodReport.checks
+          .filter((c) => c.severity === "required" && !c.passed)
+          .map((c) => c.name);
+        warnings.push({
+          code: "done_without_dod",
+          message: `Node "${nodeId}" não atende Definition of Done: ${failedRequired.join(", ")} (score: ${dodReport.score}, grade: ${dodReport.grade}).`,
+          severity: "warning", // Always warning — DoD is informational guidance
+        });
+      }
     }
   }
 

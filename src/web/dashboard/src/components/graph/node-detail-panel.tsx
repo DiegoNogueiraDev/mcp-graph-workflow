@@ -7,6 +7,7 @@ interface NodeDetailPanelProps {
   node: GraphNode | null;
   edges?: GraphEdge[];
   allNodes?: GraphNode[];
+  childrenMap?: Map<string, string[]>;
   onClose: () => void;
   onNodeNavigate?: (nodeId: string) => void;
 }
@@ -15,6 +16,7 @@ export const NodeDetailPanel = memo(function NodeDetailPanel({
   node,
   edges = [],
   allNodes = [],
+  childrenMap,
   onClose,
   onNodeNavigate,
 }: NodeDetailPanelProps) {
@@ -75,6 +77,42 @@ export const NodeDetailPanel = memo(function NodeDetailPanel({
             <p className="text-xs whitespace-pre-wrap">{node.description}</p>
           </div>
         )}
+
+        {childrenMap && (() => {
+          const childIds = childrenMap.get(node.id) ?? [];
+          if (childIds.length === 0) return null;
+          return (
+            <div className="pt-2 border-t border-[var(--color-border)]">
+              <div className="text-xs font-medium text-[var(--color-text-muted)] mb-1">
+                Children ({childIds.length})
+              </div>
+              <div className="space-y-1">
+                {childIds.map((childId) => {
+                  const child = nodeMap.get(childId);
+                  if (!child) return null;
+                  const childStatusColor = STATUS_COLORS[child.status] || "#9e9e9e";
+                  const childTypeColor = NODE_TYPE_COLORS[child.type] || "#6c757d";
+                  return (
+                    <button
+                      key={childId}
+                      onClick={() => onNodeNavigate?.(childId)}
+                      className="w-full text-left flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-[var(--color-bg-tertiary)] transition-colors text-xs"
+                    >
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ background: childStatusColor }} />
+                      <span
+                        className="text-[9px] px-1 rounded shrink-0"
+                        style={{ background: `${childTypeColor}20`, color: childTypeColor }}
+                      >
+                        {child.type}
+                      </span>
+                      <span className="truncate font-medium">{child.title}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
 
         {hasRelationships && (
           <div className="pt-2 border-t border-[var(--color-border)]">

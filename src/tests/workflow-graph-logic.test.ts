@@ -1,13 +1,17 @@
 /**
  * Frontend logic tests for WorkflowGraph component.
  * Tests the pure logic that drives the component behavior:
- * - filterTopLevelNodes integration with toFlowNodes
- * - visibleNodes computation with combined filters
+ * - getVisibleNodes with expandedIds + combined filters
+ * - buildChildrenMap + hierarchy interactions
  * - Layout skip optimization
  *
  * These test the ACTUAL production modules, not re-implementations.
  */
 import { describe, it, expect } from "vitest";
+import {
+  buildChildrenMap,
+  getVisibleNodes,
+} from "../web/dashboard/src/lib/graph-hierarchy.js";
 import { filterTopLevelNodes } from "../web/dashboard/src/lib/graph-filters.js";
 
 // ── Minimal factory matching GraphNode shape ─────
@@ -21,6 +25,14 @@ interface MockNode {
   parentId?: string | null;
 }
 
+interface MockEdge {
+  id: string;
+  from: string;
+  to: string;
+  relationType: string;
+  createdAt: string;
+}
+
 function makeNode(overrides: Partial<MockNode> & { id: string }): MockNode {
   return {
     type: "task",
@@ -31,109 +43,147 @@ function makeNode(overrides: Partial<MockNode> & { id: string }): MockNode {
   };
 }
 
-// ── Tests simulating WorkflowGraph.visibleNodes ──
+function makeEdge(from: string, to: string, relationType = "parent_of"): MockEdge {
+  return { id: `${from}-${to}`, from, to, relationType, createdAt: "2025-01-01T00:00:00Z" };
+}
 
-describe("WorkflowGraph visibleNodes logic", () => {
-  // This mirrors the exact logic in workflow-graph.tsx:
-  // const base = filterTopLevelNodes(graph.nodes, showFullGraph);
-  // return base.filter(n => {
-  //   if (filterStatuses.size && !filterStatuses.has(n.status)) return false;
-  //   if (filterTypes.size && !filterTypes.has(n.type)) return false;
-  //   return true;
-  // });
+// ── Simulate WorkflowGraph.visibleTableNodes logic ──
+// This mirrors the exact logic in workflow-graph.tsx:
+// const visible = getVisibleNodes(graph.nodes, expandedIds, childrenMap);
+// return visible.filter(n => { ...status/type filters... });
 
-  function computeVisibleNodes(
-    nodes: MockNode[],
-    showFullGraph: boolean,
-    filterStatuses: Set<string>,
-    filterTypes: Set<string>,
-  ): MockNode[] {
-    const base = filterTopLevelNodes(nodes, showFullGraph);
-    return base.filter((n) => {
-      if (filterStatuses.size && !filterStatuses.has(n.status)) return false;
-      if (filterTypes.size && !filterTypes.has(n.type)) return false;
-      return true;
-    });
-  }
+function computeVisibleNodes(
+  nodes: MockNode[],
+  edges: MockEdge[],
+  expandedIds: Set<string>,
+  filterStatuses: Set<string>,
+  filterTypes: Set<string>,
+): MockNode[] {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const childrenMap = buildChildrenMap(nodes as any, edges as any);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const visible = getVisibleNodes(nodes as any, expandedIds, childrenMap) as unknown as MockNode[];
+  return visible.filter((n) => {
+    if (filterStatuses.size && !filterStatuses.has(n.status)) return false;
+    if (filterTypes.size && !filterTypes.has(n.type)) return false;
+    return true;
+  });
+}
 
+// ── Tests ──
+
+describe("WorkflowGraph visibleNodes logic (expand/collapse)", () => {
   const allNodes: MockNode[] = [
     makeNode({ id: "epic1", type: "epic", status: "in_progress" }),
     makeNode({ id: "task1", type: "task", status: "backlog", parentId: "epic1" }),
-    makeNode({ id: "task2", type: "task", status: "done" }),
+    makeNode({ id: "task2", type: "task", status: "done", parentId: "epic1" }),
     makeNode({ id: "sub1", type: "subtask", status: "done", parentId: "task1" }),
-    makeNode({ id: "req1", type: "requirement", status: "ready", parentId: "epic1" }),
-    makeNode({ id: "milestone1", type: "milestone", status: "backlog" }),
+    makeNode({ id: "epic2", type: "epic", status: "ready" }),
+    makeNode({ id: "task3", type: "task", status: "backlog", parentId: "epic2" }),
   ];
 
-  it("should show only top-level + root nodes by default (no filters, showFullGraph=false)", () => {
-    const result = computeVisibleNodes(allNodes, false, new Set(), new Set());
+  it("should show only root nodes when nothing expanded (no filters)", () => {
+    const result = computeVisibleNodes(allNodes, [], new Set(), new Set(), new Set());
     const ids = result.map((n) => n.id);
-    // epic1 (top-level type), task2 (no parent), req1 (top-level type), milestone1 (top-level type)
-    expect(ids).toEqual(["epic1", "task2", "req1", "milestone1"]);
+    expect(ids).toEqual(["epic1", "epic2"]);
   });
 
-  it("should show all nodes when showFullGraph=true and no filters", () => {
-    const result = computeVisibleNodes(allNodes, true, new Set(), new Set());
+  it("should show children when parent is expanded", () => {
+    const result = computeVisibleNodes(allNodes, [], new Set(["epic1"]), new Set(), new Set());
+    const ids = result.map((n) => n.id);
+    expect(ids).toEqual(["epic1", "task1", "task2", "epic2"]);
+  });
+
+  it("should expand multiple levels (DFS order)", () => {
+    const result = computeVisibleNodes(allNodes, [], new Set(["epic1", "task1"]), new Set(), new Set());
+    const ids = result.map((n) => n.id);
+    // DFS: epic1 → task1 → sub1 → task2 → epic2
+    expect(ids).toEqual(["epic1", "task1", "sub1", "task2", "epic2"]);
+  });
+
+  it("should expand all parents to show all nodes", () => {
+    const result = computeVisibleNodes(
+      allNodes, [], new Set(["epic1", "task1", "epic2"]), new Set(), new Set(),
+    );
     expect(result).toHaveLength(6);
   });
 
-  it("should apply status filter on top of top-level filter", () => {
-    const result = computeVisibleNodes(allNodes, false, new Set(["done"]), new Set());
+  it("should apply status filter ON TOP of expansion", () => {
+    const result = computeVisibleNodes(
+      allNodes, [], new Set(["epic1"]), new Set(["done"]), new Set(),
+    );
     const ids = result.map((n) => n.id);
-    // Only top-level + root nodes that are "done" → task2
+    // Expanded: epic1, task1, task2, epic2. Filter done → task2 only
     expect(ids).toEqual(["task2"]);
   });
 
-  it("should apply type filter on top of top-level filter", () => {
-    const result = computeVisibleNodes(allNodes, false, new Set(), new Set(["epic"]));
+  it("should apply type filter ON TOP of expansion", () => {
+    const result = computeVisibleNodes(
+      allNodes, [], new Set(["epic1"]), new Set(), new Set(["epic"]),
+    );
+    const ids = result.map((n) => n.id);
+    // Expanded: epic1, task1, task2, epic2. Filter epic → epic1, epic2
+    expect(ids).toEqual(["epic1", "epic2"]);
+  });
+
+  it("should combine status + type filters with expansion", () => {
+    const result = computeVisibleNodes(
+      allNodes, [], new Set(["epic1"]), new Set(["in_progress"]), new Set(["epic"]),
+    );
     const ids = result.map((n) => n.id);
     expect(ids).toEqual(["epic1"]);
   });
 
-  it("should combine showFullGraph=true with status filter", () => {
-    const result = computeVisibleNodes(allNodes, true, new Set(["done"]), new Set());
-    const ids = result.map((n) => n.id);
-    expect(ids).toEqual(["task2", "sub1"]);
-  });
-
-  it("should combine showFullGraph=true with type filter", () => {
-    const result = computeVisibleNodes(allNodes, true, new Set(), new Set(["subtask"]));
-    const ids = result.map((n) => n.id);
-    expect(ids).toEqual(["sub1"]);
-  });
-
-  it("should return empty when no nodes match combined filters", () => {
-    const result = computeVisibleNodes(allNodes, false, new Set(["blocked"]), new Set());
-    expect(result).toHaveLength(0);
+  it("should handle collapse all (empty expandedIds) — only roots", () => {
+    const result = computeVisibleNodes(allNodes, [], new Set(), new Set(), new Set());
+    expect(result).toHaveLength(2);
   });
 
   it("should handle empty graph gracefully", () => {
-    const result = computeVisibleNodes([], false, new Set(), new Set());
+    const result = computeVisibleNodes([], [], new Set(), new Set(), new Set());
     expect(result).toEqual([]);
+  });
+
+  it("should use parent_of edges for hierarchy when parentId is absent", () => {
+    const nodesNoParentId = [
+      makeNode({ id: "epic1", type: "epic" }),
+      makeNode({ id: "task1", type: "task" }),
+    ];
+    const edges = [makeEdge("epic1", "task1", "parent_of")];
+    // Without expansion — task1 is a root (no parentId), so both appear
+    const result1 = computeVisibleNodes(nodesNoParentId, edges, new Set(), new Set(), new Set());
+    expect(result1.map((n) => n.id)).toEqual(["epic1", "task1"]);
+  });
+
+  it("should handle orphan nodes (parentId → non-existent) as roots", () => {
+    const nodesWithOrphan = [
+      makeNode({ id: "root1" }),
+      makeNode({ id: "orphan", parentId: "deleted" }),
+    ];
+    const result = computeVisibleNodes(nodesWithOrphan, [], new Set(), new Set(), new Set());
+    expect(result.map((n) => n.id)).toEqual(["root1", "orphan"]);
   });
 });
 
-// ── Tests simulating FilterPanel + showFullGraph ─
+// ── filterTopLevelNodes still works for prd-backlog-tab ──
 
-describe("FilterPanel showFullGraph warning logic", () => {
-  it("should warn when showFullGraph=true and count > 200", () => {
-    const showFullGraph = true;
-    const totalNodeCount = 250;
-    const shouldWarn = showFullGraph && totalNodeCount > 200;
-    expect(shouldWarn).toBe(true);
+describe("filterTopLevelNodes (backward compat for prd-backlog-tab)", () => {
+  it("should still work with showFullGraph=false", () => {
+    const nodes = [
+      makeNode({ id: "epic1", type: "epic" }),
+      makeNode({ id: "task1", type: "task", parentId: "epic1" }),
+      makeNode({ id: "task2", type: "task" }),
+    ];
+    const result = filterTopLevelNodes(nodes, false);
+    const ids = result.map((n) => n.id);
+    expect(ids).toEqual(["epic1", "task2"]);
   });
 
-  it("should not warn when showFullGraph=false", () => {
-    const showFullGraph = false;
-    const totalNodeCount = 500;
-    const shouldWarn = showFullGraph && totalNodeCount > 200;
-    expect(shouldWarn).toBe(false);
-  });
-
-  it("should not warn when count <= 200", () => {
-    const showFullGraph = true;
-    const totalNodeCount = 100;
-    const shouldWarn = showFullGraph && totalNodeCount > 200;
-    expect(shouldWarn).toBe(false);
+  it("should still work with showFullGraph=true", () => {
+    const nodes = [
+      makeNode({ id: "a" }),
+      makeNode({ id: "b", parentId: "a" }),
+    ];
+    expect(filterTopLevelNodes(nodes, true)).toHaveLength(2);
   });
 });

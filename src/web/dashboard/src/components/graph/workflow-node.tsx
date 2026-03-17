@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useCallback } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import type { WorkflowNodeData } from "./graph-utils";
 import { NODE_TYPE_COLORS, STATUS_COLORS } from "@/lib/constants";
@@ -8,6 +8,14 @@ type WorkflowNodeProps = NodeProps & { data: WorkflowNodeData };
 export const WorkflowNode = memo(function WorkflowNode({ data }: WorkflowNodeProps) {
   const typeColor = NODE_TYPE_COLORS[data.nodeType] || "#6c757d";
   const statusColor = STATUS_COLORS[data.status] || "#9e9e9e";
+
+  const handleExpandClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      data.onExpand?.(data.sourceNode.id);
+    },
+    [data],
+  );
 
   return (
     <>
@@ -30,10 +38,22 @@ export const WorkflowNode = memo(function WorkflowNode({ data }: WorkflowNodePro
         <div className="text-sm font-medium leading-tight line-clamp-2 mb-1">
           {data.label}
         </div>
-        <div className="flex items-center gap-2 text-[10px] text-[var(--color-text-muted)]">
-          <span>P{data.priority}</span>
-          {data.xpSize && <span>{data.xpSize}</span>}
-          {data.sprint && <span>{data.sprint}</span>}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-[10px] text-[var(--color-text-muted)]">
+            <span>P{data.priority}</span>
+            {data.xpSize && <span>{data.xpSize}</span>}
+            {data.sprint && <span>{data.sprint}</span>}
+          </div>
+          {data.hasChildren && (
+            <button
+              onClick={handleExpandClick}
+              className="flex items-center gap-0.5 text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors px-1 py-0.5 rounded hover:bg-[var(--color-bg-tertiary)]"
+              title={data.isExpanded ? "Collapse children" : "Expand children"}
+            >
+              <span className="text-xs">{data.isExpanded ? "\u25BE" : "\u25B8"}</span>
+              <span className="font-medium">({data.childCount})</span>
+            </button>
+          )}
         </div>
       </div>
       <Handle type="source" position={Position.Bottom} className="!w-2 !h-2" />

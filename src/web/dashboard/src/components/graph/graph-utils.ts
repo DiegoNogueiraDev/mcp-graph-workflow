@@ -11,6 +11,10 @@ export interface WorkflowNodeData {
   xpSize?: string;
   sprint?: string | null;
   sourceNode: GraphNode;
+  hasChildren: boolean;
+  isExpanded: boolean;
+  childCount: number;
+  onExpand?: (nodeId: string) => void;
   [key: string]: unknown;
 }
 
@@ -25,6 +29,9 @@ const NODE_HEIGHT = 80;
 export function toFlowNodes(
   nodes: GraphNode[],
   filters?: { statuses?: Set<string>; types?: Set<string> },
+  childrenMap?: Map<string, string[]>,
+  expandedIds?: Set<string>,
+  onExpand?: (nodeId: string) => void,
 ): Node<WorkflowNodeData>[] {
   return nodes
     .filter((n) => {
@@ -32,24 +39,32 @@ export function toFlowNodes(
       if (filters?.types?.size && !filters.types.has(n.type)) return false;
       return true;
     })
-    .map((n) => ({
-      id: n.id,
-      type: "workflowNode",
-      position: { x: 0, y: 0 },
-      data: {
-        label: n.title,
-        nodeType: n.type,
-        status: n.status,
-        priority: n.priority,
-        xpSize: n.xpSize,
-        sprint: n.sprint,
-        sourceNode: n,
-      },
-      style: {
-        width: NODE_WIDTH,
-        borderLeft: `4px solid ${NODE_TYPE_COLORS[n.type] || "#6c757d"}`,
-      },
-    }));
+    .map((n) => {
+      const children = childrenMap?.get(n.id);
+      const hasChildren = children != null && children.length > 0;
+      return {
+        id: n.id,
+        type: "workflowNode",
+        position: { x: 0, y: 0 },
+        data: {
+          label: n.title,
+          nodeType: n.type,
+          status: n.status,
+          priority: n.priority,
+          xpSize: n.xpSize,
+          sprint: n.sprint,
+          sourceNode: n,
+          hasChildren,
+          isExpanded: expandedIds?.has(n.id) ?? false,
+          childCount: children?.length ?? 0,
+          onExpand,
+        },
+        style: {
+          width: NODE_WIDTH,
+          borderLeft: `4px solid ${NODE_TYPE_COLORS[n.type] || "#6c757d"}`,
+        },
+      };
+    });
 }
 
 export function toFlowEdges(

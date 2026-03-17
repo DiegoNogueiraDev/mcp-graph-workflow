@@ -32,7 +32,7 @@ Thin orchestration layer. Commands call core functions and format output. No bus
 Tool categories:
 - **Graph CRUD** (12) — init, import_prd, add_node, update_node, delete_node, add_edge, delete_edge, list_edges, move_node, clone_node, export_graph, export_mermaid
 - **Querying** (4) — list, show, search, rag_context
-- **Planning & Execution** (7) — next, update_status, bulk_update_status, decompose, velocity, dependencies, plan_sprint
+- **Planning & Execution** (6) — next, update_status, decompose, velocity, dependencies, plan_sprint
 - **Knowledge & RAG** (3) — context, reindex_knowledge, sync_stack_docs
 - **Validation** (1) — validate_task
 - **Snapshots & Stats** (4) — stats, create_snapshot, restore_snapshot, list_snapshots
