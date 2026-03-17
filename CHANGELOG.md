@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.5](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.1.4...mcp-graph-v5.1.5) (2026-03-17)
+
+
+### Bug Fixes
+
+* default lifecycle strictness mode to strict instead of advisory ([fd87bd4](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/fd87bd47890ab1dacde9373cdccb2ec4c3951267))
+* GitNexus tracks active project basePath instead of always using mcp-graph cwd ([bd58f9f](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/bd58f9fdfa0534cf2eb83a03a8a44a0b57c5a2ba))
+* remove unused imports flagged by lint (GraphEdge, vi) ([73f0b4d](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/73f0b4de5ceb859c8909520cf63d6011113dba80))
+
 ## [5.1.4](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.1.3...mcp-graph-v5.1.4) (2026-03-16)
 
 
