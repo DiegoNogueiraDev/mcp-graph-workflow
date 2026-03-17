@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { validatePhaseTransition } from "../core/planner/lifecycle-phase.js";
-import type { GraphDocument, GraphNode, GraphEdge } from "../core/graph/graph-types.js";
+import type { GraphDocument, GraphNode } from "../core/graph/graph-types.js";
 
 function makeDoc(
   nodes: Partial<GraphNode>[] = [],

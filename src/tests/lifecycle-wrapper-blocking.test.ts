@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { buildLifecycleBlock, type LifecycleBlockOptions } from "../mcp/lifecycle-wrapper.js";
 import type { GraphDocument } from "../core/graph/graph-types.js";
 
