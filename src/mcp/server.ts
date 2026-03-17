@@ -27,15 +27,16 @@ registerAllTools(mcp, storeManager.store);
 // ── Express app ──────────────────────────────────────────
 const app = createApp({
   store: storeManager.store,
-  basePath: process.cwd(),
+  basePath: storeManager.basePath,
   eventBus,
   mcp,
   storeManager,
+  gitnexusPort: config.integrations.gitnexusPort,
 });
 
 // ── GitNexus auto-start ──────────────────────────────────
 if (config.integrations.gitnexusAutoStart) {
-  const basePath = process.cwd();
+  const basePath = storeManager.basePath;
   const gitnexusPort = config.integrations.gitnexusPort;
 
   ensureGitNexusAnalyzed(basePath).then(() => {

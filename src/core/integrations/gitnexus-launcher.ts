@@ -25,6 +25,7 @@ const GITNEXUS_PKG = "gitnexus";
 
 let serveProcess: ChildProcess | null = null;
 let resolvedBin: string | null = null;
+let currentServePath: string | null = null;
 
 export type AnalyzePhase = "idle" | "analyzing" | "ready" | "unavailable" | "error";
 
@@ -43,6 +44,15 @@ export function getAnalyzePhase(): AnalyzePhase {
 export function resetAnalyzePhase(): void {
   analyzePhase = "idle";
   resolvedBin = null;
+  currentServePath = null;
+}
+
+/**
+ * Get the basePath that the current GitNexus serve process is running for.
+ * Returns null if serve is not running.
+ */
+export function getServeBasePath(): string | null {
+  return currentServePath;
 }
 
 /**
@@ -230,10 +240,25 @@ export async function startGitNexusServe(basePath: string, port: number): Promis
     return { started: false, message: "Codebase not indexed. Run gitnexus analyze first." };
   }
 
+  // If serve is running for a different basePath, stop it first
+  if (currentServePath && currentServePath !== basePath) {
+    logger.info("GitNexus basePath changed, restarting serve", {
+      oldBasePath: currentServePath,
+      newBasePath: basePath,
+    });
+    await stopGitNexus();
+  }
+
   const alreadyRunning = await isGitNexusRunning(port);
-  if (alreadyRunning) {
-    logger.info("GitNexus already running", { port });
+  if (alreadyRunning && currentServePath === basePath) {
+    logger.info("GitNexus already running for current basePath", { port, basePath });
     return { started: true, message: `GitNexus already running on port ${port}`, port };
+  }
+
+  // If something else is running on the port but not our process, we can't start
+  if (alreadyRunning && currentServePath !== basePath) {
+    logger.warn("GitNexus port in use by external process, stopping and restarting", { port });
+    await stopGitNexus();
   }
 
   if (serveProcess && !serveProcess.killed) {
@@ -256,14 +281,17 @@ export async function startGitNexusServe(basePath: string, port: number): Promis
     serveProcess.on("error", (err) => {
       logger.error("GitNexus serve process error", { error: err.message });
       serveProcess = null;
+      currentServePath = null;
     });
 
     serveProcess.on("exit", (code) => {
       logger.info("GitNexus serve process exited", { code });
       serveProcess = null;
+      currentServePath = null;
     });
 
-    logger.success("GitNexus serve started", { port, pid: serveProcess.pid });
+    currentServePath = basePath;
+    logger.success("GitNexus serve started", { port, pid: serveProcess.pid, basePath });
     return { started: true, message: `GitNexus serve started on port ${port}`, port };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -278,6 +306,7 @@ export async function startGitNexusServe(basePath: string, port: number): Promis
 export async function stopGitNexus(): Promise<void> {
   if (!serveProcess || serveProcess.killed) {
     serveProcess = null;
+    currentServePath = null;
     return;
   }
 
@@ -286,4 +315,5 @@ export async function stopGitNexus(): Promise<void> {
   killProcess(serveProcess);
 
   serveProcess = null;
+  currentServePath = null;
 }

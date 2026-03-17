@@ -10,6 +10,7 @@ import {
   isGitNexusIndexed,
   isGitNexusRunning,
   getAnalyzePhase,
+  getServeBasePath,
   ensureGitNexusAnalyzed,
   startGitNexusServe,
 } from "../../core/integrations/gitnexus-launcher.js";
@@ -72,6 +73,8 @@ export function createGitNexusRouter(options: GitNexusRouterOptions): Router {
         running,
         port: gitnexusPort,
         analyzePhase: getAnalyzePhase(),
+        basePath: getBasePath(),
+        serveBasePath: getServeBasePath(),
         ...(running ? { url: `http://localhost:${gitnexusPort}` } : {}),
       });
     } catch (err) {

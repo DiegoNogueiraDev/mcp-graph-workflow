@@ -5,8 +5,14 @@ import type { StoreManager } from "../../core/store/store-manager.js";
 import { OpenFolderBodySchema } from "../../schemas/folder.schema.js";
 import { validateBody } from "../middleware/validate.js";
 import { STORE_DIR, LEGACY_STORE_DIR, DB_FILE } from "../../core/utils/constants.js";
+import { ensureGitNexusAnalyzed, startGitNexusServe } from "../../core/integrations/gitnexus-launcher.js";
+import { logger } from "../../core/utils/logger.js";
 
-export function createFolderRouter(storeManager: StoreManager): Router {
+export interface FolderRouterOptions {
+  gitnexusPort?: number;
+}
+
+export function createFolderRouter(storeManager: StoreManager, options?: FolderRouterOptions): Router {
   const router = Router();
 
   router.get("/", (_req, res) => {
@@ -24,6 +30,24 @@ export function createFolderRouter(storeManager: StoreManager): Router {
       if (!result.ok) {
         res.status(400).json({ ok: false, error: result.error });
         return;
+      }
+
+      // Trigger GitNexus re-index and re-serve for the new project (non-blocking)
+      const gitnexusPort = options?.gitnexusPort;
+      if (gitnexusPort) {
+        const newBasePath = result.basePath;
+        ensureGitNexusAnalyzed(newBasePath)
+          .then(() => startGitNexusServe(newBasePath, gitnexusPort))
+          .then((serveResult) => {
+            if (serveResult.started) {
+              logger.info("GitNexus re-started for new project", { basePath: newBasePath, port: gitnexusPort });
+            }
+          })
+          .catch((err) => {
+            logger.warn("GitNexus lifecycle after swap failed (non-blocking)", {
+              error: err instanceof Error ? err.message : String(err),
+            });
+          });
       }
 
       res.json({

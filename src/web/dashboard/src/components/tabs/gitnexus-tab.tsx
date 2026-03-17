@@ -246,6 +246,7 @@ export function GitNexusTab(): React.JSX.Element {
   }
 
   const gitNexusRunning = gitNexusStatus?.running ?? false;
+  const isNoGitRepo = gitNexusStatus?.analyzePhase === "unavailable";
   // Use full graph as base, context graph highlights on top
   const displayGraph = fullGraph ?? contextGraph;
 
@@ -262,6 +263,12 @@ export function GitNexusTab(): React.JSX.Element {
           onAction={handleAnalyzeAndStart}
           actionLoading={actionLoading}
         />
+
+        {gitNexusStatus?.basePath && (
+          <span className="text-[10px] text-[var(--color-text-muted)] truncate max-w-[300px]" title={gitNexusStatus.basePath}>
+            {gitNexusStatus.basePath.split("/").slice(-2).join("/")}
+          </span>
+        )}
 
         {displayGraph && (
           <span className="text-[10px] text-[var(--color-text-muted)]">
@@ -285,6 +292,12 @@ export function GitNexusTab(): React.JSX.Element {
           ))}
         </div>
       </div>
+
+      {isNoGitRepo && (
+        <div className="mx-4 mt-2 p-3 rounded-lg bg-[var(--color-bg-tertiary)] border border-[var(--color-border)] text-sm text-[var(--color-text-muted)]">
+          This project has no git repository. Code graph features require a git-initialized project.
+        </div>
+      )}
 
       {/* 2-panel body: left controls/results + right graph */}
       <div className="flex flex-1 min-h-0">

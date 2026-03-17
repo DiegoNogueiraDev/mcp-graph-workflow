@@ -116,6 +116,8 @@ export interface GitNexusStatus {
   port: number;
   url?: string;
   analyzePhase?: "idle" | "analyzing" | "ready" | "unavailable" | "error";
+  basePath?: string;
+  serveBasePath?: string | null;
 }
 
 export interface CodeSymbol {
