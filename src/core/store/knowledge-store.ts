@@ -10,6 +10,8 @@ import type { KnowledgeDocument, KnowledgeSourceType } from "../../schemas/knowl
 import { generateId } from "../utils/id.js";
 import { now } from "../utils/time.js";
 import { logger } from "../utils/logger.js";
+import { getPhaseBoost, applyPhaseBoost } from "../rag/phase-metadata.js";
+import type { LifecyclePhase } from "../planner/lifecycle-phase.js";
 
 export interface InsertKnowledgeDoc {
   sourceType: KnowledgeSourceType;
@@ -172,6 +174,35 @@ export class KnowledgeStore {
       ...rowToDoc(row),
       score: row.score,
     }));
+  }
+
+  /**
+   * Search knowledge documents with phase-aware boosting.
+   * Documents tagged with phases relevant to the current phase are ranked higher.
+   */
+  searchWithPhaseBoost(
+    query: string,
+    currentPhase: LifecyclePhase,
+    limit: number = 20,
+  ): Array<KnowledgeDocument & { score: number; phaseBoost: number }> {
+    // Fetch more results than needed to allow re-ranking
+    const rawResults = this.search(query, limit * 2);
+
+    const boosted = rawResults.map((result) => {
+      const docPhase = result.metadata?.phase as string | undefined;
+      const boost = getPhaseBoost(currentPhase, docPhase);
+      const boostedScore = applyPhaseBoost(result.score, boost);
+      return {
+        ...result,
+        score: boostedScore,
+        phaseBoost: boost,
+      };
+    });
+
+    // Re-sort by boosted score (BM25: closer to 0 = better)
+    boosted.sort((a, b) => b.score - a.score);
+
+    return boosted.slice(0, limit);
   }
 
   /**

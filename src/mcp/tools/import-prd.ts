@@ -5,6 +5,8 @@ import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import { readPrdFile } from "../../core/parser/read-file.js";
 import { extractEntities } from "../../core/parser/extract.js";
 import { convertToGraph } from "../../core/importer/prd-to-graph.js";
+import { KnowledgeStore } from "../../core/store/knowledge-store.js";
+import { indexPrdContent } from "../../core/rag/prd-indexer.js";
 import { logger } from "../../core/utils/logger.js";
 
 export function registerImportPrd(server: McpServer, store: SqliteStore): void {
@@ -67,13 +69,24 @@ export function registerImportPrd(server: McpServer, store: SqliteStore): void {
       // 7. Record import
       store.recordImport(sourceFileName, stats.nodesCreated, stats.edgesCreated);
 
-      // 8. Snapshot after import
+      // 8. Index PRD text into knowledge store for cross-phase RAG
+      let knowledgeDocsIndexed = 0;
+      try {
+        const knowledgeStore = new KnowledgeStore(store.getDb());
+        const indexResult = indexPrdContent(knowledgeStore, content, sourceFileName, "ANALYZE");
+        knowledgeDocsIndexed = indexResult.documentsIndexed;
+      } catch (err) {
+        logger.warn("tool:import_prd:knowledge_index_failed", { error: String(err) });
+      }
+
+      // 9. Snapshot after import
       store.createSnapshot();
 
       logger.info("tool:import_prd:ok", {
         sourceFile: sourceFileName,
         nodesCreated: stats.nodesCreated,
         edgesCreated: stats.edgesCreated,
+        knowledgeDocsIndexed,
       });
 
       return {
@@ -86,6 +99,7 @@ export function registerImportPrd(server: McpServer, store: SqliteStore): void {
                 sourceFile: sourceFileName,
                 originalSizeChars: sizeBytes,
                 ...stats,
+                knowledgeDocsIndexed,
                 ...(cleared
                   ? {
                       reimported: true,

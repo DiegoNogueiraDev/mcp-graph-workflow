@@ -8,6 +8,7 @@ export type GraphEventType =
   | "bulk:updated"
   | "knowledge:indexed"
   | "knowledge:deleted"
+  | "phase:transitioned"
   | "log:entry";
 
 export interface GraphEvent {
@@ -59,6 +60,17 @@ export interface KnowledgeIndexedEvent extends GraphEvent {
 export interface KnowledgeDeletedEvent extends GraphEvent {
   type: "knowledge:deleted";
   payload: { source: string; documentsDeleted: number };
+}
+
+export interface PhaseTransitionedEvent extends GraphEvent {
+  type: "phase:transitioned";
+  payload: {
+    fromPhase: string;
+    toPhase: string;
+    forced: boolean;
+    nodesCount: number;
+    doneTasksCount: number;
+  };
 }
 
 export interface LogEntryEvent extends GraphEvent {
