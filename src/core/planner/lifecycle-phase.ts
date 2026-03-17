@@ -200,20 +200,235 @@ export function getPhaseGuidance(phase: LifecyclePhase): PhaseGuidance {
 export interface LifecycleWarning {
   code: string;
   message: string;
-  severity: "info" | "warning";
+  severity: "info" | "warning" | "error";
+}
+
+// ── Strictness Mode ────────────────────────────
+export type StrictnessMode = "strict" | "advisory";
+
+// ── Phase Gates ────────────────────────────────
+
+export interface PhaseGateResult {
+  allowed: boolean;
+  reason: string | null;
+  unmetConditions: string[];
+}
+
+type PhaseGateCheck = (doc: GraphDocument) => PhaseGateResult;
+
+const PHASE_GATES: Partial<Record<`${LifecyclePhase}_to_${LifecyclePhase}`, PhaseGateCheck>> = {
+  ANALYZE_to_DESIGN: (doc) => {
+    const hasEpicOrRequirement = doc.nodes.some((n) => n.type === "epic" || n.type === "requirement");
+    return {
+      allowed: hasEpicOrRequirement,
+      reason: hasEpicOrRequirement ? null : "Nenhum epic ou requirement encontrado",
+      unmetConditions: hasEpicOrRequirement ? [] : ["Criar pelo menos 1 node tipo 'epic' ou 'requirement'"],
+    };
+  },
+  DESIGN_to_PLAN: (doc) => {
+    const hasDecisionOrConstraint = doc.nodes.some((n) => n.type === "decision" || n.type === "constraint");
+    return {
+      allowed: hasDecisionOrConstraint,
+      reason: hasDecisionOrConstraint ? null : "Nenhum decision ou constraint encontrado",
+      unmetConditions: hasDecisionOrConstraint ? [] : ["Criar pelo menos 1 node tipo 'decision' ou 'constraint'"],
+    };
+  },
+  PLAN_to_IMPLEMENT: (doc) => {
+    const tasks = doc.nodes.filter((n) => TASK_TYPES.has(n.type));
+    const hasSprints = tasks.some((n) => n.sprint != null);
+    return {
+      allowed: hasSprints,
+      reason: hasSprints ? null : "Nenhuma task com sprint atribuído",
+      unmetConditions: hasSprints ? [] : ["Atribuir sprint a pelo menos 1 task"],
+    };
+  },
+  IMPLEMENT_to_VALIDATE: (doc) => {
+    const tasks = doc.nodes.filter((n) => TASK_TYPES.has(n.type));
+    const doneTasks = tasks.filter((n) => n.status === "done");
+    const halfDone = tasks.length > 0 && doneTasks.length >= tasks.length * 0.5;
+    const hasAC = doc.nodes.some((n) => n.type === "acceptance_criteria" || (n.acceptanceCriteria && n.acceptanceCriteria.length > 0));
+    const conditions: string[] = [];
+    if (!halfDone) conditions.push(`Pelo menos 50% das tasks devem estar done (atual: ${tasks.length > 0 ? Math.round((doneTasks.length / tasks.length) * 100) : 0}%)`);
+    if (!hasAC) conditions.push("Definir acceptance criteria para validação");
+    return {
+      allowed: halfDone && hasAC,
+      reason: conditions.length > 0 ? conditions.join("; ") : null,
+      unmetConditions: conditions,
+    };
+  },
+  VALIDATE_to_REVIEW: (doc) => {
+    const tasks = doc.nodes.filter((n) => TASK_TYPES.has(n.type));
+    const doneTasks = tasks.filter((n) => n.status === "done");
+    const enough = tasks.length > 0 && doneTasks.length >= tasks.length * 0.8;
+    return {
+      allowed: enough,
+      reason: enough ? null : `Pelo menos 80% das tasks devem estar done (atual: ${tasks.length > 0 ? Math.round((doneTasks.length / tasks.length) * 100) : 0}%)`,
+      unmetConditions: enough ? [] : [`Completar tasks: ${doneTasks.length}/${tasks.length} done`],
+    };
+  },
+  REVIEW_to_HANDOFF: (doc) => {
+    const tasks = doc.nodes.filter((n) => TASK_TYPES.has(n.type));
+    const allDone = tasks.length > 0 && tasks.every((n) => n.status === "done");
+    return {
+      allowed: allDone,
+      reason: allDone ? null : "Nem todas as tasks estão done",
+      unmetConditions: allDone ? [] : ["Todas as tasks devem estar com status 'done'"],
+    };
+  },
+  HANDOFF_to_LISTENING: (doc) => {
+    // This gate is checked via options.hasSnapshots in the wrapper
+    // Here we just check if there are any done tasks (minimal gate)
+    const tasks = doc.nodes.filter((n) => TASK_TYPES.has(n.type));
+    const allDone = tasks.length > 0 && tasks.every((n) => n.status === "done");
+    return {
+      allowed: allDone,
+      reason: allDone ? null : "Todas as tasks devem estar done antes de LISTENING",
+      unmetConditions: allDone ? [] : ["Completar todas as tasks"],
+    };
+  },
+};
+
+/**
+ * Validate whether a phase transition is allowed based on graph state.
+ */
+export function validatePhaseTransition(
+  doc: GraphDocument,
+  fromPhase: LifecyclePhase,
+  toPhase: LifecyclePhase,
+): PhaseGateResult {
+  const key = `${fromPhase}_to_${toPhase}` as `${LifecyclePhase}_to_${LifecyclePhase}`;
+  const gate = PHASE_GATES[key];
+
+  if (!gate) {
+    // No gate defined for this transition — allowed by default
+    return { allowed: true, reason: null, unmetConditions: [] };
+  }
+
+  return gate(doc);
+}
+
+// ── Tool Phase Restrictions ────────────────────
+
+const TOOL_PHASE_RESTRICTIONS: Record<string, Set<LifecyclePhase>> = {
+  update_status: new Set(["ANALYZE"]),
+  bulk_update_status: new Set(["ANALYZE"]),
+  plan_sprint: new Set(["ANALYZE"]),
+  validate_task: new Set(["ANALYZE", "DESIGN", "PLAN"]),
+  decompose: new Set(["ANALYZE"]),
+  velocity: new Set(["ANALYZE", "DESIGN"]),
+};
+
+const ALWAYS_ALLOWED_TOOLS = new Set([
+  "init", "set_phase", "list", "show", "search", "stats", "export", "snapshot",
+  "add_node", "edge", "import_prd", "context", "rag_context", "next",
+  "sync_stack_docs", "reindex_knowledge", "dependencies",
+]);
+
+/**
+ * Check if a tool is allowed in the current phase.
+ * Returns warnings with severity based on strictness mode.
+ */
+export function checkToolGate(
+  doc: GraphDocument,
+  phase: LifecyclePhase,
+  toolName: string,
+  mode: StrictnessMode = "strict",
+): LifecycleWarning[] {
+  if (ALWAYS_ALLOWED_TOOLS.has(toolName)) {
+    return [];
+  }
+
+  const restrictions = TOOL_PHASE_RESTRICTIONS[toolName];
+  if (!restrictions || !restrictions.has(phase)) {
+    return [];
+  }
+
+  const severity = mode === "strict" ? "error" : "warning";
+  return [{
+    code: "tool_phase_blocked",
+    message: `Tool "${toolName}" não é permitida na fase ${phase}. Avance para a fase apropriada primeiro.`,
+    severity,
+  }];
+}
+
+// ── Status Gate ────────────────────────────────
+
+export interface StatusGateResult {
+  warnings: LifecycleWarning[];
+}
+
+/**
+ * Check if a status transition is allowed for a specific node in the current phase.
+ */
+export function checkStatusGate(
+  doc: GraphDocument,
+  phase: LifecyclePhase,
+  nodeId: string,
+  newStatus: string,
+  mode: StrictnessMode = "strict",
+): StatusGateResult {
+  const warnings: LifecycleWarning[] = [];
+  const severity = mode === "strict" ? "error" : "warning";
+
+  const node = doc.nodes.find((n) => n.id === nodeId);
+
+  if (newStatus === "done" && phase === "IMPLEMENT") {
+    // Check if node or parent has acceptance criteria
+    const hasAC = node?.acceptanceCriteria && node.acceptanceCriteria.length > 0;
+    const parentId = node?.parentId;
+    const parent = parentId ? doc.nodes.find((n) => n.id === parentId) : undefined;
+    const parentHasAC = parent?.acceptanceCriteria && parent.acceptanceCriteria.length > 0;
+    const globalAC = doc.nodes.some((n) => n.type === "acceptance_criteria");
+
+    if (!hasAC && !parentHasAC && !globalAC) {
+      warnings.push({
+        code: "done_without_acceptance_criteria",
+        message: `Node "${nodeId}" marcado como done sem acceptance criteria definidos.`,
+        severity,
+      });
+    }
+  }
+
+  if (newStatus === "in_progress" && phase === "PLAN") {
+    const tasks = doc.nodes.filter((n) => TASK_TYPES.has(n.type));
+    const taskNode = tasks.find((n) => n.id === nodeId);
+    if (taskNode && !taskNode.sprint) {
+      warnings.push({
+        code: "in_progress_without_sprint",
+        message: `Task "${nodeId}" iniciada sem sprint atribuído.`,
+        severity,
+      });
+    }
+  }
+
+  if (newStatus === "done" && node && node.status !== "in_progress") {
+    warnings.push({
+      code: "done_without_in_progress",
+      message: `Node "${nodeId}" marcado como done sem ter passado por in_progress (status atual: ${node.status}).`,
+      severity: "warning", // Always warning, even in strict — this is a soft guideline
+    });
+  }
+
+  return { warnings };
 }
 
 /**
  * Detect anti-pattern behaviors based on current phase, graph state, and tool being called.
- * Returns advisory warnings (never blocks execution).
+ * In advisory mode: returns warnings (never blocks execution).
+ * In strict mode: returns errors that block execution.
  */
 export function detectWarnings(
   doc: GraphDocument,
   phase: LifecyclePhase,
   toolName: string,
+  mode: StrictnessMode = "strict",
 ): LifecycleWarning[] {
   const warnings: LifecycleWarning[] = [];
   const guidance = GUIDANCE[phase];
+
+  // Check tool phase restrictions (strict → error, advisory → warning)
+  const gateWarnings = checkToolGate(doc, phase, toolName, mode);
+  warnings.push(...gateWarnings);
 
   // Warn if tool is not recommended for current phase
   if (!guidance.suggestedTools.includes(toolName)) {
@@ -229,7 +444,7 @@ export function detectWarnings(
     warnings.push({
       code: "premature_status_change",
       message: "Fase ANALYZE — defina requisitos antes de implementar. Mudança de status prematura.",
-      severity: "warning",
+      severity: mode === "strict" ? "error" : "warning",
     });
   }
 

@@ -39,3 +39,15 @@ export class SnapshotNotFoundError extends McpGraphError {
     this.name = "SnapshotNotFoundError";
   }
 }
+
+export class LifecycleGateError extends McpGraphError {
+  constructor(
+    public readonly toolName: string,
+    public readonly currentPhase: string,
+    public readonly reason: string,
+    public readonly unmetConditions: string[],
+  ) {
+    super(`Lifecycle gate: "${toolName}" blocked in ${currentPhase} — ${reason}`);
+    this.name = "LifecycleGateError";
+  }
+}

@@ -56,14 +56,14 @@ describe("buildLifecycleBlock", () => {
 });
 
 describe("detectWarnings", () => {
-  it("should warn when update_status is called in ANALYZE phase", () => {
+  it("should error when update_status is called in ANALYZE phase (strict default)", () => {
     const doc = makeDoc();
     const warnings = detectWarnings(doc, "ANALYZE", "update_status");
 
     expect(warnings.length).toBeGreaterThan(0);
     expect(warnings.some((w) => w.code === "premature_status_change")).toBe(true);
     const prematureWarning = warnings.find((w) => w.code === "premature_status_change")!;
-    expect(prematureWarning.severity).toBe("warning");
+    expect(prematureWarning.severity).toBe("error");
   });
 
   it("should warn when update_status is called in PLAN without sprint", () => {
