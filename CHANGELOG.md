@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.2.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.1.5...mcp-graph-v5.2.0) (2026-03-17)
+
+
+### Features
+
+* add phase-aware knowledge mesh across lifecycle phases ([3535f0f](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/3535f0f03c1d5567b1a50cfba1fac2f29de16789))
+* add phase-aware knowledge mesh across lifecycle phases ([256030e](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/256030e4715e5d3bde9dd64f99c3868d0c0f6aa7))
+* enrich lifecycle gates VALIDATE, REVIEW, HANDOFF, LISTENING with composite checks ([c52a914](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/c52a914e67d702b713c8e742a6b533f1bdbe8891))
+
 ## [5.1.5](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.1.4...mcp-graph-v5.1.5) (2026-03-17)
 
 
