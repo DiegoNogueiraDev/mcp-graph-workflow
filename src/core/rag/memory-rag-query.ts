@@ -1,10 +1,12 @@
 /**
- * Serena RAG Query — semantic search over Serena memory documents.
+ * Memory RAG Query — semantic search over memory documents.
  *
  * Supports three modes:
  * - fts: keyword search via FTS5 (fast, exact match)
  * - semantic: TF-IDF cosine similarity (broader, cross-vocabulary)
  * - hybrid: combines FTS and semantic results with deduplication
+ *
+ * Accepts both "memory" and "serena" sourceType for backward compatibility.
  */
 
 import type { SqliteStore } from "../store/sqlite-store.js";
@@ -13,14 +15,14 @@ import { EmbeddingStore } from "./embedding-store.js";
 import { indexAllEmbeddings, semanticSearch } from "./rag-pipeline.js";
 import { logger } from "../utils/logger.js";
 
-export interface SerenaRagOptions {
+export interface MemoryRagOptions {
   /** Search mode: fts (keyword), semantic (embeddings), hybrid (both) */
   mode?: "fts" | "semantic" | "hybrid";
   /** Maximum results to return */
   limit?: number;
 }
 
-export interface SerenaRagResultItem {
+export interface MemoryRagResultItem {
   id: string;
   title: string;
   content: string;
@@ -29,40 +31,43 @@ export interface SerenaRagResultItem {
   method: "fts" | "semantic";
 }
 
-export interface SerenaRagResult {
+export interface MemoryRagResult {
   query: string;
   mode: "fts" | "semantic" | "hybrid";
-  results: SerenaRagResultItem[];
-  totalSerenaDocuments: number;
+  results: MemoryRagResultItem[];
+  totalMemoryDocuments: number;
 }
 
+/** Source types to include in memory queries (backward compat with "serena") */
+const MEMORY_SOURCE_TYPES = new Set(["memory", "serena"]);
+
 /**
- * Query Serena memories using FTS, semantic search, or hybrid.
+ * Query memories using FTS, semantic search, or hybrid.
  */
-export async function querySerenaMemories(
+export async function queryMemories(
   store: SqliteStore,
   query: string,
-  options?: SerenaRagOptions,
-): Promise<SerenaRagResult> {
+  options?: MemoryRagOptions,
+): Promise<MemoryRagResult> {
   const mode = options?.mode ?? "fts";
   const limit = options?.limit ?? 10;
 
   const knowledgeStore = new KnowledgeStore(store.getDb());
-  const totalSerenaDocuments = knowledgeStore.count("serena");
+  const totalMemoryDocuments = knowledgeStore.count("memory") + knowledgeStore.count("serena");
 
-  if (totalSerenaDocuments === 0) {
-    logger.info("No Serena memories in knowledge store", { query });
-    return { query, mode, results: [], totalSerenaDocuments: 0 };
+  if (totalMemoryDocuments === 0) {
+    logger.info("No memories in knowledge store", { query });
+    return { query, mode, results: [], totalMemoryDocuments: 0 };
   }
 
-  const results: SerenaRagResultItem[] = [];
+  const results: MemoryRagResultItem[] = [];
   const seenIds = new Set<string>();
 
   // FTS search
   if (mode === "fts" || mode === "hybrid") {
     const ftsResults = knowledgeStore.search(query, limit);
     for (const doc of ftsResults) {
-      if (doc.sourceType !== "serena") continue;
+      if (!MEMORY_SOURCE_TYPES.has(doc.sourceType)) continue;
       if (seenIds.has(doc.id)) continue;
       seenIds.add(doc.id);
       results.push({
@@ -70,7 +75,7 @@ export async function querySerenaMemories(
         title: doc.title,
         content: doc.content,
         sourceId: doc.sourceId,
-        score: 1.0, // FTS results are relevance-ranked but no numeric score exposed
+        score: 1.0,
         method: "fts",
       });
     }
@@ -85,11 +90,10 @@ export async function querySerenaMemories(
 
     const semanticResults = await semanticSearch(embeddingStore, query, limit);
     for (const result of semanticResults) {
-      // Filter to only serena-sourced knowledge
       if (result.source !== "knowledge") continue;
 
       const doc = knowledgeStore.getById(result.sourceId);
-      if (!doc || doc.sourceType !== "serena") continue;
+      if (!doc || !MEMORY_SOURCE_TYPES.has(doc.sourceType)) continue;
       if (seenIds.has(doc.id)) continue;
       seenIds.add(doc.id);
 
@@ -108,12 +112,12 @@ export async function querySerenaMemories(
   results.sort((a, b) => b.score - a.score);
   const limited = results.slice(0, limit);
 
-  logger.info("Serena RAG query completed", {
+  logger.info("Memory RAG query completed", {
     query,
     mode,
     resultsCount: limited.length,
-    totalSerenaDocuments,
+    totalMemoryDocuments,
   });
 
-  return { query, mode, results: limited, totalSerenaDocuments };
+  return { query, mode, results: limited, totalMemoryDocuments };
 }

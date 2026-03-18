@@ -1,20 +1,20 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { apiClient } from "@/lib/api-client";
-import type { SerenaMemory } from "@/lib/types";
+import type { ProjectMemory } from "@/lib/types";
 import { buildMemoryTree, type MemoryTreeNode } from "@/lib/memory-tree";
 
 // ── Main component ───────────────────────────────
 
-export function SerenaTab(): React.JSX.Element {
-  const [memories, setMemories] = useState<SerenaMemory[]>([]);
-  const [selectedMemory, setSelectedMemory] = useState<SerenaMemory | null>(null);
+export function MemoriesTab(): React.JSX.Element {
+  const [memories, setMemories] = useState<ProjectMemory[]>([]);
+  const [selectedMemory, setSelectedMemory] = useState<ProjectMemory | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const mems = await apiClient.getSerenaMemories().catch(() => []);
+      const mems = await apiClient.getMemories().catch(() => []);
       setMemories(mems);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load");
@@ -30,7 +30,7 @@ export function SerenaTab(): React.JSX.Element {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full text-[var(--color-text-muted)]">
-        Loading Serena...
+        Loading Memories...
       </div>
     );
   }
@@ -47,10 +47,10 @@ export function SerenaTab(): React.JSX.Element {
     <div className="h-full flex flex-col">
       {/* Header bar */}
       <div className="flex items-center gap-3 px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
-        <h2 className="text-sm font-semibold">Serena — Memories</h2>
+        <h2 className="text-sm font-semibold">Memories</h2>
 
         <StatusBadge
-          label="Serena"
+          label="Memories"
           active={memories.length > 0}
         />
 
@@ -106,9 +106,9 @@ function FileExplorerPanel({
   selectedMemory,
   onSelect,
 }: {
-  memories: SerenaMemory[];
-  selectedMemory: SerenaMemory | null;
-  onSelect: (mem: SerenaMemory) => void;
+  memories: ProjectMemory[];
+  selectedMemory: ProjectMemory | null;
+  onSelect: (mem: ProjectMemory) => void;
 }): React.JSX.Element {
   const [search, setSearch] = useState("");
   const [collapsed, setCollapsed] = useState(false);
@@ -171,7 +171,7 @@ function FileExplorerPanel({
       <div className="flex-1 overflow-y-auto text-[11px]">
         {memories.length === 0 ? (
           <div className="px-2 py-4 text-center text-[var(--color-text-muted)]">
-            No Serena memories
+            No memories
           </div>
         ) : (
           <TreeNodeList
@@ -202,8 +202,8 @@ function TreeNodeList({
   depth: number;
   expandedPaths: Set<string>;
   onToggle: (path: string) => void;
-  selectedMemory: SerenaMemory | null;
-  onSelect: (mem: SerenaMemory) => void;
+  selectedMemory: ProjectMemory | null;
+  onSelect: (mem: ProjectMemory) => void;
 }): React.JSX.Element {
   return (
     <>
@@ -252,13 +252,13 @@ function TreeNodeList({
 
 // ── MemoryContentViewer ──────────────────────────
 
-function MemoryContentViewer({ selectedMemory }: { selectedMemory: SerenaMemory | null }): React.JSX.Element {
+function MemoryContentViewer({ selectedMemory }: { selectedMemory: ProjectMemory | null }): React.JSX.Element {
   if (!selectedMemory) {
     return (
       <div className="flex items-center justify-center h-full text-[var(--color-text-muted)]">
         <div className="text-center">
           <p className="text-sm mb-1">Select a memory from the explorer</p>
-          <p className="text-xs">Serena memories appear as navigable files</p>
+          <p className="text-xs">Project memories appear as navigable files</p>
         </div>
       </div>
     );

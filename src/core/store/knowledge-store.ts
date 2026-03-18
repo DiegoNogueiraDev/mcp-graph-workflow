@@ -1,6 +1,6 @@
 /**
  * Knowledge Store — CRUD, FTS search, and dedup for knowledge_documents.
- * Follows DocsCacheStore pattern. All sources (upload, serena, code_context,
+ * Follows DocsCacheStore pattern. All sources (upload, memory, code_context,
  * docs, web_capture) stored in a single table with source_type discriminator.
  */
 

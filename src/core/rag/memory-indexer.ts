@@ -1,45 +1,45 @@
 /**
- * Serena Indexer — reads .serena/memories/*.md and stores them
+ * Memory Indexer — reads workflow-graph/memories/*.md and stores them
  * as knowledge documents for unified search.
  */
 
-import { readAllSerenaMemories } from "../integrations/serena-reader.js";
+import { readAllMemories } from "../memory/memory-reader.js";
 import { KnowledgeStore } from "../store/knowledge-store.js";
 import { chunkText } from "./chunk-text.js";
 import { logger } from "../utils/logger.js";
 
-export interface SerenaIndexResult {
+export interface MemoryIndexResult {
   memoriesFound: number;
   documentsIndexed: number;
   skippedDuplicates: number;
 }
 
 /**
- * Index all Serena memory files into the knowledge store.
+ * Index all memory files into the knowledge store.
  * Chunks large memories and deduplicates by content hash.
  */
-export async function indexSerenaMemories(
+export async function indexMemories(
   knowledgeStore: KnowledgeStore,
   basePath: string,
-): Promise<SerenaIndexResult> {
-  const memories = await readAllSerenaMemories(basePath);
+): Promise<MemoryIndexResult> {
+  const memories = await readAllMemories(basePath);
 
   if (memories.length === 0) {
-    logger.info("No Serena memories found to index", { basePath });
+    logger.info("No memories found to index", { basePath });
     return { memoriesFound: 0, documentsIndexed: 0, skippedDuplicates: 0 };
   }
 
   let documentsIndexed = 0;
   let skippedDuplicates = 0;
-  const countBefore = knowledgeStore.count("serena");
+  const countBefore = knowledgeStore.count("memory");
 
   for (const memory of memories) {
     const chunks = chunkText(memory.content);
 
     for (const chunk of chunks) {
       knowledgeStore.insert({
-        sourceType: "serena",
-        sourceId: `serena:${memory.name}`,
+        sourceType: "memory",
+        sourceId: `memory:${memory.name}`,
         title: chunks.length > 1
           ? `${memory.name} [${chunk.index + 1}/${chunks.length}]`
           : memory.name,
@@ -49,7 +49,7 @@ export async function indexSerenaMemories(
       });
 
       // Check if this was a dedup hit (id already existed)
-      if (knowledgeStore.count("serena") === countBefore + documentsIndexed) {
+      if (knowledgeStore.count("memory") === countBefore + documentsIndexed) {
         skippedDuplicates++;
       } else {
         documentsIndexed++;
@@ -57,7 +57,7 @@ export async function indexSerenaMemories(
     }
   }
 
-  logger.info("Serena memories indexed", {
+  logger.info("Memories indexed", {
     memoriesFound: memories.length,
     documentsIndexed,
     skippedDuplicates,

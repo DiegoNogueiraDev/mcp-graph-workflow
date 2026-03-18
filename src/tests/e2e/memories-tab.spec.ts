@@ -1,25 +1,25 @@
 import { test, expect } from "@playwright/test";
 
-test.describe("Serena Tab — Memories", () => {
+test.describe("Memories Tab", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(2000);
 
-    // Navigate to Serena tab
-    const serenaTab = page.locator("nav button", { hasText: "Serena" });
-    await serenaTab.click();
+    // Navigate to Memories tab
+    const memoriesTab = page.locator("nav button", { hasText: "Memories" });
+    await memoriesTab.click();
     await page.waitForTimeout(1000);
   });
 
   // ── Header ─────────────────────────────────────
 
-  test("should display Serena header", async ({ page }) => {
-    await expect(page.getByText("Serena — Memories")).toBeVisible();
+  test("should display Memories header", async ({ page }) => {
+    await expect(page.getByText("Memories")).toBeVisible();
   });
 
-  test("should show Serena status badge", async ({ page }) => {
-    await expect(page.getByText(/Serena:/)).toBeVisible();
+  test("should show Memories status badge", async ({ page }) => {
+    await expect(page.getByText(/Memories:/)).toBeVisible();
   });
 
   test("should show memory count", async ({ page }) => {
