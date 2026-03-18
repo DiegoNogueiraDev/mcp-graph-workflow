@@ -43,15 +43,15 @@ src/
     graph/           # graph-types, graph-indexes, mermaid-export
     importer/        # import-prd, prd-to-graph
     insights/        # bottleneck-detector, metrics-calculator, skill-recommender
-    integrations/    # integration-orchestrator, serena-reader, gitnexus-launcher, enriched-context, mcp-servers-config, mcp-deps-installer, tool-status
+    integrations/    # integration-orchestrator, enriched-context, mcp-servers-config, mcp-deps-installer, tool-status
     parser/          # classify, extract, normalize, read-file, segment, file-reader, read-pdf, read-html
     planner/         # next-task, enhanced-next, decompose, dependency-chain, velocity, planning-report
-    rag/             # embedding-store, rag-pipeline, serena-indexer, docs-indexer, capture-indexer, serena-rag-query, chunk-text
+    rag/             # embedding-store, rag-pipeline, memory-indexer, docs-indexer, capture-indexer, memory-rag-query, chunk-text
     search/          # fts-search, tfidf, tokenizer
     store/           # sqlite-store, migrations, knowledge-store
     utils/           # errors, fs, id, logger, time
   api/               # Express REST API — 17 routers, 44 endpoints
-  mcp/tools/         # MCP tool wrappers (26 tools)
+  mcp/tools/         # MCP tool wrappers (30 tools)
   schemas/           # Zod schemas (node, edge, graph, knowledge)
   web/dashboard/     # React + Tailwind + React Flow dashboard
 ```
@@ -61,7 +61,7 @@ src/
 | Capability | Key Modules | Docs |
 |------------|-------------|------|
 | PRD Import | parser/, importer/ | — |
-| 26 MCP Tools | mcp/tools/ | [MCP Tools Reference](docs/MCP-TOOLS-REFERENCE.md) |
+| 29 MCP Tools | mcp/tools/ | [MCP Tools Reference](docs/MCP-TOOLS-REFERENCE.md) |
 | 17 REST API Routers | api/routes/ | [REST API Reference](docs/REST-API-REFERENCE.md) |
 | Knowledge Store + RAG | store/knowledge-store, rag/ | [Knowledge Pipeline](docs/KNOWLEDGE-PIPELINE.md) |
 | Tiered Context Compression | context/ | [Knowledge Pipeline](docs/KNOWLEDGE-PIPELINE.md) |
@@ -70,8 +70,9 @@ src/
 
 ## Integration Agents
 
-4 MCP agents coordinated by `IntegrationOrchestrator` via `GraphEventBus`:
-**Serena** (code analysis + memory), **GitNexus** (git graph), **Context7** (library docs), **Playwright** (browser validation).
+3 MCP agents coordinated by `IntegrationOrchestrator` via `GraphEventBus`:
+**mcp-graph** (execution graph), **Context7** (library docs), **Playwright** (browser validation).
+Native systems: **Code Intelligence** (code analysis), **Native Memories** (project knowledge).
 See [docs/INTEGRATIONS-GUIDE.md](docs/INTEGRATIONS-GUIDE.md).
 
 ## Non-Regression Rule
@@ -198,102 +199,36 @@ Key principles:
 
 See [docs/LIFECYCLE.md](docs/LIFECYCLE.md) for the full methodology guide.
 
-<!-- gitnexus:start -->
-# GitNexus — Code Intelligence
+# Code Intelligence
 
-This project is indexed by GitNexus as **mcp-graph-workflow** (1017 symbols, 2650 relationships, 67 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+Native code analysis engine at `src/core/code/`. Provides symbol-level understanding of the codebase without external MCP dependencies.
 
-> If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
+## What It Does
 
-## Always Do
+- **Symbol analysis** — Extracts functions, classes, methods, and interfaces from TypeScript source via AST parsing
+- **Relationship tracking** — Maps calls, imports, exports, and implements relationships between symbols
+- **Impact analysis** — Graph traversal to find upstream/downstream dependents (blast radius)
+- **FTS5 search** — Full-text search across all indexed symbols
+- **Execution flow detection** — Identifies process flows (e.g., CLI command → core function → store)
 
-- **MUST run impact analysis before editing any symbol.** Before modifying a function, class, or method, run `gitnexus_impact({target: "symbolName", direction: "upstream"})` and report the blast radius (direct callers, affected processes, risk level) to the user.
-- **MUST run `gitnexus_detect_changes()` before committing** to verify your changes only affect expected symbols and execution flows.
-- **MUST warn the user** if impact analysis returns HIGH or CRITICAL risk before proceeding with edits.
-- When exploring unfamiliar code, use `gitnexus_query({query: "concept"})` to find execution flows instead of grepping. It returns process-grouped results ranked by relevance.
-- When you need full context on a specific symbol — callers, callees, which execution flows it participates in — use `gitnexus_context({name: "symbolName"})`.
+## Module Layout
 
-## When Debugging
+| File | Purpose |
+|------|---------|
+| `ts-analyzer.ts` | TypeScript AST analysis — extracts symbols and relationships from source files |
+| `code-indexer.ts` | Indexes the entire codebase into SQLite (symbols + relationships) |
+| `code-store.ts` | SQLite storage and queries for symbols and relationships |
+| `code-search.ts` | FTS5 search + graph-based queries across indexed symbols |
+| `graph-traversal.ts` | Upstream/downstream traversal for impact analysis |
+| `process-detector.ts` | Detects execution flows across the codebase |
 
-1. `gitnexus_query({query: "<error or symptom>"})` — find execution flows related to the issue
-2. `gitnexus_context({name: "<suspect function>"})` — see all callers, callees, and process participation
-3. `READ gitnexus://repo/mcp-graph-workflow/process/{processName}` — trace the full execution flow step by step
-4. For regressions: `gitnexus_detect_changes({scope: "compare", base_ref: "main"})` — see what your branch changed
+## Dashboard
 
-## When Refactoring
+The **Code Graph** tab in the dashboard visualizes symbols, relationships, and execution flows. API routes at `src/api/routes/code-graph.ts`.
 
-- **Renaming**: MUST use `gitnexus_rename({symbol_name: "old", new_name: "new", dry_run: true})` first. Review the preview — graph edits are safe, text_search edits need manual review. Then run with `dry_run: false`.
-- **Extracting/Splitting**: MUST run `gitnexus_context({name: "target"})` to see all incoming/outgoing refs, then `gitnexus_impact({target: "target", direction: "upstream"})` to find all external callers before moving code.
-- After any refactor: run `gitnexus_detect_changes({scope: "all"})` to verify only expected files changed.
+## Usage
 
-## Never Do
-
-- NEVER edit a function, class, or method without first running `gitnexus_impact` on it.
-- NEVER ignore HIGH or CRITICAL risk warnings from impact analysis.
-- NEVER rename symbols with find-and-replace — use `gitnexus_rename` which understands the call graph.
-- NEVER commit changes without running `gitnexus_detect_changes()` to check affected scope.
-
-## Tools Quick Reference
-
-| Tool | When to use | Command |
-|------|-------------|---------|
-| `query` | Find code by concept | `gitnexus_query({query: "auth validation"})` |
-| `context` | 360-degree view of one symbol | `gitnexus_context({name: "validateUser"})` |
-| `impact` | Blast radius before editing | `gitnexus_impact({target: "X", direction: "upstream"})` |
-| `detect_changes` | Pre-commit scope check | `gitnexus_detect_changes({scope: "staged"})` |
-| `rename` | Safe multi-file rename | `gitnexus_rename({symbol_name: "old", new_name: "new", dry_run: true})` |
-| `cypher` | Custom graph queries | `gitnexus_cypher({query: "MATCH ..."})` |
-
-## Impact Risk Levels
-
-| Depth | Meaning | Action |
-|-------|---------|--------|
-| d=1 | WILL BREAK — direct callers/importers | MUST update these |
-| d=2 | LIKELY AFFECTED — indirect deps | Should test |
-| d=3 | MAY NEED TESTING — transitive | Test if critical path |
-
-## Resources
-
-| Resource | Use for |
-|----------|---------|
-| `gitnexus://repo/mcp-graph-workflow/context` | Codebase overview, check index freshness |
-| `gitnexus://repo/mcp-graph-workflow/clusters` | All functional areas |
-| `gitnexus://repo/mcp-graph-workflow/processes` | All execution flows |
-| `gitnexus://repo/mcp-graph-workflow/process/{name}` | Step-by-step execution trace |
-
-## Self-Check Before Finishing
-
-Before completing any code modification task, verify:
-1. `gitnexus_impact` was run for all modified symbols
-2. No HIGH/CRITICAL risk warnings were ignored
-3. `gitnexus_detect_changes()` confirms changes match expected scope
-4. All d=1 (WILL BREAK) dependents were updated
-
-## Keeping the Index Fresh
-
-After committing code changes, the GitNexus index becomes stale. Re-run analyze to update it:
-
-```bash
-npx gitnexus analyze
-```
-
-If the index previously included embeddings, preserve them by adding `--embeddings`:
-
-```bash
-npx gitnexus analyze --embeddings
-```
-
-To check whether embeddings exist, inspect `.gitnexus/meta.json` — the `stats.embeddings` field shows the count (0 means no embeddings). **Running analyze without `--embeddings` will delete any previously generated embeddings.**
-
-> Claude Code users: A PostToolUse hook handles this automatically after `git commit` and `git merge`.
-
-## CLI
-
-- Re-index: `npx gitnexus analyze`
-- Check freshness: `npx gitnexus status`
-- Generate docs: `npx gitnexus wiki`
-
-<!-- gitnexus:end -->
+The code index is stored in `workflow-graph/` alongside the execution graph. It is rebuilt by the `reindex_knowledge` MCP tool or via the dashboard.
 
 <!-- mcp-graph:start -->
 ## mcp-graph — mcp-graph-workflow
@@ -301,36 +236,97 @@ To check whether embeddings exist, inspect `.gitnexus/meta.json` — the `stats.
 Este projeto usa **mcp-graph** para gestão de execução via grafo persistente (SQLite).
 Dados armazenados em `workflow-graph/graph.db` (local, gitignored).
 
-### Ferramentas MCP disponíveis (26 tools)
+### Ferramentas MCP disponíveis (30 tools)
+
+#### Projeto & Grafo
 
 | Tool | Quando usar |
 |------|-------------|
-| `init` | Inicializar grafo do projeto |
-| `import_prd` | Importar PRD (texto/markdown) para o grafo |
-| `list` | Listar nodes do grafo (filtrar por tipo/status) |
-| `show` | Ver detalhes de um node específico |
-| `next` | Próxima task recomendada (prioridade + dependências) |
-| `context` | Contexto comprimido da task (token-efficient) |
-| `update_status` | Mudar status de um node (backlog→ready→in_progress→done) |
-| `add_node` | Criar node manualmente |
-| `update_node` | Atualizar campos de um node |
-| `delete_node` | Remover node do grafo |
-| `edge` | Criar/remover relações entre nodes |
-| `dependencies` | Analisar cadeia de dependências |
-| `decompose` | Detectar tasks grandes e sugerir decomposição |
-| `search` | Busca full-text no grafo (FTS5 + BM25) |
-| `rag_context` | Contexto RAG com knowledge base |
-| `plan_sprint` | Gerar relatório de planejamento de sprint |
-| `velocity` | Métricas de velocidade por sprint |
-| `stats` | Estatísticas gerais do grafo |
-| `export` | Exportar grafo (JSON ou Mermaid) |
-| `snapshot` | Criar/restaurar snapshots do grafo |
+| `init` | Inicializar grafo do projeto (cria DB, AI memory files, detecta MCPs) |
+| `list` | Listar nodes do grafo (filtrar por tipo/status/parent) |
+| `show` | Ver detalhes de um node específico (metadata, deps, knowledge) |
+| `search` | Busca full-text no grafo (FTS5 + BM25 ranking) |
+| `export` | Exportar grafo (JSON completo ou Mermaid diagram) |
+| `snapshot` | Criar/restaurar snapshots do grafo (backup/rollback) |
+| `metrics` | Estatísticas do grafo (`stats`) ou velocidade por sprint (`velocity`) |
+
+#### Nodes & Edges
+
+| Tool | Quando usar |
+|------|-------------|
+| `add_node` | Criar node manualmente (task, milestone, phase, epic) |
+| `update_node` | Atualizar campos de um node (title, description, AC, tags) |
+| `delete_node` | Remover node do grafo (cascata em filhos) |
 | `move_node` | Mover node para outro parent |
-| `clone_node` | Clonar node com filhos |
-| `bulk_update_status` | Atualizar status de múltiplos nodes |
-| `sync_stack_docs` | Sincronizar docs das libs do projeto |
-| `reindex_knowledge` | Reindexar knowledge store |
-| `validate_task` | Validar task com browser (Playwright) |
+| `clone_node` | Clonar node com filhos (deep copy) |
+| `edge` | Criar/remover relações entre nodes (depends_on, blocks, related_to) |
+| `update_status` | Mudar status de um node (backlog→ready→in_progress→done) |
+| `bulk_update_status` | Atualizar status de múltiplos nodes de uma vez |
+
+#### PRD & Planejamento
+
+| Tool | Quando usar |
+|------|-------------|
+| `import_prd` | Importar PRD → segmentar → classificar → extrair → inferir deps → criar grafo + indexar knowledge |
+| `plan_sprint` | Gerar relatório de planejamento de sprint (capacity, velocity, recomendações) |
+| `analyze` | 24 modos de análise por fase do lifecycle (ver modos abaixo) |
+| `set_phase` | Forçar/resetar fase do lifecycle (strict/advisory, gate checks) |
+
+#### Contexto & RAG
+
+| Tool | Quando usar |
+|------|-------------|
+| `next` | Próxima task recomendada (prioridade + deps + knowledge coverage 0-1 + TDD hints + velocity) |
+| `context` | Contexto comprimido da task (token-efficient, ~73% redução) |
+| `rag_context` | Contexto RAG phase-aware (tiers: summary/standard/deep, budget 60/30/10) |
+| `reindex_knowledge` | Rebuild completo do índice de knowledge (BM25 + TF-IDF) |
+| `sync_stack_docs` | Sincronizar docs das libs do projeto via Context7 |
+
+#### Memórias do Projeto
+
+| Tool | Quando usar |
+|------|-------------|
+| `write_memory` | Escrever memória em workflow-graph/memories/{name}.md (auto-indexa no RAG) |
+| `read_memory` | Ler conteúdo de uma memória específica |
+| `list_memories` | Listar todas as memórias disponíveis |
+| `delete_memory` | Remover memória do filesystem e do knowledge store |
+
+#### Validação
+
+| Tool | Quando usar |
+|------|-------------|
+| `validate_task` | Validar com Playwright (A/B comparison, CSS selector scoping, auto-index knowledge) |
+| `validate_ac` | Validar critérios de aceitação de uma task (checklist automático) |
+
+### Modos do analyze por fase
+
+| Fase | Modo | O que verifica |
+|------|------|----------------|
+| ANALYZE | `prd_quality` | Qualidade do PRD (completude, user stories, AC) |
+| ANALYZE | `scope` | Escopo do grafo (tipos, distribuição, cobertura) |
+| ANALYZE | `ready` | Definition of Ready (bloqueios, dependências, AC) |
+| ANALYZE | `risk` | Riscos (complexidade, deps, tamanho, AC faltantes) |
+| ANALYZE | `blockers` | Bloqueios transitivos de um node |
+| ANALYZE | `cycles` | Ciclos de dependência no grafo |
+| ANALYZE | `critical_path` | Caminho crítico (sequência mais longa de deps) |
+| PLAN | `decompose` | Tasks grandes que precisam ser decompostas |
+| DESIGN | `adr` | Validação de ADRs (Architecture Decision Records) |
+| DESIGN | `traceability` | Matriz de rastreabilidade (req → task → test) |
+| DESIGN | `coupling` | Acoplamento entre módulos |
+| DESIGN | `interfaces` | Verificação de interfaces e contratos |
+| DESIGN | `tech_risk` | Riscos técnicos (complexidade, stack, deps externas) |
+| DESIGN | `design_ready` | Gate DESIGN→PLAN (pré-requisitos atendidos?) |
+| IMPLEMENT | `implement_done` | Definition of Done (8 checks: 4 required + 4 recommended) |
+| IMPLEMENT | `tdd_check` | Aderência TDD (specs sugeridos por AC) |
+| IMPLEMENT | `progress` | Sprint burndown + velocity trend + blockers + ETA |
+| VALIDATE | `validate_ready` | Gate IMPLEMENT→VALIDATE |
+| VALIDATE | `done_integrity` | Integridade dos nodes marcados done |
+| VALIDATE | `status_flow` | Fluxo de status válido (sem pulos) |
+| REVIEW | `review_ready` | Gate VALIDATE→REVIEW |
+| HANDOFF | `handoff_ready` | Gate REVIEW→HANDOFF |
+| HANDOFF | `doc_completeness` | Completude de documentação |
+| LISTENING | `listening_ready` | Gate HANDOFF→LISTENING |
+| LISTENING | `backlog_health` | Saúde do backlog (distribuição, aging) |
 
 ### Fluxo de trabalho recomendado
 
@@ -341,13 +337,29 @@ next → context → [implementar com TDD] → update_status → next
 ### Lifecycle (8 fases)
 
 1. **ANALYZE** — Criar PRD, definir requisitos (`import_prd`, `add_node`)
-2. **DESIGN** — Arquitetura, decisões técnicas (`add_node`, `edge`, `decompose`)
-3. **PLAN** — Sprint planning, decomposição (`plan_sprint`, `decompose`, `sync_stack_docs`)
-4. **IMPLEMENT** — TDD Red→Green→Refactor (`next`, `context`, `update_status`)
-5. **VALIDATE** — Testes E2E, critérios de aceitação (`validate_task`, `velocity`)
-6. **REVIEW** — Code review, blast radius (`export`, `stats`)
+2. **DESIGN** — Arquitetura, decisões técnicas (`add_node`, `edge`, `analyze`)
+3. **PLAN** — Sprint planning, decomposição (`plan_sprint`, `analyze`, `sync_stack_docs`)
+4. **IMPLEMENT** — TDD Red→Green→Refactor (`next`, `context`, `update_status`, `analyze` — modes: implement_done, tdd_check, progress)
+5. **VALIDATE** — Testes E2E, critérios de aceitação (`validate_task`, `metrics`)
+6. **REVIEW** — Code review, blast radius (`export`, `metrics`)
 7. **HANDOFF** — PR, documentação, entrega (`export`, `snapshot`)
 8. **LISTENING** — Feedback, novo ciclo (`add_node`, `import_prd`)
+
+### Pipeline de Conhecimento (Knowledge Store + RAG)
+
+Fontes indexadas automaticamente:
+- **Project memories** — ao escrever com `write_memory` (auto-indexa)
+- **PRD imports** — ao importar com `import_prd`
+- **Browser captures** — ao validar com `validate_task`
+- **Stack docs** — ao sincronizar com `sync_stack_docs`
+- **Sprint reports** — ao gerar com `plan_sprint`
+
+Recuperação: `rag_context` monta contexto phase-aware com budget de tokens:
+- 60% contexto do grafo (nodes, deps, status)
+- 30% knowledge store (BM25 + TF-IDF)
+- 10% metadata de fase
+
+Manual: `reindex_knowledge` para rebuild completo do índice.
 
 ### Princípios XP Anti-Vibe-Coding
 
@@ -360,10 +372,10 @@ next → context → [implementar com TDD] → update_status → next
 ### Comandos essenciais
 
 ```bash
-npx mcp-graph stats          # Estatísticas do grafo
-npx mcp-graph list            # Listar nodes
-npx mcp-graph doctor          # Validar ambiente de execução
-npx mcp-graph doctor --json   # Diagnóstico em JSON estruturado
+npx mcp-graph stats            # Estatísticas do grafo
+npx mcp-graph list             # Listar nodes
+npx mcp-graph doctor           # Validar ambiente de execução
+npx mcp-graph doctor --json    # Diagnóstico em JSON estruturado
 npx mcp-graph serve --port 3000  # Dashboard visual
 ```
 <!-- mcp-graph:end -->

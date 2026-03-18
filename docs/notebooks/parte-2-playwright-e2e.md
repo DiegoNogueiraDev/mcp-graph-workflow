@@ -474,7 +474,7 @@
 
 ---
 
-## Cenário 16: Code Graph Tab — Integração Serena + GitNexus
+## Cenário 16: Code Graph Tab — Code Intelligence
 
 **Objetivo:** Validar os 3 modos (Explorer, Query, Symbol) e badges de integração.
 **Tools cobertos:** `browser_click`, `browser_snapshot`, `browser_take_screenshot`
@@ -505,8 +505,7 @@
 **Tool:** `browser_snapshot`
 
 **Expected:**
-- Badge "GitNexus: Inactive" com botão "Analyze & Start"
-- Badge "Serena: Active" (ou status atual) com contagem de memories
+- Badge "Code Intelligence: Active" (ou status atual) com contagem de symbols
 - Layout com painel esquerdo (controles) e direito (visualização)
 
 **Actual:**

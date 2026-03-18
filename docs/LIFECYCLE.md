@@ -6,7 +6,7 @@
 
 ## Visão Geral
 
-O mcp-graph é o **source of truth** do ciclo de desenvolvimento. Ele transforma PRDs em grafos de execução persistentes (SQLite), permitindo que agents trabalhem de forma estruturada, rastreável e eficiente em tokens.
+O mcp-graph é o **source of truth** do ciclo de desenvolvimento. Ele transforma PRDs em grafos de execução persistentes (SQLite), permitindo que agents trabalhem de forma estruturada, rastreável e eficiente em tokens. Para um resumo prático das 8 fases com gate checks e analyze modes, veja o [Advanced Guide §1](ADVANCED-GUIDE.md).
 
 ```mermaid
 graph TD
@@ -25,7 +25,7 @@ graph TD
 
 ## Arquitetura de Agents
 
-Cinco MCPs trabalham em conjunto, coordenados pelo `IntegrationOrchestrator` via `GraphEventBus`:
+Três MCPs + dois sistemas nativos trabalham em conjunto, coordenados pelo `IntegrationOrchestrator` via `GraphEventBus`:
 
 ```mermaid
 graph LR
@@ -33,37 +33,36 @@ graph LR
         MCPGraph[mcp-graph<br/>Task Graph + Knowledge Store<br/>RAG + Status]
     end
 
-    subgraph "Code & Docs Intelligence"
-        Serena[Serena<br/>Semantic Code Analysis + Memories]
-        GitNexus[GitNexus<br/>Code Graph + Impact Analysis]
-        Context7[Context7<br/>Library Docs + Stack Detection]
+    subgraph "Native Systems"
+        Memories[Native Memories<br/>Memory Read/Write + RAG]
+        CodeIntel[Code Intelligence<br/>Symbol Analysis + Impact]
     end
 
-    subgraph "Automation"
+    subgraph "External MCPs"
+        Context7[Context7<br/>Library Docs + Stack Detection]
         Playwright[Playwright MCP<br/>Validation + A/B Testing + Capture]
     end
 
-    MCPGraph <--> Serena
+    MCPGraph <--> Memories
+    MCPGraph <--> CodeIntel
     MCPGraph <--> Playwright
     MCPGraph <--> Context7
-    Serena <--> GitNexus
-    MCPGraph <--> GitNexus
     Context7 --> MCPGraph
 
     style MCPGraph fill:#4263eb,color:#fff,stroke:#4263eb
-    style Serena fill:#7c3aed,color:#fff,stroke:#7c3aed
-    style GitNexus fill:#10b981,color:#fff,stroke:#10b981
+    style Memories fill:#7c3aed,color:#fff,stroke:#7c3aed
+    style CodeIntel fill:#10b981,color:#fff,stroke:#10b981
     style Context7 fill:#0ea5e9,color:#fff,stroke:#0ea5e9
     style Playwright fill:#f59e0b,color:#000,stroke:#f59e0b
 ```
 
-| MCP | Papel | Quando |
-|-----|-------|--------|
-| **mcp-graph** | Grafo de tarefas, knowledge store, RAG, dependências, status | Todas as fases — sempre ativo |
-| **Serena** | Análise semântica de código, memories, RAG query | Antes de implementar, durante review |
-| **GitNexus** | Code graph, impact analysis, enriched context | DESIGN (impact analysis), IMPLEMENT (enriched context), REVIEW (blast radius) |
-| **Context7** | Docs de libs, stack detection, sync automático de documentação | PLAN, IMPLEMENT |
-| **Playwright** | Validação browser, A/B testing, content capture + indexação | Fase VALIDATE |
+| Sistema | Tipo | Papel | Quando |
+|---------|------|-------|--------|
+| **mcp-graph** | MCP | Grafo de tarefas, knowledge store, RAG, dependências, status | Todas as fases — sempre ativo |
+| **Native Memories** | Nativo | Leitura/escrita de memórias, RAG query | Antes de implementar, durante review |
+| **Code Intelligence** | Nativo | Symbol analysis, impact analysis, enriched context | DESIGN (impact analysis), IMPLEMENT (enriched context), REVIEW (blast radius) |
+| **Context7** | MCP | Docs de libs, stack detection, sync automático de documentação | PLAN, IMPLEMENT |
+| **Playwright** | MCP | Validação browser, A/B testing, content capture + indexação | Fase VALIDATE |
 
 ---
 
@@ -74,12 +73,12 @@ O mcp-graph integra um pipeline de conhecimento local que transforma múltiplas 
 ```mermaid
 graph LR
     subgraph "Sources"
-        S1[Serena Memories]
+        S1[Native Memories]
         S2[Context7 Docs]
         S3[Web Captures]
         S4[Uploads]
         S5[Code Context]
-        S6[GitNexus<br/>Enriched Context]
+        S6[Code Intelligence<br/>Enriched Context]
     end
 
     subgraph "Knowledge Store"
@@ -117,12 +116,12 @@ graph LR
 - **Tiered Context** — 3 níveis de compressão (Summary ~20 tokens, Standard ~150, Deep ~500+)
 - **BM25 Compressor** — Filtra e rankeia chunks por relevância à query atual
 - **Context Assembler** — Budget de tokens: 60% grafo, 30% knowledge, 10% metadata (redução de 70-85%)
-- **Enriched Context** — `buildEnrichedContext()` funde Serena memories + GitNexus code graph em contexto unificado por símbolo (on-demand, não event-driven)
+- **Enriched Context** — `buildEnrichedContext()` funde native memories + Code Intelligence em contexto unificado por símbolo (on-demand, não event-driven)
 
 **Orquestração event-driven** (`IntegrationOrchestrator` via `GraphEventBus`):
 
 ```
-import:completed  → Trigger reindex (Serena + Docs)
+import:completed  → Trigger reindex (Memories + Docs)
 knowledge:indexed → Rebuild embeddings
 docs:synced       → Index into Knowledge Store
 capture:completed → Index captured content
@@ -199,25 +198,23 @@ sequenceDiagram
 - `/context-architect` — Padrões de contexto, eficiência de tokens
 - `/backend-architect` — Design patterns, boundaries de serviço
 
-**Agents:**
-- **Serena** — Analisa código existente para entender padrões atuais
-- **GitNexus** — Impact analysis para avaliar blast radius de mudanças arquiteturais
+**Sistemas nativos:**
+- **Code Intelligence** — Analisa código existente para entender padrões atuais e avaliar blast radius de mudanças arquiteturais
 
 **Saída:** Architecture spec + ADR (Architecture Decision Records)
 
 ```mermaid
 sequenceDiagram
     participant A as Agent
-    participant Serena as Serena
-    participant GN as GitNexus
+    participant CI as Code Intelligence
     participant Skill as Skill: breakdown-epic-arch
 
-    A->>Serena: find_symbol "AuthModule"
-    Serena-->>A: Não existe (novo módulo)
-    A->>Serena: get_symbols_overview "src/core/"
-    Serena-->>A: Padrões existentes: Store, Service, Router
-    A->>GN: POST /api/impact {symbol: "UserService"}
-    GN-->>A: Blast radius: 5 módulos afetados (router, middleware, test, store, index)
+    A->>CI: search_symbols "AuthModule"
+    CI-->>A: Não existe (novo módulo)
+    A->>CI: analyze symbols in "src/core/"
+    CI-->>A: Padrões existentes: Store, Service, Router
+    A->>CI: impact_analysis {symbol: "UserService"}
+    CI-->>A: Blast radius: 5 módulos afetados (router, middleware, test, store, index)
     A->>Skill: Gerar architecture spec (com blast radius)
     Skill-->>A: AuthService + TokenStore + auth.router.ts
     A->>A: Documenta ADR: "JWT com refresh via httpOnly cookie"
@@ -287,9 +284,9 @@ graph LR
 **Skills:**
 - `/subagent-driven-development` — Subagente fresh por task, review em dois estágios
 
-**Agents:**
-- **Serena** — Analisar módulo alvo antes de implementar
-- **GitNexus** — Code graph e dependency context do símbolo em implementação (via enriched-context)
+**Sistemas:**
+- **Code Intelligence** (nativo) — Analisar módulo alvo e dependency context do símbolo em implementação (via enriched-context)
+- **Native Memories** (nativo) — Consultar memórias relevantes para o contexto da task
 - **mcp-graph** — Rastrear status, fornecer contexto knowledge-aware
 
 **Tools de contexto:**
@@ -303,17 +300,19 @@ graph LR
 sequenceDiagram
     participant A as Agent
     participant MCP as mcp-graph
-    participant Serena as Serena
-    participant GN as GitNexus
+    participant CI as Code Intelligence
+    participant Mem as Native Memories
 
     A->>MCP: next()
     MCP-->>A: TASK-001: "Criar AuthService" (coverage: 0.8, velocity: 2.3h/task)
     A->>MCP: context(TASK-001)
     MCP-->>A: Contexto token-budgeted: grafo + knowledge + metadata
-    A->>Serena: get_symbols_overview("src/core/")
-    Serena-->>A: Padrões: SqliteStore, typed errors, ESM
-    A->>GN: POST /api/context {symbol: "AuthService"}
-    GN-->>A: Dependency graph: imports, exports, callers do símbolo
+    A->>CI: analyze symbols in "src/core/"
+    CI-->>A: Padrões: SqliteStore, typed errors, ESM
+    A->>CI: symbol_context {symbol: "AuthService"}
+    CI-->>A: Dependency graph: imports, exports, callers do símbolo
+    A->>Mem: read_memory("auth-patterns")
+    Mem-->>A: Memórias relevantes sobre padrões de auth
     A->>MCP: update_status(TASK-001, "in_progress")
 
     Note over A: TDD Red: Escrever teste que falha
@@ -411,21 +410,19 @@ sequenceDiagram
 - `/log-standardization-framework` — Logs estruturados
 - `/observability-engineer` — Métricas, health, SLOs
 
-**Agents:**
-- **Serena** — Análise de padrões, inconsistências
-- **GitNexus** — Impact analysis para verificar que mudanças não quebraram dependentes
+**Sistemas nativos:**
+- **Code Intelligence** — Análise de padrões, inconsistências, impact analysis para verificar que mudanças não quebraram dependentes
 
 ```mermaid
 sequenceDiagram
     participant A as Agent
-    participant Serena as Serena
-    participant GN as GitNexus
+    participant CI as Code Intelligence
     participant MCP as mcp-graph
 
-    A->>Serena: find_referencing_symbols("AuthService")
-    Serena-->>A: 4 referências: router, middleware, test, index
-    A->>GN: POST /api/impact {symbol: "AuthService"}
-    GN-->>A: Blast radius: 4 módulos — nenhum dependente quebrado
+    A->>CI: find_references("AuthService")
+    CI-->>A: 4 referências: router, middleware, test, index
+    A->>CI: impact_analysis {symbol: "AuthService"}
+    CI-->>A: Blast radius: 4 módulos — nenhum dependente quebrado
     A->>A: Review: todos os callers tratam erros tipados? ✅
     A->>A: Review: logs estruturados em todos os paths? ✅
     A->>A: Review: sem segredos em logs? ✅
@@ -600,15 +597,15 @@ graph TD
 | **PLAN** | `decompose` | Detectar tasks para breakdown |
 | **PLAN** | `sync_stack_docs` | Sincronizar docs da stack via Context7 |
 | **PLAN** | `add_node`, `add_edge` | Criar tarefas manualmente |
-| **DESIGN** | `POST /gitnexus/impact` | Blast radius analysis de símbolo antes de definir arquitetura |
+| **DESIGN** | Code Intelligence `impact_analysis` | Blast radius analysis de símbolo antes de definir arquitetura |
 | **IMPLEMENT** | `next` | Próxima task knowledge-aware (coverage + velocity) |
 | **IMPLEMENT** | `context`, `rag_context` | Contexto token-budgeted para task atual |
-| **IMPLEMENT** | `POST /gitnexus/context` | Dependency graph do símbolo em implementação |
+| **IMPLEMENT** | Code Intelligence `symbol_context` | Dependency graph do símbolo em implementação |
 | **IMPLEMENT** | `reindex_knowledge` | Rebuild indexes de todas as fontes |
 | **IMPLEMENT** | `update_status → in_progress` | Marcar início |
 | **IMPLEMENT** | `update_status → done` | Marcar conclusão |
 | **VALIDATE** | `validate_task` | Validação browser + A/B testing + indexação |
-| **REVIEW** | `POST /gitnexus/impact` | Verificar blast radius das mudanças no review |
+| **REVIEW** | Code Intelligence `impact_analysis` | Verificar blast radius das mudanças no review |
 | **REVIEW** | `export_graph`, `export_mermaid` | Exportar para visualização |
 | **HANDOFF** | `update_status (bulk) → done` | Fechar PRD |
 | **LISTENING** | `add_node` | Registrar feedback |
@@ -617,28 +614,28 @@ graph TD
 
 ## Sugestões de MCPs Externos por Fase (Lifecycle Wrapper)
 
-O lifecycle wrapper (`_lifecycle` block) agora sugere automaticamente MCPs externos contextuais via `suggestedMcpAgents`. Cada fase do ciclo indica quais agents usar e com quais tools:
+O lifecycle wrapper (`_lifecycle` block) agora sugere automaticamente sistemas contextuais via `suggestedMcpAgents`. Cada fase do ciclo indica quais agents/sistemas usar e com quais tools:
 
-| Fase | Serena | GitNexus | Context7 | Playwright |
-|------|--------|----------|----------|------------|
+| Fase | Native Memories | Code Intelligence | Context7 | Playwright |
+|------|----------------|-------------------|----------|------------|
 | **ANALYZE** | — | — | — | — |
-| **DESIGN** | `find_symbol`, `get_symbols_overview` | `impact`, `context` | — | — |
+| **DESIGN** | — | `search_symbols`, `impact_analysis` | — | — |
 | **PLAN** | — | — | `resolve-library-id`, `query-docs` | — |
-| **IMPLEMENT** | `find_symbol`, `replace_symbol_body`, `find_referencing_symbols` | `impact`, `detect_changes`, `context` | `query-docs` | — |
-| **VALIDATE** | — | `detect_changes` | — | `browser_navigate`, `browser_snapshot`, `browser_click` |
-| **REVIEW** | `find_referencing_symbols` | `impact`, `detect_changes` | — | — |
-| **HANDOFF** | — | `detect_changes` | — | — |
+| **IMPLEMENT** | `write_memory`, `read_memory` | `search_symbols`, `impact_analysis`, `symbol_context` | `query-docs` | — |
+| **VALIDATE** | — | — | — | `browser_navigate`, `browser_snapshot`, `browser_click` |
+| **REVIEW** | `read_memory` | `impact_analysis`, `find_references` | — | — |
+| **HANDOFF** | `write_memory` | — | — | — |
 | **LISTENING** | — | — | — | — |
 
-Exemplo de `_lifecycle` response com sugestões MCP:
+Exemplo de `_lifecycle` response com sugestões:
 
 ```json
 {
   "_lifecycle": {
     "phase": "IMPLEMENT",
     "suggestedMcpAgents": [
-      { "name": "serena", "action": "Edição semântica de symbols", "tools": ["find_symbol", "replace_symbol_body"] },
-      { "name": "gitnexus", "action": "Impact analysis antes de editar", "tools": ["impact", "detect_changes"] },
+      { "name": "memories", "action": "Consultar/gravar memórias do projeto", "tools": ["write_memory", "read_memory"] },
+      { "name": "code-intelligence", "action": "Impact analysis antes de editar", "tools": ["impact_analysis", "symbol_context"] },
       { "name": "context7", "action": "Consultar API docs das libs", "tools": ["query-docs"] }
     ]
   }
@@ -690,8 +687,8 @@ sequenceDiagram
     participant U as Usuário
     participant A as Agent (Opus/Sonnet)
     participant MCP as mcp-graph
-    participant S as Serena
-    participant GN as GitNexus
+    participant CI as Code Intelligence
+    participant Mem as Native Memories
     participant C7 as Context7
     participant PW as Playwright
 
@@ -702,10 +699,10 @@ sequenceDiagram
     A->>U: PRD.md gerado
 
     Note over U,PW: FASE 2: DESIGN
-    A->>S: get_symbols_overview("src/core/")
-    S-->>A: Padrões existentes
-    A->>GN: POST /api/impact {symbol: "UserService"}
-    GN-->>A: Blast radius: módulos afetados pela mudança
+    A->>CI: analyze symbols in "src/core/"
+    CI-->>A: Padrões existentes
+    A->>CI: impact_analysis {symbol: "UserService"}
+    CI-->>A: Blast radius: módulos afetados pela mudança
     A->>U: Architecture spec + ADR
 
     Note over U,PW: FASE 3: PLAN
@@ -723,9 +720,10 @@ sequenceDiagram
         MCP-->>A: TASK-N (coverage: 0.8)
         A->>MCP: context(TASK-N)
         MCP-->>A: Contexto knowledge-aware
-        A->>S: analyze módulo alvo
-        A->>GN: POST /api/context {symbol: "TargetSymbol"}
-        GN-->>A: Dependency graph: imports, exports, callers
+        A->>CI: symbol_context {symbol: "TargetSymbol"}
+        CI-->>A: Dependency graph: imports, exports, callers
+        A->>Mem: read_memory("relevant-patterns")
+        Mem-->>A: Memórias relevantes
         A->>MCP: update_status(in_progress)
         A->>A: TDD: Red → Green → Refactor
         A->>MCP: update_status(done)
@@ -742,13 +740,14 @@ sequenceDiagram
     PW-->>A: all passed ✅
 
     Note over U,PW: FASE 6: REVIEW
-    A->>S: find_referencing_symbols
-    A->>GN: POST /api/impact {symbol: "AuthService"}
-    GN-->>A: Blast radius confirmado — nenhum dependente quebrado
+    A->>CI: find_references("AuthService")
+    A->>CI: impact_analysis {symbol: "AuthService"}
+    CI-->>A: Blast radius confirmado — nenhum dependente quebrado
     A->>A: code review + logs + observability
 
     Note over U,PW: FASE 7: HANDOFF
     A->>MCP: export_graph + export_mermaid
+    A->>Mem: write_memory("auth-implementation-notes")
     A->>U: PR criado, docs atualizados
 
     Note over U,PW: FASE 8: LISTENING
@@ -835,14 +834,14 @@ graph TD
 
 ## Resumo
 
-O mcp-graph não é apenas um task tracker. É o **Hub de Inteligência Local** — motor de execução com 26 tools MCP e 630+ testes que:
+O mcp-graph não é apenas um task tracker. É o **Hub de Inteligência Local** — motor de execução com 30 tools MCP que:
 
 1. **Parseia PRDs** automaticamente em grafos de dependência
-2. **Orquestra 5 agents** (Serena, GitNexus, Context7, Playwright) via `IntegrationOrchestrator` event-driven
+2. **Orquestra 3 MCPs + 2 sistemas nativos** (mcp-graph, Context7, Playwright + Native Memories, Code Intelligence) via `IntegrationOrchestrator` event-driven
 3. **Garante disciplina** via TDD, code review, e definition of done
 4. **Preserva contexto** entre sessões (SQLite persistente + Knowledge Store)
 5. **Economiza tokens** com tiered context compression (70-85% redução) e token budgeting (60/30/10)
 6. **Visualiza progresso** em dashboard interativo (React 19 + Tailwind + React Flow)
-7. **Acumula conhecimento** de múltiplas fontes (Serena memories, docs, web captures) com RAG pipeline 100% local
+7. **Acumula conhecimento** de múltiplas fontes (native memories, docs, web captures) com RAG pipeline 100% local
 
 > **Princípio fundamental:** O desenvolvedor define o QUE e o COMO (arquitetura). O AI executa com disciplina. Nunca o contrário.

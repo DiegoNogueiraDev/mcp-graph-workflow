@@ -6,104 +6,195 @@
 export const MARKER_START = "<!-- mcp-graph:start -->";
 export const MARKER_END = "<!-- mcp-graph:end -->";
 
-const TOOL_REFERENCE = `| Tool | Quando usar |
+const TOOL_TABLE_FULL = `#### Projeto & Grafo
+
+| Tool | Quando usar |
 |------|-------------|
-| \`init\` | Inicializar grafo do projeto |
-| \`import_prd\` | Importar PRD (texto/markdown) para o grafo |
-| \`list\` | Listar nodes do grafo (filtrar por tipo/status) |
-| \`show\` | Ver detalhes de um node específico |
-| \`next\` | Próxima task recomendada (prioridade + dependências + knowledge coverage + TDD hints) |
-| \`context\` | Contexto comprimido da task (token-efficient) |
-| \`update_status\` | Mudar status de um node (backlog→ready→in_progress→done) |
-| \`add_node\` | Criar node manualmente |
-| \`update_node\` | Atualizar campos de um node |
-| \`delete_node\` | Remover node do grafo |
-| \`edge\` | Criar/remover relações entre nodes |
-| \`analyze\` | Analisar grafo (qualidade, escopo, riscos, dependências, decomposição) |
-| \`search\` | Busca full-text no grafo (FTS5 + BM25) |
-| \`rag_context\` | Contexto RAG com knowledge base |
-| \`plan_sprint\` | Gerar relatório de planejamento de sprint |
-| \`metrics\` | Métricas do projeto (stats ou velocity) |
-| \`export\` | Exportar grafo (JSON ou Mermaid) |
-| \`snapshot\` | Criar/restaurar snapshots do grafo |
+| \`init\` | Inicializar grafo do projeto (cria DB, AI memory files, detecta MCPs) |
+| \`list\` | Listar nodes do grafo (filtrar por tipo/status/parent) |
+| \`show\` | Ver detalhes de um node específico (metadata, deps, knowledge) |
+| \`search\` | Busca full-text no grafo (FTS5 + BM25 ranking) |
+| \`export\` | Exportar grafo (JSON completo ou Mermaid diagram) |
+| \`snapshot\` | Criar/restaurar snapshots do grafo (backup/rollback) |
+| \`metrics\` | Estatísticas do grafo (\`stats\`) ou velocidade por sprint (\`velocity\`) |
+
+#### Nodes & Edges
+
+| Tool | Quando usar |
+|------|-------------|
+| \`add_node\` | Criar node manualmente (task, milestone, phase, epic) |
+| \`update_node\` | Atualizar campos de um node (title, description, AC, tags) |
+| \`delete_node\` | Remover node do grafo (cascata em filhos) |
 | \`move_node\` | Mover node para outro parent |
-| \`clone_node\` | Clonar node com filhos |
-| \`sync_stack_docs\` | Sincronizar docs das libs do projeto |
-| \`reindex_knowledge\` | Reindexar knowledge store |
-| \`validate_task\` | Validar task com browser (Playwright) |`;
+| \`clone_node\` | Clonar node com filhos (deep copy) |
+| \`edge\` | Criar/remover relações entre nodes (depends_on, blocks, related_to) |
+| \`update_status\` | Mudar status de um node (backlog\u2192ready\u2192in_progress\u2192done) |
+| \`bulk_update_status\` | Atualizar status de m\u00FAltiplos nodes de uma vez |
+
+#### PRD & Planejamento
+
+| Tool | Quando usar |
+|------|-------------|
+| \`import_prd\` | Importar PRD \u2192 segmentar \u2192 classificar \u2192 extrair \u2192 inferir deps \u2192 criar grafo + indexar knowledge |
+| \`plan_sprint\` | Gerar relat\u00F3rio de planejamento de sprint (capacity, velocity, recomenda\u00E7\u00F5es) |
+| \`analyze\` | 24 modos de an\u00E1lise por fase do lifecycle (ver modos abaixo) |
+| \`set_phase\` | For\u00E7ar/resetar fase do lifecycle (strict/advisory, gate checks) |
+
+#### Contexto & RAG
+
+| Tool | Quando usar |
+|------|-------------|
+| \`next\` | Pr\u00F3xima task recomendada (prioridade + deps + knowledge coverage 0-1 + TDD hints + velocity) |
+| \`context\` | Contexto comprimido da task (token-efficient, ~73% redu\u00E7\u00E3o) |
+| \`rag_context\` | Contexto RAG phase-aware (tiers: summary/standard/deep, budget 60/30/10) |
+| \`reindex_knowledge\` | Rebuild completo do \u00EDndice de knowledge (BM25 + TF-IDF) |
+| \`sync_stack_docs\` | Sincronizar docs das libs do projeto via Context7 |
+
+#### Mem\u00F3rias do Projeto
+
+| Tool | Quando usar |
+|------|-------------|
+| \`write_memory\` | Escrever mem\u00F3ria em workflow-graph/memories/{name}.md (auto-indexa no RAG) |
+| \`read_memory\` | Ler conte\u00FAdo de uma mem\u00F3ria espec\u00EDfica |
+| \`list_memories\` | Listar todas as mem\u00F3rias dispon\u00EDveis |
+| \`delete_memory\` | Remover mem\u00F3ria do filesystem e do knowledge store |
+
+#### Valida\u00E7\u00E3o
+
+| Tool | Quando usar |
+|------|-------------|
+| \`validate_task\` | Validar com Playwright (A/B comparison, CSS selector scoping, auto-index knowledge) |
+| \`validate_ac\` | Validar crit\u00E9rios de aceita\u00E7\u00E3o de uma task (checklist autom\u00E1tico) |`;
+
+const ANALYZE_MODES_SECTION = `### Modos do analyze por fase
+
+| Fase | Modo | O que verifica |
+|------|------|----------------|
+| ANALYZE | \`prd_quality\` | Qualidade do PRD (completude, user stories, AC) |
+| ANALYZE | \`scope\` | Escopo do grafo (tipos, distribui\u00E7\u00E3o, cobertura) |
+| ANALYZE | \`ready\` | Definition of Ready (bloqueios, depend\u00EAncias, AC) |
+| ANALYZE | \`risk\` | Riscos (complexidade, deps, tamanho, AC faltantes) |
+| ANALYZE | \`blockers\` | Bloqueios transitivos de um node |
+| ANALYZE | \`cycles\` | Ciclos de depend\u00EAncia no grafo |
+| ANALYZE | \`critical_path\` | Caminho cr\u00EDtico (sequ\u00EAncia mais longa de deps) |
+| PLAN | \`decompose\` | Tasks grandes que precisam ser decompostas |
+| DESIGN | \`adr\` | Valida\u00E7\u00E3o de ADRs (Architecture Decision Records) |
+| DESIGN | \`traceability\` | Matriz de rastreabilidade (req \u2192 task \u2192 test) |
+| DESIGN | \`coupling\` | Acoplamento entre m\u00F3dulos |
+| DESIGN | \`interfaces\` | Verifica\u00E7\u00E3o de interfaces e contratos |
+| DESIGN | \`tech_risk\` | Riscos t\u00E9cnicos (complexidade, stack, deps externas) |
+| DESIGN | \`design_ready\` | Gate DESIGN\u2192PLAN (pr\u00E9-requisitos atendidos?) |
+| IMPLEMENT | \`implement_done\` | Definition of Done (8 checks: 4 required + 4 recommended) |
+| IMPLEMENT | \`tdd_check\` | Ader\u00EAncia TDD (specs sugeridos por AC) |
+| IMPLEMENT | \`progress\` | Sprint burndown + velocity trend + blockers + ETA |
+| VALIDATE | \`validate_ready\` | Gate IMPLEMENT\u2192VALIDATE |
+| VALIDATE | \`done_integrity\` | Integridade dos nodes marcados done |
+| VALIDATE | \`status_flow\` | Fluxo de status v\u00E1lido (sem pulos) |
+| REVIEW | \`review_ready\` | Gate VALIDATE\u2192REVIEW |
+| HANDOFF | \`handoff_ready\` | Gate REVIEW\u2192HANDOFF |
+| HANDOFF | \`doc_completeness\` | Completude de documenta\u00E7\u00E3o |
+| LISTENING | \`listening_ready\` | Gate HANDOFF\u2192LISTENING |
+| LISTENING | \`backlog_health\` | Sa\u00FAde do backlog (distribui\u00E7\u00E3o, aging) |`;
+
+const KNOWLEDGE_PIPELINE_SECTION = `### Pipeline de Conhecimento (Knowledge Store + RAG)
+
+Fontes indexadas automaticamente:
+- **Project memories** \u2014 ao escrever com \`write_memory\` (auto-indexa)
+- **PRD imports** \u2014 ao importar com \`import_prd\`
+- **Browser captures** \u2014 ao validar com \`validate_task\`
+- **Stack docs** \u2014 ao sincronizar com \`sync_stack_docs\`
+- **Sprint reports** \u2014 ao gerar com \`plan_sprint\`
+
+Recupera\u00E7\u00E3o: \`rag_context\` monta contexto phase-aware com budget de tokens:
+- 60% contexto do grafo (nodes, deps, status)
+- 30% knowledge store (BM25 + TF-IDF)
+- 10% metadata de fase
+
+Manual: \`reindex_knowledge\` para rebuild completo do \u00EDndice.`;
 
 const LIFECYCLE_SUMMARY = `### Lifecycle (8 fases)
 
-1. **ANALYZE** — Criar PRD, definir requisitos (\`import_prd\`, \`add_node\`)
-2. **DESIGN** — Arquitetura, decisões técnicas (\`add_node\`, \`edge\`, \`analyze\`)
-3. **PLAN** — Sprint planning, decomposição (\`plan_sprint\`, \`analyze\`, \`sync_stack_docs\`)
-4. **IMPLEMENT** — TDD Red→Green→Refactor (\`next\`, \`context\`, \`update_status\`, \`analyze\` — modes: implement_done, tdd_check, progress)
-5. **VALIDATE** — Testes E2E, critérios de aceitação (\`validate_task\`, \`metrics\`)
-6. **REVIEW** — Code review, blast radius (\`export\`, \`metrics\`)
-7. **HANDOFF** — PR, documentação, entrega (\`export\`, \`snapshot\`)
-8. **LISTENING** — Feedback, novo ciclo (\`add_node\`, \`import_prd\`)`;
+1. **ANALYZE** \u2014 Criar PRD, definir requisitos (\`import_prd\`, \`add_node\`)
+2. **DESIGN** \u2014 Arquitetura, decis\u00F5es t\u00E9cnicas (\`add_node\`, \`edge\`, \`analyze\`)
+3. **PLAN** \u2014 Sprint planning, decomposi\u00E7\u00E3o (\`plan_sprint\`, \`analyze\`, \`sync_stack_docs\`)
+4. **IMPLEMENT** \u2014 TDD Red\u2192Green\u2192Refactor (\`next\`, \`context\`, \`update_status\`, \`analyze\` \u2014 modes: implement_done, tdd_check, progress)
+5. **VALIDATE** \u2014 Testes E2E, crit\u00E9rios de aceita\u00E7\u00E3o (\`validate_task\`, \`metrics\`)
+6. **REVIEW** \u2014 Code review, blast radius (\`export\`, \`metrics\`)
+7. **HANDOFF** \u2014 PR, documenta\u00E7\u00E3o, entrega (\`export\`, \`snapshot\`)
+8. **LISTENING** \u2014 Feedback, novo ciclo (\`add_node\`, \`import_prd\`)`;
 
-const XP_PRINCIPLES = `### Princípios XP Anti-Vibe-Coding
+const XP_PRINCIPLES = `### Princ\u00EDpios XP Anti-Vibe-Coding
 
-- **TDD obrigatório** — Teste antes do código. Sem teste = sem implementação.
-- **Anti-one-shot** — Nunca gere sistemas inteiros em um prompt. Decomponha em tasks atômicas.
-- **Decomposição atômica** — Cada task deve ser completável em ≤2h.
-- **Code detachment** — Se a IA errou, explique o erro via prompt. Nunca edite manualmente.
-- **CLAUDE.md como spec evolutiva** — Documente padrões e decisões aqui.`;
+- **TDD obrigat\u00F3rio** \u2014 Teste antes do c\u00F3digo. Sem teste = sem implementa\u00E7\u00E3o.
+- **Anti-one-shot** \u2014 Nunca gere sistemas inteiros em um prompt. Decomponha em tasks at\u00F4micas.
+- **Decomposi\u00E7\u00E3o at\u00F4mica** \u2014 Cada task deve ser complet\u00E1vel em \u22642h.
+- **Code detachment** \u2014 Se a IA errou, explique o erro via prompt. Nunca edite manualmente.
+- **CLAUDE.md como spec evolutiva** \u2014 Documente padr\u00F5es e decis\u00F5es aqui.`;
+
+const CLI_COMMANDS = `### Comandos essenciais
+
+\`\`\`bash
+npx mcp-graph stats            # Estat\u00EDsticas do grafo
+npx mcp-graph list             # Listar nodes
+npx mcp-graph doctor           # Validar ambiente de execu\u00E7\u00E3o
+npx mcp-graph doctor --json    # Diagn\u00F3stico em JSON estruturado
+npx mcp-graph serve --port 3000  # Dashboard visual
+\`\`\``;
 
 export function generateClaudeMdSection(projectName: string): string {
   return `
 ${MARKER_START}
-## mcp-graph — ${projectName}
+## mcp-graph \u2014 ${projectName}
 
-Este projeto usa **mcp-graph** para gestão de execução via grafo persistente (SQLite).
+Este projeto usa **mcp-graph** para gest\u00E3o de execu\u00E7\u00E3o via grafo persistente (SQLite).
 Dados armazenados em \`workflow-graph/graph.db\` (local, gitignored).
 
-### Ferramentas MCP disponíveis (26 tools)
+### Ferramentas MCP dispon\u00EDveis (30 tools)
 
-${TOOL_REFERENCE}
+${TOOL_TABLE_FULL}
+
+${ANALYZE_MODES_SECTION}
 
 ### Fluxo de trabalho recomendado
 
 \`\`\`
-next → context → [implementar com TDD] → update_status → next
+next \u2192 context \u2192 [implementar com TDD] \u2192 update_status \u2192 next
 \`\`\`
 
 ${LIFECYCLE_SUMMARY}
 
+${KNOWLEDGE_PIPELINE_SECTION}
+
 ${XP_PRINCIPLES}
 
-### Comandos essenciais
-
-\`\`\`bash
-npx mcp-graph stats          # Estatísticas do grafo
-npx mcp-graph list            # Listar nodes
-npx mcp-graph serve --port 3000  # Dashboard visual
-\`\`\`
+${CLI_COMMANDS}
 ${MARKER_END}
 `;
 }
 
 export function generateCopilotInstructions(projectName: string): string {
   return `${MARKER_START}
-## mcp-graph — ${projectName}
+## mcp-graph \u2014 ${projectName}
 
-Este projeto usa **mcp-graph** para gestão de execução via grafo persistente.
+Este projeto usa **mcp-graph** para gest\u00E3o de execu\u00E7\u00E3o via grafo persistente.
 Dados em \`workflow-graph/graph.db\`.
 
 ### Ferramentas MCP (principais)
 
 | Tool | Uso |
 |------|-----|
-| \`next\` | Próxima task recomendada |
-| \`context\` | Contexto comprimido (token-efficient) |
-| \`update_status\` | Mudar status (backlog→ready→in_progress→done) |
-| \`import_prd\` | Importar PRD para o grafo |
-| \`plan_sprint\` | Planejamento de sprint |
-| \`decompose\` | Decompor tasks grandes |
-| \`validate_task\` | Validar com Playwright |
+| \`next\` | Pr\u00F3xima task recomendada (prioridade + deps + knowledge coverage + TDD hints) |
+| \`context\` | Contexto comprimido (token-efficient, ~73% redu\u00E7\u00E3o) |
+| \`update_status\` | Mudar status (backlog\u2192ready\u2192in_progress\u2192done) |
+| \`import_prd\` | Importar PRD \u2192 segmentar \u2192 classificar \u2192 extrair \u2192 criar grafo |
+| \`plan_sprint\` | Planejamento de sprint (capacity, velocity) |
+| \`analyze\` | 24 modos de an\u00E1lise por fase do lifecycle |
+| \`set_phase\` | For\u00E7ar/resetar fase do lifecycle (gate checks) |
+| \`validate_task\` | Validar com Playwright (A/B, CSS scoping) |
+| \`validate_ac\` | Validar crit\u00E9rios de aceita\u00E7\u00E3o (checklist autom\u00E1tico) |
+| \`rag_context\` | Contexto RAG phase-aware (budget 60/30/10) |
 
-### Fluxo: \`next → context → [TDD] → update_status → next\`
+### Fluxo: \`next \u2192 context \u2192 [TDD] \u2192 update_status \u2192 next\`
 
 ${LIFECYCLE_SUMMARY}
 

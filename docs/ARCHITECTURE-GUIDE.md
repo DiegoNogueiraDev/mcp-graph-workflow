@@ -24,7 +24,7 @@ Thin orchestration layer. Commands call core functions and format output. No bus
 
 **Protocol:** Model Context Protocol (Streamable HTTP + Stdio)
 
-26 tools registered via `@modelcontextprotocol/sdk`. Two transport modes:
+30 tools registered (25 core + 4 memory + 1 skills) via `@modelcontextprotocol/sdk`. Two transport modes:
 
 - **HTTP** (`server.ts`) — Express server with `/mcp` endpoint + REST API + static dashboard
 - **Stdio** (`stdio.ts`) — Standard I/O transport for direct MCP client integration
@@ -57,8 +57,8 @@ routes/
   import.ts              # POST /import (multipart file upload)
   knowledge.ts           # GET/POST/DELETE /knowledge
   rag.ts                 # POST /rag/query, /rag/reindex, GET /rag/stats
-  gitnexus.ts            # GET /gitnexus/status, POST /gitnexus/query|context|impact
-  integrations.ts        # GET /integrations/status|serena|enriched-context|knowledge-status
+  code-graph.ts          # GET /code-graph/* — native code intelligence endpoints
+  integrations.ts        # GET /integrations/status|memories|enriched-context|knowledge-status
   insights.ts            # GET /insights/bottlenecks|recommendations|metrics
   context.ts             # GET /context/preview
   capture.ts             # POST /capture
@@ -126,10 +126,10 @@ Pipeline: `readFile → segment → classify → extract`
 |--------|---------|
 | `embedding-store.ts` | Persist TF-IDF vectors in SQLite, cosine similarity search |
 | `rag-pipeline.ts` | TF-IDF vectorizer: index nodes + knowledge as embeddings |
-| `serena-indexer.ts` | Index Serena memory documents into embeddings |
+| `memory-indexer.ts` | Index memory documents into embeddings |
 | `docs-indexer.ts` | Index fetched documentation into embeddings |
 | `capture-indexer.ts` | Index web-captured content into embeddings |
-| `serena-rag-query.ts` | Query Serena memories via FTS / semantic / hybrid modes |
+| `memory-rag-query.ts` | Query memories via FTS / semantic / hybrid modes |
 | `chunk-text.ts` | Split text into ~500 token chunks with overlap |
 
 See [Knowledge Pipeline](./KNOWLEDGE-PIPELINE.md) for the full RAG documentation.
@@ -139,9 +139,8 @@ See [Knowledge Pipeline](./KNOWLEDGE-PIPELINE.md) for the full RAG documentation
 | Module | Purpose |
 |--------|---------|
 | `integration-orchestrator.ts` | Event-driven mesh: auto-triggers reindex on import/sync events |
-| `serena-reader.ts` | Read `.serena/memories/` directory recursively |
-| `gitnexus-launcher.ts` | Manage GitNexus lifecycle (analyze, serve, cleanup) |
-| `enriched-context.ts` | Combine Serena + GitNexus + Knowledge into unified context |
+| `memory-reader.ts` | Read `workflow-graph/memories/` directory recursively (in `src/core/memory/`) |
+| `enriched-context.ts` | Combine Memories + Code Graph + Knowledge into unified context |
 | `mcp-servers-config.ts` | Manage `.mcp.json` server configurations |
 | `mcp-deps-installer.ts` | Auto-install MCP server dependencies |
 | `tool-status.ts` | Track integration availability and health |
@@ -259,8 +258,8 @@ Key skills: `/xp-bootstrap`, `/project-scaffold`, `/dev-flow-orchestrator`, `/tr
 
 | Integration | Purpose | Detection |
 |-------------|---------|-----------|
-| Serena | Semantic code analysis, memory | `.serena/` directory |
-| GitNexus | Code graph, dependency analysis | `.gitnexus/` directory |
+| Native Memories | Persistent project knowledge | `workflow-graph/memories/` directory |
+| Code Intelligence | Code graph, dependency analysis | Native via `src/core/code/` |
 | Context7 | Library documentation fetching | MCP server config |
 | Playwright | Browser automation, web capture | `@playwright/test` devDependency |
 
@@ -283,8 +282,8 @@ PRD File (.md/.txt/.pdf/.html)
 ### Knowledge Indexing Flow
 
 ```
-Sources (Serena memories, Context7 docs, web captures)
-  → Indexer (serena/docs/capture)  # RAG
+Sources (Memories, Context7 docs, web captures)
+  → Indexer (memory/docs/capture)  # RAG
   → chunkText()                     # RAG
   → knowledgeStore.upsert()         # Store
   → ragPipeline.buildIndex()        # RAG

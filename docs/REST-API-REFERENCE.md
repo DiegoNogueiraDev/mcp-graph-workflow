@@ -200,7 +200,7 @@ Upload a knowledge document.
 {
   "title": "string (required)",
   "content": "string (required)",
-  "sourceType": "upload|serena|code_context|docs|web_capture",
+  "sourceType": "upload|memory|code_context|docs|web_capture",
   "sourceId": "string",
   "metadata": {}
 }
@@ -208,7 +208,7 @@ Upload a knowledge document.
 
 **Response (201):** `{ ok: true, documents: [...], chunksCreated: number }`
 
-### `GET /knowledge?sourceType=serena&limit=20&offset=0`
+### `GET /knowledge?sourceType=memory&limit=20&offset=0`
 
 List knowledge documents with optional filters.
 
@@ -238,7 +238,7 @@ Delete a knowledge document.
 
 Get knowledge store statistics.
 
-**Response:** `{ total: number, bySource: { upload: 5, serena: 12, ... } }`
+**Response:** `{ total: number, bySource: { upload: 5, memory: 12, ... } }`
 
 ---
 
@@ -277,57 +277,27 @@ Get embedding statistics.
 
 ### `GET /integrations/status`
 
-Check integration status (Serena, GitNexus).
+Check integration status (Memories, Code Graph).
 
-### `GET /integrations/serena/memories`
+### `GET /integrations/memories`
 
-List all Serena memories.
+List all project memories.
 
-### `GET /integrations/serena/memories/:name`
+### `GET /integrations/memories/:name`
 
-Get a specific Serena memory.
+Get a specific memory.
 
-### `GET /integrations/gitnexus/url`
-
-Get GitNexus URL (or `503` if not running).
+> **Legacy:** `/integrations/serena/memories` and `/integrations/serena/memories/:name` are still supported for backward compatibility but deprecated.
 
 ### `GET /integrations/enriched-context/:symbol`
 
-Get enriched context combining Serena + GitNexus + Knowledge.
+Get enriched context combining Memories + Code Graph + Knowledge.
 
 ### `GET /integrations/knowledge-status`
 
 Get knowledge sync status by source.
 
-**Response:** `{ total: number, sources: [{ source: "serena", documentCount: 12 }, ...] }`
-
----
-
-## GitNexus
-
-### `GET /gitnexus/status`
-
-Check GitNexus status.
-
-**Response:** `{ indexed: boolean, running: boolean, port: number, url?: string }`
-
-### `POST /gitnexus/query`
-
-Query GitNexus code graph.
-
-**Body:** `{ "query": "string" }`
-
-### `POST /gitnexus/context`
-
-Get symbol context from GitNexus.
-
-**Body:** `{ "symbol": "string" }`
-
-### `POST /gitnexus/impact`
-
-Get impact analysis for a symbol.
-
-**Body:** `{ "symbol": "string" }`
+**Response:** `{ total: number, sources: [{ source: "memory", documentCount: 12 }, ...] }`
 
 ---
 

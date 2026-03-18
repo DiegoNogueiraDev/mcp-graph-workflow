@@ -1,6 +1,6 @@
 # MCP Tools Reference
 
-> 25 tools organized in 6 categories — complete parameter reference.
+> 30 tools organized in 7 categories — complete parameter reference.
 
 ## Summary
 
@@ -237,8 +237,39 @@ Reindex all knowledge sources into the unified store and rebuild embeddings.
 
 | Param | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `basePath` | string | No | cwd | Project base path for Serena memories |
-| `sources` | ("serena"\|"docs"\|"embeddings")[] | No | all | Which sources to reindex |
+| `basePath` | string | No | cwd | Project base path for finding memories |
+| `sources` | ("memory"\|"serena"\|"docs"\|"skills"\|"embeddings")[] | No | all | Which sources to reindex. "serena" is an alias for "memory". |
+
+### `write_memory`
+
+Write a project memory to `workflow-graph/memories/{name}.md`. Auto-indexes into the knowledge store for RAG search.
+
+| Param | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `name` | string | Yes | — | Memory name (supports nested paths like "architecture/overview") |
+| `content` | string | Yes | — | Memory content (markdown) |
+
+### `read_memory`
+
+Read a project memory from `workflow-graph/memories/{name}.md`.
+
+| Param | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `name` | string | Yes | — | Memory name (without .md extension) |
+
+### `list_memories`
+
+List all project memories available in `workflow-graph/memories/`.
+
+No parameters.
+
+### `delete_memory`
+
+Delete a project memory from `workflow-graph/memories/{name}.md` and remove from knowledge store.
+
+| Param | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `name` | string | Yes | — | Memory name to delete (without .md extension) |
 
 ### `sync_stack_docs`
 

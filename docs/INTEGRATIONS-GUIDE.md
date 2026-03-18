@@ -1,13 +1,13 @@
 # Integrations Guide
 
-> Four external MCP agents (Serena, GitNexus, Context7, Playwright) coordinated by mcp-graph as the orchestrator — 5 MCPs total working together through an event-driven mesh.
+> Three MCP agents (mcp-graph, Context7, Playwright) plus two native systems (Code Intelligence, Native Memories) — coordinated by mcp-graph as the orchestrator. No Python dependencies required.
 
 ## Overview
 
 | Integration | Role | When Used |
 |------------|------|-----------|
-| **Serena** | Code analysis, memory, symbol navigation | Reading codebase structure, collecting agent memories |
-| **GitNexus** | Git graph analysis, code dependencies | Impact analysis, dependency visualization |
+| **Native Memories** | Project memory persistence + RAG | Storing/retrieving project knowledge, architecture decisions, patterns |
+| **Code Intelligence** | Native code analysis (AST, FTS5) | Impact analysis, symbol search, dependency visualization |
 | **Context7** | Library documentation fetching | Stack-aware docs sync, API reference lookup |
 | **Playwright** | Browser automation, web capture | Task validation, A/B testing, content capture |
 
@@ -34,7 +34,7 @@ The orchestrator is an event-driven mesh that listens to `GraphEventBus` events 
 
 ```
 GraphEventBus
-  ├── import:completed  → Trigger reindex (Serena + Docs)
+  ├── import:completed  → Trigger reindex (Memories + Docs)
   ├── knowledge:indexed → Rebuild embeddings
   ├── docs:synced       → Index into knowledge store
   └── capture:completed → Index captured content
@@ -45,65 +45,100 @@ Key behaviors:
 - Cascading triggers: import → reindex → embed
 - Graceful degradation: if an integration is unavailable, others continue
 
-## Serena
+## Native Memory System
 
-### SerenaReader
+The native memory system replaces the former Serena MCP dependency with a zero-dependency TypeScript implementation. Memories are stored as `.md` files in `workflow-graph/memories/` for human readability and version control.
 
-**File:** `src/core/integrations/serena-reader.ts`
+### Memory Reader
 
-Reads `.serena/memories/` directory for collected agent memory documents.
+**File:** `src/core/memory/memory-reader.ts`
 
-- Traverses nested directories recursively
-- Parses memory files (markdown, JSON)
-- Extracts metadata (title, tags, timestamps)
+CRUD operations for project memories in `workflow-graph/memories/`:
 
-### SerenaIndexer
+- `listMemories()` — List all memory names (supports nested directories)
+- `readMemory()` — Read a specific memory by name
+- `readAllMemories()` — Read all memories at once
+- `writeMemory()` — Write/overwrite a memory file (creates parent dirs)
+- `deleteMemory()` — Delete a memory file
 
-**File:** `src/core/rag/serena-indexer.ts`
+### Memory Indexer
 
-Indexes Serena memories into the Knowledge Store and embedding pipeline.
+**File:** `src/core/rag/memory-indexer.ts`
+
+Indexes memories into the Knowledge Store and embedding pipeline.
 
 - Chunks memory content for embedding
 - SHA-256 deduplication prevents re-indexing unchanged memories
-- Source type: `serena`
+- Source type: `memory` (backward compatible with legacy `serena` source type)
 
-### Serena RAG Query
+### Memory RAG Query
 
-**File:** `src/core/rag/serena-rag-query.ts`
+**File:** `src/core/rag/memory-rag-query.ts`
 
-Three search modes over Serena memories:
+Three search modes over project memories:
 - **FTS** — Exact keyword matching via SQLite FTS5
 - **Semantic** — TF-IDF cosine similarity
 - **Hybrid** — Combined scoring for best relevance
 
-## GitNexus
+Queries both `memory` and `serena` source types for backward compatibility.
 
-### Launcher
+### Memory Migrator
 
-**File:** `src/core/integrations/gitnexus-launcher.ts`
+**File:** `src/core/memory/memory-migrator.ts`
 
-Manages GitNexus lifecycle as a child process:
+Automatically migrates memories from the legacy `.serena/memories/` directory to `workflow-graph/memories/`. Triggered lazily on first access. Existing files are never overwritten.
 
-1. **Analyze** — Index git repository structure
-2. **Serve** — Start GitNexus HTTP server on a local port
-3. **Cleanup** — Graceful shutdown on process exit
+### MCP Tools
+
+| Tool | Description |
+|------|-------------|
+| `write_memory` | Write memory to `workflow-graph/memories/{name}.md` + auto-index |
+| `read_memory` | Read a specific memory by name |
+| `list_memories` | List all available memories |
+| `delete_memory` | Delete memory from filesystem + knowledge store |
+
+## Code Intelligence
+
+Native code analysis engine at `src/core/code/`. Provides symbol-level understanding of the codebase without external MCP dependencies.
 
 ### Capabilities
 
-- **Query** — Search code symbols and relationships
-- **Context** — Get detailed context for a specific symbol
-- **Impact** — Analyze blast radius of changes to a symbol
+- **Symbol analysis** — Extracts functions, classes, methods, and interfaces from TypeScript source via AST parsing
+- **Relationship tracking** — Maps calls, imports, exports, and implements relationships between symbols
+- **Impact analysis** — Graph traversal to find upstream/downstream dependents (blast radius)
+- **FTS5 search** — Full-text search across all indexed symbols
+- **Execution flow detection** — Identifies process flows (e.g., CLI command → core function → store)
+
+### Module Layout
+
+| File | Purpose |
+|------|---------|
+| `ts-analyzer.ts` | TypeScript AST analysis — extracts symbols and relationships |
+| `code-indexer.ts` | Indexes the entire codebase into SQLite (symbols + relationships) |
+| `code-store.ts` | SQLite storage and queries for symbols and relationships |
+| `code-search.ts` | FTS5 search + graph-based queries across indexed symbols |
+| `graph-traversal.ts` | Upstream/downstream traversal for impact analysis |
+| `process-detector.ts` | Detects execution flows across the codebase |
+
+### API Routes
+
+Code Intelligence is exposed via REST at `/api/v1/code-graph/*`:
+- `GET /symbols` — List/search indexed symbols
+- `GET /symbols/:name` — Symbol detail with relationships
+- `GET /impact/:name` — Upstream/downstream impact analysis
+- `GET /flows` — Detected execution flows
+- `POST /reindex` — Trigger reindexing
 
 ### Enriched Context
 
 **File:** `src/core/integrations/enriched-context.ts`
 
-Combines outputs from multiple integrations for a single symbol:
+Combines outputs from multiple sources for a single symbol:
 
 ```
 Symbol Query
-  ├── Serena → Memory context + code structure
-  ├── GitNexus → Dependency graph + impact analysis
+  ├── Memories → Relevant project context
+  ├── Code Intelligence → Symbol graph + relations
   └── Knowledge Store → Related documentation
   ↓
 Enriched Context (unified payload)
@@ -194,25 +229,23 @@ Indexes captured web content into Knowledge Store:
 
 **File:** `src/core/integrations/mcp-servers-config.ts`
 
-Manages `.mcp.json` configuration for MCP server registrations.
+Manages `.mcp.json` configuration for MCP server registrations (3 servers: mcp-graph, context7, playwright).
 
 ### MCP Deps Installer
 
 **File:** `src/core/integrations/mcp-deps-installer.ts`
 
-Auto-installs MCP server dependencies:
-- Detects required packages from server configs
-- Runs `npm install` or `pip install` as needed
-- Validates installation success
+Auto-verifies MCP server dependencies:
+- Checks for `npx` availability (Context7, Playwright)
+- No Python dependencies required
 
 ## Tool Status
 
 **File:** `src/core/integrations/tool-status.ts`
 
 Tracks availability and health of all integrated tools:
-- Serena: connected / disconnected
-- GitNexus: indexed / running / stopped
-- Context7: available / unavailable
+- Code Graph: indexed / not indexed (native, always available)
+- Memories: available / count / directory
 - Playwright: installed / not installed
 
 ## Doctor Command
@@ -232,8 +265,8 @@ Checks performed:
 - Config file valid
 - Dashboard build present
 - `.mcp.json` exists and valid
-- GitNexus installed/running
-- Serena configured
+- Code Graph indexed
+- Memories available
 - Playwright available
 
 Exit code: 0 if all critical checks pass, 1 otherwise.

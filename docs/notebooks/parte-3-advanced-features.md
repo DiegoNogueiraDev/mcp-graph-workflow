@@ -1,6 +1,6 @@
 # Parte 3: Multi-project, Lifecycle, Integration Mesh, Knowledge Pipeline, Test Pyramid
 
-> Cenários 25-35: Validação de features avançadas — multi-project, lifecycle phase detection, integration mesh (5 MCPs), knowledge pipeline (5 source types, tiered context, budget 60/30/10), hierarquia completa (9 tipos de nó, 8 tipos de edge), pirâmide de testes e Definition of Done.
+> Cenários 25-35: Validação de features avançadas — multi-project, lifecycle phase detection, integration mesh (3 MCPs + 2 native systems), knowledge pipeline (5 source types, tiered context, budget 60/30/10), hierarquia completa (9 tipos de nó, 8 tipos de edge), pirâmide de testes e Definition of Done.
 
 ---
 
@@ -905,7 +905,7 @@ Fases testadas: ANALYZE → DESIGN → PLAN → IMPLEMENT → VALIDATE → REVIE
 
 ## Cenário 30: Integration Mesh — Orquestração dos 5 MCPs
 
-**Objetivo:** Validar que os 5 MCPs (mcp-graph, Serena, GitNexus, Context7, Playwright) funcionam em conjunto, que o EventBus dispara eventos corretos, e que o IntegrationOrchestrator reage a eles.
+**Objetivo:** Validar que os MCPs (mcp-graph, Context7, Playwright) e sistemas nativos (Native Memories, Code Intelligence) funcionam em conjunto, que o EventBus dispara eventos corretos, e que o IntegrationOrchestrator reage a eles.
 **Tools cobertos:** `init`, `import_prd`, `reindex_knowledge`, `sync_stack_docs`, `validate_task`, `search`, `rag_context`, `stats`
 **Ref:** `src/core/integrations/integration-orchestrator.ts`, `src/core/events/event-types.ts`, `src/core/integrations/tool-status.ts`
 
@@ -995,16 +995,16 @@ Fases testadas: ANALYZE → DESIGN → PLAN → IMPLEMENT → VALIDATE → REVIE
 
 ---
 
-### Step 30.5: Reindex Serena memories
+### Step 30.5: Reindex Native Memories
 
 **Tool:** `reindex_knowledge`
 **Input:**
 ```json
-{ "sources": ["serena"] }
+{ "sources": ["memory"] }
 ```
 
 **Expected:**
-- **Serena integração**: lê `.serena/memories/`, indexa no Knowledge Store (`sourceType: "serena"`)
+- **Native Memories**: lê `workflow-graph/memories/`, indexa no Knowledge Store (`sourceType: "memory"`)
 - Retorna contagem de docs indexados
 
 **Actual:**
@@ -1068,7 +1068,7 @@ Fases testadas: ANALYZE → DESIGN → PLAN → IMPLEMENT → VALIDATE → REVIE
 ```
 
 **Expected:**
-- **RAG pipeline completo**: busca semântica em TODAS as fontes (graph + serena + docs + web_capture)
+- **RAG pipeline completo**: busca semântica em TODAS as fontes (graph + memory + docs + web_capture)
 - Context montado com budget 60/30/10
 - `tokenUsage.used <= 4000`
 
@@ -1107,7 +1107,7 @@ Fases testadas: ANALYZE → DESIGN → PLAN → IMPLEMENT → VALIDATE → REVIE
 **Tools cobertos:** `rag_context`, `search`, `reindex_knowledge`, `context`
 **Ref:** `src/core/context/context-assembler.ts` (budget 60/30/10), `src/core/context/tiered-context.ts` (3 tiers), `src/schemas/knowledge.schema.ts` (5 source types)
 
-> **5 Source Types:** `upload`, `serena`, `code_context`, `docs`, `web_capture`
+> **5 Source Types:** `upload`, `memory`, `code_context`, `docs`, `web_capture`
 > **3 Tiers:** summary (~20 tokens/node), standard (~150 tokens/node), deep (~500+ tokens/node)
 > **Budget:** 60% graph, 30% knowledge, 10% overhead
 
@@ -1277,13 +1277,13 @@ Fases testadas: ANALYZE → DESIGN → PLAN → IMPLEMENT → VALIDATE → REVIE
 
 ---
 
-## Cenário 32: REVIEW Phase — Blast Radius + Serena + Code Review
+## Cenário 32: REVIEW Phase — Blast Radius + Code Intelligence + Code Review
 
-**Objetivo:** Validar o fluxo completo da Fase 6 (REVIEW) do LIFECYCLE.md: blast radius check via GitNexus, referências via Serena, e verificação de qualidade.
-**Tools cobertos:** MCP tools + Serena + GitNexus (integrations diretas)
+**Objetivo:** Validar o fluxo completo da Fase 6 (REVIEW) do LIFECYCLE.md: blast radius check via Code Intelligence, referências via symbol analysis, e verificação de qualidade.
+**Tools cobertos:** MCP tools + Code Intelligence (native `src/core/code/`)
 **Ref:** `src/core/integrations/enriched-context.ts`, `src/core/integrations/tool-status.ts`
 
-> **Nota:** Requer GitNexus e Serena configurados. Marcar SKIP se indisponíveis.
+> **Nota:** Requer Code Intelligence indexado. Marcar SKIP se indisponível.
 
 ### Step 32.1: Verificar fase REVIEW
 
@@ -1305,9 +1305,9 @@ Fases testadas: ANALYZE → DESIGN → PLAN → IMPLEMENT → VALIDATE → REVIE
 
 ---
 
-### Step 32.2: Serena — symbols overview do store
+### Step 32.2: Code Intelligence — symbols overview do store
 
-**Tool:** Serena `get_symbols_overview`
+**Tool:** Code Intelligence symbol search
 **Input:** `src/core/store/`
 
 **Expected:**
@@ -1322,9 +1322,9 @@ Fases testadas: ANALYZE → DESIGN → PLAN → IMPLEMENT → VALIDATE → REVIE
 
 ---
 
-### Step 32.3: Serena — referências ao SqliteStore
+### Step 32.3: Code Intelligence — referências ao SqliteStore
 
-**Tool:** Serena `find_referencing_symbols`
+**Tool:** Code Intelligence reference search
 **Input:** `SqliteStore`
 
 **Expected:**
@@ -1339,13 +1339,13 @@ Fases testadas: ANALYZE → DESIGN → PLAN → IMPLEMENT → VALIDATE → REVIE
 
 ---
 
-### Step 32.4: Serena — overview da classe SqliteStore
+### Step 32.4: Code Intelligence — overview da classe SqliteStore
 
-**Tool:** Serena `find_symbol`
-**Input:** `SqliteStore`, include_body=false, depth=1
+**Tool:** Code Intelligence symbol context
+**Input:** `SqliteStore`
 
 **Expected:**
-- Overview da classe: métodos públicos, sem body
+- Overview da classe: métodos públicos, callers, callees
 - Confirma API pública
 
 **Actual:**
@@ -1357,9 +1357,9 @@ Fases testadas: ANALYZE → DESIGN → PLAN → IMPLEMENT → VALIDATE → REVIE
 
 ---
 
-### Step 32.5: GitNexus — blast radius
+### Step 32.5: Code Intelligence — blast radius
 
-**Tool:** GitNexus `gitnexus_impact`
+**Tool:** Code Intelligence impact analysis
 **Input:** `{ target: "SqliteStore", direction: "upstream" }`
 
 **Expected:**
@@ -1375,9 +1375,9 @@ Fases testadas: ANALYZE → DESIGN → PLAN → IMPLEMENT → VALIDATE → REVIE
 
 ---
 
-### Step 32.6: GitNexus — detect changes
+### Step 32.6: Code Intelligence — detect changes
 
-**Tool:** GitNexus `gitnexus_detect_changes`
+**Tool:** Code Intelligence change detection
 **Input:** `{ scope: "all" }`
 
 **Expected:**
@@ -2391,15 +2391,15 @@ Após rodar todos os cenários:
 | `browser_take_screenshot` | 26, 29, 35 |
 | `browser_console_messages` | 35 |
 
-### Serena + GitNexus (Cenário 32)
+### Code Intelligence (Cenário 32)
 
 | Tool | Cenário |
 |------|---------|
-| `get_symbols_overview` | 32 |
-| `find_referencing_symbols` | 32 |
-| `find_symbol` | 32 |
-| `gitnexus_impact` | 32 |
-| `gitnexus_detect_changes` | 32 |
+| Code Intelligence symbol search | 32 |
+| Code Intelligence reference search | 32 |
+| Code Intelligence symbol context | 32 |
+| Code Intelligence impact analysis | 32 |
+| Code Intelligence change detection | 32 |
 
 ### Features/Metodologia Cobertos
 
@@ -2419,7 +2419,7 @@ Após rodar todos os cenários:
 | `_lifecycle` block + suggestedTools + principles | 28 |
 | EventBus: import:completed → reindex | 30 |
 | IntegrationOrchestrator | 30 |
-| Serena memories indexing | 30 |
+| Native Memories indexing | 30 |
 | Context7 docs sync | 30 |
 | Playwright capture + Knowledge Store index | 30 |
 | RAG pipeline end-to-end | 30 |
@@ -2428,8 +2428,8 @@ Após rodar todos os cenários:
 | Budget allocation 60/30/10 | 31 |
 | BM25 + TF-IDF rerank | 31 |
 | Compact context compression 70-85% | 31 |
-| Blast radius check (GitNexus) | 32 |
-| Serena find_referencing_symbols | 32 |
+| Blast radius check (Code Intelligence) | 32 |
+| Code Intelligence reference search | 32 |
 | Code review checklist | 32 |
 | 9 tipos de nó | 33 |
 | 8 tipos de edge | 33 |

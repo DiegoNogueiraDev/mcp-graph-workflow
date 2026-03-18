@@ -59,6 +59,78 @@ describe("generateCopilotInstructions", () => {
   });
 });
 
+describe("tool completeness", () => {
+  it("should include all 29 registered tools", () => {
+    const section = generateClaudeMdSection("test");
+    expect(section).toContain("validate_ac");
+    expect(section).toContain("set_phase");
+    expect(section).toContain("analyze");
+    expect(section).toContain("metrics");
+    expect(section).toContain("bulk_update_status");
+    expect(section).toContain("write_memory");
+    expect(section).toContain("read_memory");
+    expect(section).toContain("list_memories");
+    expect(section).toContain("delete_memory");
+  });
+
+  it("should group tools by category", () => {
+    const section = generateClaudeMdSection("test");
+    expect(section).toContain("Projeto & Grafo");
+    expect(section).toContain("Contexto & RAG");
+  });
+
+  it("should claim correct tool count (30)", () => {
+    const section = generateClaudeMdSection("test");
+    expect(section).toContain("30 tools");
+  });
+});
+
+describe("analyze modes section", () => {
+  it("should include analyze modes section", () => {
+    const section = generateClaudeMdSection("test");
+    expect(section).toContain("prd_quality");
+    expect(section).toContain("implement_done");
+    expect(section).toContain("design_ready");
+    expect(section).toContain("backlog_health");
+  });
+
+  it("should group analyze modes by lifecycle phase", () => {
+    const section = generateClaudeMdSection("test");
+    expect(section).toContain("Modos do analyze por fase");
+  });
+});
+
+describe("knowledge pipeline section", () => {
+  it("should include knowledge pipeline section", () => {
+    const section = generateClaudeMdSection("test");
+    expect(section).toContain("Knowledge");
+    expect(section).toContain("RAG");
+    expect(section).toContain("reindex_knowledge");
+  });
+});
+
+describe("doctor CLI command", () => {
+  it("should include doctor command", () => {
+    const section = generateClaudeMdSection("test");
+    expect(section).toContain("doctor");
+  });
+});
+
+describe("copilot instructions enrichment", () => {
+  it("should include set_phase and validate_ac", () => {
+    const content = generateCopilotInstructions("test");
+    expect(content).toContain("set_phase");
+    expect(content).toContain("validate_ac");
+    expect(content).toContain("analyze");
+  });
+
+  it("copilot instructions should also be idempotent", () => {
+    const s1 = generateCopilotInstructions("test");
+    const s2 = generateCopilotInstructions("test");
+    expect(s1).toBe(s2);
+  });
+});
+
 describe("idempotency", () => {
   it("markers should be consistent for repeated calls", () => {
     const section1 = generateClaudeMdSection("test");

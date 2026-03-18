@@ -72,10 +72,10 @@ npm run test:all            # Vitest + Playwright
 | `embedding-store.test.ts` | 8 | Vector storage and cosine search |
 | `rag-semantic.test.ts` | 15 | Semantic search pipeline |
 | `rag-all-embeddings.test.ts` | 5 | Full embedding index |
-| `serena-indexer.test.ts` | 4 | Serena memory indexing |
+| `memory-indexer.test.ts` | 4 | Memory document indexing |
 | `docs-indexer.test.ts` | 6 | Documentation indexing |
 | `capture-indexer.test.ts` | 4 | Web capture indexing |
-| `serena-rag-query.test.ts` | 5 | Serena semantic query modes |
+| `memory-rag-query.test.ts` | 5 | Memory semantic query modes |
 
 ### Context Compression
 
@@ -102,12 +102,11 @@ npm run test:all            # Vitest + Playwright
 | File | Cases | Coverage |
 |------|-------|----------|
 | `integration-orchestrator.test.ts` | 6 | Event-driven orchestration |
-| `gitnexus-launcher.test.ts` | 9 | GitNexus lifecycle management |
 | `mcp-context7-fetcher.test.ts` | 5 | Context7 doc fetching |
 | `stack-detector.test.ts` | 6 | Tech stack detection |
 | `mcp-deps-installer.test.ts` | 10 | MCP dependency installation |
 | `init-project-mcp-servers.test.ts` | 9 | MCP server initialization |
-| `serena-reader.test.ts` | 4 | Serena memory reading |
+| `memory-reader.test.ts` | 4 | Memory reading |
 
 ### API Endpoints
 
@@ -119,7 +118,6 @@ npm run test:all            # Vitest + Playwright
 | `api-import.test.ts` | 7 | PRD import via REST |
 | `api-project.test.ts` | 4 | Project endpoints |
 | `api-knowledge.test.ts` | 14 | Knowledge CRUD via REST |
-| `api-gitnexus.test.ts` | 8 | GitNexus control via REST |
 | `api-capture.test.ts` | 4 | Web capture via REST |
 
 ### MCP Tools

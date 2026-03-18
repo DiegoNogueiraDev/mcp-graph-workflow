@@ -8,7 +8,7 @@
 ┌─────────────┐   ┌─────────────┐   ┌─────────────┐   ┌─────────────┐   ┌─────────┐
 │   Sources    │──▶│  Knowledge   │──▶│  Embedding   │──▶│   Tiered    │──▶│   LLM   │
 │             │   │    Store     │   │  Pipeline    │   │  Context    │   │ Context │
-│ • Serena    │   │             │   │             │   │             │   │         │
+│ • Memories    │   │             │   │             │   │             │   │         │
 │ • Docs      │   │ • FTS5      │   │ • TF-IDF    │   │ • Tier 1-3  │   │ Token-  │
 │ • Captures  │   │ • SHA-256   │   │ • Cosine    │   │ • BM25      │   │ budgeted│
 │ • Uploads   │   │ • Chunking  │   │ • Local     │   │ • Assembler │   │ payload │
@@ -26,7 +26,7 @@ SQLite-backed store for all knowledge documents with full-text search.
 | Table | `knowledge_documents` |
 | Search | FTS5 full-text index |
 | Dedup | SHA-256 content hashing — same content is never stored twice |
-| Source types | `upload`, `serena`, `code_context`, `docs`, `web_capture` |
+| Source types | `upload`, `memory`, `serena` (legacy), `code_context`, `docs`, `web_capture` |
 | Chunking | Large documents auto-split into ~500 token chunks with 50 token overlap |
 
 ### Schema
@@ -62,7 +62,7 @@ Three specialized indexers feed documents into the Knowledge Store:
 
 | Indexer | File | Sources | Trigger |
 |---------|------|---------|---------|
-| **SerenaIndexer** | `src/core/rag/serena-indexer.ts` | `.serena/memories/` directory | `reindex_knowledge` tool |
+| **MemoryIndexer** | `src/core/rag/memory-indexer.ts` | `workflow-graph/memories/` directory | `reindex_knowledge` / `write_memory` tools |
 | **DocsIndexer** | `src/core/rag/docs-indexer.ts` | Context7 cached documentation | `sync_stack_docs` tool |
 | **CaptureIndexer** | `src/core/rag/capture-indexer.ts` | Playwright web captures | `validate_task` tool |
 
@@ -95,11 +95,11 @@ Documents/Nodes → Tokenize → TF-IDF Vectorize → Store Embeddings
 Query → Tokenize → TF-IDF Vectorize → Cosine Search → Top-K Results
 ```
 
-## Serena RAG Query
+## Memory RAG Query
 
-**File:** `src/core/rag/serena-rag-query.ts`
+**File:** `src/core/rag/memory-rag-query.ts`
 
-Three query modes for searching Serena memories:
+Three query modes for searching project memories (supports both `memory` and legacy `serena` source types):
 
 | Mode | Strategy | Use Case |
 |------|----------|----------|
@@ -161,6 +161,10 @@ The assembler achieves **70-85% token reduction** compared to sending raw contex
 
 | Tool | Purpose |
 |------|---------|
+| `write_memory` | Write project memory + auto-index into knowledge store |
+| `read_memory` | Read a specific project memory |
+| `list_memories` | List all available project memories |
+| `delete_memory` | Delete memory from filesystem + knowledge store |
 | `reindex_knowledge` | Rebuild knowledge indexes from all sources |
 | `sync_stack_docs` | Auto-detect stack + fetch docs via Context7 |
 | `rag_context` | Semantic search with token-budgeted context |
@@ -169,5 +173,5 @@ The assembler achieves **70-85% token reduction** compared to sending raw contex
 ## Related Documentation
 
 - [Architecture Guide](./ARCHITECTURE-GUIDE.md) — System layers and data flow
-- [Integrations Guide](./INTEGRATIONS-GUIDE.md) — Serena, GitNexus, Context7, Playwright
+- [Integrations Guide](./INTEGRATIONS-GUIDE.md) — Memories, Code Intelligence, Context7, Playwright
 - [MCP Tools Reference](./MCP-TOOLS-REFERENCE.md) — Complete tool documentation

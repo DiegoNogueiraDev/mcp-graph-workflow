@@ -1,6 +1,6 @@
 # Dashboard — Guia do Usuário
 
-Guia completo do dashboard web do mcp-graph. Para referência da API REST, veja [REST-API-REFERENCE.md](REST-API-REFERENCE.md).
+Guia completo do dashboard web do mcp-graph. Para referência da API REST, veja [REST-API-REFERENCE.md](REST-API-REFERENCE.md). Para workflows do dia-a-dia usando o dashboard, veja a seção Dashboard Deep Dive no [User Guide](USER-GUIDE.md).
 
 ---
 
@@ -72,7 +72,7 @@ Abra `http://localhost:3000` no navegador. O dashboard conecta automaticamente v
 ┌─────────────────────────────────────────────────────────────┐
 │ [mcp-graph]  My Project  1/3 done  [Open Folder] [Import PRD] [Capture] [☀] │  ← Header
 ├─────────────────────────────────────────────────────────────┤
-│ Graph | PRD & Backlog | GitNexus | Serena | Insights | Benchmark | Logs        │  ← Tabs
+│ Graph | PRD & Backlog | Code Graph | Memories | Insights | Benchmark | Logs     │  ← Tabs
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │                    Conteúdo da Tab Ativa                     │  ← Área Principal
@@ -138,23 +138,24 @@ Visão organizada do backlog com hierarquia epic → task.
 - **Lista hierárquica** com status visual (cores por status)
 - **Show all nodes** checkbox para expandir/colapsar hierarquia
 
-### GitNexus (Code Graph)
+### Code Graph
 
-Visualização do grafo de código do projeto (requer GitNexus configurado).
+Visualização do grafo de código do projeto (engine nativo, sem dependências externas).
 
-- **Status:** indica se o GitNexus está indexado e rodando
-- **Analyze / Serve:** botões para iniciar análise e servidor GitNexus
+- **Status:** indica se o índice de código está atualizado
+- **Reindex:** botão para reconstruir o índice via `reindex_knowledge`
 - **Grafo de código:** symbols (funções, classes) e relações (calls, imports)
-- **Busca por símbolo:** pesquisa no grafo de código
-- **Impact analysis:** análise de impacto de um símbolo
+- **Busca por símbolo:** pesquisa no grafo de código via FTS5
+- **Impact analysis:** análise de impacto (upstream/downstream) de um símbolo
 
-### Serena
+### Memories
 
-Visualização das memórias do Serena (MCP de análise de código).
+Visualização das memórias do projeto (sistema nativo de conhecimento).
 
 - **Explorador de arquivos:** tree view das memórias organizadas por diretório
 - **Visualização:** conteúdo da memória selecionada
-- Requer Serena MCP configurado no projeto
+- **CRUD:** criar, ler, listar e deletar memórias via MCP tools (write_memory, read_memory, list_memories, delete_memory)
+- Memórias armazenadas em `workflow-graph/memories/` e auto-indexadas no knowledge store
 
 ### Insights
 
