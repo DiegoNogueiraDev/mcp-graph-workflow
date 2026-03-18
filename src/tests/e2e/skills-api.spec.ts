@@ -8,29 +8,36 @@ import { test, expect } from "@playwright/test";
 test.describe("Skills API", () => {
   // ── GET /skills — list all ────────────────────────
 
-  test("GET /api/v1/skills returns built-in skills", async ({ request }) => {
+  test("GET /api/v1/skills returns built-in skills with token info", async ({ request }) => {
     const res = await request.get("/api/v1/skills");
     expect(res.ok()).toBe(true);
 
-    const skills = await res.json();
-    expect(Array.isArray(skills)).toBe(true);
-    expect(skills.length).toBeGreaterThanOrEqual(19);
+    const body = await res.json();
+    expect(body).toHaveProperty("skills");
+    expect(body).toHaveProperty("totalTokens");
+    expect(Array.isArray(body.skills)).toBe(true);
+    expect(body.skills.length).toBeGreaterThanOrEqual(19);
+    expect(typeof body.totalTokens).toBe("number");
+    expect(body.totalTokens).toBeGreaterThan(0);
 
     // Verify structure of first skill
-    const first = skills[0];
+    const first = body.skills[0];
     expect(first).toHaveProperty("name");
     expect(first).toHaveProperty("description");
     expect(first).toHaveProperty("category");
     expect(first).toHaveProperty("source");
+    expect(first).toHaveProperty("estimatedTokens");
+    expect(typeof first.estimatedTokens).toBe("number");
+    expect(first.estimatedTokens).toBeGreaterThan(0);
   });
 
   test("GET /api/v1/skills?source=built-in returns only built-in skills", async ({ request }) => {
     const res = await request.get("/api/v1/skills?source=built-in");
     expect(res.ok()).toBe(true);
 
-    const skills = await res.json();
-    expect(skills.length).toBe(19);
-    expect(skills.every((s: { source: string }) => s.source === "built-in")).toBe(true);
+    const body = await res.json();
+    expect(body.skills.length).toBe(19);
+    expect(body.skills.every((s: { source: string }) => s.source === "built-in")).toBe(true);
   });
 
   // ── GET /skills?phase= — filter by phase ──────────
@@ -39,10 +46,10 @@ test.describe("Skills API", () => {
     const res = await request.get("/api/v1/skills?phase=ANALYZE");
     expect(res.ok()).toBe(true);
 
-    const skills = await res.json();
-    expect(skills.length).toBe(3);
+    const body = await res.json();
+    expect(body.skills.length).toBe(3);
 
-    const names = skills.map((s: { name: string }) => s.name);
+    const names = body.skills.map((s: { name: string }) => s.name);
     expect(names).toContain("create-prd-chat-mode");
     expect(names).toContain("business-analyst");
     expect(names).toContain("product-manager");
@@ -52,10 +59,10 @@ test.describe("Skills API", () => {
     const res = await request.get("/api/v1/skills?phase=IMPLEMENT");
     expect(res.ok()).toBe(true);
 
-    const skills = await res.json();
-    expect(skills.length).toBe(2);
+    const body = await res.json();
+    expect(body.skills.length).toBe(2);
 
-    const names = skills.map((s: { name: string }) => s.name);
+    const names = body.skills.map((s: { name: string }) => s.name);
     expect(names).toContain("subagent-driven-development");
     expect(names).toContain("xp-bootstrap");
   });
@@ -64,10 +71,10 @@ test.describe("Skills API", () => {
     const res = await request.get("/api/v1/skills?phase=VALIDATE");
     expect(res.ok()).toBe(true);
 
-    const skills = await res.json();
-    expect(skills.length).toBe(4);
+    const body = await res.json();
+    expect(body.skills.length).toBe(4);
 
-    const names = skills.map((s: { name: string }) => s.name);
+    const names = body.skills.map((s: { name: string }) => s.name);
     expect(names).toContain("playwright-explore-website");
     expect(names).toContain("e2e-testing");
   });
@@ -76,10 +83,10 @@ test.describe("Skills API", () => {
     const res = await request.get("/api/v1/skills?phase=REVIEW");
     expect(res.ok()).toBe(true);
 
-    const skills = await res.json();
-    expect(skills.length).toBe(5);
+    const body = await res.json();
+    expect(body.skills.length).toBe(5);
 
-    const names = skills.map((s: { name: string }) => s.name);
+    const names = body.skills.map((s: { name: string }) => s.name);
     expect(names).toContain("code-reviewer");
     expect(names).toContain("observability-engineer");
   });
@@ -88,20 +95,22 @@ test.describe("Skills API", () => {
     const res = await request.get("/api/v1/skills?phase=HANDOFF");
     expect(res.ok()).toBe(true);
 
-    const skills = await res.json();
-    expect(skills.length).toBe(0);
+    const body = await res.json();
+    expect(body.skills.length).toBe(0);
   });
 
   // ── Skill structure validation ────────────────────
 
-  test("built-in skills include phases array", async ({ request }) => {
+  test("built-in skills include phases array and estimatedTokens", async ({ request }) => {
     const res = await request.get("/api/v1/skills?source=built-in");
-    const skills = await res.json();
+    const body = await res.json();
 
-    for (const skill of skills) {
+    for (const skill of body.skills) {
       expect(skill.phases).toBeDefined();
       expect(Array.isArray(skill.phases)).toBe(true);
       expect(skill.phases.length).toBeGreaterThan(0);
+      expect(typeof skill.estimatedTokens).toBe("number");
+      expect(skill.estimatedTokens).toBeGreaterThan(0);
     }
   });
 

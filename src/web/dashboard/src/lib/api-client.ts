@@ -1,4 +1,4 @@
-import type { GraphDocument, GraphEdge, GraphNode, GraphStats, IntegrationStatus, CodeGraphStatus, ProjectMemory, ReindexResult, LogEntry, FolderInfo, OpenFolderResult, BrowseResult, CodeGraphData, ImpactResult, KnowledgeStats } from "./types";
+import type { GraphDocument, GraphEdge, GraphNode, GraphStats, IntegrationStatus, CodeGraphStatus, ProjectMemory, ReindexResult, LogEntry, FolderInfo, OpenFolderResult, BrowseResult, CodeGraphData, ImpactResult, KnowledgeStats, Skill } from "./types";
 
 const BASE = "/api/v1";
 
@@ -102,7 +102,7 @@ export const apiClient = {
   getBottlenecks: () => request("/insights/bottlenecks"),
   getRecommendations: () => request<{ recommendations: Array<{ phase: string; skill: string; reason: string }> }>("/insights/recommendations"),
   getMetrics: () => request("/insights/metrics"),
-  getSkills: () => request<Array<{ name: string; category: string; description: string }>>("/skills"),
+  getSkills: () => request<{ skills: Skill[]; totalTokens: number }>("/skills"),
 
   // Knowledge
   getKnowledgeStats: () => request<KnowledgeStats>("/knowledge/stats/summary"),

@@ -101,6 +101,9 @@ export interface Skill {
   name: string;
   category: string;
   description: string;
+  phases?: string[];
+  source: "built-in" | "filesystem";
+  estimatedTokens: number;
 }
 
 export interface IntegrationStatus {
