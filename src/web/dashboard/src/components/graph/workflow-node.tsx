@@ -20,41 +20,41 @@ export const WorkflowNode = memo(function WorkflowNode({ data }: WorkflowNodePro
   return (
     <>
       <Handle type="target" position={Position.Top} className="!w-2 !h-2" />
-      <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg p-2.5 shadow-sm hover:shadow-md transition-shadow cursor-pointer min-w-[200px]">
-        <div className="flex items-center justify-between mb-1">
-          <span
-            className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded"
-            style={{ background: `${typeColor}20`, color: typeColor }}
-          >
-            {data.nodeType}
-          </span>
-          <span
-            className="text-[10px] font-medium px-1.5 py-0.5 rounded-full"
-            style={{ background: `${statusColor}20`, color: statusColor }}
-          >
-            {data.status.replace("_", " ")}
-          </span>
-        </div>
-        <div className="text-sm font-medium leading-tight line-clamp-2 mb-1">
-          {data.label}
-        </div>
-        <div className="flex items-center justify-between">
+      <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer min-w-[200px]">
+        <div className="p-2.5">
+          <div className="flex items-center justify-between mb-1">
+            <span
+              className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded"
+              style={{ background: `${typeColor}20`, color: typeColor }}
+            >
+              {data.nodeType}
+            </span>
+            <span
+              className="text-[10px] font-medium px-1.5 py-0.5 rounded-full"
+              style={{ background: `${statusColor}20`, color: statusColor }}
+            >
+              {data.status.replace("_", " ")}
+            </span>
+          </div>
+          <div className="text-sm font-medium leading-tight line-clamp-2 mb-1">
+            {data.label}
+          </div>
           <div className="flex items-center gap-2 text-[10px] text-[var(--color-text-muted)]">
             <span>P{data.priority}</span>
             {data.xpSize && <span>{data.xpSize}</span>}
             {data.sprint && <span>{data.sprint}</span>}
           </div>
-          {data.hasChildren && (
-            <button
-              onClick={handleExpandClick}
-              className="flex items-center gap-0.5 text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors px-1 py-0.5 rounded hover:bg-[var(--color-bg-tertiary)]"
-              title={data.isExpanded ? "Collapse children" : "Expand children"}
-            >
-              <span className="text-xs">{data.isExpanded ? "\u25BE" : "\u25B8"}</span>
-              <span className="font-medium">({data.childCount})</span>
-            </button>
-          )}
         </div>
+        {data.hasChildren && (
+          <button
+            onClick={handleExpandClick}
+            className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium border-t border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-bg-tertiary)] transition-colors rounded-b-lg"
+            title={data.isExpanded ? "Collapse children" : "Expand children"}
+          >
+            <span>{data.isExpanded ? "\u25BC" : "\u25B6"}</span>
+            <span>{data.childCount} {data.childCount === 1 ? "child" : "children"}</span>
+          </button>
+        )}
       </div>
       <Handle type="source" position={Position.Bottom} className="!w-2 !h-2" />
     </>

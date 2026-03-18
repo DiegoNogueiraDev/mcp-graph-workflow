@@ -1,5 +1,5 @@
 /**
- * Pure utility to convert a flat list of Serena memories into a
+ * Pure utility to convert a flat list of project memories into a
  * hierarchical folder tree, using "/" in memory names as path separators.
  * No React/DOM dependencies — fully testable.
  */

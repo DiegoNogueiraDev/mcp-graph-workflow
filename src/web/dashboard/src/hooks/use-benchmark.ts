@@ -29,6 +29,41 @@ export interface BenchmarkData {
     blockedTasks: number;
     cycles: number;
   };
+  toolTokenUsage?: {
+    totalCalls: number;
+    totalInputTokens: number;
+    totalOutputTokens: number;
+    perTool: Array<{
+      toolName: string;
+      callCount: number;
+      totalInputTokens: number;
+      totalOutputTokens: number;
+      avgInputTokens: number;
+      avgOutputTokens: number;
+      totalTokens: number;
+    }>;
+    recentCalls: Array<{
+      id: number;
+      toolName: string;
+      inputTokens: number;
+      outputTokens: number;
+      calledAt: string;
+    }>;
+  } | null;
+  layeredCompression?: {
+    avgNaiveNeighborhoodTokens: number;
+    avgCompactContextTokens: number;
+    avgNeighborTruncatedTokens: number;
+    avgDefaultOmittedTokens: number;
+    avgShortKeysTokens: number;
+    avgSummaryTierTokens: number;
+    avgLayer1SavingsPercent: number;
+    avgLayer2SavingsPercent: number;
+    avgLayer3SavingsPercent: number;
+    avgLayer4SavingsPercent: number;
+    avgTotalRealSavingsPercent: number;
+    sampleSize: number;
+  } | null;
   formulas: Record<string, string>;
 }
 

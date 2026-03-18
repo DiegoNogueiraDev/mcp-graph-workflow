@@ -104,23 +104,28 @@ export interface Skill {
 }
 
 export interface IntegrationStatus {
-  gitnexus?: { running: boolean; url: string };
-  serena?: { memories?: Array<{ name: string; content: string }> };
+  codeGraph?: { installed: boolean; running: boolean; symbolCount: number };
+  memories?: { available: boolean; count: number; directory: string; names: string[] };
+  playwright?: { installed: boolean; running: boolean };
 }
 
-// ── GitNexus Code Graph types ───────────────────
+// ── Code Graph types ────────────────────────────
 
-export interface GitNexusStatus {
+export interface CodeGraphStatus {
   indexed: boolean;
-  running: boolean;
-  port: number;
-  url?: string;
-  analyzePhase?: "idle" | "analyzing" | "ready" | "unavailable" | "error";
   basePath?: string;
-  serveBasePath?: string | null;
+  symbolCount: number;
+  relationCount: number;
+  fileCount: number;
+  lastIndexed: string | null;
+  gitHash: string | null;
 }
+
+/** @deprecated Use CodeGraphStatus instead */
+export type GitNexusStatus = CodeGraphStatus;
 
 export interface CodeSymbol {
+  id?: string;
   name: string;
   kind: "function" | "class" | "method" | "interface" | "variable" | "module" | "file" | "folder";
   file?: string;
@@ -130,8 +135,10 @@ export interface CodeSymbol {
 }
 
 export interface CodeRelation {
-  from: string;
-  to: string;
+  from?: string;
+  to?: string;
+  fromSymbol?: string;
+  toSymbol?: string;
   type: "imports" | "calls" | "belongs_to" | "extends" | "implements";
 }
 
@@ -146,10 +153,14 @@ export interface ImpactResult {
   riskLevel: "low" | "medium" | "high";
 }
 
-export interface SerenaMemory {
+export interface ProjectMemory {
   name: string;
   content: string;
+  sizeBytes?: number;
 }
+
+/** @deprecated Use ProjectMemory instead */
+export type SerenaMemory = ProjectMemory;
 
 // ── Log types ────────────────────────────────────
 
@@ -190,14 +201,28 @@ export interface OpenFolderResult {
   recentFolders?: string[];
 }
 
-// ── GitNexus on-demand action results ───────────
+// ── Code Graph action results ───────────────────
 
+export interface ReindexResult {
+  success: boolean;
+  fileCount: number;
+  symbolCount: number;
+  relationCount: number;
+}
+
+/** @deprecated Use ReindexResult instead */
 export interface AnalyzeResult {
   skipped: boolean;
   success?: boolean;
   reason: string;
 }
 
+export interface KnowledgeStats {
+  total: number;
+  bySource: Record<string, number>;
+}
+
+/** @deprecated Will be removed with GitNexus */
 export interface ServeResult {
   started: boolean;
   message: string;

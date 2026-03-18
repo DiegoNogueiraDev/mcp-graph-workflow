@@ -1,4 +1,4 @@
-import type { GraphDocument, GraphEdge, GraphNode, GraphStats, IntegrationStatus, GitNexusStatus, SerenaMemory, AnalyzeResult, ServeResult, LogEntry, FolderInfo, OpenFolderResult, BrowseResult } from "./types";
+import type { GraphDocument, GraphEdge, GraphNode, GraphStats, IntegrationStatus, CodeGraphStatus, ProjectMemory, ReindexResult, LogEntry, FolderInfo, OpenFolderResult, BrowseResult, CodeGraphData, ImpactResult, KnowledgeStats } from "./types";
 
 const BASE = "/api/v1";
 
@@ -104,6 +104,9 @@ export const apiClient = {
   getMetrics: () => request("/insights/metrics"),
   getSkills: () => request<Array<{ name: string; category: string; description: string }>>("/skills"),
 
+  // Knowledge
+  getKnowledgeStats: () => request<KnowledgeStats>("/knowledge/stats/summary"),
+
   // Capture
   captureUrl: (url: string, selector?: string, waitForSelector?: string) =>
     request("/capture", {
@@ -111,41 +114,35 @@ export const apiClient = {
       body: JSON.stringify({ url, selector, waitForSelector }),
     }),
 
-  // GitNexus Code Graph
-  getGitNexusStatus: () => request<GitNexusStatus>("/gitnexus/status"),
-  queryCodeGraph: (query: string) =>
-    request("/gitnexus/query", {
-      method: "POST",
-      body: JSON.stringify({ query }),
-    }),
+  // Code Graph (native Code Intelligence engine)
+  getCodeGraphStatus: () => request<CodeGraphStatus>("/code-graph/status"),
   getSymbolContext: (symbol: string) =>
-    request("/gitnexus/context", {
+    request<CodeGraphData>("/code-graph/context", {
       method: "POST",
       body: JSON.stringify({ symbol }),
     }),
   getSymbolImpact: (symbol: string) =>
-    request("/gitnexus/impact", {
+    request<ImpactResult>("/code-graph/impact", {
       method: "POST",
       body: JSON.stringify({ symbol }),
     }),
-
-  // GitNexus full code graph (all nodes + relations)
-  getFullCodeGraph: () =>
-    request("/gitnexus/query", {
+  searchCodeGraph: (query: string, limit?: number) =>
+    request("/code-graph/search", {
       method: "POST",
-      body: JSON.stringify({
-        query: "MATCH (n)-[r:CodeRelation]->(m) RETURN n.name AS src, n.filePath AS srcFile, r.type AS relType, m.name AS dst, m.filePath AS dstFile LIMIT 2000",
-      }),
+      body: JSON.stringify({ query, limit }),
     }),
+  getFullCodeGraph: () =>
+    request<CodeGraphData>("/code-graph/full"),
+  triggerReindex: () =>
+    request<ReindexResult>("/code-graph/reindex", { method: "POST" }),
 
-  // GitNexus on-demand actions
-  triggerAnalyze: () =>
-    request<AnalyzeResult>("/gitnexus/analyze", { method: "POST" }),
-  triggerServe: () =>
-    request<ServeResult>("/gitnexus/serve", { method: "POST" }),
+  /** @deprecated Use getCodeGraphStatus instead */
+  getGitNexusStatus: () => request<CodeGraphStatus>("/code-graph/status"),
 
-  // Serena Memories
-  getSerenaMemories: () => request<SerenaMemory[]>("/integrations/serena/memories"),
+  // Memories
+  getMemories: () => request<ProjectMemory[]>("/integrations/memories"),
+  /** @deprecated Use getMemories instead */
+  getSerenaMemories: () => request<ProjectMemory[]>("/integrations/memories"),
 
   // Folder
   getFolder: () => request<FolderInfo>("/folder"),

@@ -118,10 +118,11 @@ export function shouldSkipLayout(prevIds: string[] | null, nextIds: string[]): b
   return true;
 }
 
-// Layout cache to avoid expensive Dagre recalculation on tab switches
+// Layout cache stores only computed positions (not node objects with callbacks)
+// so multiple tabs sharing the same node IDs get correct layout without stale closures.
 let layoutCache: {
   key: number;
-  result: { nodes: Node<WorkflowNodeData>[]; edges: Edge<WorkflowEdgeData>[] };
+  positions: Map<string, { x: number; y: number }>;
 } | null = null;
 
 export function applyDagreLayout(
@@ -132,38 +133,44 @@ export function applyDagreLayout(
   const nodeIds = nodes.map((n) => n.id);
   const edgePairs = edges.map((e) => `${e.source}-${e.target}`);
   const cacheKey = computeLayoutKey(nodeIds, edgePairs, direction);
+
+  let positions: Map<string, { x: number; y: number }>;
+
   if (layoutCache && layoutCache.key === cacheKey) {
-    return layoutCache.result;
-  }
+    positions = layoutCache.positions;
+  } else {
+    const g = new dagre.graphlib.Graph();
+    g.setDefaultEdgeLabel(() => ({}));
+    g.setGraph({ rankdir: direction, ranksep: 60, nodesep: 40 });
 
-  const g = new dagre.graphlib.Graph();
-  g.setDefaultEdgeLabel(() => ({}));
-  g.setGraph({ rankdir: direction, ranksep: 60, nodesep: 40 });
+    for (const node of nodes) {
+      g.setNode(node.id, { width: NODE_WIDTH, height: NODE_HEIGHT });
+    }
 
-  for (const node of nodes) {
-    g.setNode(node.id, { width: NODE_WIDTH, height: NODE_HEIGHT });
-  }
+    for (const edge of edges) {
+      g.setEdge(edge.source, edge.target);
+    }
 
-  for (const edge of edges) {
-    g.setEdge(edge.source, edge.target);
-  }
+    dagre.layout(g);
 
-  dagre.layout(g);
-
-  const layoutedNodes = nodes.map((node) => {
-    const pos = g.node(node.id);
-    return {
-      ...node,
-      position: {
+    positions = new Map();
+    for (const node of nodes) {
+      const pos = g.node(node.id);
+      positions.set(node.id, {
         x: pos.x - NODE_WIDTH / 2,
         y: pos.y - NODE_HEIGHT / 2,
-      },
-    };
+      });
+    }
+
+    layoutCache = { key: cacheKey, positions };
+  }
+
+  const layoutedNodes = nodes.map((node) => {
+    const pos = positions.get(node.id) ?? { x: 0, y: 0 };
+    return { ...node, position: pos };
   });
 
-  const result = { nodes: layoutedNodes, edges };
-  layoutCache = { key: cacheKey, result };
-  return result;
+  return { nodes: layoutedNodes, edges };
 }
 
 export { NODE_TYPE_COLORS, STATUS_COLORS };

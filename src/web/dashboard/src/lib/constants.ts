@@ -45,7 +45,7 @@ export const ALL_TYPES: NodeType[] = [
   "milestone", "acceptance_criteria", "risk", "decision",
 ];
 
-// ── Code Graph (GitNexus) ──────────────────────
+// ── Code Graph ─────────────────────────────────
 
 export const CODE_SYMBOL_COLORS: Record<string, string> = {
   function: "#4fc3f7",
@@ -64,4 +64,12 @@ export const CODE_RELATION_COLORS: Record<string, string> = {
   belongs_to: "#ce93d8",
   extends: "#81c784",
   implements: "#4dd0e1",
+};
+
+export const CODE_RELATION_LABELS: Record<string, string> = {
+  belongs_to: "Contains",
+  imports: "Imports",
+  calls: "Calls",
+  extends: "Extends",
+  implements: "Implements",
 };

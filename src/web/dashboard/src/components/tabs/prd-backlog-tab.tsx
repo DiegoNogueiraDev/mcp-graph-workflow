@@ -1,10 +1,12 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 import {
   ReactFlow,
+  ReactFlowProvider,
   Background,
   Controls,
   useNodesState,
   useEdgesState,
+  useReactFlow,
   type Node,
   type Edge,
 } from "@xyflow/react";
@@ -12,7 +14,7 @@ import "@xyflow/react/dist/style.css";
 
 import type { GraphDocument, GraphNode } from "@/lib/types";
 import { STATUS_COLORS } from "@/lib/constants";
-import { filterTopLevelNodes } from "@/lib/graph-filters";
+import { buildChildrenMap, getVisibleNodes } from "@/lib/graph-hierarchy";
 import { WorkflowNode } from "@/components/graph/workflow-node";
 import { WorkflowEdge } from "@/components/graph/workflow-edge";
 import { NodeDetailPanel } from "@/components/graph/node-detail-panel";
@@ -28,22 +30,48 @@ interface PrdBacklogTabProps {
   graph: GraphDocument;
 }
 
-export function PrdBacklogTab({ graph }: PrdBacklogTabProps): React.JSX.Element {
+function PrdBacklogFlow({ graph }: PrdBacklogTabProps): React.JSX.Element {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<WorkflowNodeData>>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge<WorkflowEdgeData>>([]);
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
-  const [showFullGraph, setShowFullGraph] = useState(false);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const isInitialRender = useRef(true);
+  const { fitView } = useReactFlow();
+
+  const childrenMap = useMemo(
+    () => buildChildrenMap(graph.nodes, graph.edges),
+    [graph.nodes, graph.edges],
+  );
+
+  const handleNodeExpand = useCallback((nodeId: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(nodeId)) {
+        next.delete(nodeId);
+      } else {
+        next.add(nodeId);
+      }
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
-    // Show only top-level nodes by default to avoid DOM overload
-    const filteredNodes = filterTopLevelNodes(graph.nodes, showFullGraph);
-    const flowNodes = toFlowNodes(filteredNodes);
+    const visibleGraphNodes = getVisibleNodes(graph.nodes, expandedIds, childrenMap);
+    const flowNodes = toFlowNodes(visibleGraphNodes, undefined, childrenMap, expandedIds, handleNodeExpand);
     const visibleIds = new Set(flowNodes.map((n) => n.id));
     const flowEdges = toFlowEdges(graph.edges, visibleIds);
     const layout = applyDagreLayout(flowNodes, flowEdges, "TB");
     setNodes(layout.nodes);
     setEdges(layout.edges);
-  }, [graph, setNodes, setEdges, showFullGraph]);
+
+    // Auto-fitView after expand/collapse (skip initial render — fitView prop handles that)
+    if (isInitialRender.current) {
+      isInitialRender.current = false;
+    } else {
+      // Wait for ReactFlow to process the new nodes before fitting
+      setTimeout(() => fitView({ duration: 300 }), 50);
+    }
+  }, [graph, setNodes, setEdges, expandedIds, childrenMap, handleNodeExpand, fitView]);
 
   const handleNodeClick = useCallback(
     (_: React.MouseEvent, node: Node<WorkflowNodeData>) => {
@@ -69,21 +97,10 @@ export function PrdBacklogTab({ graph }: PrdBacklogTabProps): React.JSX.Element 
     <div className="flex h-full">
       {/* Left: Workflow diagram */}
       <div className="flex-1 min-w-0 flex flex-col">
-        <div className="px-3 py-1.5 bg-[var(--color-bg-secondary)] border-b border-[var(--color-border)] flex items-center gap-2 text-xs">
-          <label className="flex items-center gap-1 cursor-pointer text-[var(--color-text-muted)]">
-            <input
-              type="checkbox"
-              checked={showFullGraph}
-              onChange={() => setShowFullGraph((v) => !v)}
-              className="rounded"
-            />
-            Show all nodes ({graph.nodes.length})
-          </label>
-          {!showFullGraph && (
-            <span className="text-[var(--color-text-muted)]">
-              Showing {nodes.length} top-level nodes
-            </span>
-          )}
+        <div className="px-3 py-1.5 bg-[var(--color-bg-secondary)] border-b border-[var(--color-border)] flex items-center gap-2 text-xs relative z-10">
+          <span className="text-[var(--color-text-muted)]">
+            Showing {nodes.length} of {graph.nodes.length} nodes — click ▶ to expand
+          </span>
         </div>
         {graph.nodes.length > 0 ? (
           <ReactFlow
@@ -146,5 +163,13 @@ export function PrdBacklogTab({ graph }: PrdBacklogTabProps): React.JSX.Element 
         <NodeDetailPanel node={selectedNode} onClose={() => setSelectedNode(null)} />
       )}
     </div>
+  );
+}
+
+export function PrdBacklogTab({ graph }: PrdBacklogTabProps): React.JSX.Element {
+  return (
+    <ReactFlowProvider>
+      <PrdBacklogFlow graph={graph} />
+    </ReactFlowProvider>
   );
 }

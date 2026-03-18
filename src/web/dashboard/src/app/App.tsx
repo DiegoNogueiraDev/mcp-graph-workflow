@@ -14,7 +14,7 @@ import { OpenFolderModal } from "@/components/modals/open-folder-modal";
 const GraphTab = lazy(() => import("@/components/tabs/graph-tab").then((m) => ({ default: m.GraphTab })));
 const PrdBacklogTab = lazy(() => import("@/components/tabs/prd-backlog-tab").then((m) => ({ default: m.PrdBacklogTab })));
 const GitNexusTab = lazy(() => import("@/components/tabs/gitnexus-tab").then((m) => ({ default: m.GitNexusTab })));
-const SerenaTab = lazy(() => import("@/components/tabs/serena-tab").then((m) => ({ default: m.SerenaTab })));
+const MemoriesTab = lazy(() => import("@/components/tabs/memories-tab").then((m) => ({ default: m.MemoriesTab })));
 const InsightsTab = lazy(() => import("@/components/tabs/insights-tab").then((m) => ({ default: m.InsightsTab })));
 const BenchmarkTab = lazy(() => import("@/components/tabs/benchmark-tab").then((m) => ({ default: m.BenchmarkTab })));
 const LogsTab = lazy(() => import("@/components/tabs/logs-tab").then((m) => ({ default: m.LogsTab })));
@@ -103,7 +103,7 @@ function AppContent(): React.JSX.Element {
                   {graph && <PrdBacklogTab graph={graph} />}
                 </div>
                 {activeTab === "gitnexus" && <GitNexusTab />}
-                {activeTab === "serena" && <SerenaTab />}
+                {activeTab === "memories" && <MemoriesTab />}
                 {activeTab === "insights" && <InsightsTab />}
                 {activeTab === "benchmark" && <BenchmarkTab />}
                 {activeTab === "logs" && <LogsTab />}

@@ -4,11 +4,17 @@ import "@react-sigma/core/lib/style.css";
 import Graph from "graphology";
 import forceAtlas2 from "graphology-layout-forceatlas2";
 import { apiClient } from "@/lib/api-client";
-import type { GitNexusStatus, CodeGraphData, ImpactResult } from "@/lib/types";
-import { CODE_SYMBOL_COLORS, CODE_RELATION_COLORS } from "@/lib/constants";
+import type { CodeGraphStatus, CodeGraphData, ImpactResult } from "@/lib/types";
+import { CODE_SYMBOL_COLORS, CODE_RELATION_COLORS, CODE_RELATION_LABELS } from "@/lib/constants";
 import { isCodeGraphData, isImpactResult, isCypherResult, isTabularData } from "@/lib/code-graph-guards";
 import { TabularResultView } from "@/components/query-results/tabular-result-view";
 import { JsonResultView } from "@/components/query-results/json-result-view";
+import { OpenFolderModal } from "@/components/modals/open-folder-modal";
+import { buildFileTree, filterTreeBySearch } from "@/lib/file-tree";
+import { FileTreePanel } from "@/components/code-graph/file-tree-panel";
+import { GraphFiltersPanel } from "@/components/code-graph/graph-filters-panel";
+import { computeNHopNeighbors } from "@/lib/graph-bfs";
+import { EdgeArrowProgram, EdgeLineProgram } from "sigma/rendering";
 
 // Strip existing alpha from hex colors longer than 7 chars (#RRGGBBAA, etc.)
 // before appending new alpha. Safari's Canvas2D throws on invalid gradient colors.
@@ -17,7 +23,7 @@ function safeColor(color: string, alpha: string): string {
   return base + alpha;
 }
 
-type GitNexusViewMode = "query" | "symbol";
+type SidebarTab = "explorer" | "filters";
 
 interface QueryResult {
   data: unknown;
@@ -104,8 +110,7 @@ function guessKind(name: string): string {
 // ── Main component ───────────────────────────────
 
 export function GitNexusTab(): React.JSX.Element {
-  const [gitNexusStatus, setGitNexusStatus] = useState<GitNexusStatus | null>(null);
-  const [viewMode, setViewMode] = useState<GitNexusViewMode>("query");
+  const [gitNexusStatus, setGitNexusStatus] = useState<CodeGraphStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -125,22 +130,51 @@ export function GitNexusTab(): React.JSX.Element {
   const [fullGraph, setFullGraph] = useState<CodeGraphData | null>(null);
   const [contextGraph, setContextGraph] = useState<CodeGraphData | null>(null);
 
+  // Folder modal + current path state
+  const [folderModalOpen, setFolderModalOpen] = useState(false);
+  const [currentPath, setCurrentPath] = useState<string | null>(null);
+
   // GitNexus on-demand action
   const [actionLoading, setActionLoading] = useState(false);
+
+  // Sidebar tab (Explorer / Filters)
+  const [sidebarTab, setSidebarTab] = useState<SidebarTab>("explorer");
+
+  // File tree state
+  const [fileSearchQuery, setFileSearchQuery] = useState("");
+  const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
+  const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
+
+  // Collapsible sections
+  const [queryOpen, setQueryOpen] = useState(false);
+  const [symbolOpen, setSymbolOpen] = useState(false);
+
+  // Graph filter state
+  const [visibleNodeKinds, setVisibleNodeKinds] = useState<Set<string>>(
+    new Set(Object.keys(CODE_SYMBOL_COLORS)),
+  );
+  const [visibleEdgeTypes, setVisibleEdgeTypes] = useState<Set<string>>(
+    new Set(Object.keys(CODE_RELATION_COLORS)),
+  );
+  const [focusDepth, setFocusDepth] = useState<number | null>(null);
 
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const status = await apiClient.getGitNexusStatus().catch(() => null);
+      const [status, folderInfo] = await Promise.all([
+        apiClient.getCodeGraphStatus().catch(() => null),
+        apiClient.getFolder().catch(() => null),
+      ]);
       setGitNexusStatus(status);
 
-      // Load full code graph if GitNexus is running
-      if (status?.running) {
+      // Set current path from folder info or status basePath
+      setCurrentPath(folderInfo?.currentPath ?? status?.basePath ?? null);
+
+      // Load full code graph if indexed
+      if (status?.indexed) {
         try {
-          const raw = await apiClient.getFullCodeGraph();
-          const result = raw as { result?: CypherRow[] };
-          if (result.result && Array.isArray(result.result)) {
-            const graphData = buildGraphFromCypherRows(result.result);
+          const graphData = await apiClient.getFullCodeGraph() as CodeGraphData;
+          if (graphData?.symbols) {
             setFullGraph(graphData);
           }
         } catch {
@@ -158,19 +192,12 @@ export function GitNexusTab(): React.JSX.Element {
     void loadData();
   }, [loadData]);
 
-  // Poll while analyze is in progress
-  useEffect(() => {
-    if (gitNexusStatus?.analyzePhase !== "analyzing") return;
-    const interval = setInterval(() => { void loadData(); }, 5000);
-    return () => clearInterval(interval);
-  }, [gitNexusStatus?.analyzePhase, loadData]);
-
   const handleQuery = useCallback(async () => {
     if (!queryInput.trim()) return;
 
     setQueryResult({ data: null, loading: true, error: null });
     try {
-      const data = await apiClient.queryCodeGraph(queryInput);
+      const data = await apiClient.searchCodeGraph(queryInput);
       setQueryResult({ data, loading: false, error: null });
       if (isCodeGraphData(data)) {
         setContextGraph(data);
@@ -209,30 +236,125 @@ export function GitNexusTab(): React.JSX.Element {
     }
   }, []);
 
-  const handleAnalyzeAndStart = useCallback(async () => {
+  const handleReindex = useCallback(async () => {
     setActionLoading(true);
     try {
-      await apiClient.triggerAnalyze();
-      await apiClient.triggerServe();
+      await apiClient.triggerReindex();
       await loadData();
     } catch {
-      // loadData will refresh status; error state handled by status polling
+      // loadData will refresh status
     } finally {
       setActionLoading(false);
     }
   }, [loadData]);
 
+  const handleFolderChanged = useCallback(() => {
+    void loadData();
+  }, [loadData]);
+
   const handleSymbolSelect = useCallback((symbolName: string) => {
     setSelectedSymbol(symbolName);
     setSymbolInput(symbolName);
-    setViewMode("symbol");
+    setSymbolOpen(true);
     void handleSymbolContext(symbolName);
   }, [handleSymbolContext]);
+
+  // File tree computed values
+  const fileTree = useMemo(() => {
+    if (!fullGraph) return [];
+    return buildFileTree(fullGraph.symbols);
+  }, [fullGraph]);
+
+  const filteredFileTree = useMemo(() => {
+    if (!fileSearchQuery.trim()) return fileTree;
+    return filterTreeBySearch(fileTree, fileSearchQuery);
+  }, [fileTree, fileSearchQuery]);
+
+  const symbolCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    if (fullGraph) {
+      for (const sym of fullGraph.symbols) {
+        counts[sym.kind] = (counts[sym.kind] ?? 0) + 1;
+      }
+    }
+    return counts;
+  }, [fullGraph]);
+
+  const relationCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    if (fullGraph) {
+      for (const rel of fullGraph.relations) {
+        counts[rel.type] = (counts[rel.type] ?? 0) + 1;
+      }
+    }
+    return counts;
+  }, [fullGraph]);
+
+  const handleToggleExpand = useCallback((path: string) => {
+    setExpandedPaths((prev) => {
+      const next = new Set(prev);
+      if (next.has(path)) {
+        next.delete(path);
+      } else {
+        next.add(path);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleSelectFilePath = useCallback((path: string, isDirectory: boolean) => {
+    setSelectedFilePath(path);
+    if (!fullGraph) return;
+
+    // Collect symbols from the selected file or folder
+    const matchingSymbols = fullGraph.symbols.filter((sym) => {
+      if (!sym.file) return false;
+      return isDirectory ? sym.file.startsWith(path + "/") || sym.file.startsWith(path) : sym.file === path;
+    });
+
+    if (matchingSymbols.length > 0) {
+      const contextData: CodeGraphData = {
+        symbols: matchingSymbols,
+        relations: fullGraph.relations.filter((rel) => {
+          const src = rel.from ?? rel.fromSymbol ?? "";
+          const dst = rel.to ?? rel.toSymbol ?? "";
+          const fromMatch = matchingSymbols.some((s) => s.name === src);
+          const toMatch = matchingSymbols.some((s) => s.name === dst);
+          return fromMatch || toMatch;
+        }),
+      };
+      setContextGraph(contextData);
+    }
+  }, [fullGraph]);
+
+  const handleToggleNodeKind = useCallback((kind: string) => {
+    setVisibleNodeKinds((prev) => {
+      const next = new Set(prev);
+      if (next.has(kind)) {
+        next.delete(kind);
+      } else {
+        next.add(kind);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleToggleEdgeType = useCallback((edgeType: string) => {
+    setVisibleEdgeTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(edgeType)) {
+        next.delete(edgeType);
+      } else {
+        next.add(edgeType);
+      }
+      return next;
+    });
+  }, []);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full text-[var(--color-text-muted)]">
-        Loading GitNexus...
+        Loading Code Graph...
       </div>
     );
   }
@@ -245,8 +367,7 @@ export function GitNexusTab(): React.JSX.Element {
     );
   }
 
-  const gitNexusRunning = gitNexusStatus?.running ?? false;
-  const isNoGitRepo = gitNexusStatus?.analyzePhase === "unavailable";
+  const gitNexusRunning = gitNexusStatus?.indexed ?? false;
   // Use full graph as base, context graph highlights on top
   const displayGraph = fullGraph ?? contextGraph;
 
@@ -254,75 +375,117 @@ export function GitNexusTab(): React.JSX.Element {
     <div className="h-full flex flex-col">
       {/* Header bar */}
       <div className="flex items-center gap-3 px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
-        <h2 className="text-sm font-semibold">GitNexus — Code Intelligence</h2>
+        <h2 className="text-sm font-semibold">Code Graph — Code Intelligence</h2>
 
         <StatusBadge
-          label="GitNexus"
+          label="Code Graph"
           indexed={gitNexusStatus?.indexed ?? false}
           running={gitNexusRunning}
-          onAction={handleAnalyzeAndStart}
+          onAction={handleReindex}
           actionLoading={actionLoading}
         />
-
-        {gitNexusStatus?.basePath && (
-          <span className="text-[10px] text-[var(--color-text-muted)] truncate max-w-[300px]" title={gitNexusStatus.basePath}>
-            {gitNexusStatus.basePath.split("/").slice(-2).join("/")}
-          </span>
-        )}
 
         {displayGraph && (
           <span className="text-[10px] text-[var(--color-text-muted)]">
             {displayGraph.symbols.length} symbols · {displayGraph.relations.length} relations
           </span>
         )}
-
-        <div className="flex gap-1 ml-auto">
-          {(["query", "symbol"] as GitNexusViewMode[]).map((mode) => (
-            <button
-              key={mode}
-              onClick={() => setViewMode(mode)}
-              className={`text-xs px-2 py-1 rounded transition-colors ${
-                viewMode === mode
-                  ? "bg-[var(--color-accent)] text-white"
-                  : "text-[var(--color-text-muted)] hover:bg-[var(--color-bg-tertiary)]"
-              }`}
-            >
-              {mode === "query" ? "Query" : "Symbol"}
-            </button>
-          ))}
-        </div>
       </div>
 
-      {isNoGitRepo && (
-        <div className="mx-4 mt-2 p-3 rounded-lg bg-[var(--color-bg-tertiary)] border border-[var(--color-border)] text-sm text-[var(--color-text-muted)]">
-          This project has no git repository. Code graph features require a git-initialized project.
-        </div>
-      )}
+      {/* Path bar */}
+      <div className="flex items-center gap-3 px-4 py-1.5 border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
+        <span className="text-[10px] text-[var(--color-text-muted)] whitespace-nowrap font-mono">
+          {currentPath ? `Current: ${currentPath}` : "No project path"}
+        </span>
+        <button
+          onClick={() => setFolderModalOpen(true)}
+          className="text-[10px] font-medium px-3 py-1 rounded bg-[var(--color-accent)] text-white hover:opacity-90 transition-opacity whitespace-nowrap"
+        >
+          Open Folder...
+        </button>
+      </div>
+
+      {/* Folder browser modal */}
+      <OpenFolderModal
+        open={folderModalOpen}
+        onClose={() => setFolderModalOpen(false)}
+        onFolderChanged={handleFolderChanged}
+      />
 
       {/* 2-panel body: left controls/results + right graph */}
       <div className="flex flex-1 min-h-0">
-        {/* Left: Query/Symbol panel (~30%) */}
-        <div className="w-[30%] min-w-[320px] border-r border-[var(--color-border)] overflow-auto">
-          {viewMode === "query" && (
-            <QueryContent
-              queryInput={queryInput}
-              onQueryChange={setQueryInput}
-              onSubmit={handleQuery}
-              result={queryResult}
-              gitNexusRunning={gitNexusRunning}
-              onSymbolSelect={handleSymbolSelect}
-            />
+        {/* Left: Explorer/Filters sidebar (~30%) */}
+        <div className="w-[30%] min-w-[320px] border-r border-[var(--color-border)] flex flex-col min-h-0">
+          {/* Sidebar tab bar */}
+          <div className="flex border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
+            {(["explorer", "filters"] as SidebarTab[]).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setSidebarTab(tab)}
+                className={`flex-1 text-xs px-3 py-2 font-medium transition-colors ${
+                  sidebarTab === tab
+                    ? "border-b-2 border-[var(--color-accent)] text-[var(--color-accent)]"
+                    : "text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+                }`}
+              >
+                {tab === "explorer" ? "Explorer" : "Filters"}
+              </button>
+            ))}
+          </div>
+
+          {sidebarTab === "explorer" && (
+            <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              {/* File tree */}
+              <div className="flex-1 min-h-0 overflow-auto">
+                <FileTreePanel
+                  tree={filteredFileTree}
+                  searchQuery={fileSearchQuery}
+                  onSearchChange={setFileSearchQuery}
+                  expandedPaths={expandedPaths}
+                  onToggleExpand={handleToggleExpand}
+                  selectedPath={selectedFilePath}
+                  onSelectPath={handleSelectFilePath}
+                />
+              </div>
+
+              {/* Collapsible: Query */}
+              <CollapsibleSection title="Query" open={queryOpen} onToggle={() => setQueryOpen((o) => !o)}>
+                <QueryContent
+                  queryInput={queryInput}
+                  onQueryChange={setQueryInput}
+                  onSubmit={handleQuery}
+                  result={queryResult}
+                  gitNexusRunning={gitNexusRunning}
+                  onSymbolSelect={handleSymbolSelect}
+                />
+              </CollapsibleSection>
+
+              {/* Collapsible: Symbol Explorer */}
+              <CollapsibleSection title="Symbol Explorer" open={symbolOpen} onToggle={() => setSymbolOpen((o) => !o)}>
+                <SymbolContent
+                  symbolInput={symbolInput}
+                  onSymbolInputChange={setSymbolInput}
+                  onContext={handleSymbolContext}
+                  onImpact={handleSymbolImpact}
+                  contextData={symbolContextData}
+                  impactData={impactData}
+                  gitNexusRunning={gitNexusRunning}
+                  onSymbolSelect={handleSymbolSelect}
+                />
+              </CollapsibleSection>
+            </div>
           )}
-          {viewMode === "symbol" && (
-            <SymbolContent
-              symbolInput={symbolInput}
-              onSymbolInputChange={setSymbolInput}
-              onContext={handleSymbolContext}
-              onImpact={handleSymbolImpact}
-              contextData={symbolContextData}
-              impactData={impactData}
-              gitNexusRunning={gitNexusRunning}
-              onSymbolSelect={handleSymbolSelect}
+
+          {sidebarTab === "filters" && (
+            <GraphFiltersPanel
+              visibleNodeKinds={visibleNodeKinds}
+              visibleEdgeTypes={visibleEdgeTypes}
+              focusDepth={focusDepth}
+              onToggleNodeKind={handleToggleNodeKind}
+              onToggleEdgeType={handleToggleEdgeType}
+              onSetFocusDepth={setFocusDepth}
+              symbolCounts={symbolCounts}
+              relationCounts={relationCounts}
             />
           )}
         </div>
@@ -333,8 +496,38 @@ export function GitNexusTab(): React.JSX.Element {
           contextGraph={contextGraph}
           selectedSymbol={selectedSymbol}
           onNodeClick={handleSymbolSelect}
+          visibleNodeKinds={visibleNodeKinds}
+          visibleEdgeTypes={visibleEdgeTypes}
+          focusDepth={focusDepth}
         />
       </div>
+    </div>
+  );
+}
+
+// ── CollapsibleSection ───────────────────────────
+
+function CollapsibleSection({
+  title,
+  open,
+  onToggle,
+  children,
+}: {
+  title: string;
+  open: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}): React.JSX.Element {
+  return (
+    <div className="border-t border-[var(--color-border)]">
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-bg-tertiary)] transition-colors"
+      >
+        <span className="text-[10px]">{open ? "\u25BE" : "\u25B8"}</span>
+        {title}
+      </button>
+      {open && <div className="max-h-[300px] overflow-auto">{children}</div>}
     </div>
   );
 }
@@ -354,9 +547,8 @@ function StatusBadge({
   onAction?: () => void;
   actionLoading?: boolean;
 }): React.JSX.Element {
-  const color = running ? "var(--color-success)" : indexed ? "var(--color-warning)" : "var(--color-text-muted)";
-  const text = running ? "Active" : indexed ? "Indexed" : "Inactive";
-  const showAction = !running && onAction;
+  const color = indexed ? "var(--color-success)" : "var(--color-text-muted)";
+  const text = indexed ? `Indexed (${running ? "active" : "ready"})` : "Not indexed";
 
   return (
     <span className="inline-flex items-center gap-1">
@@ -366,13 +558,13 @@ function StatusBadge({
       >
         {label}: {text}
       </span>
-      {showAction && (
+      {onAction && (
         <button
           onClick={onAction}
           disabled={actionLoading}
           className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--color-accent)] text-white disabled:opacity-50 hover:opacity-90 transition-opacity"
         >
-          {actionLoading ? "Starting..." : "Analyze & Start"}
+          {actionLoading ? "Indexing..." : "Reindex"}
         </button>
       )}
     </span>
@@ -402,7 +594,7 @@ function QueryContent({
 
       {!gitNexusRunning && (
         <div className="mb-4 p-3 rounded-lg bg-[var(--color-bg-tertiary)] border border-[var(--color-border)] text-sm text-[var(--color-text-muted)]">
-          GitNexus is not running. Start it to enable code graph queries.
+          Code index not available. Click Reindex to enable code graph queries.
         </div>
       )}
 
@@ -626,7 +818,7 @@ function SymbolContent({
 
       {!gitNexusRunning && (
         <div className="mb-4 p-3 rounded-lg bg-[var(--color-bg-tertiary)] border border-[var(--color-border)] text-sm text-[var(--color-text-muted)]">
-          GitNexus is not running. Start it to explore symbols.
+          Code index not available. Click Reindex to explore symbols.
         </div>
       )}
 
@@ -683,11 +875,17 @@ function CosmosGraphPanel({
   contextGraph,
   selectedSymbol,
   onNodeClick,
+  visibleNodeKinds,
+  visibleEdgeTypes,
+  focusDepth,
 }: {
   fullGraph: CodeGraphData | null;
   contextGraph: CodeGraphData | null;
   selectedSymbol: string | null;
   onNodeClick: (symbolName: string) => void;
+  visibleNodeKinds: Set<string>;
+  visibleEdgeTypes: Set<string>;
+  focusDepth: number | null;
 }): React.JSX.Element {
   // Track hovered node for starburst effect
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
@@ -748,12 +946,13 @@ function CosmosGraphPanel({
           labelRenderedSizeThreshold: 10,
           labelDensity: 0.5,
           renderLabels: true,
-          renderEdgeLabels: false,
+          renderEdgeLabels: true,
           enableEdgeEvents: false,
-          defaultEdgeType: "line",
+          defaultEdgeType: "arrow",
+          edgeProgramClasses: { arrow: EdgeArrowProgram, line: EdgeLineProgram },
           defaultDrawNodeHover: drawNodeHover,
           defaultDrawNodeLabel: drawNodeLabel,
-          minEdgeThickness: 0.3,
+          minEdgeThickness: 0.5,
           minCameraRatio: 0.05,
           maxCameraRatio: 10,
           zIndex: true,
@@ -769,6 +968,10 @@ function CosmosGraphPanel({
           onNodeHover={setHoveredNode}
           activeNode={activeNode}
           highlightedNodes={highlightedNodes}
+          visibleNodeKinds={visibleNodeKinds}
+          visibleEdgeTypes={visibleEdgeTypes}
+          focusDepth={focusDepth}
+          selectedSymbol={selectedSymbol}
         />
       </SigmaContainer>
     </div>
@@ -873,16 +1076,20 @@ function CosmosGraphLoader({
     // Add all edges with type stored for reducers — deduplicate by source→target
     const seenEdges = new Set<string>();
     for (const rel of fullGraph.relations) {
-      const edgeKey = `${rel.from}\0${rel.to}`;
-      if (!g.hasNode(rel.from) || !g.hasNode(rel.to) || rel.from === rel.to || seenEdges.has(edgeKey)) continue;
+      const source = rel.from ?? rel.fromSymbol ?? "";
+      const target = rel.to ?? rel.toSymbol ?? "";
+      const edgeKey = `${source}\0${target}`;
+      if (!source || !target || !g.hasNode(source) || !g.hasNode(target) || source === target || seenEdges.has(edgeKey)) continue;
       seenEdges.add(edgeKey);
       const baseEdgeColor = CODE_RELATION_COLORS[rel.type] ?? "#2a2a50";
       try {
-        g.addEdge(rel.from, rel.to, {
-          color: safeColor(baseEdgeColor, "35"),
-          size: 0.4,
+        g.addEdge(source, target, {
+          color: safeColor(baseEdgeColor, "a0"),
+          size: 0.5,
           baseColor: baseEdgeColor,
           relType: rel.type,
+          label: CODE_RELATION_LABELS[rel.type] ?? rel.type,
+          type: rel.type === "belongs_to" ? "line" : "arrow",
         });
       } catch {
         // Skip duplicate edges silently
@@ -979,7 +1186,7 @@ function CosmosGraphLoader({
         graph.setEdgeAttribute(edge, "zIndex", 0);
       } else {
         // Default: faint constellation lines
-        graph.setEdgeAttribute(edge, "color", safeColor(baseEdgeColor, "35"));
+        graph.setEdgeAttribute(edge, "color", safeColor(baseEdgeColor, "50"));
         graph.setEdgeAttribute(edge, "size", 0.4);
         graph.setEdgeAttribute(edge, "zIndex", 0);
       }
@@ -991,16 +1198,25 @@ function CosmosGraphLoader({
   return null;
 }
 
+
 function GraphEvents({
   onNodeClick,
   onNodeHover,
   activeNode,
   highlightedNodes,
+  visibleNodeKinds,
+  visibleEdgeTypes,
+  focusDepth,
+  selectedSymbol,
 }: {
   onNodeClick: (name: string) => void;
   onNodeHover: (name: string | null) => void;
   activeNode: string | null;
   highlightedNodes: Set<string>;
+  visibleNodeKinds: Set<string>;
+  visibleEdgeTypes: Set<string>;
+  focusDepth: number | null;
+  selectedSymbol: string | null;
 }): null {
   const registerEvents = useRegisterEvents();
   const sigma = useSigma();
@@ -1019,16 +1235,35 @@ function GraphEvents({
     });
   }, [registerEvents, onNodeClick, onNodeHover]);
 
-  // Dynamic starburst on hover via reducers
+  // Dynamic starburst on hover + filter visibility via reducers
   useEffect(() => {
     const graph = sigma.getGraph();
 
-    if (activeNode && graph.hasNode(activeNode)) {
-      // Build neighbor set for the active node
-      const neighbors = new Set<string>(graph.neighbors(activeNode));
-      neighbors.add(activeNode);
+    // Compute focus depth set if applicable
+    let focusSet: Set<string> | null = null;
+    if (focusDepth != null && selectedSymbol && graph.hasNode(selectedSymbol)) {
+      focusSet = computeNHopNeighbors(graph, selectedSymbol, focusDepth);
+    }
 
-      sigma.setSetting("nodeReducer", (node, data) => {
+    // Always set reducers (for filters even without activeNode)
+    sigma.setSetting("nodeReducer", (node, data) => {
+      const kind = graph.getNodeAttribute(node, "kind") as string;
+
+      // Filter by node kind
+      if (!visibleNodeKinds.has(kind)) {
+        return { ...data, hidden: true };
+      }
+
+      // Filter by focus depth
+      if (focusSet && !focusSet.has(node)) {
+        return { ...data, hidden: true };
+      }
+
+      // Starburst/hover effects
+      if (activeNode && graph.hasNode(activeNode)) {
+        const neighbors = new Set<string>(graph.neighbors(activeNode));
+        neighbors.add(activeNode);
+
         if (node === activeNode) {
           return { ...data, color: "#ffffff", size: (data.size ?? 3) * 1.3, zIndex: 3 };
         }
@@ -1037,7 +1272,6 @@ function GraphEvents({
           return { ...data, color: baseColor.startsWith("#") && baseColor.length > 7 ? baseColor.slice(0, 7) : baseColor, zIndex: 2 };
         }
         if (highlightedNodes.size === 0) {
-          // Dim everything else when hovering
           const baseColor = graph.getNodeAttribute(node, "baseColor") as string ?? "#6a6a8a";
           return { ...data, color: safeColor(baseColor, "25"), zIndex: 0 };
         }
@@ -1045,27 +1279,48 @@ function GraphEvents({
           const baseColor = (data.color as string) ?? "#6a6a8a";
           return { ...data, color: baseColor.startsWith("#") && baseColor.length > 7 ? baseColor.slice(0, 7) : baseColor };
         }
-      });
+      }
 
-      sigma.setSetting("edgeReducer", (edge, data) => {
-        const source = graph.source(edge);
-        const target = graph.target(edge);
+      return data;
+    });
+
+    sigma.setSetting("edgeReducer", (edge, data) => {
+      const source = graph.source(edge);
+      const target = graph.target(edge);
+      const relType = graph.getEdgeAttribute(edge, "relType") as string;
+
+      // Filter by edge type
+      if (!visibleEdgeTypes.has(relType)) {
+        return { ...data, hidden: true };
+      }
+
+      // Hide edges connected to hidden nodes
+      const sourceKind = graph.getNodeAttribute(source, "kind") as string;
+      const targetKind = graph.getNodeAttribute(target, "kind") as string;
+      if (!visibleNodeKinds.has(sourceKind) || !visibleNodeKinds.has(targetKind)) {
+        return { ...data, hidden: true };
+      }
+
+      // Hide edges outside focus depth
+      if (focusSet && (!focusSet.has(source) || !focusSet.has(target))) {
+        return { ...data, hidden: true };
+      }
+
+      // Starburst/hover effects
+      if (activeNode && graph.hasNode(activeNode)) {
         const isConnected = source === activeNode || target === activeNode;
         if (isConnected) {
           const baseEdgeColor = graph.getEdgeAttribute(edge, "baseColor") as string ?? "#4a4a7a";
-          return { ...data, color: safeColor(baseEdgeColor, "f0"), size: 3, zIndex: 2 };
+          return { ...data, color: safeColor(baseEdgeColor, "f0"), size: 3, zIndex: 2, forceLabel: true };
         }
         if (highlightedNodes.size === 0) {
-          return { ...data, color: "#0a0a15", size: 0.15, zIndex: 0 };
+          return { ...data, color: "#1e1e3a", size: 0.2, zIndex: 0 };
         }
-        return data;
-      });
-    } else {
-      // Clear reducers when nothing is active
-      sigma.setSetting("nodeReducer", null);
-      sigma.setSetting("edgeReducer", null);
-    }
-  }, [activeNode, highlightedNodes, sigma]);
+      }
+
+      return data;
+    });
+  }, [activeNode, highlightedNodes, visibleNodeKinds, visibleEdgeTypes, focusDepth, selectedSymbol, sigma]);
 
   return null;
 }
