@@ -8,8 +8,8 @@ import {
 } from "../core/skills/built-in-skills.js";
 
 describe("BuiltInSkills Registry", () => {
-  it("should have exactly 19 built-in skills", () => {
-    expect(BUILT_IN_SKILLS).toHaveLength(19);
+  it("should have exactly 45 built-in skills", () => {
+    expect(BUILT_IN_SKILLS).toHaveLength(45);
   });
 
   it("should have unique names across all skills", () => {
@@ -59,40 +59,40 @@ describe("BuiltInSkills Registry", () => {
 describe("getBuiltInSkills", () => {
   it("should return all built-in skills", () => {
     const skills = getBuiltInSkills();
-    expect(skills).toHaveLength(19);
+    expect(skills).toHaveLength(45);
   });
 });
 
 describe("getSkillsByPhase", () => {
-  it("should return 3 skills for ANALYZE", () => {
+  it("should return 4 skills for ANALYZE (3 original + research-methodology)", () => {
     const skills = getSkillsByPhase("ANALYZE");
-    expect(skills).toHaveLength(3);
+    expect(skills).toHaveLength(4);
     expect(skills.every((s: BuiltInSkill) => s.phases.includes("ANALYZE"))).toBe(true);
   });
 
-  it("should return 3 skills for DESIGN", () => {
+  it("should return 26 skills for DESIGN", () => {
     const skills = getSkillsByPhase("DESIGN");
+    expect(skills).toHaveLength(26);
+  });
+
+  it("should return 3 skills for PLAN", () => {
+    const skills = getSkillsByPhase("PLAN");
     expect(skills).toHaveLength(3);
   });
 
-  it("should return 2 skills for PLAN", () => {
-    const skills = getSkillsByPhase("PLAN");
-    expect(skills).toHaveLength(2);
-  });
-
-  it("should return 2 skills for IMPLEMENT", () => {
+  it("should return 20 skills for IMPLEMENT", () => {
     const skills = getSkillsByPhase("IMPLEMENT");
-    expect(skills).toHaveLength(2);
+    expect(skills).toHaveLength(20);
   });
 
-  it("should return 4 skills for VALIDATE", () => {
+  it("should return 9 skills for VALIDATE", () => {
     const skills = getSkillsByPhase("VALIDATE");
-    expect(skills).toHaveLength(4);
+    expect(skills).toHaveLength(9);
   });
 
-  it("should return 5 skills for REVIEW", () => {
+  it("should return 26 skills for REVIEW", () => {
     const skills = getSkillsByPhase("REVIEW");
-    expect(skills).toHaveLength(5);
+    expect(skills).toHaveLength(26);
   });
 
   it("should return empty array for HANDOFF (no built-in skills assigned)", () => {
@@ -103,6 +103,50 @@ describe("getSkillsByPhase", () => {
   it("should return empty array for LISTENING (no built-in skills assigned)", () => {
     const skills = getSkillsByPhase("LISTENING");
     expect(skills).toHaveLength(0);
+  });
+});
+
+describe("New skill categories", () => {
+  it("should have 15 software-design skills", () => {
+    const skills = BUILT_IN_SKILLS.filter((s) => s.category === "software-design");
+    expect(skills).toHaveLength(15);
+  });
+
+  it("should have 1 DDD skill", () => {
+    const skills = BUILT_IN_SKILLS.filter((s) => s.category === "ddd");
+    expect(skills).toHaveLength(1);
+  });
+
+  it("should have 3 security skills", () => {
+    const skills = BUILT_IN_SKILLS.filter((s) => s.category === "security");
+    expect(skills).toHaveLength(3);
+  });
+
+  it("should have 1 frontend-design skill", () => {
+    const skills = BUILT_IN_SKILLS.filter((s) => s.category === "frontend-design");
+    expect(skills).toHaveLength(1);
+  });
+
+  it("should have 1 testing skill", () => {
+    const skills = BUILT_IN_SKILLS.filter((s) => s.category === "testing");
+    expect(skills).toHaveLength(1);
+  });
+
+  it("should have 1 research skill", () => {
+    const skills = BUILT_IN_SKILLS.filter((s) => s.category === "research");
+    expect(skills).toHaveLength(1);
+  });
+
+  it("should have 3 cost-reducer skills", () => {
+    const skills = BUILT_IN_SKILLS.filter((s) => s.category === "cost-reducer");
+    expect(skills).toHaveLength(3);
+  });
+
+  it("should have self-healing-awareness skill in implement category", () => {
+    const skill = getSkillByName("self-healing-awareness");
+    expect(skill).toBeDefined();
+    expect(skill!.phases).toContain("IMPLEMENT");
+    expect(skill!.phases).toContain("VALIDATE");
   });
 });
 
