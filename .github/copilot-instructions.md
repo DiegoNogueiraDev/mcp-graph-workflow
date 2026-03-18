@@ -8,24 +8,27 @@ Dados em `workflow-graph/graph.db`.
 
 | Tool | Uso |
 |------|-----|
-| `next` | Próxima task recomendada |
-| `context` | Contexto comprimido (token-efficient) |
+| `next` | Próxima task recomendada (prioridade + deps + knowledge coverage + TDD hints) |
+| `context` | Contexto comprimido (token-efficient, ~73% redução) |
 | `update_status` | Mudar status (backlog→ready→in_progress→done) |
-| `import_prd` | Importar PRD para o grafo |
-| `plan_sprint` | Planejamento de sprint |
-| `decompose` | Decompor tasks grandes |
-| `validate_task` | Validar com Playwright |
+| `import_prd` | Importar PRD → segmentar → classificar → extrair → criar grafo |
+| `plan_sprint` | Planejamento de sprint (capacity, velocity) |
+| `analyze` | 24 modos de análise por fase do lifecycle |
+| `set_phase` | Forçar/resetar fase do lifecycle (gate checks) |
+| `validate_task` | Validar com Playwright (A/B, CSS scoping) |
+| `validate_ac` | Validar critérios de aceitação (checklist automático) |
+| `rag_context` | Contexto RAG phase-aware (budget 60/30/10) |
 
 ### Fluxo: `next → context → [TDD] → update_status → next`
 
 ### Lifecycle (8 fases)
 
 1. **ANALYZE** — Criar PRD, definir requisitos (`import_prd`, `add_node`)
-2. **DESIGN** — Arquitetura, decisões técnicas (`add_node`, `edge`, `decompose`)
-3. **PLAN** — Sprint planning, decomposição (`plan_sprint`, `decompose`, `sync_stack_docs`)
-4. **IMPLEMENT** — TDD Red→Green→Refactor (`next`, `context`, `update_status`)
-5. **VALIDATE** — Testes E2E, critérios de aceitação (`validate_task`, `velocity`)
-6. **REVIEW** — Code review, blast radius (`export`, `stats`)
+2. **DESIGN** — Arquitetura, decisões técnicas (`add_node`, `edge`, `analyze`)
+3. **PLAN** — Sprint planning, decomposição (`plan_sprint`, `analyze`, `sync_stack_docs`)
+4. **IMPLEMENT** — TDD Red→Green→Refactor (`next`, `context`, `update_status`, `analyze` — modes: implement_done, tdd_check, progress)
+5. **VALIDATE** — Testes E2E, critérios de aceitação (`validate_task`, `metrics`)
+6. **REVIEW** — Code review, blast radius (`export`, `metrics`)
 7. **HANDOFF** — PR, documentação, entrega (`export`, `snapshot`)
 8. **LISTENING** — Feedback, novo ciclo (`add_node`, `import_prd`)
 

@@ -11,10 +11,9 @@ export const ConfigSchema = z.object({
     .default({ autoOpen: true }),
   integrations: z
     .object({
-      gitnexusPort: z.number().int().min(1).max(65535).default(3737),
-      gitnexusAutoStart: z.boolean().default(true),
+      codeGraphAutoIndex: z.boolean().default(false),
     })
-    .default({ gitnexusPort: 3737, gitnexusAutoStart: true }),
+    .default({ codeGraphAutoIndex: false }),
 });
 
 export type McpGraphConfig = z.infer<typeof ConfigSchema>;

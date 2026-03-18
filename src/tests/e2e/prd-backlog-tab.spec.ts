@@ -35,15 +35,10 @@ test.describe("PRD & Backlog Tab", () => {
     expect(hasFlow > 0 || hasEmpty > 0).toBeTruthy();
   });
 
-  test("show all nodes checkbox toggles", async ({ page }) => {
-    const checkbox = page.locator("label").filter({ hasText: "Show all nodes" }).locator("input[type='checkbox']");
-    if (await checkbox.count() > 0) {
-      await checkbox.click();
-      await page.waitForTimeout(500);
-      // Should still render without crash
-      const hasFlow = await page.locator(".react-flow").count();
-      const hasEmpty = await page.getByText("Import a PRD to see the workflow").count();
-      expect(hasFlow > 0 || hasEmpty > 0).toBeTruthy();
+  test("info bar shows node count with expand hint", async ({ page }) => {
+    const infoBar = page.getByText(/Showing \d+ of \d+ nodes/);
+    if (await infoBar.count() > 0) {
+      await expect(infoBar).toContainText("click ▸ to expand");
     }
   });
 

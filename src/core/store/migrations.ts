@@ -212,6 +212,95 @@ const migrations: Migration[] = [
       );
     `,
   },
+  {
+    version: 6,
+    description: "Code Intelligence — symbols, relations, FTS5 index, index metadata",
+    sql: `
+      CREATE TABLE IF NOT EXISTS code_symbols (
+        id          TEXT PRIMARY KEY,
+        project_id  TEXT NOT NULL,
+        name        TEXT NOT NULL,
+        kind        TEXT NOT NULL,
+        file        TEXT NOT NULL,
+        start_line  INTEGER NOT NULL,
+        end_line    INTEGER NOT NULL,
+        exported    INTEGER NOT NULL DEFAULT 0,
+        module_path TEXT,
+        signature   TEXT,
+        metadata    TEXT,
+        indexed_at  TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS code_relations (
+        id          TEXT PRIMARY KEY,
+        project_id  TEXT NOT NULL,
+        from_symbol TEXT NOT NULL REFERENCES code_symbols(id),
+        to_symbol   TEXT NOT NULL REFERENCES code_symbols(id),
+        type        TEXT NOT NULL,
+        file        TEXT,
+        line        INTEGER,
+        metadata    TEXT,
+        indexed_at  TEXT NOT NULL
+      );
+
+      CREATE VIRTUAL TABLE IF NOT EXISTS code_symbols_fts USING fts5(
+        name, file, signature,
+        content='code_symbols', content_rowid='rowid'
+      );
+
+      -- FTS5 sync triggers
+      CREATE TRIGGER IF NOT EXISTS code_fts_insert AFTER INSERT ON code_symbols BEGIN
+        INSERT INTO code_symbols_fts(rowid, name, file, signature)
+          VALUES (NEW.rowid, NEW.name, NEW.file, COALESCE(NEW.signature, ''));
+      END;
+
+      CREATE TRIGGER IF NOT EXISTS code_fts_delete AFTER DELETE ON code_symbols BEGIN
+        INSERT INTO code_symbols_fts(code_symbols_fts, rowid, name, file, signature)
+          VALUES ('delete', OLD.rowid, OLD.name, OLD.file, COALESCE(OLD.signature, ''));
+      END;
+
+      CREATE TRIGGER IF NOT EXISTS code_fts_update AFTER UPDATE ON code_symbols BEGIN
+        INSERT INTO code_symbols_fts(code_symbols_fts, rowid, name, file, signature)
+          VALUES ('delete', OLD.rowid, OLD.name, OLD.file, COALESCE(OLD.signature, ''));
+        INSERT INTO code_symbols_fts(rowid, name, file, signature)
+          VALUES (NEW.rowid, NEW.name, NEW.file, COALESCE(NEW.signature, ''));
+      END;
+
+      CREATE TABLE IF NOT EXISTS code_index_meta (
+        project_id    TEXT PRIMARY KEY,
+        last_indexed  TEXT NOT NULL,
+        file_count    INTEGER DEFAULT 0,
+        symbol_count  INTEGER DEFAULT 0,
+        relation_count INTEGER DEFAULT 0,
+        git_hash      TEXT
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_code_sym_project ON code_symbols(project_id);
+      CREATE INDEX IF NOT EXISTS idx_code_sym_name ON code_symbols(name);
+      CREATE INDEX IF NOT EXISTS idx_code_sym_file ON code_symbols(file);
+      CREATE INDEX IF NOT EXISTS idx_code_rel_from ON code_relations(from_symbol);
+      CREATE INDEX IF NOT EXISTS idx_code_rel_to ON code_relations(to_symbol);
+      CREATE INDEX IF NOT EXISTS idx_code_rel_type ON code_relations(type);
+    `,
+  },
+  {
+    version: 7,
+    description: "Tool token usage tracking for benchmark analytics",
+    sql: `
+      CREATE TABLE IF NOT EXISTS tool_token_usage (
+        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id    TEXT NOT NULL REFERENCES projects(id),
+        tool_name     TEXT NOT NULL,
+        input_tokens  INTEGER NOT NULL DEFAULT 0,
+        output_tokens INTEGER NOT NULL DEFAULT 0,
+        called_at     TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_ttu_project ON tool_token_usage(project_id);
+      CREATE INDEX IF NOT EXISTS idx_ttu_tool    ON tool_token_usage(tool_name);
+      CREATE INDEX IF NOT EXISTS idx_ttu_called  ON tool_token_usage(called_at);
+    `,
+  },
 ];
 
 export function runMigrations(db: Database.Database): void {

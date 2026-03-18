@@ -1,3 +1,6 @@
+import { existsSync } from "node:fs";
+import path from "node:path";
+import Database from "better-sqlite3";
 import { logger } from "../utils/logger.js";
 import { whichCommand } from "../utils/platform.js";
 
@@ -9,25 +12,9 @@ export interface ToolInfo {
 }
 
 export interface IntegrationsStatus {
-  gitnexus: ToolInfo;
-  serena: ToolInfo & { memories: string[] };
+  codeGraph: ToolInfo & { symbolCount: number };
+  memories: { available: boolean; count: number; directory: string; names: string[] };
   playwright: ToolInfo;
-}
-
-/**
- * Detect whether a local HTTP service is running by attempting a fetch.
- */
-async function probeHttp(url: string, timeoutMs: number = 2000): Promise<boolean> {
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    const res = await fetch(url, { signal: controller.signal });
-    clearTimeout(timer);
-    return res.ok || res.status < 500;
-  } catch (err) {
-    logger.debug("probe:http:fail", { url, error: err instanceof Error ? err.message : String(err) });
-    return false;
-  }
 }
 
 /**
@@ -47,33 +34,37 @@ async function isCommandInstalled(command: string): Promise<boolean> {
 }
 
 /**
- * Read Serena memory file names from .serena/memories/ directory.
+ * Read memory file names from workflow-graph/memories/ directory.
  */
-async function readSerenaMemories(basePath: string): Promise<string[]> {
+async function readMemoryNames(basePath: string): Promise<string[]> {
   try {
-    const path = await import("node:path");
-    const { readdir } = await import("node:fs/promises");
-    const memoriesDir = path.join(basePath, ".serena", "memories");
-    const files = await readdir(memoriesDir);
-    return files.filter((f) => f.endsWith(".md")).map((f) => f.replace(/\.md$/, ""));
+    const { listMemories } = await import("../memory/memory-reader.js");
+    return await listMemories(basePath);
   } catch (err) {
-    logger.debug("serena:memories:fail", { error: err instanceof Error ? err.message : String(err) });
+    logger.debug("memories:list:fail", { error: err instanceof Error ? err.message : String(err) });
     return [];
   }
 }
 
 /**
- * Check if Serena is configured for this project.
+ * Check code graph index status from SQLite.
  */
-async function isSerenaConfigured(basePath: string): Promise<boolean> {
+function getCodeGraphStatus(basePath: string): { indexed: boolean; symbolCount: number } {
   try {
-    const path = await import("node:path");
-    const { access } = await import("node:fs/promises");
-    await access(path.join(basePath, ".serena"));
-    return true;
-  } catch (err) {
-    logger.debug("serena:config:fail", { basePath, error: err instanceof Error ? err.message : String(err) });
-    return false;
+    const dbPath = path.join(basePath, "workflow-graph", "graph.db");
+    if (!existsSync(dbPath)) return { indexed: false, symbolCount: 0 };
+
+    const db = new Database(dbPath, { readonly: true });
+    try {
+      const row = db.prepare("SELECT symbol_count FROM code_index_meta LIMIT 1").get() as { symbol_count: number } | undefined;
+      return { indexed: !!row, symbolCount: row?.symbol_count ?? 0 };
+    } catch {
+      return { indexed: false, symbolCount: 0 };
+    } finally {
+      db.close();
+    }
+  } catch {
+    return { indexed: false, symbolCount: 0 };
   }
 }
 
@@ -83,28 +74,25 @@ async function isSerenaConfigured(basePath: string): Promise<boolean> {
 export async function getIntegrationsStatus(basePath: string): Promise<IntegrationsStatus> {
   logger.info("Checking integrations status", { basePath });
 
-  const GITNEXUS_PORT = parseInt(process.env.GITNEXUS_PORT || "3737", 10);
-  const gitnexusUrl = `http://localhost:${GITNEXUS_PORT}`;
-
-  const [gitnexusInstalled, gitnexusRunning, serenaConfigured, serenaMemories, playwrightInstalled] =
+  const [memoryNames, playwrightInstalled] =
     await Promise.all([
-      isCommandInstalled("gitnexus"),
-      probeHttp(gitnexusUrl),
-      isSerenaConfigured(basePath),
-      readSerenaMemories(basePath),
+      readMemoryNames(basePath),
       isCommandInstalled("npx").then(() => true).catch(() => false),
     ]);
 
+  const codeGraphInfo = getCodeGraphStatus(basePath);
+
   return {
-    gitnexus: {
-      installed: gitnexusInstalled,
-      running: gitnexusRunning,
-      ...(gitnexusRunning ? { url: gitnexusUrl } : {}),
+    codeGraph: {
+      installed: true, // Native — always available
+      running: codeGraphInfo.indexed,
+      symbolCount: codeGraphInfo.symbolCount,
     },
-    serena: {
-      installed: serenaConfigured,
-      running: serenaConfigured,
-      memories: serenaMemories,
+    memories: {
+      available: memoryNames.length > 0,
+      count: memoryNames.length,
+      directory: "workflow-graph/memories",
+      names: memoryNames,
     },
     playwright: {
       installed: playwrightInstalled,

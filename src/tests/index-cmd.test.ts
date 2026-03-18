@@ -3,8 +3,8 @@ import { indexCommand } from "../cli/commands/index-cmd.js";
 import { SqliteStore } from "../core/store/sqlite-store.js";
 
 // Mock the indexing modules
-vi.mock("../core/rag/serena-indexer.js", () => ({
-  indexSerenaMemories: vi.fn(async () => ({
+vi.mock("../core/rag/memory-indexer.js", () => ({
+  indexMemories: vi.fn(async () => ({
     memoriesFound: 3,
     documentsIndexed: 2,
   })),
@@ -63,7 +63,7 @@ describe("indexCommand", () => {
 
     const allOutput = stdoutSpy.mock.calls.map((c) => c[0]).join("");
     expect(allOutput).toContain("Knowledge indexing complete:");
-    expect(allOutput).toContain("Serena memories: 3 found, 2 indexed");
+    expect(allOutput).toContain("Memories: 3 found, 2 indexed");
     expect(allOutput).toContain("Docs cache: 5 found, 4 indexed");
     expect(allOutput).toContain("Embeddings: 10 nodes + 7 knowledge");
 
@@ -80,7 +80,7 @@ describe("indexCommand", () => {
 
     const allOutput = stdoutSpy.mock.calls.map((c) => c[0]).join("");
     const output = JSON.parse(allOutput);
-    expect(output.serena).toEqual({ memoriesFound: 3, documentsIndexed: 2 });
+    expect(output.memories).toEqual({ memoriesFound: 3, documentsIndexed: 2 });
     expect(output.docs).toEqual({ docsFound: 5, documentsIndexed: 4 });
     expect(output.embeddings).toEqual({ nodes: 10, knowledge: 7 });
     expect(typeof output.totalKnowledge).toBe("number");

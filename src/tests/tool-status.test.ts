@@ -23,78 +23,62 @@ describe("getIntegrationsStatus", { timeout: 15_000 }, () => {
   it("should return correct shape with all fields", async () => {
     const status = await getIntegrationsStatus(tmpDir);
 
-    expect(status).toHaveProperty("gitnexus");
-    expect(status).toHaveProperty("serena");
+    expect(status).toHaveProperty("codeGraph");
+    expect(status).toHaveProperty("memories");
     expect(status).toHaveProperty("playwright");
-    expect(status.gitnexus).toHaveProperty("installed");
-    expect(status.gitnexus).toHaveProperty("running");
-    expect(status.serena).toHaveProperty("installed");
-    expect(status.serena).toHaveProperty("running");
-    expect(status.serena).toHaveProperty("memories");
+    expect(status.codeGraph).toHaveProperty("installed");
+    expect(status.codeGraph).toHaveProperty("running");
+    expect(status.codeGraph).toHaveProperty("symbolCount");
+    expect(status.memories).toHaveProperty("available");
+    expect(status.memories).toHaveProperty("count");
+    expect(status.memories).toHaveProperty("directory");
+    expect(status.memories).toHaveProperty("names");
     expect(status.playwright).toHaveProperty("installed");
     expect(status.playwright).toHaveProperty("running");
-    expect(Array.isArray(status.serena.memories)).toBe(true);
   });
 
-  // ── Serena detection ──────────────────────────────
+  // ── Memories detection ──────────────────────────────
 
-  it("should detect Serena when .serena/ dir exists with memory files", async () => {
-    const memoriesDir = path.join(tmpDir, ".serena", "memories");
+  it("should detect memories when workflow-graph/memories/ exists with files", async () => {
+    const memoriesDir = path.join(tmpDir, "workflow-graph", "memories");
     mkdirSync(memoriesDir, { recursive: true });
     writeFileSync(path.join(memoriesDir, "architecture.md"), "# Architecture notes");
     writeFileSync(path.join(memoriesDir, "conventions.md"), "# Conventions");
 
     const status = await getIntegrationsStatus(tmpDir);
 
-    expect(status.serena.installed).toBe(true);
-    expect(status.serena.running).toBe(true);
-    expect(status.serena.memories).toContain("architecture");
-    expect(status.serena.memories).toContain("conventions");
-    expect(status.serena.memories).toHaveLength(2);
+    expect(status.memories.available).toBe(true);
+    expect(status.memories.count).toBe(2);
+    expect(status.memories.names).toContain("architecture");
+    expect(status.memories.names).toContain("conventions");
   });
 
-  it("should not detect Serena when no .serena/ dir exists", async () => {
+  it("should report no memories when directory does not exist", async () => {
     const status = await getIntegrationsStatus(tmpDir);
 
-    expect(status.serena.installed).toBe(false);
-    expect(status.serena.running).toBe(false);
-    expect(status.serena.memories).toHaveLength(0);
+    expect(status.memories.available).toBe(false);
+    expect(status.memories.count).toBe(0);
+    expect(status.memories.names).toHaveLength(0);
   });
 
-  it("should return empty memories when .serena/memories/ dir is empty", async () => {
-    const memoriesDir = path.join(tmpDir, ".serena", "memories");
+  it("should report empty when memories dir is empty", async () => {
+    const memoriesDir = path.join(tmpDir, "workflow-graph", "memories");
     mkdirSync(memoriesDir, { recursive: true });
 
     const status = await getIntegrationsStatus(tmpDir);
 
-    expect(status.serena.installed).toBe(true);
-    expect(status.serena.memories).toHaveLength(0);
+    expect(status.memories.available).toBe(false);
+    expect(status.memories.count).toBe(0);
   });
 
-  // ── GitNexus ──────────────────────────────────────
+  // ── Code Graph ──────────────────────────────────────
 
-  it("should report GitNexus not running when HTTP probe fails", async () => {
+  it("should report code graph not indexed when no DB exists", async () => {
     const status = await getIntegrationsStatus(tmpDir);
 
-    expect(status.gitnexus.running).toBe(false);
-    expect(status.gitnexus.url).toBeUndefined();
-  });
-
-  it("should honor custom GITNEXUS_PORT env var", async () => {
-    const originalPort = process.env.GITNEXUS_PORT;
-    process.env.GITNEXUS_PORT = "9999";
-
-    try {
-      const status = await getIntegrationsStatus(tmpDir);
-      // Port 9999 should not have a running service either
-      expect(status.gitnexus.running).toBe(false);
-    } finally {
-      if (originalPort !== undefined) {
-        process.env.GITNEXUS_PORT = originalPort;
-      } else {
-        delete process.env.GITNEXUS_PORT;
-      }
-    }
+    expect(status.codeGraph.installed).toBe(true); // Always available (native)
+    expect(status.codeGraph.running).toBe(false);
+    expect(status.codeGraph.symbolCount).toBe(0);
   });
 
   // ── Playwright ────────────────────────────────────
@@ -102,15 +86,14 @@ describe("getIntegrationsStatus", { timeout: 15_000 }, () => {
   it("should detect playwright based on npx availability", async () => {
     const status = await getIntegrationsStatus(tmpDir);
 
-    // npx should be installed in any Node.js environment
     expect(typeof status.playwright.installed).toBe("boolean");
     expect(status.playwright.running).toBe(false);
   });
 
-  // ── Serena edge case ──────────────────────────────
+  // ── Memories edge case ──────────────────────────────
 
   it("should only include .md files in memories list", async () => {
-    const memoriesDir = path.join(tmpDir, ".serena", "memories");
+    const memoriesDir = path.join(tmpDir, "workflow-graph", "memories");
     mkdirSync(memoriesDir, { recursive: true });
     writeFileSync(path.join(memoriesDir, "notes.md"), "# Notes");
     writeFileSync(path.join(memoriesDir, "data.json"), "{}");
@@ -118,6 +101,6 @@ describe("getIntegrationsStatus", { timeout: 15_000 }, () => {
 
     const status = await getIntegrationsStatus(tmpDir);
 
-    expect(status.serena.memories).toEqual(["notes"]);
+    expect(status.memories.names).toEqual(["notes"]);
   });
 });

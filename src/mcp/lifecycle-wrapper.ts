@@ -13,6 +13,8 @@ import {
   type StrictnessMode,
 } from "../core/planner/lifecycle-phase.js";
 import { KnowledgeStore } from "../core/store/knowledge-store.js";
+import { ToolTokenStore } from "../core/store/tool-token-store.js";
+import { estimateTokens } from "../core/context/token-estimator.js";
 import { logger } from "../core/utils/logger.js";
 
 export interface PhaseKnowledgeSnippet {
@@ -29,6 +31,7 @@ export interface LifecycleBlock {
   principles: string[];
   warnings: LifecycleWarning[];
   suggestedMcpAgents?: McpAgentSuggestion[];
+  suggestedSkills?: string[];
   phaseKnowledge?: PhaseKnowledgeSnippet[];
 }
 
@@ -83,6 +86,9 @@ export function buildLifecycleBlock(doc: GraphDocument, options?: LifecycleBlock
     warnings,
     ...(guidance.suggestedMcpAgents && guidance.suggestedMcpAgents.length > 0
       ? { suggestedMcpAgents: guidance.suggestedMcpAgents }
+      : {}),
+    ...(guidance.suggestedSkills && guidance.suggestedSkills.length > 0
+      ? { suggestedSkills: guidance.suggestedSkills }
       : {}),
     ...(phaseKnowledge && phaseKnowledge.length > 0 ? { phaseKnowledge } : {}),
   };
@@ -216,6 +222,22 @@ export function wrapToolsWithLifecycle(server: McpServer, store: SqliteStore): v
 
       // ── Execute original handler ──
       const result = await originalHandler(...args) as ToolCallResult;
+
+      // ── Token tracking — fire-and-forget, never blocks execution ──
+      try {
+        const project = store.getProject();
+        if (project) {
+          const inputText = JSON.stringify(args);
+          const outputText = result?.content
+            ?.map((c: { text?: string }) => c.text ?? "").join("") ?? "";
+          const inputTok = estimateTokens(inputText);
+          const outputTok = estimateTokens(outputText);
+          const toolTokenStore = new ToolTokenStore(store.getDb());
+          toolTokenStore.record(project.id, name, inputTok, outputTok);
+        }
+      } catch {
+        logger.debug("lifecycle-wrapper: token tracking skipped", { tool: name });
+      }
 
       // ── Post-execution: append _lifecycle block ──
       try {

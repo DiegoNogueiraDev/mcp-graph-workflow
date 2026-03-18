@@ -46,15 +46,15 @@ describe("API /api/v1/knowledge", () => {
       const res = await request(ctx.app)
         .post("/api/v1/knowledge")
         .send({
-          title: "Serena Memory",
+          title: "Project Memory",
           content: "Important memory content",
-          sourceType: "serena",
+          sourceType: "memory",
           sourceId: "mem-001",
           metadata: { importance: "high" },
         });
 
       expect(res.status).toBe(201);
-      expect(res.body.documents[0].sourceType).toBe("serena");
+      expect(res.body.documents[0].sourceType).toBe("memory");
     });
 
     it("should reject empty title", async () => {

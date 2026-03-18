@@ -10,13 +10,13 @@ describe("Knowledge event types", () => {
     bus.on("knowledge:indexed", (event) => events.push(event));
 
     bus.emitTyped("knowledge:indexed", {
-      source: "serena",
+      source: "memory",
       documentsIndexed: 5,
     });
 
     expect(events).toHaveLength(1);
     expect(events[0].type).toBe("knowledge:indexed");
-    expect(events[0].payload.source).toBe("serena");
+    expect(events[0].payload.source).toBe("memory");
     expect(events[0].payload.documentsIndexed).toBe(5);
   });
 
@@ -43,7 +43,7 @@ describe("Knowledge event types", () => {
     bus.on("*", (event) => events.push(event));
 
     bus.emitTyped("knowledge:indexed", { source: "docs", documentsIndexed: 10 });
-    bus.emitTyped("knowledge:deleted", { source: "serena", documentsDeleted: 2 });
+    bus.emitTyped("knowledge:deleted", { source: "memory", documentsDeleted: 2 });
 
     expect(events).toHaveLength(2);
     expect(events[0].type).toBe("knowledge:indexed");

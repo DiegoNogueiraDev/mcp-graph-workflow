@@ -41,7 +41,7 @@ describe("KnowledgeDocumentSchema", () => {
 
 describe("KnowledgeSourceTypeSchema", () => {
   it("should accept all valid source types", () => {
-    const types = ["upload", "serena", "code_context", "docs", "web_capture"];
+    const types = ["upload", "serena", "memory", "code_context", "docs", "web_capture"];
     for (const type of types) {
       expect(KnowledgeSourceTypeSchema.safeParse(type).success).toBe(true);
     }

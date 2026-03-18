@@ -26,14 +26,14 @@ describe("enriched-context", () => {
       const ctx = await buildEnrichedContext("GraphStore", tmpDir);
 
       expect(ctx).toHaveProperty("symbol");
-      expect(ctx).toHaveProperty("serena");
-      expect(ctx).toHaveProperty("gitnexus");
+      expect(ctx).toHaveProperty("memories");
+      expect(ctx).toHaveProperty("codeGraph");
       expect(ctx).toHaveProperty("combined");
       expect(ctx.symbol).toBe("GraphStore");
     });
 
-    it("should return serena data when memories exist", async () => {
-      const memoriesDir = path.join(tmpDir, ".serena", "memories");
+    it("should return memories data when memories exist", async () => {
+      const memoriesDir = path.join(tmpDir, "workflow-graph", "memories");
       mkdirSync(memoriesDir, { recursive: true });
       writeFileSync(
         path.join(memoriesDir, "architecture.md"),
@@ -42,22 +42,22 @@ describe("enriched-context", () => {
 
       const ctx = await buildEnrichedContext("GraphStore", tmpDir);
 
-      expect(ctx.serena.available).toBe(true);
-      expect(ctx.serena.relevantMemories.length).toBeGreaterThan(0);
-      expect(ctx.serena.relevantMemories[0].name).toBe("architecture");
+      expect(ctx.memories.available).toBe(true);
+      expect(ctx.memories.relevantMemories.length).toBeGreaterThan(0);
+      expect(ctx.memories.relevantMemories[0].name).toBe("architecture");
     });
 
-    it("should return empty serena when no memories dir", async () => {
+    it("should return empty memories when no memories dir", async () => {
       const ctx = await buildEnrichedContext("GraphStore", tmpDir);
 
-      expect(ctx.serena.available).toBe(false);
-      expect(ctx.serena.relevantMemories).toHaveLength(0);
+      expect(ctx.memories.available).toBe(false);
+      expect(ctx.memories.relevantMemories).toHaveLength(0);
     });
 
-    it("should return gitnexus unavailable when not running", async () => {
+    it("should return codeGraph unavailable when no db provided", async () => {
       const ctx = await buildEnrichedContext("GraphStore", tmpDir);
 
-      expect(ctx.gitnexus.available).toBe(false);
+      expect(ctx.codeGraph.available).toBe(false);
     });
 
     it("should always include combined summary", async () => {
@@ -68,7 +68,7 @@ describe("enriched-context", () => {
     });
 
     it("should filter memories relevant to the symbol", async () => {
-      const memoriesDir = path.join(tmpDir, ".serena", "memories");
+      const memoriesDir = path.join(tmpDir, "workflow-graph", "memories");
       mkdirSync(memoriesDir, { recursive: true });
       writeFileSync(path.join(memoriesDir, "db-layer.md"), "# DB Layer\nGraphStore is the main store class.");
       writeFileSync(path.join(memoriesDir, "ui-guide.md"), "# UI Guide\nThe dashboard uses React.");
@@ -76,7 +76,7 @@ describe("enriched-context", () => {
       const ctx = await buildEnrichedContext("GraphStore", tmpDir);
 
       // Should include db-layer (mentions GraphStore) but may or may not include ui-guide
-      const memNames = ctx.serena.relevantMemories.map((m) => m.name);
+      const memNames = ctx.memories.relevantMemories.map((m) => m.name);
       expect(memNames).toContain("db-layer");
     });
   });

@@ -18,11 +18,10 @@ export interface AppFactoryOptions {
   eventBus: GraphEventBus;
   mcp?: McpServer;
   storeManager?: StoreManager;
-  gitnexusPort?: number;
 }
 
 export function createApp(options: AppFactoryOptions): Express {
-  const { store, basePath, eventBus, mcp, storeManager, gitnexusPort } = options;
+  const { store, basePath, eventBus, mcp, storeManager } = options;
 
   const app = express();
   app.use(express.json());
@@ -39,7 +38,7 @@ export function createApp(options: AppFactoryOptions): Express {
   }
 
   // REST API
-  app.use("/api/v1", createApiRouter({ store, basePath, eventBus, storeManager, gitnexusPort }));
+  app.use("/api/v1", createApiRouter({ store, basePath, eventBus, storeManager }));
 
   // Static files (dashboard)
   app.use(express.static(publicDir));

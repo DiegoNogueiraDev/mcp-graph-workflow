@@ -3,7 +3,7 @@ import { SqliteStore } from "../../core/store/sqlite-store.js";
 import { KnowledgeStore } from "../../core/store/knowledge-store.js";
 import { DocsCacheStore } from "../../core/docs/docs-cache-store.js";
 import { EmbeddingStore } from "../../core/rag/embedding-store.js";
-import { indexSerenaMemories } from "../../core/rag/serena-indexer.js";
+import { indexMemories } from "../../core/rag/memory-indexer.js";
 import { indexCachedDocs } from "../../core/rag/docs-indexer.js";
 import { indexAllEmbeddings } from "../../core/rag/rag-pipeline.js";
 import { logger } from "../../core/utils/logger.js";
@@ -14,7 +14,7 @@ function output(msg: string): void {
 
 export function indexCommand(): Command {
   return new Command("index")
-    .description("Reindex all knowledge sources (Serena, docs cache) and rebuild embeddings")
+    .description("Reindex all knowledge sources (memories, docs cache) and rebuild embeddings")
     .option("-d, --dir <dir>", "Project directory", process.cwd())
     .option("--json", "Output as JSON")
     .action(async (opts: { dir: string; json: boolean }) => {
@@ -25,7 +25,7 @@ export function indexCommand(): Command {
         const docsCacheStore = new DocsCacheStore(store.getDb());
         const embeddingStore = new EmbeddingStore(store);
 
-        const serenaResult = await indexSerenaMemories(knowledgeStore, opts.dir);
+        const memoriesResult = await indexMemories(knowledgeStore, opts.dir);
         const docsResult = indexCachedDocs(knowledgeStore, docsCacheStore);
 
         embeddingStore.clear();
@@ -35,14 +35,14 @@ export function indexCommand(): Command {
 
         if (opts.json) {
           output(JSON.stringify({
-            serena: serenaResult,
+            memories: memoriesResult,
             docs: docsResult,
             embeddings: embeddingResult,
             totalKnowledge,
           }, null, 2));
         } else {
           output("Knowledge indexing complete:");
-          output(`  Serena memories: ${serenaResult.memoriesFound} found, ${serenaResult.documentsIndexed} indexed`);
+          output(`  Memories: ${memoriesResult.memoriesFound} found, ${memoriesResult.documentsIndexed} indexed`);
           output(`  Docs cache: ${docsResult.docsFound} found, ${docsResult.documentsIndexed} indexed`);
           output(`  Embeddings: ${embeddingResult.nodes} nodes + ${embeddingResult.knowledge} knowledge`);
           output(`  Total knowledge documents: ${totalKnowledge}`);

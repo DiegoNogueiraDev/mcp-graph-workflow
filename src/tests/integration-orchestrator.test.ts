@@ -41,7 +41,7 @@ describe("IntegrationOrchestrator", () => {
     const orchestrator = new IntegrationOrchestrator(store, eventBus);
     const statuses = orchestrator.getStatuses();
 
-    expect(statuses.length).toBe(5); // upload, serena, code_context, docs, web_capture
+    expect(statuses.length).toBe(6); // upload, memory, serena, code_context, docs, web_capture
     expect(statuses.every((s) => s.status === "idle")).toBe(true);
   });
 

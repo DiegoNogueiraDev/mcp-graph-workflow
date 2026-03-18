@@ -163,7 +163,7 @@ export function createKnowledgeRouter(storeRef: StoreRef): Router {
       const knowledgeStore = getKnowledgeStore();
       const total = knowledgeStore.count();
       const bySource: Record<string, number> = {};
-      const sourceTypes = ["upload", "serena", "code_context", "docs", "web_capture"] as const;
+      const sourceTypes = ["upload", "memory", "serena", "code_context", "docs", "web_capture"] as const;
       for (const st of sourceTypes) {
         const c = knowledgeStore.count(st);
         if (c > 0) bySource[st] = c;

@@ -80,6 +80,24 @@ describe("KnowledgeStore", () => {
 
       expect(doc.chunkIndex).toBe(3);
     });
+
+    it("should insert and retrieve a document with sourceType 'memory'", () => {
+      const doc = knowledgeStore.insert({
+        sourceType: "memory",
+        sourceId: "mem-001",
+        title: "Project Architecture Decision",
+        content: "We chose SQLite for local-first persistence",
+      });
+
+      expect(doc.id).toMatch(/^kdoc_/);
+      expect(doc.sourceType).toBe("memory");
+      expect(doc.sourceId).toBe("mem-001");
+      expect(doc.title).toBe("Project Architecture Decision");
+
+      const retrieved = knowledgeStore.getById(doc.id);
+      expect(retrieved).not.toBeNull();
+      expect(retrieved!.sourceType).toBe("memory");
+    });
   });
 
   // ── Deduplication ──────────────────────────────

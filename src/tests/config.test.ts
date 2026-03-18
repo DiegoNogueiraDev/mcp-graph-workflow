@@ -9,13 +9,13 @@ import { ConfigSchema } from "../core/config/config-schema.js";
 describe("Config layer", () => {
   let tmpDir: string;
   const originalMcpPort = process.env.MCP_PORT;
-  const originalGitnexusPort = process.env.GITNEXUS_PORT;
+  const originalCodeGraphAutoIndex = process.env.CODE_GRAPH_AUTO_INDEX;
 
   beforeEach(() => {
     tmpDir = path.join(tmpdir(), `config-test-${Date.now()}`);
     mkdirSync(tmpDir, { recursive: true });
     delete process.env.MCP_PORT;
-    delete process.env.GITNEXUS_PORT;
+    delete process.env.CODE_GRAPH_AUTO_INDEX;
   });
 
   afterEach(() => {
@@ -25,10 +25,10 @@ describe("Config layer", () => {
     } else {
       delete process.env.MCP_PORT;
     }
-    if (originalGitnexusPort !== undefined) {
-      process.env.GITNEXUS_PORT = originalGitnexusPort;
+    if (originalCodeGraphAutoIndex !== undefined) {
+      process.env.CODE_GRAPH_AUTO_INDEX = originalCodeGraphAutoIndex;
     } else {
-      delete process.env.GITNEXUS_PORT;
+      delete process.env.CODE_GRAPH_AUTO_INDEX;
     }
   });
 
@@ -39,7 +39,7 @@ describe("Config layer", () => {
 
     expect(config.port).toBe(3000);
     expect(config.dbPath).toBe("workflow-graph");
-    expect(config.integrations.gitnexusPort).toBe(3737);
+    expect(config.integrations.codeGraphAutoIndex).toBe(false);
   });
 
   // ── File loading ──────────────────────────────────
@@ -79,11 +79,11 @@ describe("Config layer", () => {
     expect(config.port).toBe(5555);
   });
 
-  it("should override gitnexusPort from GITNEXUS_PORT env var", () => {
-    process.env.GITNEXUS_PORT = "8888";
+  it("should override codeGraphAutoIndex from CODE_GRAPH_AUTO_INDEX env var", () => {
+    process.env.CODE_GRAPH_AUTO_INDEX = "true";
     const config = loadConfig(tmpDir);
 
-    expect(config.integrations.gitnexusPort).toBe(8888);
+    expect(config.integrations.codeGraphAutoIndex).toBe(true);
   });
 
   // ── Missing optional fields ───────────────────────
@@ -99,7 +99,7 @@ describe("Config layer", () => {
     expect(config.port).toBe(3000);
     expect(config.dbPath).toBe("workflow-graph");
     expect(config.basePath).toBeUndefined();
-    expect(config.integrations.gitnexusPort).toBe(3737);
+    expect(config.integrations.codeGraphAutoIndex).toBe(false);
   });
 
   it("should handle malformed JSON gracefully and use defaults", () => {

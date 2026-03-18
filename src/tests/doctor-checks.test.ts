@@ -218,12 +218,12 @@ describe("checkMcpJson", () => {
 });
 
 describe("checkIntegrations", () => {
-  it("should return results for gitnexus, serena, and playwright", { timeout: 15_000 }, async () => {
+  it("should return results for code-graph, memories, and playwright", { timeout: 15_000 }, async () => {
     const { checkIntegrations } = await import("../core/doctor/doctor-checks.js");
     const results = await checkIntegrations(tmpdir());
     expect(results.length).toBe(3);
     expect(results.map((r) => r.name)).toEqual(
-      expect.arrayContaining(["integration-gitnexus", "integration-serena", "integration-playwright"]),
+      expect.arrayContaining(["integration-code-graph", "integration-memories", "integration-playwright"]),
     );
     // All should be either ok or warning (never error for integrations)
     for (const r of results) {

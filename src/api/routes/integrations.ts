@@ -1,7 +1,8 @@
 import { Router } from "express";
 import type { StoreRef } from "../../core/store/store-manager.js";
 import { getIntegrationsStatus } from "../../core/integrations/tool-status.js";
-import { readSerenaMemory, readAllSerenaMemories } from "../../core/integrations/serena-reader.js";
+import { readMemory, readAllMemories, writeMemory, deleteMemory } from "../../core/memory/memory-reader.js";
+import { migrateSerenaMemories } from "../../core/memory/memory-migrator.js";
 import { buildEnrichedContext } from "../../core/integrations/enriched-context.js";
 import { KnowledgeStore } from "../../core/store/knowledge-store.js";
 
@@ -17,19 +18,21 @@ export function createIntegrationsRouter(storeRef: StoreRef, getBasePath: () => 
     }
   });
 
-  router.get("/serena/memories", async (_req, res, next) => {
+  // ── Memories CRUD ────────────────────────────────
+  router.get("/memories", async (_req, res, next) => {
     try {
-      const memories = await readAllSerenaMemories(getBasePath());
+      await migrateSerenaMemories(getBasePath());
+      const memories = await readAllMemories(getBasePath());
       res.json(memories);
     } catch (err) {
       next(err);
     }
   });
 
-  router.get("/serena/memories/:name", async (req, res, next) => {
+  router.get("/memories/:name", async (req, res, next) => {
     try {
       const name = req.params.name as string;
-      const memory = await readSerenaMemory(getBasePath(), name);
+      const memory = await readMemory(getBasePath(), name);
       if (!memory) {
         res.status(404).json({ error: `Memory not found: ${name}` });
         return;
@@ -40,27 +43,68 @@ export function createIntegrationsRouter(storeRef: StoreRef, getBasePath: () => 
     }
   });
 
-  router.get("/gitnexus/url", async (_req, res, next) => {
+  router.post("/memories", async (req, res, next) => {
     try {
-      const status = await getIntegrationsStatus(getBasePath());
-      if (!status.gitnexus.running) {
-        res.status(503).json({
-          error: "GitNexus is not running",
-          instructions: "Run: gitnexus analyze && gitnexus serve",
-        });
+      const { name, content } = req.body as { name: string; content: string };
+      if (!name || !content) {
+        res.status(400).json({ error: "name and content are required" });
         return;
       }
-      res.json({ url: status.gitnexus.url });
+      await writeMemory(getBasePath(), name, content);
+      res.status(201).json({ ok: true, name });
     } catch (err) {
       next(err);
     }
   });
 
-  // ── Enriched context (Serena + GitNexus combined) ──
+  router.delete("/memories/:name", async (req, res, next) => {
+    try {
+      const name = req.params.name as string;
+      const deleted = await deleteMemory(getBasePath(), name);
+      if (!deleted) {
+        res.status(404).json({ error: `Memory not found: ${name}` });
+        return;
+      }
+      res.json({ ok: true });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Backward compat: redirect /serena/memories → /memories
+  router.get("/serena/memories", async (_req, res, next) => {
+    try {
+      await migrateSerenaMemories(getBasePath());
+      const memories = await readAllMemories(getBasePath());
+      res.json(memories);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.get("/serena/memories/:name", async (req, res, next) => {
+    try {
+      const name = req.params.name as string;
+      const memory = await readMemory(getBasePath(), name);
+      if (!memory) {
+        res.status(404).json({ error: `Memory not found: ${name}` });
+        return;
+      }
+      res.json(memory);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // ── Enriched context (Memories + Code Intelligence combined) ──
   router.get("/enriched-context/:symbol", async (req, res, next) => {
     try {
       const symbol = req.params.symbol as string;
-      const ctx = await buildEnrichedContext(symbol, getBasePath());
+      const project = storeRef.current.getProject();
+      const ctx = await buildEnrichedContext(symbol, getBasePath(), 0, {
+        db: storeRef.current.getDb(),
+        projectId: project?.id,
+      });
       res.json(ctx);
     } catch (err) {
       next(err);
@@ -71,7 +115,7 @@ export function createIntegrationsRouter(storeRef: StoreRef, getBasePath: () => 
   router.get("/knowledge-status", (_req, res, next) => {
     try {
       const knowledgeStore = new KnowledgeStore(storeRef.current.getDb());
-      const sourceTypes = ["upload", "serena", "code_context", "docs", "web_capture"] as const;
+      const sourceTypes = ["upload", "memory", "serena", "code_context", "docs", "web_capture"] as const;
       const statuses = sourceTypes.map((st) => ({
         source: st,
         documentCount: knowledgeStore.count(st),

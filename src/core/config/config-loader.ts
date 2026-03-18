@@ -33,18 +33,9 @@ export function loadConfig(basePath?: string): McpGraphConfig {
     }
   }
 
-  if (process.env.GITNEXUS_PORT) {
-    const envGitnexusPort = parseInt(process.env.GITNEXUS_PORT, 10);
-    if (!isNaN(envGitnexusPort)) {
-      const integrations = (fileConfig.integrations ?? {}) as Record<string, unknown>;
-      integrations.gitnexusPort = envGitnexusPort;
-      fileConfig.integrations = integrations;
-    }
-  }
-
-  if (process.env.GITNEXUS_AUTO_START) {
+  if (process.env.CODE_GRAPH_AUTO_INDEX) {
     const integrations = (fileConfig.integrations ?? {}) as Record<string, unknown>;
-    integrations.gitnexusAutoStart = process.env.GITNEXUS_AUTO_START !== "false";
+    integrations.codeGraphAutoIndex = process.env.CODE_GRAPH_AUTO_INDEX !== "false";
     fileConfig.integrations = integrations;
   }
 

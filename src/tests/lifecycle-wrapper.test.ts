@@ -109,6 +109,39 @@ describe("detectWarnings", () => {
   });
 });
 
+describe("buildLifecycleBlock suggestedSkills", () => {
+  it("should include suggestedSkills for IMPLEMENT phase", () => {
+    const doc = makeDoc([{ type: "task", status: "in_progress", sprint: "s1" }]);
+    const block = buildLifecycleBlock(doc);
+    expect(block.phase).toBe("IMPLEMENT");
+    expect(block.suggestedSkills).toBeDefined();
+    expect(block.suggestedSkills!.length).toBeGreaterThan(0);
+    expect(block.suggestedSkills).toContain("subagent-driven-development");
+    expect(block.suggestedSkills).toContain("xp-bootstrap");
+  });
+
+  it("should include suggestedSkills for ANALYZE phase", () => {
+    const doc = makeDoc();
+    const block = buildLifecycleBlock(doc);
+    expect(block.phase).toBe("ANALYZE");
+    expect(block.suggestedSkills).toBeDefined();
+    expect(block.suggestedSkills).toContain("create-prd-chat-mode");
+  });
+
+  it("should include suggestedSkills for VALIDATE phase", () => {
+    const doc = makeDoc([
+      { type: "task", status: "done", sprint: "s1" },
+      { type: "task", status: "done", sprint: "s1" },
+      { type: "task", status: "ready", sprint: "s1" },
+    ]);
+    const block = buildLifecycleBlock(doc);
+    expect(block.phase).toBe("VALIDATE");
+    expect(block.suggestedSkills).toBeDefined();
+    expect(block.suggestedSkills).toContain("playwright-explore-website");
+    expect(block.suggestedSkills).toContain("e2e-testing");
+  });
+});
+
 describe("buildLifecycleBlock suggestedMcpAgents", () => {
   it("should include suggestedMcpAgents for IMPLEMENT phase", () => {
     const doc = makeDoc([{ type: "task", status: "in_progress", sprint: "s1" }]);
@@ -117,8 +150,8 @@ describe("buildLifecycleBlock suggestedMcpAgents", () => {
     expect(block.suggestedMcpAgents).toBeDefined();
     expect(block.suggestedMcpAgents!.length).toBeGreaterThan(0);
     const names = block.suggestedMcpAgents!.map((a) => a.name);
-    expect(names).toContain("serena");
-    expect(names).toContain("gitnexus");
+    expect(names).toContain("code-graph");
+    expect(names).toContain("context7");
   });
 
   it("should not include suggestedMcpAgents for ANALYZE phase", () => {

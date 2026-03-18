@@ -21,36 +21,37 @@ describe("API /api/v1/integrations", () => {
   // ── GET /integrations/status ────────────────────
 
   describe("GET /api/v1/integrations/status", () => {
-    it("should return status object with gitnexus, serena, playwright keys", async () => {
+    it("should return status object with codeGraph, memories, playwright keys", async () => {
       const res = await request(ctx.app).get("/api/v1/integrations/status");
 
       expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty("gitnexus");
-      expect(res.body).toHaveProperty("serena");
+      expect(res.body).toHaveProperty("codeGraph");
+      expect(res.body).toHaveProperty("memories");
       expect(res.body).toHaveProperty("playwright");
     });
 
-    it("should have boolean installed/running flags for each integration", async () => {
+    it("should have correct shape for each integration", async () => {
       const res = await request(ctx.app).get("/api/v1/integrations/status");
 
-      expect(typeof res.body.gitnexus.installed).toBe("boolean");
-      expect(typeof res.body.gitnexus.running).toBe("boolean");
-      expect(typeof res.body.serena.installed).toBe("boolean");
+      expect(typeof res.body.codeGraph.installed).toBe("boolean");
+      expect(typeof res.body.codeGraph.running).toBe("boolean");
+      expect(typeof res.body.memories.available).toBe("boolean");
+      expect(typeof res.body.memories.count).toBe("number");
     });
   });
 
-  // ── GET /integrations/serena/memories ───────────
+  // ── GET /integrations/memories ───────────────────
 
-  describe("GET /api/v1/integrations/serena/memories", () => {
-    it("should return array (possibly empty if no .serena dir)", async () => {
-      const res = await request(ctx.app).get("/api/v1/integrations/serena/memories");
+  describe("GET /api/v1/integrations/memories", () => {
+    it("should return array (possibly empty if no memories dir)", async () => {
+      const res = await request(ctx.app).get("/api/v1/integrations/memories");
 
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body)).toBe(true);
     });
 
     it("each memory should have name and content fields", async () => {
-      const res = await request(ctx.app).get("/api/v1/integrations/serena/memories");
+      const res = await request(ctx.app).get("/api/v1/integrations/memories");
 
       if (res.body.length > 0) {
         expect(res.body[0]).toHaveProperty("name");
@@ -61,15 +62,26 @@ describe("API /api/v1/integrations", () => {
     });
   });
 
-  // ── GET /integrations/serena/memories/:name ─────
+  // ── GET /integrations/memories/:name ─────────────
 
-  describe("GET /api/v1/integrations/serena/memories/:name", () => {
+  describe("GET /api/v1/integrations/memories/:name", () => {
     it("should return 404 for non-existent memory", async () => {
       const res = await request(ctx.app)
-        .get("/api/v1/integrations/serena/memories/nonexistent-xyz");
+        .get("/api/v1/integrations/memories/nonexistent-xyz");
 
       expect(res.status).toBe(404);
       expect(res.body).toHaveProperty("error");
+    });
+  });
+
+  // ── Backward compat: /serena/memories ────────────
+
+  describe("GET /api/v1/integrations/serena/memories (backward compat)", () => {
+    it("should still return array via deprecated endpoint", async () => {
+      const res = await request(ctx.app).get("/api/v1/integrations/serena/memories");
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body)).toBe(true);
     });
   });
 

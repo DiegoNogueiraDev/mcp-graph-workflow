@@ -252,34 +252,34 @@ export function checkMcpJson(basePath: string): CheckResult {
 }
 
 /**
- * Check integration tools (GitNexus, Serena, Playwright).
+ * Check integration tools (Code Graph, Memories, Playwright).
  */
 export async function checkIntegrations(basePath: string): Promise<CheckResult[]> {
   try {
     const status = await getIntegrationsStatus(basePath);
     const results: CheckResult[] = [];
 
-    // GitNexus
+    // Code Graph
     results.push({
-      name: "integration-gitnexus",
-      level: status.gitnexus.installed ? "ok" : "warning",
-      message: status.gitnexus.installed
-        ? `GitNexus installed${status.gitnexus.running ? " and running" : ""}`
-        : "GitNexus not installed",
-      ...(!status.gitnexus.installed && {
-        suggestion: "Install GitNexus: npm install -g gitnexus",
+      name: "integration-code-graph",
+      level: status.codeGraph.running ? "ok" : "warning",
+      message: status.codeGraph.running
+        ? `Code Graph indexed (${status.codeGraph.symbolCount} symbols)`
+        : "Code Graph not indexed",
+      ...(!status.codeGraph.running && {
+        suggestion: "Run code graph reindex via dashboard or API",
       }),
     });
 
-    // Serena
+    // Memories
     results.push({
-      name: "integration-serena",
-      level: status.serena.installed ? "ok" : "warning",
-      message: status.serena.installed
-        ? `Serena configured (${status.serena.memories.length} memories)`
-        : "Serena not configured",
-      ...(!status.serena.installed && {
-        suggestion: "Configure Serena: create .serena/ directory with project config",
+      name: "integration-memories",
+      level: status.memories.available ? "ok" : "warning",
+      message: status.memories.available
+        ? `Memories available (${status.memories.count} memories in ${status.memories.directory})`
+        : "No memories found",
+      ...(!status.memories.available && {
+        suggestion: "Create memories in workflow-graph/memories/ or use write_memory MCP tool",
       }),
     });
 
@@ -302,14 +302,14 @@ export async function checkIntegrations(basePath: string): Promise<CheckResult[]
     });
     return [
       {
-        name: "integration-gitnexus",
+        name: "integration-code-graph",
         level: "warning",
-        message: "Could not check GitNexus status",
+        message: "Could not check Code Graph status",
       },
       {
-        name: "integration-serena",
+        name: "integration-memories",
         level: "warning",
-        message: "Could not check Serena status",
+        message: "Could not check Memories status",
       },
       {
         name: "integration-playwright",

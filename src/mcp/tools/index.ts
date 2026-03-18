@@ -25,6 +25,8 @@ import { registerValidateTask } from "./validate-task.js";
 import { registerValidateAc } from "./validate-ac.js";
 import { registerPlanSprint } from "./plan-sprint.js";
 import { registerSetPhase } from "./set-phase.js";
+import { registerMemory } from "./memory.js";
+import { registerListSkills } from "./list-skills.js";
 import { wrapToolsWithLifecycle } from "../lifecycle-wrapper.js";
 
 export function registerAllTools(server: McpServer, store: SqliteStore): void {
@@ -53,6 +55,8 @@ export function registerAllTools(server: McpServer, store: SqliteStore): void {
   registerValidateAc(server, store);
   registerPlanSprint(server, store);
   registerSetPhase(server, store);
+  registerMemory(server, store);
+  registerListSkills(server);
 
   // Wrap all registered tool responses with lifecycle context
   wrapToolsWithLifecycle(server, store);

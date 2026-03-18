@@ -50,7 +50,7 @@ test.describe("Tab Navigation & Theme", () => {
   });
 
   test("all tabs are present in navigation", async ({ page }) => {
-    const tabNames = ["Graph", "PRD & Backlog", "Code Graph", "Insights", "Benchmark"];
+    const tabNames = ["Graph", "PRD & Backlog", "Code Graph", "Memories", "Insights", "Benchmark", "Logs"];
     for (const name of tabNames) {
       const exact = name === "Graph"; // avoid matching "Code Graph"
       await expect(page.getByRole("button", { name, exact })).toBeVisible();

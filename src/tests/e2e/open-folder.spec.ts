@@ -302,7 +302,7 @@ test.describe("Open Folder — Navigation After Swap", () => {
       (e) =>
         !e.includes("React") &&
         !e.includes("favicon") &&
-        !e.includes("GitNexus") &&
+        !e.includes("Code Graph") &&
         !e.includes("Failed to fetch") &&
         !e.includes("assets/index") &&  // bundled JS stack traces
         !e.includes("graph") &&         // graph re-render during swap

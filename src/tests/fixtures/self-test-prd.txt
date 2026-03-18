@@ -108,12 +108,12 @@ Build a comprehensive benchmark and validation suite for the mcp-graph project i
 
 ## Epic 3: Integration Mesh Validation
 
-### Task 3.1: Serena Code Intelligence
+### Task 3.1: Native Code Intelligence & Memories
 - **Size:** XL
 - **Priority:** medium
 - **Depends on:** Task 2.2
 - **Acceptance Criteria:**
-  - Code Graph tab shows Serena status badge
+  - Code Graph tab shows native Code Intelligence status badge
   - Explorer mode displays file tree
   - Symbol search returns relevant code symbols
   - Memory count badge updates correctly

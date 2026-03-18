@@ -9,16 +9,15 @@ describe("mcp-servers-config", () => {
   // ── buildMcpServersConfig ─────────────────────────
 
   describe("buildMcpServersConfig", () => {
-    it("should return config with all 5 MCP server entries", () => {
+    it("should return config with all 3 MCP server entries (no serena)", () => {
       const config = buildMcpServersConfig();
       const servers = config.mcpServers;
 
-      expect(Object.keys(servers)).toHaveLength(5);
+      expect(Object.keys(servers)).toHaveLength(3);
       expect(servers).toHaveProperty("mcp-graph");
-      expect(servers).toHaveProperty("gitnexus");
-      expect(servers).toHaveProperty("serena");
       expect(servers).toHaveProperty("context7");
       expect(servers).toHaveProperty("playwright");
+      expect(servers).not.toHaveProperty("serena");
     });
 
     it("should have correct mcp-graph server config", () => {
@@ -27,25 +26,6 @@ describe("mcp-servers-config", () => {
 
       expect(mcpGraph.command).toBe("npx");
       expect(mcpGraph.args).toContain("-y");
-    });
-
-    it("should have correct gitnexus server config with mcp arg", () => {
-      const config = buildMcpServersConfig();
-      const gitnexus = config.mcpServers["gitnexus"];
-
-      expect(gitnexus.command).toBe("npx");
-      expect(gitnexus.args).toContain("gitnexus");
-      expect(gitnexus.args).toContain("mcp");
-    });
-
-    it("should have correct serena server config with uvx and --project", () => {
-      const config = buildMcpServersConfig();
-      const serena = config.mcpServers["serena"];
-
-      expect(serena.command).toBe("uvx");
-      expect(serena.args).toContain("serena");
-      expect(serena.args).toContain("start-mcp-server");
-      expect(serena.args).toContain("--project");
     });
 
     it("should have correct context7 server config", () => {
@@ -66,10 +46,9 @@ describe("mcp-servers-config", () => {
 
     it("should export MCP_SERVER_NAMES constant with all names", () => {
       expect(MCP_SERVER_NAMES).toContain("mcp-graph");
-      expect(MCP_SERVER_NAMES).toContain("gitnexus");
-      expect(MCP_SERVER_NAMES).toContain("serena");
       expect(MCP_SERVER_NAMES).toContain("context7");
       expect(MCP_SERVER_NAMES).toContain("playwright");
+      expect(MCP_SERVER_NAMES).not.toContain("serena");
     });
   });
 
@@ -100,8 +79,8 @@ describe("mcp-servers-config", () => {
         command: "node",
         args: ["custom.js"],
       });
-      // All 5 standard servers should still be there
-      expect(Object.keys(config.mcpServers).length).toBeGreaterThanOrEqual(6);
+      // All 3 standard servers + 1 custom = 4
+      expect(Object.keys(config.mcpServers).length).toBeGreaterThanOrEqual(4);
     });
 
     it("should override existing mcp-graph entry with latest config", () => {

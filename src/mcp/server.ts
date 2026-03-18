@@ -4,9 +4,10 @@ import { registerAllTools } from "./tools/index.js";
 import { GraphEventBus } from "../core/events/event-bus.js";
 import { logger } from "../core/utils/logger.js";
 import { loadConfig } from "../core/config/config-loader.js";
-import { ensureGitNexusAnalyzed, startGitNexusServe, stopGitNexus } from "../core/integrations/gitnexus-launcher.js";
 import { createApp } from "./app-factory.js";
 import { StoreManager } from "../core/store/store-manager.js";
+import { CodeStore } from "../core/code/code-store.js";
+import { CodeIndexer } from "../core/code/code-indexer.js";
 
 const config = loadConfig();
 const PORT = config.port;
@@ -31,31 +32,33 @@ const app = createApp({
   eventBus,
   mcp,
   storeManager,
-  gitnexusPort: config.integrations.gitnexusPort,
 });
 
-// ── GitNexus auto-start ──────────────────────────────────
-if (config.integrations.gitnexusAutoStart) {
+// ── Code Graph auto-index ────────────────────────────────
+if (config.integrations.codeGraphAutoIndex) {
   const basePath = storeManager.basePath;
-  const gitnexusPort = config.integrations.gitnexusPort;
-
-  ensureGitNexusAnalyzed(basePath).then(() => {
-    return startGitNexusServe(basePath, gitnexusPort);
-  }).then((result) => {
-    if (result.started) {
-      logger.info("GitNexus serve running", { port: gitnexusPort });
+  try {
+    const project = storeManager.store.getProject();
+    if (project) {
+      const codeStore = new CodeStore(storeManager.store.getDb());
+      const indexer = new CodeIndexer(codeStore, project.id);
+      const result = indexer.indexDirectory(basePath, basePath);
+      logger.info("Code graph auto-indexed", {
+        files: result.fileCount,
+        symbols: result.symbolCount,
+        relations: result.relationCount,
+      });
     }
-  }).catch((err) => {
-    logger.warn("GitNexus auto-start failed (non-blocking)", {
+  } catch (err) {
+    logger.warn("Code graph auto-index failed (non-blocking)", {
       error: err instanceof Error ? err.message : String(err),
     });
-  });
+  }
 }
 
 // ── Cleanup on shutdown ──────────────────────────────────
 function cleanup(signal: string): void {
   logger.info("server:shutdown", { signal });
-  stopGitNexus().catch(() => {});
   storeManager.close();
   logger.info("server:shutdown:ok", { signal });
   process.exit(0);

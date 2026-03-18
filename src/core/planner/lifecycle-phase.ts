@@ -28,6 +28,7 @@ export interface PhaseGuidance {
   suggestedTools: string[];
   principles: string[];
   suggestedMcpAgents?: McpAgentSuggestion[];
+  suggestedSkills?: string[];
 }
 
 const DESIGN_ONLY_TYPES = new Set(["requirement", "epic", "decision", "constraint", "milestone", "risk", "acceptance_criteria"]);
@@ -137,15 +138,16 @@ const GUIDANCE: Record<LifecyclePhase, PhaseGuidance> = {
     reminder: "Fase ANALYZE: Crie o PRD a partir da ideia. Defina requisitos, restrições e critérios de aceitação antes de qualquer código.",
     suggestedTools: ["import_prd", "add_node", "analyze", "validate_ac", "search"],
     principles: ["Definir antes de construir", "PRD como contrato", "Requisitos claros e mensuráveis"],
+    suggestedSkills: ["create-prd-chat-mode", "business-analyst", "product-manager"],
   },
   DESIGN: {
     reminder: "Fase DESIGN: Defina a arquitetura e tome decisões técnicas. Use analyze para validar qualidade arquitetural.",
     suggestedTools: ["add_node", "edge", "analyze", "export"],
     principles: ["Skeleton & Organs", "ADR documentado", "Interface-first", "Traceability"],
     suggestedMcpAgents: [
-      { name: "serena", action: "Análise semântica de symbols para entender arquitetura existente", tools: ["find_symbol", "get_symbols_overview"] },
-      { name: "gitnexus", action: "Análise de impacto e blast radius da proposta arquitetural", tools: ["impact", "context"] },
+      { name: "code-graph", action: "Análise de impacto e blast radius da proposta arquitetural", tools: ["impact", "context"] },
     ],
+    suggestedSkills: ["breakdown-epic-arch", "context-architect", "backend-architect"],
   },
   PLAN: {
     reminder: "Fase PLAN: Planeje o sprint, decomponha tasks grandes e sincronize documentação das libs.",
@@ -154,41 +156,43 @@ const GUIDANCE: Record<LifecyclePhase, PhaseGuidance> = {
     suggestedMcpAgents: [
       { name: "context7", action: "Consultar docs atualizadas das libs do stack", tools: ["resolve-library-id", "query-docs"] },
     ],
+    suggestedSkills: ["breakdown-feature-prd", "track-with-mcp-graph"],
   },
   IMPLEMENT: {
     reminder: "Fase IMPLEMENT: TDD obrigatório — Red → Green → Refactor. Escreva o teste ANTES da implementação. Use `context` para token-efficiency.",
     suggestedTools: ["next", "context", "update_status", "rag_context", "validate_task", "analyze"],
     principles: ["TDD Red→Green→Refactor", "Anti-one-shot", "Code detachment", "Decomposição atômica"],
     suggestedMcpAgents: [
-      { name: "serena", action: "Edição semântica de symbols e navegação por referências", tools: ["find_symbol", "replace_symbol_body", "find_referencing_symbols"] },
-      { name: "gitnexus", action: "Impact analysis antes de editar, detect_changes antes de commit", tools: ["impact", "detect_changes", "context"] },
+      { name: "code-graph", action: "Impact analysis antes de editar, busca de contexto de symbols", tools: ["impact", "context", "search"] },
       { name: "context7", action: "Consultar API docs das libs em uso", tools: ["query-docs"] },
     ],
+    suggestedSkills: ["subagent-driven-development", "xp-bootstrap"],
   },
   VALIDATE: {
     reminder: "Fase VALIDATE: Valide tasks completadas com testes E2E (Playwright). Verifique critérios de aceitação.",
     suggestedTools: ["validate_task", "metrics", "analyze", "list"],
     principles: ["Validação automatizada", "Critérios de aceitação como contrato", "Zero tolerance para regressões", "AC quality como contrato", "Done integrity"],
     suggestedMcpAgents: [
-      { name: "gitnexus", action: "Verificar escopo das mudanças com detect_changes", tools: ["detect_changes"] },
+      { name: "code-graph", action: "Verificar impacto das mudanças nos symbols afetados", tools: ["impact", "search"] },
       { name: "playwright", action: "Testes E2E no browser, screenshots e validação visual", tools: ["browser_navigate", "browser_snapshot", "browser_click"] },
     ],
+    suggestedSkills: ["playwright-explore-website", "playwright-generate-test", "playwright-tester-mode", "e2e-testing"],
   },
   REVIEW: {
     reminder: "Fase REVIEW: Revise o código, verifique blast radius e garanta que nada quebrou. Exporte o grafo para revisão.",
     suggestedTools: ["export", "metrics", "analyze"],
     principles: ["Code review obrigatório", "Blast radius check", "Non-regression rule", "Velocity stability", "Scope integrity"],
     suggestedMcpAgents: [
-      { name: "serena", action: "Verificar callers e referências dos symbols modificados", tools: ["find_referencing_symbols"] },
-      { name: "gitnexus", action: "Blast radius final e verificação de escopo", tools: ["impact", "detect_changes"] },
+      { name: "code-graph", action: "Blast radius final e verificação de escopo", tools: ["impact", "search"] },
     ],
+    suggestedSkills: ["code-reviewer", "code-review-checklist", "review-and-refactor", "log-standardization-framework", "observability-engineer"],
   },
   HANDOFF: {
     reminder: "Fase HANDOFF: Crie o PR, documente decisões e exporte o grafo. Prepare para entrega.",
     suggestedTools: ["export", "snapshot", "metrics", "analyze"],
     principles: ["Documentação como entrega", "Grafo exportado", "Knowledge base atualizada", "Doc completeness", "Knowledge captured"],
     suggestedMcpAgents: [
-      { name: "gitnexus", action: "Scope check final antes do PR", tools: ["detect_changes"] },
+      { name: "code-graph", action: "Scope check final antes do PR", tools: ["impact", "search"] },
     ],
   },
   LISTENING: {

@@ -1,21 +1,24 @@
 /**
- * Enriched Context Builder — combines Serena memories with GitNexus data
+ * Enriched Context Builder — combines project memories with native Code Intelligence
  * for a unified symbol context. All data sourced locally.
  */
 
-import { readAllSerenaMemories, type SerenaMemory } from "./serena-reader.js";
-import { isGitNexusRunning } from "./gitnexus-launcher.js";
+import { readAllMemories, type ProjectMemory } from "../memory/memory-reader.js";
+import { migrateSerenaMemories } from "../memory/memory-migrator.js";
 import { logger } from "../utils/logger.js";
+import { CodeStore } from "../code/code-store.js";
+import { getSymbolContext } from "../code/graph-traversal.js";
+import type { CodeGraphData } from "../code/code-types.js";
 
 export interface EnrichedContext {
   symbol: string;
-  serena: {
+  memories: {
     available: boolean;
     relevantMemories: Array<{ name: string; excerpt: string }>;
   };
-  gitnexus: {
+  codeGraph: {
     available: boolean;
-    data?: unknown;
+    data?: CodeGraphData;
   };
   combined: string;
 }
@@ -24,7 +27,7 @@ export interface EnrichedContext {
  * Filter memories that mention the given symbol (case-insensitive).
  */
 function filterRelevantMemories(
-  memories: SerenaMemory[],
+  memories: ProjectMemory[],
   symbol: string,
 ): Array<{ name: string; excerpt: string }> {
   const lower = symbol.toLowerCase();
@@ -32,95 +35,96 @@ function filterRelevantMemories(
   return memories
     .filter((m) => m.content.toLowerCase().includes(lower))
     .map((m) => {
-      // Extract relevant excerpt — lines containing the symbol
       const lines = m.content.split("\n");
       const relevant = lines.filter((l) => l.toLowerCase().includes(lower));
       const excerpt = relevant.slice(0, 5).join("\n") || m.content.slice(0, 200);
-
       return { name: m.name, excerpt };
     });
 }
 
 /**
- * Try to fetch GitNexus context for a symbol.
+ * Query native Code Intelligence engine for symbol context.
  */
-async function fetchGitNexusContext(
+function fetchCodeContext(
   symbol: string,
-  port: number,
-): Promise<{ available: boolean; data?: unknown }> {
-  const running = await isGitNexusRunning(port);
-  if (!running) {
-    return { available: false };
-  }
+  db: import("better-sqlite3").Database | null,
+  projectId: string,
+): { available: boolean; data?: CodeGraphData } {
+  if (!db) return { available: false };
 
   try {
-    const res = await fetch(`http://localhost:${port}/api/context`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ symbol }),
-    });
+    const codeStore = new CodeStore(db);
+    const meta = codeStore.getIndexMeta(projectId);
+    if (!meta) return { available: false };
 
-    if (!res.ok) {
-      return { available: true, data: null };
-    }
-
-    const data = await res.json();
-    return { available: true, data };
+    const context = getSymbolContext(codeStore, symbol, projectId);
+    return {
+      available: true,
+      data: context.symbols.length > 0 ? context : undefined,
+    };
   } catch {
     return { available: false };
   }
 }
 
 /**
- * Build enriched context for a symbol by combining Serena + GitNexus data.
+ * Build enriched context for a symbol by combining project memories + native Code Intelligence.
  */
 export async function buildEnrichedContext(
   symbol: string,
   basePath: string,
-  gitnexusPort: number = 3737,
+  _unused?: number,
+  options?: { db?: import("better-sqlite3").Database; projectId?: string },
 ): Promise<EnrichedContext> {
   logger.info("Building enriched context", { symbol, basePath });
 
+  // Lazy migration: copy .serena/memories → workflow-graph/memories if needed
+  await migrateSerenaMemories(basePath);
+
   // Fetch data from both sources in parallel
-  const [memories, gitnexus] = await Promise.all([
-    readAllSerenaMemories(basePath),
-    fetchGitNexusContext(symbol, gitnexusPort),
+  const [memories, codeGraph] = await Promise.all([
+    readAllMemories(basePath),
+    Promise.resolve(fetchCodeContext(
+      symbol,
+      options?.db ?? null,
+      options?.projectId ?? "default",
+    )),
   ]);
 
-  const serenaAvailable = memories.length > 0;
+  const memoriesAvailable = memories.length > 0;
   const relevantMemories = filterRelevantMemories(memories, symbol);
 
   // Build combined summary
   const parts: string[] = [`Symbol: ${symbol}`];
 
   if (relevantMemories.length > 0) {
-    parts.push(`\nSerena Memories (${relevantMemories.length} relevant):`);
+    parts.push(`\nMemories (${relevantMemories.length} relevant):`);
     for (const mem of relevantMemories) {
       parts.push(`  [${mem.name}] ${mem.excerpt.split("\n")[0]}`);
     }
   }
 
-  if (gitnexus.available && gitnexus.data) {
-    parts.push("\nGitNexus Context: Available (see gitnexus.data)");
-  } else if (!gitnexus.available) {
-    parts.push("\nGitNexus: Not available");
+  if (codeGraph.available && codeGraph.data) {
+    parts.push(`\nCode Graph: ${codeGraph.data.symbols.length} symbols, ${codeGraph.data.relations.length} relations`);
+  } else if (!codeGraph.available) {
+    parts.push("\nCode Intelligence: Not indexed. Run reindex first.");
   }
 
   const combined = parts.join("\n");
 
   logger.info("Enriched context built", {
     symbol,
-    serenaMemories: relevantMemories.length,
-    gitnexusAvailable: gitnexus.available,
+    memories: relevantMemories.length,
+    codeGraphAvailable: codeGraph.available,
   });
 
   return {
     symbol,
-    serena: {
-      available: serenaAvailable,
+    memories: {
+      available: memoriesAvailable,
       relevantMemories,
     },
-    gitnexus,
+    codeGraph,
     combined,
   };
 }

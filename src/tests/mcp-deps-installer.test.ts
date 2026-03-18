@@ -54,10 +54,10 @@ describe("mcp-deps-installer", () => {
     it("should include result for each known dependency", () => {
       const names = results.map((r) => r.name);
 
-      expect(names).toContain("gitnexus");
-      expect(names).toContain("serena");
       expect(names).toContain("context7");
       expect(names).toContain("playwright");
+      // Serena removed — no Python dependency needed
+      expect(names).not.toContain("serena");
     });
 
     it("should have correct InstallResult shape for each entry", () => {
@@ -83,20 +83,6 @@ describe("mcp-deps-installer", () => {
 
       expect(playwright).toBeDefined();
       expect(playwright!.status).toMatch(/already_available|installed/);
-    });
-
-    it("should not block init when serena install fails", () => {
-      const serena = results.find((r) => r.name === "serena");
-
-      expect(serena).toBeDefined();
-      expect(["installed", "already_available", "skipped", "failed"]).toContain(serena!.status);
-    });
-
-    it("should report gitnexus status", () => {
-      const gitnexus = results.find((r) => r.name === "gitnexus");
-
-      expect(gitnexus).toBeDefined();
-      expect(["installed", "already_available", "skipped", "failed"]).toContain(gitnexus!.status);
     });
   });
 });
