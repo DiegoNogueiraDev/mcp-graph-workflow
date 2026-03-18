@@ -1,18 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useSkills } from "@/hooks/use-skills";
-import type { Skill, Recommendation } from "@/lib/types";
+import { SkillDetailModal } from "@/components/modals/skill-detail-modal";
+import { CreateSkillModal } from "@/components/modals/create-skill-modal";
+import type { Skill, Recommendation, CustomSkillInput } from "@/lib/types";
 
 const LIFECYCLE_PHASES = ["ANALYZE", "DESIGN", "PLAN", "IMPLEMENT", "VALIDATE", "REVIEW", "HANDOFF", "LISTENING"] as const;
 
 const PHASE_COLORS: Record<string, string> = {
-  ANALYZE: "#8b5cf6",
-  DESIGN: "#3b82f6",
-  PLAN: "#06b6d4",
-  IMPLEMENT: "#10b981",
-  VALIDATE: "#f59e0b",
-  REVIEW: "#ef4444",
-  HANDOFF: "#ec4899",
-  LISTENING: "#6b7280",
+  ANALYZE: "#8b5cf6", DESIGN: "#3b82f6", PLAN: "#06b6d4", IMPLEMENT: "#10b981",
+  VALIDATE: "#f59e0b", REVIEW: "#ef4444", HANDOFF: "#ec4899", LISTENING: "#6b7280",
 };
 
 const TOKEN_BUDGET = 4000;
@@ -21,10 +17,7 @@ const TOKEN_BUDGET = 4000;
 
 function MetricCard({ value, label }: { value: string | number; label: string }): React.JSX.Element {
   return (
-    <div
-      className="p-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-center"
-      data-testid="metric-card"
-    >
+    <div className="p-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-center" data-testid="metric-card">
       <div className="text-xl font-bold">{value}</div>
       <div className="text-[10px] text-[var(--color-text-muted)] uppercase">{label}</div>
     </div>
@@ -34,36 +27,47 @@ function MetricCard({ value, label }: { value: string | number; label: string })
 function PhaseBadge({ phase }: { phase: string }): React.JSX.Element {
   const color = PHASE_COLORS[phase] ?? "#6b7280";
   return (
-    <span
-      className="px-2 py-0.5 rounded-full text-[10px] font-medium"
-      style={{ background: `${color}20`, color }}
-    >
+    <span className="px-2 py-0.5 rounded-full text-[10px] font-medium" style={{ background: `${color}20`, color }}>
       {phase}
     </span>
   );
 }
 
-function SourceBadge({ source }: { source: "built-in" | "filesystem" }): React.JSX.Element {
-  const isBuiltIn = source === "built-in";
+function SourceBadge({ source }: { source: "built-in" | "filesystem" | "custom" }): React.JSX.Element {
+  const colors = {
+    "built-in": "bg-[var(--color-accent)]/10 text-[var(--color-accent)]",
+    "filesystem": "bg-[var(--color-text-muted)]/10 text-[var(--color-text-muted)]",
+    "custom": "bg-purple-500/10 text-purple-500",
+  };
   return (
-    <span
-      className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
-        isBuiltIn
-          ? "bg-[var(--color-accent)]/10 text-[var(--color-accent)]"
-          : "bg-[var(--color-text-muted)]/10 text-[var(--color-text-muted)]"
-      }`}
-    >
+    <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${colors[source]}`}>
       {source}
     </span>
   );
 }
 
-function SkillCard({ skill }: { skill: Skill }): React.JSX.Element {
+function SkillCard({ skill, onToggle, onClick }: {
+  skill: Skill;
+  onToggle: (name: string, enabled: boolean) => void;
+  onClick: (skill: Skill) => void;
+}): React.JSX.Element {
   return (
-    <div className="p-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
+    <div
+      className={`p-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)] cursor-pointer hover:border-[var(--color-accent)]/50 transition-all ${
+        !skill.enabled ? "opacity-50" : ""
+      }`}
+      onClick={() => onClick(skill)}
+    >
       <div className="flex items-center justify-between gap-2 mb-1">
         <span className="text-sm font-medium truncate">{skill.name}</span>
         <div className="flex items-center gap-1.5 shrink-0">
+          <input
+            type="checkbox"
+            checked={skill.enabled}
+            onChange={(e) => { e.stopPropagation(); onToggle(skill.name, e.target.checked); }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-3.5 h-3.5 accent-[var(--color-accent)]"
+          />
           <SourceBadge source={skill.source} />
           <span className="text-[10px] text-[var(--color-text-muted)]">
             {skill.estimatedTokens.toLocaleString()} tok
@@ -75,9 +79,15 @@ function SkillCard({ skill }: { skill: Skill }): React.JSX.Element {
   );
 }
 
-function PhaseSection({ phase, skills }: { phase: string; skills: Skill[] }): React.JSX.Element {
+function PhaseSection({ phase, skills, onToggle, onSkillClick }: {
+  phase: string;
+  skills: Skill[];
+  onToggle: (name: string, enabled: boolean) => void;
+  onSkillClick: (skill: Skill) => void;
+}): React.JSX.Element {
   const [open, setOpen] = useState(true);
   const color = PHASE_COLORS[phase] ?? "#6b7280";
+  const enabledCount = skills.filter((s) => s.enabled).length;
 
   return (
     <div className="rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)] overflow-hidden">
@@ -90,7 +100,7 @@ function PhaseSection({ phase, skills }: { phase: string; skills: Skill[] }): Re
           <span className="w-2 h-2 rounded-full" style={{ background: color }} />
           {phase}
           <span className="px-1.5 py-0.5 rounded-full bg-[var(--color-border)] text-[10px]">
-            {skills.length}
+            {enabledCount}/{skills.length}
           </span>
         </span>
         <span className="text-[var(--color-text-muted)]">{open ? "\u25B2" : "\u25BC"}</span>
@@ -98,7 +108,7 @@ function PhaseSection({ phase, skills }: { phase: string; skills: Skill[] }): Re
       {open && (
         <div className="px-3 pb-3 space-y-2">
           {skills.map((skill) => (
-            <SkillCard key={skill.name} skill={skill} />
+            <SkillCard key={skill.name} skill={skill} onToggle={onToggle} onClick={onSkillClick} />
           ))}
         </div>
       )}
@@ -118,23 +128,28 @@ function RecommendationCard({ rec }: { rec: Recommendation }): React.JSX.Element
   );
 }
 
-function TokenBudgetBar({ totalTokens }: { totalTokens: number }): React.JSX.Element {
-  const ratio = Math.min(totalTokens / TOKEN_BUDGET, 1);
-  const pct = Math.round(ratio * 100);
-  const barColor = ratio > 0.8 ? "#ef4444" : ratio > 0.5 ? "#f59e0b" : "#10b981";
+function TokenBudgetBar({ totalTokens, activeTokens }: { totalTokens: number; activeTokens: number }): React.JSX.Element {
+  const activeRatio = Math.min(activeTokens / TOKEN_BUDGET, 1);
+  const totalRatio = Math.min(totalTokens / TOKEN_BUDGET, 1);
+  const activePct = Math.round(activeRatio * 100);
+  const activeColor = activeRatio > 0.8 ? "#ef4444" : activeRatio > 0.5 ? "#f59e0b" : "#10b981";
 
   return (
     <div data-testid="token-budget-bar" className="p-4 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase">Token Budget</h3>
         <span className="text-xs text-[var(--color-text-muted)]">
-          {totalTokens.toLocaleString()} / {TOKEN_BUDGET.toLocaleString()} tokens ({pct}%)
+          {activeTokens.toLocaleString()} active / {totalTokens.toLocaleString()} total ({activePct}%)
         </span>
       </div>
-      <div className="w-full h-2 rounded-full bg-[var(--color-border)]">
+      <div className="w-full h-2 rounded-full bg-[var(--color-border)] relative">
         <div
-          className="h-full rounded-full transition-all"
-          style={{ width: `${pct}%`, background: barColor }}
+          className="h-full rounded-full absolute top-0 left-0 opacity-30"
+          style={{ width: `${Math.round(totalRatio * 100)}%`, background: "#6b7280" }}
+        />
+        <div
+          className="h-full rounded-full absolute top-0 left-0 transition-all"
+          style={{ width: `${activePct}%`, background: activeColor }}
         />
       </div>
     </div>
@@ -144,7 +159,35 @@ function TokenBudgetBar({ totalTokens }: { totalTokens: number }): React.JSX.Ele
 // ── Main component ────────────────────────────────
 
 export function SkillsTab(): React.JSX.Element {
-  const { skills, recommendations, totalTokens, loading, error, refresh } = useSkills();
+  const {
+    skills, recommendations, totalTokens, activeTokens,
+    loading, error, refresh,
+    toggleSkill, createSkill, updateSkill, deleteSkill,
+  } = useSkills();
+
+  const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [editSkill, setEditSkill] = useState<Skill | null>(null);
+
+  const handleDelete = useCallback(async (id: string) => {
+    await deleteSkill(id);
+    setSelectedSkill(null);
+  }, [deleteSkill]);
+
+  const handleEdit = useCallback((skill: Skill) => {
+    setSelectedSkill(null);
+    setEditSkill(skill);
+    setCreateModalOpen(true);
+  }, []);
+
+  const handleCreateSubmit = useCallback(async (data: CustomSkillInput) => {
+    if (editSkill?.id) {
+      await updateSkill(editSkill.id, data);
+    } else {
+      await createSkill(data);
+    }
+    setEditSkill(null);
+  }, [editSkill, createSkill, updateSkill]);
 
   if (error) {
     return (
@@ -163,7 +206,8 @@ export function SkillsTab(): React.JSX.Element {
   }
 
   const builtInCount = skills.filter((s) => s.source === "built-in").length;
-  const fsCount = skills.filter((s) => s.source === "filesystem").length;
+  const customCount = skills.filter((s) => s.source === "custom").length;
+  const enabledCount = skills.filter((s) => s.enabled).length;
 
   // Group skills by phase
   const skillsByPhase = new Map<string, Skill[]>();
@@ -182,24 +226,33 @@ export function SkillsTab(): React.JSX.Element {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Skills</h2>
-        <button
-          onClick={() => void refresh()}
-          className="text-xs px-3 py-1.5 rounded-lg bg-[var(--color-accent)] text-white hover:opacity-90 transition-opacity"
-        >
-          Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => { setEditSkill(null); setCreateModalOpen(true); }}
+            className="text-xs px-3 py-1.5 rounded-lg border border-[var(--color-accent)] text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 transition-colors"
+          >
+            + Custom Skill
+          </button>
+          <button
+            onClick={() => void refresh()}
+            className="text-xs px-3 py-1.5 rounded-lg bg-[var(--color-accent)] text-white hover:opacity-90 transition-opacity"
+          >
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Stats cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3" data-testid="skills-stats">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3" data-testid="skills-stats">
         <MetricCard value={skills.length} label="Total Skills" />
         <MetricCard value={builtInCount} label="Built-in" />
-        <MetricCard value={fsCount} label="Filesystem" />
-        <MetricCard value={totalTokens.toLocaleString()} label="Total Tokens" />
+        <MetricCard value={customCount} label="Custom" />
+        <MetricCard value={enabledCount} label="Enabled" />
+        <MetricCard value={activeTokens.toLocaleString()} label="Active Tokens" />
       </div>
 
       {/* Token budget bar */}
-      <TokenBudgetBar totalTokens={totalTokens} />
+      <TokenBudgetBar totalTokens={totalTokens} activeTokens={activeTokens} />
 
       {/* Recommendations */}
       {recommendations.length > 0 && (
@@ -221,12 +274,35 @@ export function SkillsTab(): React.JSX.Element {
           Skills by Lifecycle Phase
         </h3>
         {[...skillsByPhase.entries()].map(([phase, phaseSkills]) => (
-          <PhaseSection key={phase} phase={phase} skills={phaseSkills} />
+          <PhaseSection
+            key={phase}
+            phase={phase}
+            skills={phaseSkills}
+            onToggle={toggleSkill}
+            onSkillClick={setSelectedSkill}
+          />
         ))}
         {otherSkills.length > 0 && (
-          <PhaseSection phase="Other" skills={otherSkills} />
+          <PhaseSection phase="Other" skills={otherSkills} onToggle={toggleSkill} onSkillClick={setSelectedSkill} />
         )}
       </div>
+
+      {/* Detail Modal */}
+      <SkillDetailModal
+        skill={selectedSkill}
+        onClose={() => setSelectedSkill(null)}
+        onToggle={toggleSkill}
+        onDelete={handleDelete}
+        onEdit={handleEdit}
+      />
+
+      {/* Create/Edit Modal */}
+      <CreateSkillModal
+        open={createModalOpen}
+        onClose={() => { setCreateModalOpen(false); setEditSkill(null); }}
+        onSubmit={handleCreateSubmit}
+        editSkill={editSkill}
+      />
     </div>
   );
 }

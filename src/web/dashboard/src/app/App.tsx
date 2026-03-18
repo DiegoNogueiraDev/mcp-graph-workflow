@@ -17,6 +17,7 @@ const GitNexusTab = lazy(() => import("@/components/tabs/gitnexus-tab").then((m)
 const MemoriesTab = lazy(() => import("@/components/tabs/memories-tab").then((m) => ({ default: m.MemoriesTab })));
 const InsightsTab = lazy(() => import("@/components/tabs/insights-tab").then((m) => ({ default: m.InsightsTab })));
 const SkillsTab = lazy(() => import("@/components/tabs/skills-tab").then((m) => ({ default: m.SkillsTab })));
+const ContextTab = lazy(() => import("@/components/tabs/context-tab").then((m) => ({ default: m.ContextTab })));
 const BenchmarkTab = lazy(() => import("@/components/tabs/benchmark-tab").then((m) => ({ default: m.BenchmarkTab })));
 const LogsTab = lazy(() => import("@/components/tabs/logs-tab").then((m) => ({ default: m.LogsTab })));
 
@@ -107,6 +108,7 @@ function AppContent(): React.JSX.Element {
                 {activeTab === "memories" && <MemoriesTab />}
                 {activeTab === "insights" && <InsightsTab />}
                 {activeTab === "skills" && <SkillsTab />}
+                {activeTab === "context" && <ContextTab />}
                 {activeTab === "benchmark" && <BenchmarkTab />}
                 {activeTab === "logs" && <LogsTab />}
               </Suspense>

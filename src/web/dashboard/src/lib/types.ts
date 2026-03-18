@@ -102,8 +102,41 @@ export interface Skill {
   category: string;
   description: string;
   phases?: string[];
-  source: "built-in" | "filesystem";
+  source: "built-in" | "filesystem" | "custom";
   estimatedTokens: number;
+  enabled: boolean;
+  id?: string;
+}
+
+export interface CustomSkillInput {
+  name: string;
+  description: string;
+  category: string;
+  phases: string[];
+  instructions: string;
+}
+
+export interface CustomSkill extends CustomSkillInput {
+  id: string;
+  projectId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ContextBudget {
+  totalTokens: number;
+  activeTokens: number;
+  totalCount: number;
+  activeCount: number;
+  health: "green" | "yellow" | "red";
+  healthMessage: string;
+  recommendations: string[];
+  breakdown: Array<{
+    name: string;
+    source: "built-in" | "custom";
+    tokens: number;
+    enabled: boolean;
+  }>;
 }
 
 export interface IntegrationStatus {

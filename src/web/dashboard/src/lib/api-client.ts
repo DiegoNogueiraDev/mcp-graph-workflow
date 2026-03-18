@@ -1,4 +1,4 @@
-import type { GraphDocument, GraphEdge, GraphNode, GraphStats, IntegrationStatus, CodeGraphStatus, ProjectMemory, ReindexResult, LogEntry, FolderInfo, OpenFolderResult, BrowseResult, CodeGraphData, ImpactResult, KnowledgeStats, Skill } from "./types";
+import type { GraphDocument, GraphEdge, GraphNode, GraphStats, IntegrationStatus, CodeGraphStatus, ProjectMemory, ReindexResult, LogEntry, FolderInfo, OpenFolderResult, BrowseResult, CodeGraphData, ImpactResult, KnowledgeStats, Skill, CustomSkill, CustomSkillInput, ContextBudget } from "./types";
 
 const BASE = "/api/v1";
 
@@ -103,6 +103,25 @@ export const apiClient = {
   getRecommendations: () => request<{ recommendations: Array<{ phase: string; skill: string; reason: string }> }>("/insights/recommendations"),
   getMetrics: () => request("/insights/metrics"),
   getSkills: () => request<{ skills: Skill[]; totalTokens: number }>("/skills"),
+  getSkillPreferences: () => request<{ preferences: Record<string, boolean> }>("/skills/preferences"),
+  toggleSkill: (name: string, enabled: boolean) =>
+    request<{ ok: boolean; name: string; enabled: boolean }>(`/skills/${encodeURIComponent(name)}/preference`, {
+      method: "PATCH",
+      body: JSON.stringify({ enabled }),
+    }),
+  createCustomSkill: (data: CustomSkillInput) =>
+    request<CustomSkill>("/skills/custom", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateCustomSkill: (id: string, data: Partial<CustomSkillInput>) =>
+    request<CustomSkill>(`/skills/custom/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  deleteCustomSkill: (id: string) =>
+    request<null>(`/skills/custom/${id}`, { method: "DELETE" }),
+  getContextBudget: () => request<ContextBudget>("/context/budget"),
 
   // Knowledge
   getKnowledgeStats: () => request<KnowledgeStats>("/knowledge/stats/summary"),
