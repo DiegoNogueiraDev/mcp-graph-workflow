@@ -84,6 +84,7 @@ export interface GraphIndexes {
 export interface GraphProject {
   id: string;
   name: string;
+  fsPath?: string;
   createdAt: string;
   updatedAt: string;
 }

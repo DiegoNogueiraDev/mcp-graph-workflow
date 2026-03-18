@@ -12,6 +12,7 @@ export const GraphIndexesSchema = z.object({
 export const GraphProjectSchema = z.object({
   id: z.string(),
   name: z.string(),
+  fsPath: z.string().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });

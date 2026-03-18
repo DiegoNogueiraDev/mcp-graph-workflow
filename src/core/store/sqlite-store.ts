@@ -27,6 +27,7 @@ import { STORE_DIR, LEGACY_STORE_DIR, DB_FILE } from "../utils/constants.js";
 interface ProjectRow {
   id: string;
   name: string;
+  fs_path: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -162,6 +163,19 @@ function rowToEdge(row: EdgeRow): GraphEdge {
   return edge;
 }
 
+// ── Row → Domain mapping ─────────────────────────────────
+
+function rowToProject(row: ProjectRow): GraphProject {
+  const project: GraphProject = {
+    id: row.id,
+    name: row.name,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+  if (row.fs_path) project.fsPath = row.fs_path;
+  return project;
+}
+
 // ── SqliteStore ──────────────────────────────────────────
 
 export class SqliteStore {
@@ -231,6 +245,31 @@ export class SqliteStore {
     return store;
   }
 
+  /**
+   * Open a store at an absolute DB file path.
+   * Creates the file and parent dirs if they don't exist.
+   * Useful for global mode where the DB is at ~/.mcp-graph/graph.db.
+   */
+  static openDb(dbPath: string): SqliteStore {
+    const dir = path.dirname(dbPath);
+    mkdirSync(dir, { recursive: true });
+
+    const db = new Database(dbPath);
+    configureDb(db);
+    runMigrations(db);
+
+    const store = new SqliteStore(db);
+
+    // Auto-load project if one exists
+    const row = db
+      .prepare("SELECT id FROM projects LIMIT 1")
+      .get() as { id: string } | undefined;
+    if (row) store.projectId = row.id;
+
+    logger.info(`Store opened at ${dbPath}`);
+    return store;
+  }
+
   /** Expose the raw database instance for extension modules (e.g. DocsCacheStore). */
   getDb(): Database.Database {
     return this.db;
@@ -261,12 +300,7 @@ export class SqliteStore {
       if (existing) {
         this.projectId = existing.id;
         logger.info("Project activated by name", { name, projectId: existing.id });
-        return {
-          id: existing.id,
-          name: existing.name,
-          createdAt: existing.created_at,
-          updatedAt: existing.updated_at,
-        };
+        return rowToProject(existing);
       }
     }
 
@@ -278,12 +312,7 @@ export class SqliteStore {
     if (existing) {
       this.projectId = existing.id;
       logger.info("Project activated by name", { name: projectName, projectId: existing.id });
-      return {
-        id: existing.id,
-        name: existing.name,
-        createdAt: existing.created_at,
-        updatedAt: existing.updated_at,
-      };
+      return rowToProject(existing);
     }
 
     // If no name provided but a project exists in DB, reuse it
@@ -294,12 +323,7 @@ export class SqliteStore {
       if (anyProject) {
         this.projectId = anyProject.id;
         logger.info("Project activated (existing)", { name: anyProject.name, projectId: anyProject.id });
-        return {
-          id: anyProject.id,
-          name: anyProject.name,
-          createdAt: anyProject.created_at,
-          updatedAt: anyProject.updated_at,
-        };
+        return rowToProject(anyProject);
       }
     }
 
@@ -323,12 +347,7 @@ export class SqliteStore {
       .prepare("SELECT * FROM projects WHERE id = ?")
       .get(this.projectId) as ProjectRow | undefined;
     if (!row) return null;
-    return {
-      id: row.id,
-      name: row.name,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-    };
+    return rowToProject(row);
   }
 
   /** Alias for getProject — returns the currently active project. */
@@ -341,12 +360,7 @@ export class SqliteStore {
     const rows = this.db
       .prepare("SELECT * FROM projects ORDER BY created_at")
       .all() as ProjectRow[];
-    return rows.map((row) => ({
-      id: row.id,
-      name: row.name,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-    }));
+    return rows.map(rowToProject);
   }
 
   /** Switch the active project. Throws if project ID does not exist. */
@@ -359,6 +373,56 @@ export class SqliteStore {
     }
     this.projectId = projectId;
     logger.info("Project activated", { projectId });
+  }
+
+  /**
+   * Find a project by its filesystem path.
+   * Returns null if no project is registered at that path.
+   */
+  findProjectByPath(fsPath: string): GraphProject | null {
+    const row = this.db
+      .prepare("SELECT * FROM projects WHERE fs_path = ?")
+      .get(fsPath) as ProjectRow | undefined;
+    return row ? rowToProject(row) : null;
+  }
+
+  /**
+   * Register a project with a filesystem path.
+   * If a project already exists at that path, returns the existing one.
+   * Creates and activates a new project otherwise.
+   */
+  registerProject(name: string, fsPath: string): GraphProject {
+    // Check if project already exists at this path
+    const existing = this.findProjectByPath(fsPath);
+    if (existing) {
+      this.projectId = existing.id;
+      logger.info("Project found by path", { name: existing.name, fsPath, projectId: existing.id });
+      return existing;
+    }
+
+    // Create new project with fs_path
+    const id = generateId("proj");
+    const timestamp = now();
+    this.db
+      .prepare(
+        "INSERT INTO projects (id, name, fs_path, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+      )
+      .run(id, name, fsPath, timestamp, timestamp);
+
+    this.projectId = id;
+    logger.info(`Project registered: ${name} at ${fsPath} (${id})`);
+    return { id, name, fsPath, createdAt: timestamp, updatedAt: timestamp };
+  }
+
+  /**
+   * Set or update the filesystem path for a project.
+   */
+  setProjectFsPath(projectId: string, fsPath: string): void {
+    const timestamp = now();
+    this.db
+      .prepare("UPDATE projects SET fs_path = ?, updated_at = ? WHERE id = ?")
+      .run(fsPath, timestamp, projectId);
+    logger.info("Project fs_path updated", { projectId, fsPath });
   }
 
   private ensureProject(): string {

@@ -62,7 +62,7 @@ export function createApiRouter(storeOrOptions: SqliteStore | ApiRouterOptions):
   router.use("/import", createImportRouter(storeRef));
   router.use("/integrations", createIntegrationsRouter(storeRef, getBasePath));
   router.use("/insights", createInsightsRouter(storeRef, getBasePath));
-  router.use("/skills", createSkillsRouter(getBasePath));
+  router.use("/skills", createSkillsRouter(getBasePath, storeRef));
   router.use("/capture", createCaptureRouter());
   router.use("/docs", createDocsCacheRouter(storeRef));
   router.use("/context", createContextRouter(storeRef));

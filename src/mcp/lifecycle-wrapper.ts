@@ -16,6 +16,8 @@ import { KnowledgeStore } from "../core/store/knowledge-store.js";
 import { ToolTokenStore } from "../core/store/tool-token-store.js";
 import { estimateTokens } from "../core/context/token-estimator.js";
 import { logger } from "../core/utils/logger.js";
+import { GraphEventBus } from "../core/events/event-bus.js";
+import { categorizeError, generateErrorHash } from "../core/skills/self-healing-listener.js";
 
 export interface PhaseKnowledgeSnippet {
   title: string;
@@ -174,7 +176,7 @@ function extractStatusArgs(toolName: string, args: unknown[]): { nodeId?: string
  * Pre-execution: checks tool gates and status gates (blocks in strict mode).
  * Post-execution: appends _lifecycle block to responses.
  */
-export function wrapToolsWithLifecycle(server: McpServer, store: SqliteStore): void {
+export function wrapToolsWithLifecycle(server: McpServer, store: SqliteStore, eventBus?: GraphEventBus): void {
   const registeredTools = (server as unknown as { _registeredTools: Record<string, RegisteredTool> })._registeredTools;
 
   if (!registeredTools) {
@@ -237,6 +239,24 @@ export function wrapToolsWithLifecycle(server: McpServer, store: SqliteStore): v
         }
       } catch {
         logger.debug("lifecycle-wrapper: token tracking skipped", { tool: name });
+      }
+
+      // ── Error detection for self-healing ──
+      if (eventBus && result?.isError) {
+        try {
+          const errorText = result.content
+            ?.map((c: { text?: string }) => c.text ?? "").join("") ?? "";
+          const errorCategory = categorizeError(errorText);
+          const errorHash = generateErrorHash(errorCategory, errorText);
+          eventBus.emitTyped("error:detected", {
+            toolName: name,
+            errorMessage: errorText.slice(0, 500),
+            errorCategory,
+            errorHash,
+          });
+        } catch {
+          logger.debug("lifecycle-wrapper: error detection skipped", { tool: name });
+        }
       }
 
       // ── Post-execution: append _lifecycle block ──

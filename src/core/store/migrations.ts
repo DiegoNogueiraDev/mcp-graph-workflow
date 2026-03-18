@@ -301,6 +301,45 @@ const migrations: Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_ttu_called  ON tool_token_usage(called_at);
     `,
   },
+  {
+    version: 8,
+    description: "Global mode — fs_path on projects, project_id on knowledge_documents",
+    sql: `
+      ALTER TABLE projects ADD COLUMN fs_path TEXT;
+      CREATE INDEX IF NOT EXISTS idx_projects_fs_path ON projects(fs_path);
+
+      ALTER TABLE knowledge_documents ADD COLUMN project_id TEXT;
+      CREATE INDEX IF NOT EXISTS idx_knowledge_project ON knowledge_documents(project_id);
+    `,
+  },
+  {
+    version: 9,
+    description: "Skill preferences and custom skills tables",
+    sql: `
+      CREATE TABLE IF NOT EXISTS skill_preferences (
+        project_id  TEXT NOT NULL,
+        skill_name  TEXT NOT NULL,
+        enabled     INTEGER NOT NULL DEFAULT 1,
+        updated_at  TEXT NOT NULL,
+        PRIMARY KEY (project_id, skill_name)
+      );
+
+      CREATE TABLE IF NOT EXISTS custom_skills (
+        id          TEXT PRIMARY KEY,
+        project_id  TEXT NOT NULL,
+        name        TEXT NOT NULL,
+        description TEXT NOT NULL,
+        category    TEXT NOT NULL DEFAULT 'know-me',
+        phases      TEXT NOT NULL,
+        instructions TEXT NOT NULL,
+        created_at  TEXT NOT NULL,
+        updated_at  TEXT NOT NULL,
+        UNIQUE(project_id, name)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_custom_skills_project ON custom_skills(project_id);
+    `,
+  },
 ];
 
 export function runMigrations(db: Database.Database): void {

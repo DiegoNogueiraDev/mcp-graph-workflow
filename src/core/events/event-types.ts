@@ -9,7 +9,9 @@ export type GraphEventType =
   | "knowledge:indexed"
   | "knowledge:deleted"
   | "phase:transitioned"
-  | "log:entry";
+  | "log:entry"
+  | "error:detected"
+  | "healing:memory_created";
 
 export interface GraphEvent {
   type: GraphEventType;
@@ -76,4 +78,14 @@ export interface PhaseTransitionedEvent extends GraphEvent {
 export interface LogEntryEvent extends GraphEvent {
   type: "log:entry";
   payload: { id: number; level: string; message: string; context?: Record<string, unknown> };
+}
+
+export interface ErrorDetectedEvent extends GraphEvent {
+  type: "error:detected";
+  payload: { toolName: string; errorMessage: string; errorCategory: string; errorHash: string };
+}
+
+export interface HealingMemoryCreatedEvent extends GraphEvent {
+  type: "healing:memory_created";
+  payload: { memoryName: string; errorCategory: string; errorHash: string };
 }

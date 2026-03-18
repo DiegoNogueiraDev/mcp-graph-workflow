@@ -27,6 +27,7 @@ import { registerPlanSprint } from "./plan-sprint.js";
 import { registerSetPhase } from "./set-phase.js";
 import { registerMemory } from "./memory.js";
 import { registerListSkills } from "./list-skills.js";
+import { registerManageSkill } from "./manage-skill.js";
 import { wrapToolsWithLifecycle } from "../lifecycle-wrapper.js";
 
 export function registerAllTools(server: McpServer, store: SqliteStore): void {
@@ -57,6 +58,7 @@ export function registerAllTools(server: McpServer, store: SqliteStore): void {
   registerSetPhase(server, store);
   registerMemory(server, store);
   registerListSkills(server);
+  registerManageSkill(server, store);
 
   // Wrap all registered tool responses with lifecycle context
   wrapToolsWithLifecycle(server, store);
