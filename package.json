@@ -70,6 +70,7 @@
     "@vitest/coverage-v8": "^4.0.0",
     "eslint": "^10.0.3",
     "eslint-plugin-security": "^4.0.0",
+    "graphology": "^0.26.0",
     "supertest": "^7.2.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",

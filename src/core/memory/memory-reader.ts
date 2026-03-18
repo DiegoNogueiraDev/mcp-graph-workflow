@@ -37,7 +37,7 @@ async function collectMdFiles(dir: string, root: string): Promise<string[]> {
       const nested = await collectMdFiles(fullPath, root);
       results.push(...nested);
     } else if (entry.isFile() && entry.name.endsWith(".md")) {
-      const relative = path.relative(root, fullPath);
+      const relative = path.relative(root, fullPath).replace(/\\/g, "/");
       results.push(relative.replace(/\.md$/, ""));
     }
   }
