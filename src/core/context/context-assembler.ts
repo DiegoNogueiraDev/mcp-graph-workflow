@@ -1,5 +1,5 @@
 /**
- * Context Assembler — combines graph context + knowledge + Serena + docs
+ * Context Assembler — combines graph context + knowledge + memories + docs
  * with token accounting per section. Produces a structured, budgeted context
  * suitable for LLM consumption.
  */
