@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.4.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.3.0...mcp-graph-v5.4.0) (2026-03-18)
+
+
+### Features
+
+* **dashboard:** add skills management UI, context budget tab, and modals ([fe10580](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/fe10580c0015f7c6979b9b2b9ab093b97810a0fa))
+* **skills:** add custom skill CRUD, preferences, and self-healing listener ([3f58c02](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/3f58c02e7e983fa58df804b4d69fc9ceb219799e))
+
 ## [5.3.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.2.0...mcp-graph-v5.3.0) (2026-03-18)
 
 
