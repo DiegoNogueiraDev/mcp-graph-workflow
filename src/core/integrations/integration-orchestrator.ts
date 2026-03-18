@@ -76,7 +76,7 @@ export class IntegrationOrchestrator {
   getStatuses(): IntegrationStatus[] {
     // Refresh document counts
     const knowledgeStore = new KnowledgeStore(this.store.getDb());
-    const sourceTypes = ["upload", "serena", "code_context", "docs", "web_capture"] as const;
+    const sourceTypes = ["upload", "memory", "serena", "code_context", "docs", "web_capture"] as const;
 
     for (const st of sourceTypes) {
       const existing = this.statuses.get(st);
@@ -136,7 +136,7 @@ export class IntegrationOrchestrator {
   }
 
   private initStatuses(): void {
-    const sourceTypes = ["upload", "serena", "code_context", "docs", "web_capture"] as const;
+    const sourceTypes = ["upload", "memory", "serena", "code_context", "docs", "web_capture"] as const;
     const knowledgeStore = new KnowledgeStore(this.store.getDb());
 
     for (const st of sourceTypes) {

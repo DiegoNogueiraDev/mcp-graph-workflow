@@ -16,7 +16,7 @@ import { createCaptureRouter } from "./routes/capture.js";
 import { createDocsCacheRouter } from "./routes/docs-cache.js";
 import { createContextRouter } from "./routes/context.js";
 import { createEventsRouter } from "./routes/events.js";
-import { createGitNexusRouter } from "./routes/gitnexus.js";
+import { createCodeGraphRouter } from "./routes/code-graph.js";
 import { createRagRouter } from "./routes/rag.js";
 import { createKnowledgeRouter } from "./routes/knowledge.js";
 import { createBenchmarkRouter } from "./routes/benchmark.js";
@@ -33,7 +33,6 @@ export interface ApiRouterOptions {
   storeRef?: StoreRef;
   getBasePath?: () => string;
   storeManager?: import("../core/store/store-manager.js").StoreManager;
-  gitnexusPort?: number;
 }
 
 export function createApiRouter(storeOrOptions: SqliteStore | ApiRouterOptions): Router {
@@ -67,15 +66,14 @@ export function createApiRouter(storeOrOptions: SqliteStore | ApiRouterOptions):
   router.use("/capture", createCaptureRouter());
   router.use("/docs", createDocsCacheRouter(storeRef));
   router.use("/context", createContextRouter(storeRef));
-  const gitnexusPort = "gitnexusPort" in storeOrOptions ? storeOrOptions.gitnexusPort : undefined;
-  router.use("/gitnexus", createGitNexusRouter({ getBasePath, gitnexusPort }));
+  router.use("/code-graph", createCodeGraphRouter({ storeRef, getBasePath }));
   router.use("/rag", createRagRouter(storeRef));
   router.use("/knowledge", createKnowledgeRouter(storeRef));
   router.use("/benchmark", createBenchmarkRouter(storeRef));
   router.use("/logs", createLogsRouter());
 
   if (storeManager) {
-    router.use("/folder", createFolderRouter(storeManager, { gitnexusPort }));
+    router.use("/folder", createFolderRouter(storeManager));
   }
 
   if (eventBus) {

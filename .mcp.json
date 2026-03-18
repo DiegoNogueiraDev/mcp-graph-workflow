@@ -7,17 +7,6 @@
         "@mcp-graph-workflow/mcp-graph"
       ]
     },
-    "serena": {
-      "command": "uvx",
-      "args": [
-        "--from",
-        "git+https://github.com/oraios/serena",
-        "serena",
-        "start-mcp-server",
-        "--project",
-        "."
-      ]
-    },
     "playwright": {
       "command": "npx",
       "args": [
@@ -29,14 +18,6 @@
       "args": [
         "-y",
         "@upstash/context7-mcp"
-      ]
-    },
-    "gitnexus": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "gitnexus",
-        "mcp"
       ]
     }
   }

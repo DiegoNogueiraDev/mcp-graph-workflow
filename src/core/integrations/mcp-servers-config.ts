@@ -5,8 +5,6 @@
 
 export const MCP_SERVER_NAMES = [
   "mcp-graph",
-  "gitnexus",
-  "serena",
   "context7",
   "playwright",
 ] as const;
@@ -28,21 +26,6 @@ function getDefaultServers(): Record<McpServerName, McpServerEntry> {
     "mcp-graph": {
       command: "npx",
       args: ["-y", "@mcp-graph-workflow/mcp-graph"],
-    },
-    gitnexus: {
-      command: "npx",
-      args: ["-y", "gitnexus", "mcp"],
-    },
-    serena: {
-      command: "uvx",
-      args: [
-        "--from",
-        "git+https://github.com/oraios/serena",
-        "serena",
-        "start-mcp-server",
-        "--project",
-        ".",
-      ],
     },
     context7: {
       command: "npx",
