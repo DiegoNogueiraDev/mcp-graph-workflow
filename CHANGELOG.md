@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.3.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.2.0...mcp-graph-v5.3.0) (2026-03-18)
+
+
+### Features
+
+* add built-in skills system with list_skills tool ([b433038](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/b4330380fbb87bb45dc9533e457e66fa765b2e93))
+* add Insights dashboard with health score and bottleneck detection ([9a17e72](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/9a17e72de71a47a32d307bb7919c3a5fc5f2b85a))
+* add layered context compression and tool token tracking ([fd8bc68](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/fd8bc68255fc0752fe31ac3c3d9fbe698ed75127))
+* add native Code Intelligence engine with AST analysis and impact tracking ([90c2bbe](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/90c2bbe27a89a1d7b51f89ee12fdd424f3f85051))
+* add native memory system replacing Serena MCP ([7709301](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/77093017eb598cec109b5c790c77c1993a7de16c))
+* **dashboard:** Add Skills tab with token estimation ([ed1e67c](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/ed1e67c736041db80fe4edfdb62f8b1dda4bfd43))
+* remove GitNexus MCP in favor of native Code Intelligence ([0fc8371](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/0fc8371d72ba7923158c7c691c12ee50e6307d27))
+* update dashboard with project enhancements and new components ([3f0e565](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/3f0e5654e623c61f23155a8f354398a313240d14))
+
+
+### Bug Fixes
+
+* Resolve CI failures for graphology dep and Windows path separators ([f39118c](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/f39118c79c84bb53fbc0922af331e66e29170f93))
+* resolve lint errors in code intelligence and insights modules ([66601d3](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/66601d3a74a155f3e9c18cb216962c1d501a1dbd))
+* **test:** resolve flaky gitnexus basePath tracking test in CI ([5e9f44c](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/5e9f44c702c642becb299ed7fe57b35d684e5852))
+
 ## [5.2.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.1.5...mcp-graph-v5.2.0) (2026-03-17)
 
 
