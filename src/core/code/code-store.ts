@@ -7,7 +7,6 @@ import type Database from "better-sqlite3";
 import type { CodeSymbol, CodeRelation, CodeIndexMeta } from "./code-types.js";
 import { generateId } from "../utils/id.js";
 import { now } from "../utils/time.js";
-import { logger } from "../utils/logger.js";
 
 // ── Row types (SQLite ↔ JS) ─────────────────────────────
 

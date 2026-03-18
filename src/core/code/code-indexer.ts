@@ -3,7 +3,7 @@
  * Supports incremental reindexing by clearing per-file data before reinserting.
  */
 
-import { readdirSync, statSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import path from "node:path";
 import type { CodeStore } from "./code-store.js";
 import type { IndexResult } from "./code-types.js";

@@ -339,10 +339,11 @@ function collectCalls(
         const { line } = ts.getLineAndCharacterOfPosition(sourceFile, node.getStart());
 
         // Resolve through import map if available
-        const resolvedName = importMap.has(calleeName)
-          ? importMap.get(calleeName)!.importedName === "*"
+        const importEntry = importMap.get(calleeName);
+        const resolvedName = importEntry
+          ? importEntry.importedName === "*"
             ? calleeName
-            : importMap.get(calleeName)!.importedName
+            : importEntry.importedName
           : calleeName;
 
         relations.push({
@@ -384,7 +385,7 @@ function hasExportModifier(node: ts.Node): boolean {
   return modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword) ?? false;
 }
 
-function extractCalleeName(expr: ts.Expression, sourceFile: ts.SourceFile): string | null {
+function extractCalleeName(expr: ts.Expression, _sourceFile: ts.SourceFile): string | null {
   // Simple identifier: foo()
   if (ts.isIdentifier(expr)) {
     return expr.text;

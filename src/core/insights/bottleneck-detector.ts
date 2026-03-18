@@ -109,7 +109,7 @@ export function detectBottlenecks(doc: GraphDocument): BottleneckReport {
         n.estimateMinutes > OVERSIZE_THRESHOLD_MINUTES &&
         !hasChildren(n.id),
     )
-    .map((n) => ({ id: n.id, title: n.title, estimateMinutes: n.estimateMinutes! }));
+    .map((n) => ({ id: n.id, title: n.title, estimateMinutes: n.estimateMinutes ?? 0 }));
 
   logger.info("Bottleneck detection complete", {
     blocked: blockedTasks.length,
