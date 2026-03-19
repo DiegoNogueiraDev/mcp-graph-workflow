@@ -1,3 +1,7 @@
+/**
+ * @deprecated Use `validate` tool with action:"task" instead. Will be removed in v7.0.
+ */
+
 import { z } from "zod/v4";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { SqliteStore } from "../../core/store/sqlite-store.js";
@@ -9,7 +13,7 @@ import { logger } from "../../core/utils/logger.js";
 export function registerValidateTask(server: McpServer, store: SqliteStore): void {
   server.tool(
     "validate_task",
-    "Run browser-based validation for a task. Captures a URL, optionally compares with a second URL (A/B), and indexes the captured content into the knowledge store.",
+    "Run browser-based validation for a task (DEPRECATED — use `validate` with action:\"task\")",
     {
       url: z.string().url().describe("URL to validate"),
       compareUrl: z
@@ -27,6 +31,7 @@ export function registerValidateTask(server: McpServer, store: SqliteStore): voi
         .describe("Associate validation with a graph node"),
     },
     async ({ url, compareUrl, selector, nodeId }) => {
+      logger.warn("tool:validate_task:deprecated", { message: "Use 'validate' tool with action:'task' instead" });
       logger.debug("tool:validate_task", { nodeId });
       const result = await runValidation(url, { compareUrl, selector });
 
@@ -43,6 +48,7 @@ export function registerValidateTask(server: McpServer, store: SqliteStore): voi
         wordCount: result.primary.wordCount,
         title: result.primary.title,
         timestamp: result.timestamp,
+        _deprecated: "Use 'validate' tool with action:'task'",
       };
 
       if (nodeId) {

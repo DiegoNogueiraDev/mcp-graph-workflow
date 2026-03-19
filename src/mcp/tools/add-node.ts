@@ -1,3 +1,7 @@
+/**
+ * @deprecated Use `node` tool with action:"add" instead. Will be removed in v7.0.
+ */
+
 import { z } from "zod/v4";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { SqliteStore } from "../../core/store/sqlite-store.js";
@@ -11,7 +15,7 @@ import { logger } from "../../core/utils/logger.js";
 export function registerAddNode(server: McpServer, store: SqliteStore): void {
   server.tool(
     "add_node",
-    "Create a single node in the graph",
+    "Create a single node in the graph (DEPRECATED — use `node` with action:\"add\")",
     {
       type: NodeTypeSchema.describe("Node type (epic, task, subtask, etc.)"),
       title: z.string().describe("Node title"),
@@ -28,6 +32,7 @@ export function registerAddNode(server: McpServer, store: SqliteStore): void {
       metadata: z.record(z.string(), z.unknown()).optional().describe("Custom metadata"),
     },
     async (args) => {
+      logger.warn("tool:add_node:deprecated", { message: "Use 'node' tool with action:'add' instead" });
       logger.debug("tool:add_node", { type: args.type, title: args.title, parentId: args.parentId });
       if (args.parentId) {
         const parent = store.getNodeById(args.parentId);
@@ -35,7 +40,7 @@ export function registerAddNode(server: McpServer, store: SqliteStore): void {
           const err = new NodeNotFoundError(args.parentId);
           return {
             content: [
-              { type: "text" as const, text: JSON.stringify({ error: `Parent not found: ${err.message}` }) },
+              { type: "text" as const, text: JSON.stringify({ error: `Parent not found: ${err.message}`, _deprecated: "Use 'node' tool with action:'add'" }) },
             ],
             isError: true,
           };
@@ -86,7 +91,7 @@ export function registerAddNode(server: McpServer, store: SqliteStore): void {
         content: [
           {
             type: "text" as const,
-            text: JSON.stringify({ ok: true, node }, null, 2),
+            text: JSON.stringify({ ok: true, node, _deprecated: "Use 'node' tool with action:'add'" }, null, 2),
           },
         ],
       };

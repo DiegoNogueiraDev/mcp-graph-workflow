@@ -1,3 +1,7 @@
+/**
+ * @deprecated Use `node` tool with action:"update" instead. Will be removed in v7.0.
+ */
+
 import { z } from "zod/v4";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { SqliteStore } from "../../core/store/sqlite-store.js";
@@ -8,7 +12,7 @@ import { logger } from "../../core/utils/logger.js";
 export function registerUpdateNode(server: McpServer, store: SqliteStore): void {
   server.tool(
     "update_node",
-    "Update arbitrary fields of a node (title, description, priority, sprint, tags, xpSize, etc.)",
+    "Update arbitrary fields of a node (DEPRECATED — use `node` with action:\"update\")",
     {
       id: z.string().describe("The node ID to update"),
       title: z.string().optional().describe("New title"),
@@ -26,6 +30,7 @@ export function registerUpdateNode(server: McpServer, store: SqliteStore): void 
         .describe("New acceptance criteria"),
     },
     async ({ id, ...fields }) => {
+      logger.warn("tool:update_node:deprecated", { message: "Use 'node' tool with action:'update' instead" });
       logger.debug("tool:update_node", { id, fields: Object.keys(fields) });
       const updated = store.updateNode(id, fields);
 
@@ -34,7 +39,7 @@ export function registerUpdateNode(server: McpServer, store: SqliteStore): void 
         logger.warn("tool:update_node:fail", { error: err.message });
         return {
           content: [
-            { type: "text" as const, text: JSON.stringify({ error: err.message }) },
+            { type: "text" as const, text: JSON.stringify({ error: err.message, _deprecated: "Use 'node' tool with action:'update'" }) },
           ],
           isError: true,
         };
@@ -45,7 +50,7 @@ export function registerUpdateNode(server: McpServer, store: SqliteStore): void 
         content: [
           {
             type: "text" as const,
-            text: JSON.stringify({ ok: true, node: updated }, null, 2),
+            text: JSON.stringify({ ok: true, node: updated, _deprecated: "Use 'node' tool with action:'update'" }, null, 2),
           },
         ],
       };

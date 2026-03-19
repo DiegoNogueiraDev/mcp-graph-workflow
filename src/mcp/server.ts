@@ -37,23 +37,25 @@ const app = createApp({
 // ── Code Graph auto-index ────────────────────────────────
 if (config.integrations.codeGraphAutoIndex) {
   const basePath = storeManager.basePath;
-  try {
-    const project = storeManager.store.getProject();
-    if (project) {
-      const codeStore = new CodeStore(storeManager.store.getDb());
-      const indexer = new CodeIndexer(codeStore, project.id);
-      const result = indexer.indexDirectory(basePath, basePath);
-      logger.info("Code graph auto-indexed", {
-        files: result.fileCount,
-        symbols: result.symbolCount,
-        relations: result.relationCount,
+  (async () => {
+    try {
+      const project = storeManager.store.getProject();
+      if (project) {
+        const codeStore = new CodeStore(storeManager.store.getDb());
+        const indexer = new CodeIndexer(codeStore, project.id);
+        const result = await indexer.indexDirectory(basePath, basePath);
+        logger.info("Code graph auto-indexed", {
+          files: result.fileCount,
+          symbols: result.symbolCount,
+          relations: result.relationCount,
+        });
+      }
+    } catch (err) {
+      logger.warn("Code graph auto-index failed (non-blocking)", {
+        error: err instanceof Error ? err.message : String(err),
       });
     }
-  } catch (err) {
-    logger.warn("Code graph auto-index failed (non-blocking)", {
-      error: err instanceof Error ? err.message : String(err),
-    });
-  }
+  })();
 }
 
 // ── Cleanup on shutdown ──────────────────────────────────
