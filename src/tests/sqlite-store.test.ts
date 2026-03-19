@@ -324,4 +324,57 @@ describe("SqliteStore", () => {
       expect(() => store.restoreSnapshot(999)).toThrow(SnapshotNotFoundError);
     });
   });
+
+  // ── Delete cascade ────────────────────────────
+
+  describe("deleteNode cascade", () => {
+    it("should recursively delete children when parent is deleted", () => {
+      // Arrange — epic with 2 child tasks, one with a subtask
+      const epic = makeNode({ type: "epic", title: "Epic" });
+      const task1 = makeNode({ type: "task", title: "Task 1", parentId: epic.id });
+      const task2 = makeNode({ type: "task", title: "Task 2", parentId: epic.id });
+      const subtask = makeNode({ type: "subtask", title: "Subtask", parentId: task1.id });
+      store.insertNode(epic);
+      store.insertNode(task1);
+      store.insertNode(task2);
+      store.insertNode(subtask);
+
+      expect(store.getAllNodes()).toHaveLength(4);
+
+      // Act — delete the epic
+      const deleted = store.deleteNode(epic.id);
+
+      // Assert — all 4 nodes removed
+      expect(deleted).toBe(true);
+      expect(store.getAllNodes()).toHaveLength(0);
+      expect(store.getNodeById(task1.id)).toBeNull();
+      expect(store.getNodeById(task2.id)).toBeNull();
+      expect(store.getNodeById(subtask.id)).toBeNull();
+    });
+
+    it("should clean up edges when cascade deleting", () => {
+      // Arrange
+      const epic = makeNode({ type: "epic", title: "Epic" });
+      const task = makeNode({ type: "task", title: "Task", parentId: epic.id });
+      store.insertNode(epic);
+      store.insertNode(task);
+      store.insertEdge(makeEdge(epic.id, task.id, { relationType: "parent_of" }));
+      store.insertEdge(makeEdge(task.id, epic.id, { relationType: "child_of" }));
+
+      // Act
+      store.deleteNode(epic.id);
+
+      // Assert — all edges gone
+      expect(store.getAllEdges()).toHaveLength(0);
+    });
+
+    it("should delete leaf node (no children) normally", () => {
+      const task = makeNode({ type: "task", title: "Leaf" });
+      store.insertNode(task);
+
+      const deleted = store.deleteNode(task.id);
+      expect(deleted).toBe(true);
+      expect(store.getNodeById(task.id)).toBeNull();
+    });
+  });
 });

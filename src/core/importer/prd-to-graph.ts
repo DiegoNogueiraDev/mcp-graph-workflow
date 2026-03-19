@@ -149,11 +149,14 @@ export function convertToGraph(
   const nodes: GraphNode[] = [];
   const edges: GraphEdge[] = [];
 
-  // Pass 1: Create nodes from top-level blocks
-  for (const block of extraction.blocks) {
+  // Pass 1: Create nodes from top-level blocks (maps block index → node)
+  const blockNodeMap: Map<number, GraphNode> = new Map();
+  for (let bi = 0; bi < extraction.blocks.length; bi++) {
+    const block = extraction.blocks[bi];
     const node = createNodeFromBlock(block, sourceFile);
     if (!node) continue;
     nodes.push(node);
+    blockNodeMap.set(bi, node);
 
     // Pass 2: Create child nodes from block items
     const childTaskNodes: GraphNode[] = [];
@@ -185,8 +188,9 @@ export function convertToGraph(
 
       nodes.push(childNode);
 
-      // Parent-child edge
+      // Parent-child edges (bidirectional)
       edges.push(createEdge(node.id, childNode.id, "parent_of", undefined, false, 1));
+      edges.push(createEdge(childNode.id, node.id, "child_of", undefined, false, 1));
 
       if (itemType === "task" || itemType === "subtask") {
         childTaskNodes.push(childNode);
@@ -199,27 +203,66 @@ export function convertToGraph(
     }
   }
 
-  // Pass 3: Link constraints to tasks as blockers
+  // Pass 1.5: Heading hierarchy — assign parent based on heading level
+  // Use a stack to track the current parent at each heading depth
+  const levelStack: { level: number; node: GraphNode }[] = [];
+
+  for (let bi = 0; bi < extraction.blocks.length; bi++) {
+    const block = extraction.blocks[bi];
+    const node = blockNodeMap.get(bi);
+    if (!node) continue;
+
+    // Pop stack while top has level >= current (siblings or deeper = not parent)
+    while (levelStack.length > 0 && levelStack[levelStack.length - 1].level >= block.level) {
+      levelStack.pop();
+    }
+
+    // If stack not empty, the top is the parent
+    if (levelStack.length > 0) {
+      const parent = levelStack[levelStack.length - 1].node;
+      node.parentId = parent.id;
+      edges.push(createEdge(parent.id, node.id, "parent_of", "Heading hierarchy", false, 1));
+      edges.push(createEdge(node.id, parent.id, "child_of", "Heading hierarchy", false, 1));
+    }
+
+    levelStack.push({ level: block.level, node });
+  }
+
+  // Pass 3: Link constraints to tasks as blockers (scoped to same parent)
   const constraintNodes = nodes.filter((n) => n.type === "constraint");
   const taskNodes = nodes.filter((n) => n.type === "task" || n.type === "subtask");
 
   for (const constraint of constraintNodes) {
-    for (const task of taskNodes) {
-      // Only create block edges if constraint text seems related
-      // For now, constraints block all tasks (simple heuristic for MVP)
+    const scopedTasks = constraint.parentId
+      ? taskNodes.filter((t) => t.parentId === constraint.parentId)
+      : taskNodes;
+
+    for (const task of scopedTasks) {
       edges.push(
         createEdge(constraint.id, task.id, "related_to", "Constraint applies to task", true, 0.4),
       );
     }
   }
 
-  // Pass 4: Link acceptance criteria to epic/parent
+  // Pass 4: Link acceptance criteria to nearest previous epic/task
   const acNodes = nodes.filter((n) => n.type === "acceptance_criteria");
-  const epicNodes = nodes.filter((n) => n.type === "epic");
   for (const ac of acNodes) {
-    if (ac.parentId) continue; // already linked
-    for (const epic of epicNodes) {
-      edges.push(createEdge(ac.id, epic.id, "implements", "Acceptance criteria for epic", true, 0.6));
+    if (ac.parentId) continue; // already linked via heading hierarchy
+
+    // Find the nearest previous epic or task in block order
+    const acBlockIndex = [...blockNodeMap.entries()].find(([, n]) => n.id === ac.id)?.[0];
+    if (acBlockIndex !== undefined) {
+      let nearestParent: GraphNode | null = null;
+      for (let i = acBlockIndex - 1; i >= 0; i--) {
+        const candidate = blockNodeMap.get(i);
+        if (candidate && (candidate.type === "epic" || candidate.type === "task")) {
+          nearestParent = candidate;
+          break;
+        }
+      }
+      if (nearestParent) {
+        edges.push(createEdge(ac.id, nearestParent.id, "implements", "Acceptance criteria for epic", true, 0.6));
+      }
     }
   }
 

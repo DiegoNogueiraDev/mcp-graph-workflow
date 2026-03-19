@@ -14,6 +14,7 @@ function makeBlock(overrides: Partial<ClassifiedBlock> = {}): ClassifiedBlock {
     startLine: 1,
     endLine: 10,
     confidence: 0.9,
+    level: 2,
     ...overrides,
   };
 }
@@ -287,8 +288,8 @@ describe("convertToGraph", () => {
     // Assert
     // Nodes: 1 epic + 2 child tasks + 1 constraint = 4
     expect(result.stats.nodesCreated).toBe(4);
-    // Edges: 2 parent_of + 1 sequential depends_on + 2 constraint related_to = 5
-    expect(result.stats.edgesCreated).toBe(5);
+    // Edges: 2 parent_of + 2 child_of + 1 sequential depends_on + 2 constraint related_to = 7
+    expect(result.stats.edgesCreated).toBe(7);
     // Blocked: Task B depends on Task A = 1 blocked
     expect(result.stats.blockedTasks).toBe(1);
     // Inferred: 1 sequential + 2 constraint = 3
@@ -324,5 +325,186 @@ describe("convertToGraph", () => {
     // Assert
     expect(result.nodes).toHaveLength(1);
     expect(result.nodes[0].title).toBe("Valid task");
+  });
+
+  // ── Issue #1: Heading hierarchy (h3 under h2) ──────────
+
+  it("h3 task sob h2 epic recebe parentId do epic + edges bidirecionais", () => {
+    // Arrange — simula h2 Epic seguido de h3 Task
+    const extraction = makeExtraction([
+      makeBlock({ type: "epic", title: "Epic A", level: 2 }),
+      makeBlock({ type: "task", title: "Task A.1", level: 3 }),
+      makeBlock({ type: "task", title: "Task A.2", level: 3 }),
+    ]);
+
+    // Act
+    const result = convertToGraph(extraction, "prd.md");
+
+    // Assert
+    const epic = result.nodes.find((n) => n.title === "Epic A")!;
+    const task1 = result.nodes.find((n) => n.title === "Task A.1")!;
+    const task2 = result.nodes.find((n) => n.title === "Task A.2")!;
+
+    expect(task1.parentId).toBe(epic.id);
+    expect(task2.parentId).toBe(epic.id);
+
+    // Bidirectional edges
+    expect(result.edges.some((e) => e.from === epic.id && e.to === task1.id && e.relationType === "parent_of")).toBe(true);
+    expect(result.edges.some((e) => e.from === task1.id && e.to === epic.id && e.relationType === "child_of")).toBe(true);
+    expect(result.edges.some((e) => e.from === epic.id && e.to === task2.id && e.relationType === "parent_of")).toBe(true);
+    expect(result.edges.some((e) => e.from === task2.id && e.to === epic.id && e.relationType === "child_of")).toBe(true);
+  });
+
+  it("h4 subtask sob h3 task recebe parentId do task", () => {
+    // Arrange
+    const extraction = makeExtraction([
+      makeBlock({ type: "epic", title: "Epic", level: 2 }),
+      makeBlock({ type: "task", title: "Task", level: 3 }),
+      makeBlock({ type: "subtask", title: "Subtask", level: 4 }),
+    ]);
+
+    // Act
+    const result = convertToGraph(extraction, "prd.md");
+
+    // Assert
+    const task = result.nodes.find((n) => n.title === "Task")!;
+    const subtask = result.nodes.find((n) => n.title === "Subtask")!;
+    expect(subtask.parentId).toBe(task.id);
+  });
+
+  it("multiplos epics mantêm tasks separadas", () => {
+    // Arrange
+    const extraction = makeExtraction([
+      makeBlock({ type: "epic", title: "Epic A", level: 2 }),
+      makeBlock({ type: "task", title: "Task A.1", level: 3 }),
+      makeBlock({ type: "epic", title: "Epic B", level: 2 }),
+      makeBlock({ type: "task", title: "Task B.1", level: 3 }),
+    ]);
+
+    // Act
+    const result = convertToGraph(extraction, "prd.md");
+
+    // Assert
+    const epicA = result.nodes.find((n) => n.title === "Epic A")!;
+    const epicB = result.nodes.find((n) => n.title === "Epic B")!;
+    const taskA1 = result.nodes.find((n) => n.title === "Task A.1")!;
+    const taskB1 = result.nodes.find((n) => n.title === "Task B.1")!;
+
+    expect(taskA1.parentId).toBe(epicA.id);
+    expect(taskB1.parentId).toBe(epicB.id);
+  });
+
+  it("sections de mesmo nível consecutivas são siblings, não parent-child", () => {
+    // Arrange
+    const extraction = makeExtraction([
+      makeBlock({ type: "task", title: "Task 1", level: 2 }),
+      makeBlock({ type: "task", title: "Task 2", level: 2 }),
+    ]);
+
+    // Act
+    const result = convertToGraph(extraction, "prd.md");
+
+    // Assert
+    const task1 = result.nodes.find((n) => n.title === "Task 1")!;
+    const task2 = result.nodes.find((n) => n.title === "Task 2")!;
+    expect(task1.parentId).toBeFalsy();
+    expect(task2.parentId).toBeFalsy();
+  });
+
+  // ── Issue #2: AC nodes linkam ao parent mais próximo ───
+
+  it("AC nodes órfãos linkam ao epic/task mais próximo anterior, não a todos", () => {
+    // Arrange
+    const extraction = makeExtraction([
+      makeBlock({ type: "epic", title: "Epic 1", level: 2 }),
+      makeBlock({ type: "epic", title: "Epic 2", level: 2 }),
+      makeBlock({ type: "acceptance_criteria", title: "AC for Epic 2", level: 2 }),
+    ]);
+
+    // Act
+    const result = convertToGraph(extraction, "prd.md");
+
+    // Assert
+    const epic2 = result.nodes.find((n) => n.title === "Epic 2")!;
+    const ac = result.nodes.find((n) => n.title === "AC for Epic 2")!;
+    const implementsEdges = result.edges.filter((e) => e.relationType === "implements");
+
+    // Should only link to the nearest previous epic (Epic 2), not all epics
+    expect(implementsEdges).toHaveLength(1);
+    expect(implementsEdges[0].from).toBe(ac.id);
+    expect(implementsEdges[0].to).toBe(epic2.id);
+  });
+
+  // ── Issue #3: child_of reciprocal edges on item children ──
+
+  it("cria child_of recíproco junto com parent_of para items filhos", () => {
+    // Arrange
+    const extraction = makeExtraction([
+      makeBlock({
+        type: "epic",
+        title: "Parent Epic",
+        items: [makeItem({ type: "task", text: "Child Task" })],
+      }),
+    ]);
+
+    // Act
+    const result = convertToGraph(extraction, "prd.md");
+
+    // Assert
+    const parentNode = result.nodes.find((n) => n.title === "Parent Epic")!;
+    const childNode = result.nodes.find((n) => n.title === "Child Task")!;
+
+    const parentOf = result.edges.filter((e) => e.relationType === "parent_of");
+    const childOf = result.edges.filter((e) => e.relationType === "child_of");
+
+    expect(parentOf).toHaveLength(1);
+    expect(childOf).toHaveLength(1);
+    expect(parentOf[0].from).toBe(parentNode.id);
+    expect(parentOf[0].to).toBe(childNode.id);
+    expect(childOf[0].from).toBe(childNode.id);
+    expect(childOf[0].to).toBe(parentNode.id);
+  });
+
+  // ── Issue #4: Constraints scoped ao parent ─────────────
+
+  it("constraints linkam apenas a tasks do mesmo parent (siblings)", () => {
+    // Arrange — Constraint e Task A sob Epic A, Task B sob Epic B
+    const extraction = makeExtraction([
+      makeBlock({ type: "epic", title: "Epic A", level: 2 }),
+      makeBlock({ type: "constraint", title: "Constraint A", level: 3 }),
+      makeBlock({ type: "task", title: "Task A", level: 3 }),
+      makeBlock({ type: "epic", title: "Epic B", level: 2 }),
+      makeBlock({ type: "task", title: "Task B", level: 3 }),
+    ]);
+
+    // Act
+    const result = convertToGraph(extraction, "prd.md");
+
+    // Assert
+    const constraintNode = result.nodes.find((n) => n.title === "Constraint A")!;
+    const taskA = result.nodes.find((n) => n.title === "Task A")!;
+    const taskB = result.nodes.find((n) => n.title === "Task B")!;
+
+    const relatedEdges = result.edges.filter((e) => e.relationType === "related_to" && e.from === constraintNode.id);
+    // Should only link to Task A (same parent), not Task B
+    expect(relatedEdges).toHaveLength(1);
+    expect(relatedEdges[0].to).toBe(taskA.id);
+  });
+
+  it("constraints sem parent linkam a todos os tasks (fallback)", () => {
+    // Arrange — all at level 2, no parent hierarchy
+    const extraction = makeExtraction([
+      makeBlock({ type: "constraint", title: "Global Constraint", level: 2 }),
+      makeBlock({ type: "task", title: "Task 1", level: 2 }),
+      makeBlock({ type: "task", title: "Task 2", level: 2 }),
+    ]);
+
+    // Act
+    const result = convertToGraph(extraction, "prd.md");
+
+    // Assert
+    const constraintNode = result.nodes.find((n) => n.title === "Global Constraint")!;
+    const relatedEdges = result.edges.filter((e) => e.relationType === "related_to" && e.from === constraintNode.id);
+    expect(relatedEdges).toHaveLength(2);
   });
 });

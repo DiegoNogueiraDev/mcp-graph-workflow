@@ -15,6 +15,7 @@ export interface ClassifiedBlock {
   startLine: number;
   endLine: number;
   confidence: number;
+  level: number;
 }
 
 export interface ClassifiedItem {
@@ -165,5 +166,6 @@ export function classifySection(
     startLine,
     endLine,
     confidence: finalConf,
+    level,
   };
 }

@@ -624,19 +624,39 @@ export class SqliteStore {
     logger.debug("tx:delete-node", { id });
 
     return this.db.transaction(() => {
-      // Delete edges referencing this node
-      this.db
-        .prepare(
-          "DELETE FROM edges WHERE project_id = ? AND (from_node = ? OR to_node = ?)",
-        )
-        .run(pid, id, id);
+      // Recursively collect all descendant node IDs
+      const toDelete: string[] = [];
+      const collectDescendants = (nodeId: string): void => {
+        toDelete.push(nodeId);
+        const children = this.db
+          .prepare("SELECT id FROM nodes WHERE project_id = ? AND parent_id = ?")
+          .all(pid, nodeId) as { id: string }[];
+        for (const child of children) {
+          collectDescendants(child.id);
+        }
+      };
+      collectDescendants(id);
 
-      const result = this.db
-        .prepare("DELETE FROM nodes WHERE id = ? AND project_id = ?")
-        .run(id, pid);
+      // Delete edges and nodes for all collected IDs
+      for (const nodeId of toDelete) {
+        this.db
+          .prepare(
+            "DELETE FROM edges WHERE project_id = ? AND (from_node = ? OR to_node = ?)",
+          )
+          .run(pid, nodeId, nodeId);
+      }
 
-      const deleted = result.changes > 0;
-      if (deleted) this._eventBus?.emitTyped("node:deleted", { nodeId: id });
+      let deleted = false;
+      for (const nodeId of toDelete) {
+        const result = this.db
+          .prepare("DELETE FROM nodes WHERE id = ? AND project_id = ?")
+          .run(nodeId, pid);
+        if (result.changes > 0) {
+          deleted = true;
+          this._eventBus?.emitTyped("node:deleted", { nodeId });
+        }
+      }
+
       return deleted;
     })();
   }
