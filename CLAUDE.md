@@ -230,6 +230,66 @@ The **Code Graph** tab in the dashboard visualizes symbols, relationships, and e
 
 The code index is stored in `workflow-graph/` alongside the execution graph. It is rebuilt by the `reindex_knowledge` MCP tool or via the dashboard.
 
+## mcp-graph Execution Rule
+
+**MANDATORY — applies to every task the AI performs, no exceptions.**
+
+mcp-graph is the **single source of truth** for all work. The execution graph must reflect reality at all times. No implementation happens outside the graph.
+
+### Before ANY implementation (Gate de Entrada)
+
+1. **Node must exist** — before writing ANY code, the corresponding task node MUST exist in mcp-graph. Use `search` or `list` to find it. If it doesn't exist, create it with `node` (action: `add`) BEFORE touching any source file.
+2. **Epic structure first** — when starting a new Epic or feature, create ALL nodes (Epic + child tasks) and ALL edges (dependencies) BEFORE implementing the first task. Use `import_prd` for PRDs or `node` (action: `add`) + `edge` for manual creation.
+3. **Status = in_progress** — call `update_status` → `in_progress` BEFORE writing the first line of code for a task.
+4. **Load context** — call `context` for the task to load compressed context (dependencies, RAG knowledge, related nodes). This informs the implementation.
+5. **Use `next`** — always use `next` to get the recommended task based on priority + dependencies + knowledge coverage. Do NOT cherry-pick tasks unless the user explicitly requests a specific one.
+
+### During implementation (Ciclo Obrigatório)
+
+6. **The mandatory flow is: `next → context → [implement with TDD] → update_status → next`**. This cycle is NOT optional, NOT "recommended" — it is REQUIRED for every task.
+7. **Phase-aware analysis** — use `analyze` with the appropriate mode for the current lifecycle phase:
+   - IMPLEMENT: `tdd_check` (before coding), `implement_done` (after coding), `progress` (mid-sprint)
+   - VALIDATE: `validate_ready`, `done_integrity`, `status_flow`
+   - REVIEW: `review_ready`
+8. **Save decisions** — use `write_memory` for important technical decisions, architectural patterns, or error patterns discovered during implementation.
+9. **Validate completion** — use `validate` (action: `ac`) after completing each task to verify acceptance criteria are met.
+
+### After implementation (Gate de Saída)
+
+10. **Status = done** — call `update_status` → `done` ONLY after the task passes: tests green, build passes, AC validated.
+11. **Never leave tasks in_progress** — if you stop working on a task (blocked, context switch), update status to `blocked` or `ready` as appropriate.
+12. **Sprint tracking** — periodically use `analyze` mode `progress` to check burndown and velocity.
+
+### Structural rules (Integridade do Grafo)
+
+13. **Zero untracked work** — if a task doesn't have a node, CREATE IT FIRST. Every file change must trace back to a graph node.
+14. **Dependencies matter** — use `edge` to declare dependencies between tasks. Never implement a task whose dependencies are not `done`.
+15. **Knowledge pipeline** — use `rag_context` for deep context when needed. Use `reindex_knowledge` if the knowledge index seems stale.
+16. **Graph visualization** — use `export` (format: `mermaid`) for reviews, handoffs, and debugging.
+
+### Integration with other MCPs
+
+17. **Context7** — use `sync_stack_docs` to ensure library docs are indexed before implementing features that depend on external libraries.
+18. **Playwright** — use `validate` (action: `task`) for browser-based validation of UI tasks. Results auto-index into knowledge store.
+19. **Code Intelligence** — use impact analysis and blast radius before modifying shared modules.
+
+### If mcp-graph is unavailable
+
+20. **Stop and diagnose** — if the mcp-graph MCP server is not responding, diagnose the issue BEFORE proceeding. Never fall back to working without the graph. Check `npx mcp-graph doctor` for environment validation.
+
+### Quick reference checklist (every task)
+
+- [ ] Node exists in graph? → if not, `node` (action: `add`)
+- [ ] Dependencies satisfied? → `show` node, check deps
+- [ ] Status updated to `in_progress`? → `update_status`
+- [ ] Context loaded? → `context` or `rag_context`
+- [ ] TDD test written FIRST? → Red → Green → Refactor
+- [ ] AC validated? → `validate` (action: `ac`)
+- [ ] Status updated to `done`? → `update_status`
+- [ ] Technical decisions saved? → `write_memory`
+
+> The bar is simple: **no node in the graph = no code written. The graph IS the work.**
+
 <!-- mcp-graph:start -->
 ## mcp-graph — mcp-graph-workflow
 
