@@ -6,6 +6,19 @@
 export const MARKER_START = "<!-- mcp-graph:start -->";
 export const MARKER_END = "<!-- mcp-graph:end -->";
 
+const MANDATORY_EXECUTION_RULE = `### ⚠️ Regra de Execução OBRIGATÓRIA
+
+**O mcp-graph é a fonte de verdade ABSOLUTA. Nenhuma implementação acontece fora do grafo.**
+
+1. **Node deve existir** — antes de escrever QUALQUER código, o node correspondente DEVE existir no grafo
+2. **Fluxo obrigatório** — \`next → context → [implementar com TDD] → update_status → next\` — SEM EXCEÇÕES
+3. **Epic = estrutura primeiro** — criar Epic + tasks filhas + edges ANTES de implementar
+4. **Status tracking** — \`update_status → in_progress\` ANTES de codar, \`→ done\` APÓS completar
+5. **Validação** — usar \`validate\` (action: \`ac\`) após cada task para checar critérios de aceitação
+6. **Zero trabalho não-rastreado** — se não tem node no grafo, CRIAR PRIMEIRO
+
+> **Sem node no grafo = sem código escrito.**`;
+
 const TOOL_TABLE_FULL = `#### Projeto & Grafo
 
 | Tool | Quando usar |
@@ -22,9 +35,7 @@ const TOOL_TABLE_FULL = `#### Projeto & Grafo
 
 | Tool | Quando usar |
 |------|-------------|
-| \`add_node\` | Criar node manualmente (task, milestone, phase, epic) |
-| \`update_node\` | Atualizar campos de um node (title, description, AC, tags) |
-| \`delete_node\` | Remover node do grafo (cascata em filhos) |
+| \`node\` | CRUD de nodes: action \`add\` (criar), \`update\` (atualizar), \`delete\` (remover) |
 | \`move_node\` | Mover node para outro parent |
 | \`clone_node\` | Clonar node com filhos (deep copy) |
 | \`edge\` | Criar/remover relações entre nodes (depends_on, blocks, related_to) |
@@ -63,8 +74,24 @@ const TOOL_TABLE_FULL = `#### Projeto & Grafo
 
 | Tool | Quando usar |
 |------|-------------|
-| \`validate_task\` | Validar com Playwright (A/B comparison, CSS selector scoping, auto-index knowledge) |
-| \`validate_ac\` | Validar crit\u00E9rios de aceita\u00E7\u00E3o de uma task (checklist autom\u00E1tico) |`;
+| \`validate\` | Validação: action \`task\` (browser A/B com Playwright) ou \`ac\` (critérios de aceitação) |
+
+#### Skills
+
+| Tool | Quando usar |
+|------|-------------|
+| \`manage_skill\` | Gerenciar skills: action \`list\` (listar/filtrar por fase), \`enable\`/\`disable\`, CRUD de custom skills |
+
+#### Tools Deprecated (backward compat, removidos na v7.0)
+
+| Tool antigo | Usar no lugar |
+|-------------|---------------|
+| \`add_node\` | \`node\` com action:\`add\` |
+| \`update_node\` | \`node\` com action:\`update\` |
+| \`delete_node\` | \`node\` com action:\`delete\` |
+| \`validate_task\` | \`validate\` com action:\`task\` |
+| \`validate_ac\` | \`validate\` com action:\`ac\` |
+| \`list_skills\` | \`manage_skill\` com action:\`list\` |`;
 
 const ANALYZE_MODES_SECTION = `### Modos do analyze por fase
 
@@ -112,6 +139,40 @@ Recupera\u00E7\u00E3o: \`rag_context\` monta contexto phase-aware com budget de 
 
 Manual: \`reindex_knowledge\` para rebuild completo do \u00EDndice.`;
 
+const SKILLS_SECTION = `### Skills Built-in (40 skills)
+
+40 skills mapeadas \u00E0s fases do lifecycle. Use \`list_skills\` para descobrir por fase ou ver instru\u00E7\u00F5es completas.
+
+#### Skills por fase
+
+| Fase | Skills sugeridas |
+|------|-----------------|
+| ANALYZE | \`create-prd-chat-mode\`, \`business-analyst\`, \`product-manager\` |
+| DESIGN | \`breakdown-epic-arch\`, \`context-architect\`, \`backend-architect\` |
+| PLAN | \`breakdown-feature-prd\`, \`track-with-mcp-graph\` |
+| IMPLEMENT | \`subagent-driven-development\`, \`xp-bootstrap\`, \`self-healing-awareness\` |
+| VALIDATE | \`playwright-explore-website\`, \`playwright-generate-test\`, \`e2e-testing\` |
+| REVIEW | \`code-reviewer\`, \`code-review-checklist\`, \`review-and-refactor\`, \`observability-engineer\` |
+
+#### Categorias adicionais (multi-fase)
+
+| Categoria | Skills |
+|-----------|--------|
+| software-design | SOLID, KISS, YAGNI, DRY, clean-architecture, composition-over-inheritance |
+| security | \`owasp-web-security\`, \`auth-and-secrets\`, \`database-and-deps-security\` |
+| ddd | \`domain-driven-design\` (DESIGN, PLAN) |
+| testing | \`comprehensive-testing-reference\`, \`self-healing-awareness\` (IMPLEMENT, VALIDATE) |
+| cost-reducer | \`cloud-infra-cost\`, \`code-level-savings\`, \`finops-services\` (DESIGN, REVIEW) |
+| frontend-design | \`ui-ux-patterns\` (DESIGN, IMPLEMENT) |
+
+#### Custom Skills
+
+Crie skills espec\u00EDficas do projeto via \`manage_skill\` (create/enable/disable). Custom skills s\u00E3o armazenadas no grafo e aparecem junto com as built-in em \`list_skills\`.
+
+#### Self-Healing Awareness
+
+A skill \`self-healing-awareness\` monitora padr\u00F5es de erro recorrentes e sugere corre\u00E7\u00F5es automaticamente. Ativa nas fases IMPLEMENT e VALIDATE.`;
+
 const LIFECYCLE_SUMMARY = `### Lifecycle (8 fases)
 
 1. **ANALYZE** \u2014 Criar PRD, definir requisitos (\`import_prd\`, \`add_node\`)
@@ -136,6 +197,7 @@ const CLI_COMMANDS = `### Comandos essenciais
 \`\`\`bash
 npx mcp-graph stats            # Estat\u00EDsticas do grafo
 npx mcp-graph list             # Listar nodes
+npx mcp-graph update           # Atualizar configs para \u00FAltima vers\u00E3o
 npx mcp-graph doctor           # Validar ambiente de execu\u00E7\u00E3o
 npx mcp-graph doctor --json    # Diagn\u00F3stico em JSON estruturado
 npx mcp-graph serve --port 3000  # Dashboard visual
@@ -149,13 +211,15 @@ ${MARKER_START}
 Este projeto usa **mcp-graph** para gest\u00E3o de execu\u00E7\u00E3o via grafo persistente (SQLite).
 Dados armazenados em \`workflow-graph/graph.db\` (local, gitignored).
 
-### Ferramentas MCP dispon\u00EDveis (30 tools)
+${MANDATORY_EXECUTION_RULE}
+
+### Ferramentas MCP dispon\u00EDveis (28 tools + 6 deprecated)
 
 ${TOOL_TABLE_FULL}
 
 ${ANALYZE_MODES_SECTION}
 
-### Fluxo de trabalho recomendado
+### Fluxo de trabalho OBRIGATÓRIO
 
 \`\`\`
 next \u2192 context \u2192 [implementar com TDD] \u2192 update_status \u2192 next
@@ -164,6 +228,8 @@ next \u2192 context \u2192 [implementar com TDD] \u2192 update_status \u2192 nex
 ${LIFECYCLE_SUMMARY}
 
 ${KNOWLEDGE_PIPELINE_SECTION}
+
+${SKILLS_SECTION}
 
 ${XP_PRINCIPLES}
 
@@ -193,6 +259,13 @@ Dados em \`workflow-graph/graph.db\`.
 | \`validate_task\` | Validar com Playwright (A/B, CSS scoping) |
 | \`validate_ac\` | Validar crit\u00E9rios de aceita\u00E7\u00E3o (checklist autom\u00E1tico) |
 | \`rag_context\` | Contexto RAG phase-aware (budget 60/30/10) |
+| \`list_skills\` | Listar skills built-in (filtrar por fase) |
+| \`manage_skill\` | Habilitar/desabilitar skills, CRUD de custom skills |
+
+#### Skills
+40 skills built-in mapeadas ao lifecycle. Use \`list_skills\` para descobrir por fase.
+Skills-chave: \`create-prd-chat-mode\` (ANALYZE), \`subagent-driven-development\` (IMPLEMENT), \`code-reviewer\` (REVIEW).
+Custom skills: \`manage_skill\` (create/enable/disable).
 
 ### Fluxo: \`next \u2192 context \u2192 [TDD] \u2192 update_status \u2192 next\`
 

@@ -23,7 +23,7 @@ export class CodeIndexer {
   /**
    * Index all TypeScript/JavaScript files in a directory tree.
    */
-  indexDirectory(dirPath: string, basePath: string): IndexResult {
+  async indexDirectory(dirPath: string, basePath: string): Promise<IndexResult> {
     const files = walkDirectory(dirPath);
 
     logger.info("code-indexer:start", {
@@ -37,7 +37,7 @@ export class CodeIndexer {
   /**
    * Index specific files.
    */
-  indexFiles(filePaths: string[], basePath: string): IndexResult {
+  async indexFiles(filePaths: string[], basePath: string): Promise<IndexResult> {
     let totalSymbols = 0;
     let totalRelations = 0;
     let fileCount = 0;
@@ -52,7 +52,7 @@ export class CodeIndexer {
         // Clear existing data for this file (incremental)
         this.store.deleteSymbolsByFile(relativePath, this.projectId);
 
-        const result = analyzeFile(filePath, basePath);
+        const result = await analyzeFile(filePath, basePath);
 
         if (result.symbols.length === 0) continue;
 

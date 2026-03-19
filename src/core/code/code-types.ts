@@ -167,7 +167,7 @@ export interface CodeAnalyzer {
   /** Languages supported by this analyzer (e.g., ["typescript", "javascript"]) */
   readonly languages: string[];
   /** Analyze a single file and return symbols + relations */
-  analyzeFile(filePath: string, basePath: string): AnalyzedFile;
+  analyzeFile(filePath: string, basePath: string): Promise<AnalyzedFile>;
 }
 
 // ── Index Result ──────────────────────────────────────

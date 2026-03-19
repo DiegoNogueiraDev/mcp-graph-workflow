@@ -19,7 +19,7 @@ export function createFolderRouter(storeManager: StoreManager): Router {
     });
   });
 
-  router.post("/open", validateBody(OpenFolderBodySchema), (req, res, next) => {
+  router.post("/open", validateBody(OpenFolderBodySchema), async (req, res, next) => {
     try {
       const { path: folderPath } = req.body as { path: string };
       const result = storeManager.swap(folderPath);
@@ -36,7 +36,7 @@ export function createFolderRouter(storeManager: StoreManager): Router {
         if (project) {
           const codeStore = new CodeStore(storeManager.store.getDb());
           const indexer = new CodeIndexer(codeStore, project.id);
-          const indexResult = indexer.indexDirectory(newBasePath, newBasePath);
+          const indexResult = await indexer.indexDirectory(newBasePath, newBasePath);
           logger.info("Code graph re-indexed after folder swap", {
             basePath: newBasePath,
             symbols: indexResult.symbolCount,

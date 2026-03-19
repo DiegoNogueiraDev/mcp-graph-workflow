@@ -26,6 +26,7 @@ if (isMcpClient) {
   const { initCommand } = await import("./commands/init.js");
   const { indexCommand } = await import("./commands/index-cmd.js");
   const { doctorCommand } = await import("./commands/doctor.js");
+  const { updateCommand } = await import("./commands/update.js");
 
   const program = new Command();
 
@@ -42,6 +43,7 @@ if (isMcpClient) {
   program.addCommand(initCommand());
   program.addCommand(indexCommand());
   program.addCommand(doctorCommand());
+  program.addCommand(updateCommand());
 
   program.parse();
 }

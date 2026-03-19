@@ -15,25 +15,31 @@ import {
   getCustomSkills,
   getCustomSkillByName,
 } from "../../core/skills/skill-store.js";
+import { getBuiltInSkills, getSkillsByPhase, getSkillByName } from "../../core/skills/built-in-skills.js";
+import type { LifecyclePhase } from "../../core/planner/lifecycle-phase.js";
 import { CustomSkillInputSchema } from "../../schemas/skill.schema.js";
 import { logger } from "../../core/utils/logger.js";
 
 export function registerManageSkill(server: McpServer, store: SqliteStore): void {
   server.tool(
     "manage_skill",
-    "Manage skills: enable/disable built-in skills, CRUD custom skills (know-me, project-specific).",
+    "Manage skills: list built-in skills, enable/disable, CRUD custom skills.",
     {
       action: z
-        .enum(["enable", "disable", "create", "update", "delete", "list_custom", "get_preferences"])
+        .enum(["list", "enable", "disable", "create", "update", "delete", "list_custom", "get_preferences"])
         .describe("Action to perform"),
       skillName: z
         .string()
         .optional()
-        .describe("Skill name (for enable/disable/delete_by_name)"),
+        .describe("Skill name (for list: get full instructions; enable/disable/delete_by_name)"),
       skillId: z
         .string()
         .optional()
         .describe("Skill ID (for update/delete)"),
+      phase: z
+        .enum(["ANALYZE", "DESIGN", "PLAN", "IMPLEMENT", "VALIDATE", "REVIEW", "HANDOFF", "LISTENING"])
+        .optional()
+        .describe("Filter skills by lifecycle phase (list only)"),
       data: z
         .object({
           name: z.string().optional(),
@@ -45,7 +51,7 @@ export function registerManageSkill(server: McpServer, store: SqliteStore): void
         .optional()
         .describe("Skill data (for create/update)"),
     },
-    async ({ action, skillName, skillId, data }) => {
+    async ({ action, skillName, skillId, phase, data }) => {
       logger.debug("tool:manage_skill", { action, skillName, skillId });
 
       const project = store.getProject();
@@ -61,6 +67,59 @@ export function registerManageSkill(server: McpServer, store: SqliteStore): void
 
       try {
         switch (action) {
+          case "list": {
+            // Single skill lookup with full instructions
+            if (skillName) {
+              const skill = getSkillByName(skillName);
+              if (!skill) {
+                return {
+                  content: [{
+                    type: "text" as const,
+                    text: JSON.stringify({ error: `Skill '${skillName}' not found` }, null, 2),
+                  }],
+                  isError: true,
+                };
+              }
+
+              return {
+                content: [{
+                  type: "text" as const,
+                  text: JSON.stringify({
+                    name: skill.name,
+                    description: skill.description,
+                    category: skill.category,
+                    phases: skill.phases,
+                    instructions: skill.instructions,
+                  }, null, 2),
+                }],
+              };
+            }
+
+            // List skills (optionally filtered by phase)
+            const skills = phase
+              ? getSkillsByPhase(phase as LifecyclePhase)
+              : getBuiltInSkills();
+
+            const summary = skills.map((s) => ({
+              name: s.name,
+              description: s.description,
+              category: s.category,
+              phases: s.phases,
+            }));
+
+            logger.info("tool:manage_skill:list:ok", { count: summary.length, phase: phase ?? "all" });
+            return {
+              content: [{
+                type: "text" as const,
+                text: JSON.stringify({
+                  total: summary.length,
+                  ...(phase ? { phase } : {}),
+                  skills: summary,
+                }, null, 2),
+              }],
+            };
+          }
+
           case "enable":
           case "disable": {
             if (!skillName) {

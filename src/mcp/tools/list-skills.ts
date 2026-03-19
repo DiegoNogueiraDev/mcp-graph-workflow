@@ -1,6 +1,5 @@
 /**
- * MCP Tool — list_skills
- * Lists built-in skills with optional phase filter.
+ * @deprecated Use `manage_skill` tool with action:"list" instead. Will be removed in v7.0.
  */
 
 import { z } from "zod/v4";
@@ -12,7 +11,7 @@ import { logger } from "../../core/utils/logger.js";
 export function registerListSkills(server: McpServer): void {
   server.tool(
     "list_skills",
-    "List built-in skills (prompts/workflows) mapped to lifecycle phases. Filter by phase or get a specific skill by name.",
+    "List built-in skills (DEPRECATED — use `manage_skill` with action:\"list\")",
     {
       phase: z
         .enum(["ANALYZE", "DESIGN", "PLAN", "IMPLEMENT", "VALIDATE", "REVIEW", "HANDOFF", "LISTENING"])
@@ -24,6 +23,7 @@ export function registerListSkills(server: McpServer): void {
         .describe("Get a specific skill by name (returns full instructions)"),
     },
     async ({ phase, name }) => {
+      logger.warn("tool:list_skills:deprecated", { message: "Use 'manage_skill' tool with action:'list' instead" });
       logger.debug("tool:list_skills", { phase, name });
 
       // Single skill lookup with full instructions
@@ -33,7 +33,7 @@ export function registerListSkills(server: McpServer): void {
           return {
             content: [{
               type: "text" as const,
-              text: JSON.stringify({ error: `Skill '${name}' not found` }, null, 2),
+              text: JSON.stringify({ error: `Skill '${name}' not found`, _deprecated: "Use 'manage_skill' tool with action:'list'" }, null, 2),
             }],
             isError: true,
           };
@@ -48,6 +48,7 @@ export function registerListSkills(server: McpServer): void {
               category: skill.category,
               phases: skill.phases,
               instructions: skill.instructions,
+              _deprecated: "Use 'manage_skill' tool with action:'list'",
             }, null, 2),
           }],
         };
@@ -73,6 +74,7 @@ export function registerListSkills(server: McpServer): void {
             total: summary.length,
             ...(phase ? { phase } : {}),
             skills: summary,
+            _deprecated: "Use 'manage_skill' tool with action:'list'",
           }, null, 2),
         }],
       };

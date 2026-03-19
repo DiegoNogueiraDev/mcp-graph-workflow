@@ -65,7 +65,7 @@ export function createCodeGraphRouter(options: CodeGraphRouterOptions): Router {
   });
 
   // ── POST /reindex ─────────────────────────────
-  router.post("/reindex", (_req, res, next) => {
+  router.post("/reindex", async (_req, res, next) => {
     try {
       const codeStore = getCodeStore();
       const projectId = getProjectId();
@@ -75,7 +75,7 @@ export function createCodeGraphRouter(options: CodeGraphRouterOptions): Router {
 
       const indexer = new CodeIndexer(codeStore, projectId);
       codeStore.deleteAllSymbols(projectId);
-      const result = indexer.indexDirectory(basePath, basePath);
+      const result = await indexer.indexDirectory(basePath, basePath);
 
       res.json({
         success: true,

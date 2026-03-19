@@ -60,9 +60,15 @@ describe("generateCopilotInstructions", () => {
 });
 
 describe("tool completeness", () => {
-  it("should include all 29 registered tools", () => {
+  it("should include consolidated tools", () => {
     const section = generateClaudeMdSection("test");
-    expect(section).toContain("validate_ac");
+    expect(section).toContain("node");
+    expect(section).toContain("validate");
+    expect(section).toContain("manage_skill");
+  });
+
+  it("should include core tools", () => {
+    const section = generateClaudeMdSection("test");
     expect(section).toContain("set_phase");
     expect(section).toContain("analyze");
     expect(section).toContain("metrics");
@@ -77,11 +83,23 @@ describe("tool completeness", () => {
     const section = generateClaudeMdSection("test");
     expect(section).toContain("Projeto & Grafo");
     expect(section).toContain("Contexto & RAG");
+    expect(section).toContain("Skills");
   });
 
-  it("should claim correct tool count (30)", () => {
+  it("should claim correct tool count (28 + 6 deprecated)", () => {
     const section = generateClaudeMdSection("test");
-    expect(section).toContain("30 tools");
+    expect(section).toContain("28 tools + 6 deprecated");
+  });
+
+  it("should include deprecated tools reference", () => {
+    const section = generateClaudeMdSection("test");
+    expect(section).toContain("deprecated");
+    expect(section).toContain("add_node");
+    expect(section).toContain("update_node");
+    expect(section).toContain("delete_node");
+    expect(section).toContain("validate_task");
+    expect(section).toContain("validate_ac");
+    expect(section).toContain("list_skills");
   });
 });
 
@@ -128,6 +146,31 @@ describe("copilot instructions enrichment", () => {
     const s1 = generateCopilotInstructions("test");
     const s2 = generateCopilotInstructions("test");
     expect(s1).toBe(s2);
+  });
+});
+
+describe("skills section", () => {
+  it("should include manage_skill tool in CLAUDE.md", () => {
+    const section = generateClaudeMdSection("test");
+    expect(section).toContain("manage_skill");
+  });
+
+  it("should include skills by phase table", () => {
+    const section = generateClaudeMdSection("test");
+    expect(section).toContain("create-prd-chat-mode");
+    expect(section).toContain("subagent-driven-development");
+    expect(section).toContain("code-reviewer");
+    expect(section).toContain("self-healing-awareness");
+  });
+
+  it("should include custom skills reference", () => {
+    const section = generateClaudeMdSection("test");
+    expect(section).toContain("Custom Skills");
+  });
+
+  it("copilot instructions should mention manage_skill", () => {
+    const content = generateCopilotInstructions("test");
+    expect(content).toContain("manage_skill");
   });
 });
 

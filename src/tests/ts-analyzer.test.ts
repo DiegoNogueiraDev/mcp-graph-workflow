@@ -112,8 +112,8 @@ afterAll(() => {
 
 describe("ts-analyzer", () => {
   describe("analyzeFile — symbol extraction", () => {
-    it("should extract exported and non-exported functions", () => {
-      const result = analyzeFile(path.join(FIXTURE_DIR, "simple.ts"), FIXTURE_DIR);
+    it("should extract exported and non-exported functions", async () => {
+      const result = await analyzeFile(path.join(FIXTURE_DIR, "simple.ts"), FIXTURE_DIR);
 
       const greetFn = result.symbols.find((s) => s.name === "greet");
       expect(greetFn).toBeDefined();
@@ -126,16 +126,16 @@ describe("ts-analyzer", () => {
       expect(helper!.exported).toBe(false);
     });
 
-    it("should extract exported variables", () => {
-      const result = analyzeFile(path.join(FIXTURE_DIR, "simple.ts"), FIXTURE_DIR);
+    it("should extract exported variables", async () => {
+      const result = await analyzeFile(path.join(FIXTURE_DIR, "simple.ts"), FIXTURE_DIR);
       const pi = result.symbols.find((s) => s.name === "PI");
       expect(pi).toBeDefined();
       expect(pi!.kind).toBe("variable");
       expect(pi!.exported).toBe(true);
     });
 
-    it("should extract class and its methods", () => {
-      const result = analyzeFile(path.join(FIXTURE_DIR, "user-service.ts"), FIXTURE_DIR);
+    it("should extract class and its methods", async () => {
+      const result = await analyzeFile(path.join(FIXTURE_DIR, "user-service.ts"), FIXTURE_DIR);
 
       const cls = result.symbols.find((s) => s.name === "UserService");
       expect(cls).toBeDefined();
@@ -147,14 +147,14 @@ describe("ts-analyzer", () => {
       expect(getUser!.kind).toBe("method");
     });
 
-    it("should create belongs_to relations for methods", () => {
-      const result = analyzeFile(path.join(FIXTURE_DIR, "user-service.ts"), FIXTURE_DIR);
+    it("should create belongs_to relations for methods", async () => {
+      const result = await analyzeFile(path.join(FIXTURE_DIR, "user-service.ts"), FIXTURE_DIR);
       const belongsTo = result.relations.filter((r) => r.type === "belongs_to");
       expect(belongsTo.length).toBeGreaterThanOrEqual(2); // getUser, deleteUser → UserService
     });
 
-    it("should extract interfaces and type aliases", () => {
-      const result = analyzeFile(path.join(FIXTURE_DIR, "shapes.ts"), FIXTURE_DIR);
+    it("should extract interfaces and type aliases", async () => {
+      const result = await analyzeFile(path.join(FIXTURE_DIR, "shapes.ts"), FIXTURE_DIR);
 
       const drawable = result.symbols.find((s) => s.name === "Drawable");
       expect(drawable).toBeDefined();
@@ -165,8 +165,8 @@ describe("ts-analyzer", () => {
       expect(point!.kind).toBe("type_alias");
     });
 
-    it("should extract enums", () => {
-      const result = analyzeFile(path.join(FIXTURE_DIR, "shapes.ts"), FIXTURE_DIR);
+    it("should extract enums", async () => {
+      const result = await analyzeFile(path.join(FIXTURE_DIR, "shapes.ts"), FIXTURE_DIR);
 
       const color = result.symbols.find((s) => s.name === "Color");
       expect(color).toBeDefined();
@@ -176,8 +176,8 @@ describe("ts-analyzer", () => {
   });
 
   describe("analyzeFile — relation extraction", () => {
-    it("should extract import relations", () => {
-      const result = analyzeFile(path.join(FIXTURE_DIR, "caller.ts"), FIXTURE_DIR);
+    it("should extract import relations", async () => {
+      const result = await analyzeFile(path.join(FIXTURE_DIR, "caller.ts"), FIXTURE_DIR);
       const imports = result.relations.filter((r) => r.type === "imports");
       expect(imports.length).toBeGreaterThanOrEqual(2); // greet + UserService
 
@@ -187,14 +187,14 @@ describe("ts-analyzer", () => {
       expect(greetImport).toBeDefined();
     });
 
-    it("should extract call relations", () => {
-      const result = analyzeFile(path.join(FIXTURE_DIR, "caller.ts"), FIXTURE_DIR);
+    it("should extract call relations", async () => {
+      const result = await analyzeFile(path.join(FIXTURE_DIR, "caller.ts"), FIXTURE_DIR);
       const calls = result.relations.filter((r) => r.type === "calls");
       expect(calls.length).toBeGreaterThanOrEqual(1); // greet("world")
     });
 
-    it("should extract extends relations", () => {
-      const result = analyzeFile(path.join(FIXTURE_DIR, "shapes.ts"), FIXTURE_DIR);
+    it("should extract extends relations", async () => {
+      const result = await analyzeFile(path.join(FIXTURE_DIR, "shapes.ts"), FIXTURE_DIR);
       const ext = result.relations.filter((r) => r.type === "extends");
       expect(ext.length).toBeGreaterThanOrEqual(1);
 
@@ -204,8 +204,8 @@ describe("ts-analyzer", () => {
       expect(circleExtends).toBeDefined();
     });
 
-    it("should extract implements relations", () => {
-      const result = analyzeFile(path.join(FIXTURE_DIR, "shapes.ts"), FIXTURE_DIR);
+    it("should extract implements relations", async () => {
+      const result = await analyzeFile(path.join(FIXTURE_DIR, "shapes.ts"), FIXTURE_DIR);
       const impl = result.relations.filter((r) => r.type === "implements");
       expect(impl.length).toBeGreaterThanOrEqual(1);
 
@@ -217,10 +217,21 @@ describe("ts-analyzer", () => {
   });
 
   describe("analyzeFile — relative paths", () => {
-    it("should produce relative file paths from basePath", () => {
-      const result = analyzeFile(path.join(FIXTURE_DIR, "simple.ts"), FIXTURE_DIR);
+    it("should produce relative file paths from basePath", async () => {
+      const result = await analyzeFile(path.join(FIXTURE_DIR, "simple.ts"), FIXTURE_DIR);
       expect(result.file).not.toContain(FIXTURE_DIR);
       expect(result.file).toMatch(/simple\.ts$/);
+    });
+  });
+
+  describe("graceful degradation", () => {
+    it("should return file path even when typescript module is loaded", async () => {
+      // This test verifies the function returns properly structured results
+      // The actual unavailability case is tested via the resetTypeScriptLoader export
+      // which allows resetting the lazy loader state for integration testing
+      const result = await analyzeFile(path.join(FIXTURE_DIR, "simple.ts"), FIXTURE_DIR);
+      expect(result.file).toBe("simple.ts");
+      expect(result.symbols.length).toBeGreaterThan(0);
     });
   });
 });

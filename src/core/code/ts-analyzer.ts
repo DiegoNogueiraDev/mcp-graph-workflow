@@ -2,9 +2,12 @@
  * TypeScript AST analyzer using ts.createSourceFile() (parse-only, no type checker).
  * Extracts symbols and relations from TypeScript files syntactically.
  * ~10-100x faster than ts.createProgram() with ~95% accuracy.
+ *
+ * Uses dynamic import for the "typescript" package so the module loads
+ * gracefully even when typescript is not installed (e.g. production / global installs).
  */
 
-import ts from "typescript";
+import type ts from "typescript";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { logger } from "../utils/logger.js";
@@ -13,20 +16,54 @@ import type { AnalyzedFile, CodeRelation, CodeSymbol } from "./code-types.js";
 type PartialSymbol = Omit<CodeSymbol, "id" | "projectId" | "indexedAt">;
 type PartialRelation = Omit<CodeRelation, "id" | "projectId" | "indexedAt">;
 
+// ── Lazy TypeScript loader ──────────────────────────────
+
+let tsModule: typeof ts | null = null;
+let loadAttempted = false;
+
+async function loadTypeScript(): Promise<typeof ts | null> {
+  if (tsModule) return tsModule;
+  if (loadAttempted) return null;
+  loadAttempted = true;
+  try {
+    const mod = await import("typescript");
+    tsModule = mod.default ?? mod;
+    return tsModule;
+  } catch {
+    logger.warn("ts-analyzer:typescript-unavailable", {
+      message: "typescript not found — code analysis disabled",
+    });
+    return null;
+  }
+}
+
+/** Reset the lazy loader state (for testing purposes). */
+export function resetTypeScriptLoader(): void {
+  tsModule = null;
+  loadAttempted = false;
+}
+
 /**
  * Analyze a single TypeScript file syntactically.
  * Returns extracted symbols and relations with paths relative to basePath.
+ * Returns empty result if the typescript package is unavailable.
  */
-export function analyzeFile(filePath: string, basePath: string): AnalyzedFile {
-  const content = readFileSync(filePath, "utf-8");
+export async function analyzeFile(filePath: string, basePath: string): Promise<AnalyzedFile> {
   const relativePath = path.relative(basePath, filePath);
 
-  const sourceFile = ts.createSourceFile(
+  const tsLib = await loadTypeScript();
+  if (!tsLib) {
+    return { file: relativePath, symbols: [], relations: [] };
+  }
+
+  const content = readFileSync(filePath, "utf-8");
+
+  const sourceFile = tsLib.createSourceFile(
     relativePath,
     content,
-    ts.ScriptTarget.Latest,
+    tsLib.ScriptTarget.Latest,
     true, // setParentNodes
-    ts.ScriptKind.TS,
+    tsLib.ScriptKind.TS,
   );
 
   const symbols: PartialSymbol[] = [];
@@ -36,10 +73,10 @@ export function analyzeFile(filePath: string, basePath: string): AnalyzedFile {
   const importMap = new Map<string, { modulePath: string; importedName: string }>();
 
   // First pass: collect imports
-  collectImports(sourceFile, importMap);
+  collectImports(tsLib, sourceFile, importMap);
 
   // Second pass: extract symbols and relations
-  visitNode(sourceFile, sourceFile, relativePath, symbols, relations, importMap, null);
+  visitNode(tsLib, sourceFile, sourceFile, relativePath, symbols, relations, importMap, null);
 
   logger.debug("ts-analyzer:file", {
     file: relativePath,
@@ -53,12 +90,13 @@ export function analyzeFile(filePath: string, basePath: string): AnalyzedFile {
 // ── Import Collection ────────────────────────────────
 
 function collectImports(
+  tsLib: typeof ts,
   sourceFile: ts.SourceFile,
   importMap: Map<string, { modulePath: string; importedName: string }>,
 ): void {
   for (const stmt of sourceFile.statements) {
-    if (!ts.isImportDeclaration(stmt)) continue;
-    if (!stmt.moduleSpecifier || !ts.isStringLiteral(stmt.moduleSpecifier)) continue;
+    if (!tsLib.isImportDeclaration(stmt)) continue;
+    if (!stmt.moduleSpecifier || !tsLib.isStringLiteral(stmt.moduleSpecifier)) continue;
 
     const modulePath = stmt.moduleSpecifier.text;
     const clause = stmt.importClause;
@@ -70,7 +108,7 @@ function collectImports(
     }
 
     // Named imports: import { a, b as c } from '...'
-    if (clause.namedBindings && ts.isNamedImports(clause.namedBindings)) {
+    if (clause.namedBindings && tsLib.isNamedImports(clause.namedBindings)) {
       for (const specifier of clause.namedBindings.elements) {
         const localName = specifier.name.text;
         const importedName = specifier.propertyName?.text ?? localName;
@@ -79,7 +117,7 @@ function collectImports(
     }
 
     // Namespace import: import * as ns from '...'
-    if (clause.namedBindings && ts.isNamespaceImport(clause.namedBindings)) {
+    if (clause.namedBindings && tsLib.isNamespaceImport(clause.namedBindings)) {
       importMap.set(clause.namedBindings.name.text, { modulePath, importedName: "*" });
     }
   }
@@ -88,6 +126,7 @@ function collectImports(
 // ── AST Visitor ──────────────────────────────────────
 
 function visitNode(
+  tsLib: typeof ts,
   node: ts.Node,
   sourceFile: ts.SourceFile,
   file: string,
@@ -97,10 +136,10 @@ function visitNode(
   currentClass: string | null,
 ): void {
   // Function declarations
-  if (ts.isFunctionDeclaration(node) && node.name) {
+  if (tsLib.isFunctionDeclaration(node) && node.name) {
     const name = node.name.text;
-    const { line: startLine } = ts.getLineAndCharacterOfPosition(sourceFile, node.getStart());
-    const { line: endLine } = ts.getLineAndCharacterOfPosition(sourceFile, node.getEnd());
+    const { line: startLine } = tsLib.getLineAndCharacterOfPosition(sourceFile, node.getStart());
+    const { line: endLine } = tsLib.getLineAndCharacterOfPosition(sourceFile, node.getEnd());
 
     symbols.push({
       name,
@@ -108,21 +147,21 @@ function visitNode(
       file,
       startLine: startLine + 1,
       endLine: endLine + 1,
-      exported: hasExportModifier(node),
-      signature: extractSignature(node, sourceFile),
+      exported: hasExportModifier(tsLib, node),
+      signature: extractSignature(tsLib, node, sourceFile),
     });
 
     // Scan function body for calls
     if (node.body) {
-      collectCalls(node.body, sourceFile, file, name, relations, importMap);
+      collectCalls(tsLib, node.body, sourceFile, file, name, relations, importMap);
     }
   }
 
   // Class declarations
-  if (ts.isClassDeclaration(node) && node.name) {
+  if (tsLib.isClassDeclaration(node) && node.name) {
     const className = node.name.text;
-    const { line: startLine } = ts.getLineAndCharacterOfPosition(sourceFile, node.getStart());
-    const { line: endLine } = ts.getLineAndCharacterOfPosition(sourceFile, node.getEnd());
+    const { line: startLine } = tsLib.getLineAndCharacterOfPosition(sourceFile, node.getStart());
+    const { line: endLine } = tsLib.getLineAndCharacterOfPosition(sourceFile, node.getEnd());
 
     symbols.push({
       name: className,
@@ -130,13 +169,13 @@ function visitNode(
       file,
       startLine: startLine + 1,
       endLine: endLine + 1,
-      exported: hasExportModifier(node),
+      exported: hasExportModifier(tsLib, node),
     });
 
     // Heritage clauses: extends / implements
     if (node.heritageClauses) {
       for (const clause of node.heritageClauses) {
-        const relType = clause.token === ts.SyntaxKind.ExtendsKeyword ? "extends" : "implements";
+        const relType = clause.token === tsLib.SyntaxKind.ExtendsKeyword ? "extends" : "implements";
         for (const typeExpr of clause.types) {
           const baseName = typeExpr.expression.getText(sourceFile);
           relations.push({
@@ -144,7 +183,7 @@ function visitNode(
             toSymbol: baseName,
             type: relType as PartialRelation["type"],
             file,
-            line: ts.getLineAndCharacterOfPosition(sourceFile, typeExpr.getStart()).line + 1,
+            line: tsLib.getLineAndCharacterOfPosition(sourceFile, typeExpr.getStart()).line + 1,
           });
         }
       }
@@ -152,10 +191,10 @@ function visitNode(
 
     // Visit class members
     for (const member of node.members) {
-      if (ts.isMethodDeclaration(member) && member.name) {
+      if (tsLib.isMethodDeclaration(member) && member.name) {
         const methodName = member.name.getText(sourceFile);
-        const { line: mStartLine } = ts.getLineAndCharacterOfPosition(sourceFile, member.getStart());
-        const { line: mEndLine } = ts.getLineAndCharacterOfPosition(sourceFile, member.getEnd());
+        const { line: mStartLine } = tsLib.getLineAndCharacterOfPosition(sourceFile, member.getStart());
+        const { line: mEndLine } = tsLib.getLineAndCharacterOfPosition(sourceFile, member.getEnd());
 
         symbols.push({
           name: methodName,
@@ -164,7 +203,7 @@ function visitNode(
           startLine: mStartLine + 1,
           endLine: mEndLine + 1,
           exported: false,
-          signature: extractSignature(member, sourceFile),
+          signature: extractSignature(tsLib, member, sourceFile),
         });
 
         relations.push({
@@ -177,13 +216,13 @@ function visitNode(
 
         // Scan method body for calls
         if (member.body) {
-          collectCalls(member.body, sourceFile, file, methodName, relations, importMap);
+          collectCalls(tsLib, member.body, sourceFile, file, methodName, relations, importMap);
         }
       }
 
-      if (ts.isConstructorDeclaration(member) && member.body) {
-        const { line: cStartLine } = ts.getLineAndCharacterOfPosition(sourceFile, member.getStart());
-        const { line: cEndLine } = ts.getLineAndCharacterOfPosition(sourceFile, member.getEnd());
+      if (tsLib.isConstructorDeclaration(member) && member.body) {
+        const { line: cStartLine } = tsLib.getLineAndCharacterOfPosition(sourceFile, member.getStart());
+        const { line: cEndLine } = tsLib.getLineAndCharacterOfPosition(sourceFile, member.getEnd());
 
         symbols.push({
           name: "constructor",
@@ -202,7 +241,7 @@ function visitNode(
           line: cStartLine + 1,
         });
 
-        collectCalls(member.body, sourceFile, file, "constructor", relations, importMap);
+        collectCalls(tsLib, member.body, sourceFile, file, "constructor", relations, importMap);
       }
     }
 
@@ -210,10 +249,10 @@ function visitNode(
   }
 
   // Interface declarations
-  if (ts.isInterfaceDeclaration(node)) {
+  if (tsLib.isInterfaceDeclaration(node)) {
     const name = node.name.text;
-    const { line: startLine } = ts.getLineAndCharacterOfPosition(sourceFile, node.getStart());
-    const { line: endLine } = ts.getLineAndCharacterOfPosition(sourceFile, node.getEnd());
+    const { line: startLine } = tsLib.getLineAndCharacterOfPosition(sourceFile, node.getStart());
+    const { line: endLine } = tsLib.getLineAndCharacterOfPosition(sourceFile, node.getEnd());
 
     symbols.push({
       name,
@@ -221,15 +260,15 @@ function visitNode(
       file,
       startLine: startLine + 1,
       endLine: endLine + 1,
-      exported: hasExportModifier(node),
+      exported: hasExportModifier(tsLib, node),
     });
   }
 
   // Type alias declarations
-  if (ts.isTypeAliasDeclaration(node)) {
+  if (tsLib.isTypeAliasDeclaration(node)) {
     const name = node.name.text;
-    const { line: startLine } = ts.getLineAndCharacterOfPosition(sourceFile, node.getStart());
-    const { line: endLine } = ts.getLineAndCharacterOfPosition(sourceFile, node.getEnd());
+    const { line: startLine } = tsLib.getLineAndCharacterOfPosition(sourceFile, node.getStart());
+    const { line: endLine } = tsLib.getLineAndCharacterOfPosition(sourceFile, node.getEnd());
 
     symbols.push({
       name,
@@ -237,15 +276,15 @@ function visitNode(
       file,
       startLine: startLine + 1,
       endLine: endLine + 1,
-      exported: hasExportModifier(node),
+      exported: hasExportModifier(tsLib, node),
     });
   }
 
   // Enum declarations
-  if (ts.isEnumDeclaration(node)) {
+  if (tsLib.isEnumDeclaration(node)) {
     const name = node.name.text;
-    const { line: startLine } = ts.getLineAndCharacterOfPosition(sourceFile, node.getStart());
-    const { line: endLine } = ts.getLineAndCharacterOfPosition(sourceFile, node.getEnd());
+    const { line: startLine } = tsLib.getLineAndCharacterOfPosition(sourceFile, node.getStart());
+    const { line: endLine } = tsLib.getLineAndCharacterOfPosition(sourceFile, node.getEnd());
 
     symbols.push({
       name,
@@ -253,17 +292,17 @@ function visitNode(
       file,
       startLine: startLine + 1,
       endLine: endLine + 1,
-      exported: hasExportModifier(node),
+      exported: hasExportModifier(tsLib, node),
     });
   }
 
   // Variable statements (top-level exports: export const X = ...)
-  if (ts.isVariableStatement(node) && hasExportModifier(node)) {
+  if (tsLib.isVariableStatement(node) && hasExportModifier(tsLib, node)) {
     for (const decl of node.declarationList.declarations) {
-      if (ts.isIdentifier(decl.name)) {
+      if (tsLib.isIdentifier(decl.name)) {
         const name = decl.name.text;
-        const { line: startLine } = ts.getLineAndCharacterOfPosition(sourceFile, node.getStart());
-        const { line: endLine } = ts.getLineAndCharacterOfPosition(sourceFile, node.getEnd());
+        const { line: startLine } = tsLib.getLineAndCharacterOfPosition(sourceFile, node.getStart());
+        const { line: endLine } = tsLib.getLineAndCharacterOfPosition(sourceFile, node.getEnd());
 
         symbols.push({
           name,
@@ -278,13 +317,13 @@ function visitNode(
   }
 
   // Import declarations → import relations (file-level, from each imported name to the file)
-  if (ts.isImportDeclaration(node) && node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)) {
+  if (tsLib.isImportDeclaration(node) && node.moduleSpecifier && tsLib.isStringLiteral(node.moduleSpecifier)) {
     const modulePath = node.moduleSpecifier.text;
     const clause = node.importClause;
     if (clause) {
-      const { line } = ts.getLineAndCharacterOfPosition(sourceFile, node.getStart());
+      const { line } = tsLib.getLineAndCharacterOfPosition(sourceFile, node.getStart());
 
-      if (clause.namedBindings && ts.isNamedImports(clause.namedBindings)) {
+      if (clause.namedBindings && tsLib.isNamedImports(clause.namedBindings)) {
         for (const specifier of clause.namedBindings.elements) {
           const importedName = specifier.propertyName?.text ?? specifier.name.text;
           relations.push({
@@ -312,9 +351,9 @@ function visitNode(
   }
 
   // Recurse into children (except class which is handled above)
-  if (!ts.isClassDeclaration(node)) {
-    ts.forEachChild(node, (child) => {
-      visitNode(child, sourceFile, file, symbols, relations, importMap, currentClass);
+  if (!tsLib.isClassDeclaration(node)) {
+    tsLib.forEachChild(node, (child) => {
+      visitNode(tsLib, child, sourceFile, file, symbols, relations, importMap, currentClass);
     });
   }
 }
@@ -322,6 +361,7 @@ function visitNode(
 // ── Call Collection ──────────────────────────────────
 
 function collectCalls(
+  tsLib: typeof ts,
   body: ts.Node,
   sourceFile: ts.SourceFile,
   file: string,
@@ -332,11 +372,11 @@ function collectCalls(
   const seen = new Set<string>();
 
   function walk(node: ts.Node): void {
-    if (ts.isCallExpression(node)) {
-      const calleeName = extractCalleeName(node.expression, sourceFile);
+    if (tsLib.isCallExpression(node)) {
+      const calleeName = extractCalleeName(tsLib, node.expression, sourceFile);
       if (calleeName && calleeName !== callerName && !seen.has(calleeName)) {
         seen.add(calleeName);
-        const { line } = ts.getLineAndCharacterOfPosition(sourceFile, node.getStart());
+        const { line } = tsLib.getLineAndCharacterOfPosition(sourceFile, node.getStart());
 
         // Resolve through import map if available
         const importEntry = importMap.get(calleeName);
@@ -356,11 +396,11 @@ function collectCalls(
       }
     }
 
-    if (ts.isNewExpression(node)) {
-      const calleeName = extractCalleeName(node.expression, sourceFile);
+    if (tsLib.isNewExpression(node)) {
+      const calleeName = extractCalleeName(tsLib, node.expression, sourceFile);
       if (calleeName && !seen.has(calleeName)) {
         seen.add(calleeName);
-        const { line } = ts.getLineAndCharacterOfPosition(sourceFile, node.getStart());
+        const { line } = tsLib.getLineAndCharacterOfPosition(sourceFile, node.getStart());
         relations.push({
           fromSymbol: callerName,
           toSymbol: calleeName,
@@ -371,7 +411,7 @@ function collectCalls(
       }
     }
 
-    ts.forEachChild(node, walk);
+    tsLib.forEachChild(node, walk);
   }
 
   walk(body);
@@ -379,20 +419,20 @@ function collectCalls(
 
 // ── Helpers ──────────────────────────────────────────
 
-function hasExportModifier(node: ts.Node): boolean {
-  if (!ts.canHaveModifiers(node)) return false;
-  const modifiers = ts.getModifiers(node);
-  return modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword) ?? false;
+function hasExportModifier(tsLib: typeof ts, node: ts.Node): boolean {
+  if (!tsLib.canHaveModifiers(node)) return false;
+  const modifiers = tsLib.getModifiers(node);
+  return modifiers?.some((m) => m.kind === tsLib.SyntaxKind.ExportKeyword) ?? false;
 }
 
-function extractCalleeName(expr: ts.Expression, _sourceFile: ts.SourceFile): string | null {
+function extractCalleeName(tsLib: typeof ts, expr: ts.Expression, _sourceFile: ts.SourceFile): string | null {
   // Simple identifier: foo()
-  if (ts.isIdentifier(expr)) {
+  if (tsLib.isIdentifier(expr)) {
     return expr.text;
   }
 
   // Property access: obj.method() → extract method name
-  if (ts.isPropertyAccessExpression(expr)) {
+  if (tsLib.isPropertyAccessExpression(expr)) {
     return expr.name.text;
   }
 
@@ -400,6 +440,7 @@ function extractCalleeName(expr: ts.Expression, _sourceFile: ts.SourceFile): str
 }
 
 function extractSignature(
+  tsLib: typeof ts,
   node: ts.FunctionDeclaration | ts.MethodDeclaration,
   sourceFile: ts.SourceFile,
 ): string | undefined {
