@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.5.1](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.5.0...mcp-graph-v5.5.1) (2026-03-20)
+
+
+### Bug Fixes
+
+* update documentation for 5.5.0 release (tool consolidation, hierarchy) ([89ba0d9](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/89ba0d92b6af3f3ba560367f15349f9fd26726ba))
+
 ## [5.5.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.4.0...mcp-graph-v5.5.0) (2026-03-20)
 
 
