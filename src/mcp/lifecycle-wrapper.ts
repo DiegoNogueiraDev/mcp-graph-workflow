@@ -52,6 +52,7 @@ export interface LifecycleBlockOptions {
 const READ_ONLY_TOOLS = new Set([
   "list", "show", "search", "metrics", "export", "context", "rag_context",
   "analyze", "snapshot", "next", "list_memories", "read_memory", "list_skills",
+  "stats", "velocity", "dependencies", "plan_sprint", "validate_ac",
 ]);
 
 export function buildLifecycleBlock(doc: GraphDocument, options?: LifecycleBlockOptions): LifecycleBlock {

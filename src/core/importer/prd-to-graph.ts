@@ -189,6 +189,35 @@ function inferKeywordDeps(nodes: GraphNode[]): GraphEdge[] {
   return edges;
 }
 
+function findNodeByRef(nodes: GraphNode[], ref: string, excludeId: string): GraphNode | undefined {
+  const refLower = ref.toLowerCase().trim();
+  if (!refLower || refLower === "none" || refLower === "n/a" || refLower === "nenhum") return undefined;
+
+  // Strategy 1: Exact title match
+  const exact = nodes.find((n) => n.id !== excludeId && n.title.toLowerCase().trim() === refLower);
+  if (exact) return exact;
+
+  // Strategy 2: Task number pattern — "Task 1.1" matches "Task 1.1: Description"
+  const taskNumMatch = refLower.match(/^task\s+([\d.]+)/i);
+  if (taskNumMatch) {
+    const taskNum = taskNumMatch[1];
+    const byNum = nodes.find((n) => {
+      if (n.id === excludeId) return false;
+      const m = n.title.match(/^task\s+([\d.]+)/i);
+      return m ? m[1] === taskNum : false;
+    });
+    if (byNum) return byNum;
+  }
+
+  // Strategy 3: Title starts with reference
+  const startsWith = nodes.find((n) =>
+    n.id !== excludeId && n.title.toLowerCase().trim().startsWith(refLower),
+  );
+  if (startsWith) return startsWith;
+
+  return undefined;
+}
+
 export function convertToGraph(
   extraction: ExtractionResult,
   sourceFile: string,
@@ -322,8 +351,7 @@ export function convertToGraph(
 
     const depRefs = match[1].split(/,\s*| e | and /).map((s) => s.trim()).filter(Boolean);
     for (const ref of depRefs) {
-      const refLower = ref.toLowerCase();
-      const target = nodes.find((n) => n.id !== node.id && n.title.toLowerCase() === refLower);
+      const target = findNodeByRef(nodes, ref, node.id);
       if (target) {
         edges.push(
           createEdge(node.id, target.id, "depends_on", `Explicit depends_on: "${ref}"`, false, 0.85),

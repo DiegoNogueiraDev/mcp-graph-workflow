@@ -69,6 +69,17 @@ function matchesAny(text: string, patterns: RegExp[]): boolean {
   return patterns.some((p) => p.test(text));
 }
 
+const METADATA_PATTERNS = [
+  /^\*\*(?:Size|Tamanho)\s*:/i,
+  /^\*\*(?:Priority|Prioridade)\s*:/i,
+  /^\*\*(?:Tags?)\s*:/i,
+  /^\*\*(?:Depends?\s+on|Depende\s+de)\s*:/i,
+];
+
+export function isMetadataLine(text: string): boolean {
+  return METADATA_PATTERNS.some((p) => p.test(text));
+}
+
 const CHECKBOX_PATTERN = /^\[[ x]\]\s/i;
 
 export function classifyText(text: string): { type: BlockType; confidence: number } {
@@ -106,6 +117,7 @@ function parseBulletItems(body: string, startLine: number): ClassifiedItem[] {
     if (!bulletMatch) continue;
 
     const text = bulletMatch[1].trim();
+    if (isMetadataLine(text)) continue;
     const { type, confidence } = classifyText(text);
 
     items.push({
@@ -129,6 +141,7 @@ function parseNumberedItems(body: string, startLine: number): ClassifiedItem[] {
     if (!numMatch) continue;
 
     const text = numMatch[1].trim();
+    if (isMetadataLine(text)) continue;
     const { type, confidence } = classifyText(text);
 
     items.push({

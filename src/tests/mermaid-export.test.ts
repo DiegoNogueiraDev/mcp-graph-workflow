@@ -76,7 +76,7 @@ describe("graphToMermaid", () => {
   it("should escape special characters in title", () => {
     const node = makeNode({ id: "n1", title: 'Task with "quotes" & <brackets>' });
     const result = graphToMermaid([node], []);
-    expect(result).toContain('n1["Task with &quot;quotes&quot; &amp; &lt;brackets&gt;"]');
+    expect(result).toContain(`n1["Task with 'quotes' & <brackets>"]`);
   });
 
   it("should render mindmap format", () => {

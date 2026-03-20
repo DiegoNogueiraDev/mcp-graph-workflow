@@ -56,10 +56,13 @@ export function extractEntities(rawText: string): ExtractionResult {
           inAcSection = false;
         }
         if (inAcSection) {
-          const bulletMatch = line.match(/^\s*[-]\s+(.+)$/);
+          const bulletMatch = line.match(/^\s*[-*]\s+(?:\[[ x]\]\s)?(.+)$/i);
           if (bulletMatch) {
             const bulletText = bulletMatch[1].trim();
-            const matchingItem = block.items.find((item) => item.text === bulletText);
+            const matchingItem = block.items.find((item) => {
+              const normalized = item.text.replace(/^\[[ x]\]\s*/i, "").trim();
+              return normalized === bulletText || item.text === bulletText;
+            });
             if (matchingItem) {
               matchingItem.type = "acceptance_criteria";
               matchingItem.confidence = 0.85;
@@ -74,6 +77,9 @@ export function extractEntities(rawText: string): ExtractionResult {
   for (const block of blocks) {
     if (block.type === "task" || block.type === "epic") {
       for (const item of block.items) {
+        if (item.type === "acceptance_criteria" || item.type === "constraint") {
+          continue; // Already classified with higher confidence — don't demote
+        }
         if (item.type === "unknown" || item.type === "task") {
           // Items inside a task/epic section are subtasks
           if (block.type === "task") {

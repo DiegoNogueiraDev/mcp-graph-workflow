@@ -181,6 +181,9 @@ export function findCriticalPath(doc: GraphDocument): GraphNode[] {
     current = prev.get(current) ?? null;
   }
 
+  // A single-node "path" is not a meaningful dependency chain
+  if (path.length <= 1) return [];
+
   logger.info(`Critical path: ${path.length} nodes, ${maxDist} total minutes`);
   return path;
 }

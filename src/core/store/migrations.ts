@@ -340,6 +340,17 @@ const migrations: Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_custom_skills_project ON custom_skills(project_id);
     `,
   },
+  {
+    version: 10,
+    description: "Edge deduplication — remove duplicates, add UNIQUE constraint",
+    sql: `
+      DELETE FROM edges WHERE rowid NOT IN (
+        SELECT MIN(rowid) FROM edges GROUP BY project_id, from_node, to_node, relation_type
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_edges_unique
+        ON edges(project_id, from_node, to_node, relation_type);
+    `,
+  },
 ];
 
 export function runMigrations(db: Database.Database): void {

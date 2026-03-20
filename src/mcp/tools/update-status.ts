@@ -32,34 +32,34 @@ export function registerUpdateStatus(server: McpServer, store: SqliteStore): voi
 
       if (isBulk) {
         // Validate transitions for bulk update
+        const bulkWarnings: string[] = [];
         if (!force) {
-          const invalidTransitions: string[] = [];
           for (const nodeId of ids) {
             const currentNode = store.getNodeById(nodeId);
             if (currentNode) {
               const allowed = VALID_TRANSITIONS[currentNode.status] ?? [];
               if (!allowed.includes(status as string)) {
-                invalidTransitions.push(`${nodeId}: ${currentNode.status} → ${status}`);
+                bulkWarnings.push(`${nodeId}: ${currentNode.status} → ${status}`);
               }
             }
-          }
-          if (invalidTransitions.length > 0) {
-            return mcpError(`Invalid status transitions: ${invalidTransitions.join("; ")}. Use force:true to override.`);
           }
         }
 
         const result = store.bulkUpdateStatus(ids, status as NodeStatus);
         logger.info("tool:update_status:ok", { count: ids.length, status, updated: result.updated.length });
-        return mcpText({ ok: true, ...result });
+        const bulkResult: Record<string, unknown> = { ok: true, ...result };
+        if (bulkWarnings.length > 0) bulkResult.warnings = bulkWarnings;
+        return mcpText(bulkResult);
       }
 
       // Validate status transition for single update
+      let transitionWarning: string | undefined;
       if (!force) {
         const currentNode = store.getNodeById(ids[0]);
         if (currentNode) {
           const allowed = VALID_TRANSITIONS[currentNode.status] ?? [];
           if (!allowed.includes(status as string)) {
-            return mcpError(`Invalid status transition: ${currentNode.status} → ${status}. Allowed: ${allowed.join(", ")}. Use force:true to override.`);
+            transitionWarning = `Status skip: ${currentNode.status} → ${status}. Recommended flow: backlog→ready→in_progress→done.`;
           }
         }
       }
@@ -74,7 +74,9 @@ export function registerUpdateStatus(server: McpServer, store: SqliteStore): voi
       }
 
       logger.info("tool:update_status:ok", { id: ids[0], status });
-      return mcpText({ ok: true, node: updated });
+      const result: Record<string, unknown> = { ok: true, node: updated };
+      if (transitionWarning) result.warning = transitionWarning;
+      return mcpText(result);
     },
   );
 }

@@ -95,8 +95,8 @@ export function checkTddAdherence(doc: GraphDocument, nodeId?: string): TddCheck
 /**
  * Generate TDD hints for a single node — lightweight version for next tool enrichment.
  */
-export function generateTddHints(node: GraphNode): TddHint[] {
-  const acs = node.acceptanceCriteria ?? [];
+export function generateTddHints(node: GraphNode, doc?: GraphDocument): TddHint[] {
+  const acs = doc ? getNodeAcTexts(doc, node.id) : (node.acceptanceCriteria ?? []);
   if (acs.length === 0) return [];
 
   const hints: TddHint[] = [];

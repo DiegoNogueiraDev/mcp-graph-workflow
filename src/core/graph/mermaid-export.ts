@@ -18,11 +18,7 @@ const STATUS_COLORS: Record<NodeStatus, string> = {
 const DASHED_RELATIONS = new Set(["depends_on", "blocks", "related_to"]);
 
 function escapeMermaid(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return text.replace(/"/g, "'");
 }
 
 const REDUNDANT_EDGE_TYPES = new Set(["child_of"]);

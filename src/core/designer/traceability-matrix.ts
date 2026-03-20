@@ -77,7 +77,7 @@ export function buildTraceabilityMatrix(doc: GraphDocument): TraceabilityReport 
   const linkedItems = coveredCount + linkedDecisionCount;
   const coverageRate = totalItems > 0
     ? Math.round((linkedItems / totalItems) * 10000) / 100
-    : 100;
+    : 0;
 
   logger.info("traceability-matrix", { requirements: requirements.length, coverageRate });
 

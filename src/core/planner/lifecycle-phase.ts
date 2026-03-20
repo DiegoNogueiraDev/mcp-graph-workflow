@@ -347,11 +347,9 @@ const PHASE_RECOMMENDED_TOOLS: Record<LifecyclePhase, Set<string>> = {
 
 const ALWAYS_ALLOWED_TOOLS = new Set([
   "init", "set_phase", "list", "show", "search", "metrics", "export", "snapshot",
-  "add_node", "edge", "import_prd", "context", "rag_context", "next",
-  "sync_stack_docs", "reindex_knowledge", "analyze", "validate_ac",
-  "read_memory", "list_memories", "delete_memory", "write_memory",
-  "update_node", "delete_node", "move_node", "clone_node", "node",
-  "bulk_update_status", "decompose",
+  "context", "rag_context", "next", "analyze",
+  "sync_stack_docs", "reindex_knowledge",
+  "read_memory", "list_memories", "list_skills",
 ]);
 
 /**

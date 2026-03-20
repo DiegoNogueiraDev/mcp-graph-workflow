@@ -1,5 +1,6 @@
 import type { SqliteStore } from "../store/sqlite-store.js";
-import type { GraphNode, GraphEdge } from "../graph/graph-types.js";
+import type { GraphDocument, GraphNode, GraphEdge } from "../graph/graph-types.js";
+import { getNodeAcTexts } from "../utils/ac-helpers.js";
 import { estimateTokens } from "./token-estimator.js";
 import { logger } from "../utils/logger.js";
 
@@ -259,12 +260,6 @@ export function buildTaskContext(
     } else if (edge.relationType === "parent_of" && !edgeParent) {
       const parentNode = store.getNodeById(edge.from);
       if (parentNode) edgeParent = toTaskSummary(parentNode);
-    } else if (edge.relationType === "child_of") {
-      const childNode = store.getNodeById(edge.from);
-      if (childNode && !edgeChildrenIds.has(childNode.id)) {
-        edgeChildrenIds.add(childNode.id);
-        edgeChildren.push(toTaskSummary(childNode));
-      }
     }
   }
 
@@ -293,9 +288,6 @@ export function buildTaskContext(
     } else if (edge.relationType === "derived_from") {
       const derivedNode = store.getNodeById(edge.to);
       if (derivedNode) derivedFromNodes.push(toTaskSummary(derivedNode));
-    } else if (edge.relationType === "child_of" && !edgeParent) {
-      const parentNode = store.getNodeById(edge.to);
-      if (parentNode) edgeParent = toTaskSummary(parentNode);
     } else if (edge.relationType === "parent_of") {
       const childNode = store.getNodeById(edge.to);
       if (childNode && !edgeChildrenIds.has(childNode.id)) {
@@ -305,8 +297,11 @@ export function buildTaskContext(
     }
   }
 
-  // Acceptance criteria
-  const acceptanceCriteria = node.acceptanceCriteria ?? [];
+  // Acceptance criteria (inline + child AC nodes)
+  const allNodes = store.getAllNodes();
+  const allEdges = store.getAllEdges();
+  const miniDoc = { nodes: allNodes, edges: allEdges } as unknown as GraphDocument;
+  const acceptanceCriteria = getNodeAcTexts(miniDoc, node.id);
 
   // Source reference
   const sourceRef: SourceRefInfo | null = node.sourceRef
@@ -314,8 +309,6 @@ export function buildTaskContext(
     : null;
 
   // Metrics: estimate original size from full PRD-related content
-  const allNodes = store.getAllNodes();
-  const allEdges = store.getAllEdges();
   const originalChars =
     allNodes.reduce(
       (sum, n) =>
@@ -408,12 +401,6 @@ export function buildNaiveNeighborhood(
     } else if (edge.relationType === "parent_of" && !edgeParent) {
       const pNode = store.getNodeById(edge.from);
       if (pNode) edgeParent = pNode;
-    } else if (edge.relationType === "child_of") {
-      const cNode = store.getNodeById(edge.from);
-      if (cNode && !edgeChildrenIds.has(cNode.id)) {
-        edgeChildrenIds.add(cNode.id);
-        edgeChildren.push(cNode);
-      }
     }
   }
 
@@ -433,9 +420,6 @@ export function buildNaiveNeighborhood(
     } else if (edge.relationType === "derived_from") {
       const derivedNode = store.getNodeById(edge.to);
       if (derivedNode) derivedFromNodes.push(derivedNode);
-    } else if (edge.relationType === "child_of" && !edgeParent) {
-      const pNode = store.getNodeById(edge.to);
-      if (pNode) edgeParent = pNode;
     } else if (edge.relationType === "parent_of") {
       const cNode = store.getNodeById(edge.to);
       if (cNode && !edgeChildrenIds.has(cNode.id)) {

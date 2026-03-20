@@ -9,6 +9,7 @@
 
 import type { GraphDocument, GraphNode } from "../graph/graph-types.js";
 import { XP_SIZE_ORDER } from "../utils/xp-sizing.js";
+import { getNodeAcTexts } from "../utils/ac-helpers.js";
 import { logger } from "../utils/logger.js";
 
 const ESTIMATE_THRESHOLD = 120; // minutes
@@ -50,7 +51,7 @@ export function detectLargeTasks(doc: GraphDocument): DecomposeResult[] {
       reasons.push(`XP size ${node.xpSize} is large`);
     }
 
-    const acCount = node.acceptanceCriteria?.length ?? 0;
+    const acCount = getNodeAcTexts(doc, node.id).length;
     if (acCount > AC_THRESHOLD) {
       reasons.push(`${acCount} acceptance criteria > ${AC_THRESHOLD} threshold`);
     }
@@ -61,7 +62,7 @@ export function detectLargeTasks(doc: GraphDocument): DecomposeResult[] {
     const hasChildren = doc.nodes.some((n) => n.parentId === node.id);
     if (hasChildren) continue;
 
-    const suggestedSubtasks = suggestDecomposition(node);
+    const suggestedSubtasks = suggestDecomposition(doc, node);
 
     results.push({ node, reasons, suggestedSubtasks });
   }
@@ -73,9 +74,9 @@ export function detectLargeTasks(doc: GraphDocument): DecomposeResult[] {
 /**
  * Suggest subtask breakdown based on acceptance criteria and estimate.
  */
-function suggestDecomposition(node: GraphNode): SuggestedSubtask[] {
+function suggestDecomposition(doc: GraphDocument, node: GraphNode): SuggestedSubtask[] {
   const subtasks: SuggestedSubtask[] = [];
-  const ac = node.acceptanceCriteria ?? [];
+  const ac = getNodeAcTexts(doc, node.id);
 
   if (ac.length > 0) {
     // Group acceptance criteria into subtasks (2-3 AC per subtask)

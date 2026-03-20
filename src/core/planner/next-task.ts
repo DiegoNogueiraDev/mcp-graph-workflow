@@ -10,6 +10,7 @@
 
 import type { GraphDocument, GraphNode, GraphEdge } from "../graph/graph-types.js";
 import { XP_SIZE_ORDER } from "../utils/xp-sizing.js";
+import { getNodeAcTexts } from "../utils/ac-helpers.js";
 import { logger } from "../utils/logger.js";
 
 export interface NextTaskResult {
@@ -83,13 +84,14 @@ export function findNextTask(doc: GraphDocument): NextTaskResult | null {
     const rankA = priorityRank.get(a.id) ?? Infinity;
     const rankB = priorityRank.get(b.id) ?? Infinity;
     if (rankA !== rankB) return rankA - rankB;
-    // Priority ASC (1 = critical, 5 = optional)
-    if (a.priority !== b.priority) return a.priority - b.priority;
 
-    // Blocking impact DESC (more downstream = higher priority)
+    // Blocking impact DESC (tasks that unblock others go first)
     const impactA = blockingImpact.get(a.id) ?? 0;
     const impactB = blockingImpact.get(b.id) ?? 0;
     if (impactA !== impactB) return impactB - impactA;
+
+    // Priority ASC (1 = critical, 5 = optional)
+    if (a.priority !== b.priority) return a.priority - b.priority;
 
     // XP size ASC
     const sizeA = XP_SIZE_ORDER[a.xpSize || "M"] ?? 3;
@@ -102,8 +104,8 @@ export function findNextTask(doc: GraphDocument): NextTaskResult | null {
     if (estA !== estB) return estA - estB;
 
     // Prefer tasks with more acceptance criteria (clearer definition)
-    const acA = a.acceptanceCriteria?.length ?? 0;
-    const acB = b.acceptanceCriteria?.length ?? 0;
+    const acA = getNodeAcTexts(doc, a.id).length;
+    const acB = getNodeAcTexts(doc, b.id).length;
     if (acA !== acB) return acB - acA;
 
     // CreatedAt ASC (older first)

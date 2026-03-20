@@ -15,6 +15,11 @@ export const TechDebtIndicatorSchema = z.object({
   keywords: z.array(z.string()),
 });
 
+export const BacklogAgingSchema = z.object({
+  avgDays: z.number().min(0),
+  maxDays: z.number().min(0),
+});
+
 export const BacklogHealthReportSchema = z.object({
   backlogCount: z.number().min(0),
   readyCount: z.number().min(0),
@@ -23,6 +28,7 @@ export const BacklogHealthReportSchema = z.object({
   cleanForNewCycle: z.boolean(),
   typeDistribution: z.record(z.string(), z.number()),
   priorityDistribution: z.record(z.string(), z.number()),
+  aging: BacklogAgingSchema,
 });
 
 // ── Listener Readiness ──
@@ -44,6 +50,7 @@ export const ListenerReadinessReportSchema = z.object({
 
 export type StaleTask = z.infer<typeof StaleTaskSchema>;
 export type TechDebtIndicator = z.infer<typeof TechDebtIndicatorSchema>;
+export type BacklogAging = z.infer<typeof BacklogAgingSchema>;
 export type BacklogHealthReport = z.infer<typeof BacklogHealthReportSchema>;
 export type ListenerReadinessCheck = z.infer<typeof ListenerReadinessCheckSchema>;
 export type ListenerReadinessReport = z.infer<typeof ListenerReadinessReportSchema>;

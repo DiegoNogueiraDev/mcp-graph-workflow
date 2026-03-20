@@ -5,7 +5,7 @@
 import type { GraphDocument } from "../graph/graph-types.js";
 import type { ListenerReadinessReport, ListenerReadinessCheck } from "../../schemas/listener-schema.js";
 import { analyzeScope } from "../analyzer/scope-analyzer.js";
-import { detectBottlenecks } from "../insights/bottleneck-detector.js";
+import { findAllBlockedTasks } from "../utils/blocked-helpers.js";
 import { calculateVelocity } from "../planner/velocity.js";
 import { analyzeBacklogHealth } from "./backlog-health.js";
 import { scoreToGrade } from "../utils/grading.js";
@@ -63,10 +63,7 @@ export function checkListeningReadiness(
   });
 
   // 4. no_blocked — zero blocked tasks (status-based + dependency-based for consistency)
-  const bottlenecks = detectBottlenecks(doc);
-  const bottleneckIds = new Set(bottlenecks.blockedTasks.map((b) => b.id));
-  const statusBlocked = tasks.filter((n) => (n.status === "blocked" || n.blocked === true) && !bottleneckIds.has(n.id));
-  const blockedTasks = [...bottlenecks.blockedTasks, ...statusBlocked.map((n) => ({ id: n.id, title: n.title }))];
+  const blockedTasks = findAllBlockedTasks(doc);
   const noBlocked = blockedTasks.length === 0;
   checks.push({
     name: "no_blocked",

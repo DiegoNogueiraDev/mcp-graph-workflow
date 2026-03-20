@@ -221,17 +221,17 @@ describe("compact-context", () => {
     expect(ctx!.edgeParent!.title).toBe("Edge parent");
   });
 
-  it("includes edge-based parent from outgoing child_of edge", () => {
+  it("includes edge-based parent from incoming parent_of edge", () => {
     const task = makeNode({ title: "Child task" });
-    const edgeParent = makeNode({ type: "epic", title: "Edge parent via child_of" });
+    const edgeParent = makeNode({ type: "epic", title: "Edge parent via parent_of" });
     store.insertNode(task);
     store.insertNode(edgeParent);
-    // child_of: task -> edgeParent means task is child of edgeParent
-    store.insertEdge(makeEdge(task.id, edgeParent.id, { relationType: "child_of" }));
+    // parent_of: edgeParent -> task means edgeParent is parent of task
+    store.insertEdge(makeEdge(edgeParent.id, task.id, { relationType: "parent_of" }));
 
     const ctx = buildTaskContext(store, task.id);
     expect(ctx!.edgeParent).not.toBeNull();
-    expect(ctx!.edgeParent!.title).toBe("Edge parent via child_of");
+    expect(ctx!.edgeParent!.title).toBe("Edge parent via parent_of");
   });
 
   it("includes edge-based children from outgoing parent_of edges", () => {
@@ -248,17 +248,17 @@ describe("compact-context", () => {
     expect(ctx!.edgeChildren).toHaveLength(2);
   });
 
-  it("includes edge-based children from incoming child_of edges", () => {
+  it("includes edge-based children from outgoing parent_of edge (single child)", () => {
     const parent = makeNode({ type: "epic", title: "Edge parent" });
-    const child = makeNode({ title: "Edge child via child_of" });
+    const child = makeNode({ title: "Edge child via parent_of" });
     store.insertNode(parent);
     store.insertNode(child);
-    // child_of: child -> parent means child is child of parent
-    store.insertEdge(makeEdge(child.id, parent.id, { relationType: "child_of" }));
+    // parent_of: parent -> child means parent is parent of child
+    store.insertEdge(makeEdge(parent.id, child.id, { relationType: "parent_of" }));
 
     const ctx = buildTaskContext(store, parent.id);
     expect(ctx!.edgeChildren).toHaveLength(1);
-    expect(ctx!.edgeChildren![0].title).toBe("Edge child via child_of");
+    expect(ctx!.edgeChildren![0].title).toBe("Edge child via parent_of");
   });
 
   it("edge-based hierarchy is independent from parentId hierarchy", () => {

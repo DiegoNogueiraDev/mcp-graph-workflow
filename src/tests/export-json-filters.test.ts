@@ -32,21 +32,20 @@ function makeEdge(from: string, to: string, relationType: string): GraphEdge {
   };
 }
 
-describe("BUG-25: escapeMermaid ampersand fix", () => {
-  it("should encode & as &amp; not #amp;", () => {
+describe("BUG-25: escapeMermaid preserves & and escapes quotes", () => {
+  it("should preserve & as literal & in Mermaid labels", () => {
     const nodes = [makeNode({ id: "n1", title: "A & B" })];
     const result = graphToMermaid(nodes, [], {});
-    expect(result).toContain("&amp;");
+    expect(result).toContain("A & B");
+    expect(result).not.toContain("&amp;");
     expect(result).not.toContain("#amp;");
   });
 
-  it("should encode all special chars properly", () => {
+  it("should escape double quotes and preserve other chars", () => {
     const nodes = [makeNode({ id: "n1", title: 'A < B > C & D "E"' })];
     const result = graphToMermaid(nodes, [], {});
-    expect(result).toContain("&amp;");
-    expect(result).toContain("&lt;");
-    expect(result).toContain("&gt;");
-    expect(result).toContain("&quot;");
+    expect(result).toContain("A < B > C & D 'E'");
+    expect(result).not.toContain('"E"');
   });
 });
 

@@ -118,6 +118,20 @@ export function ragBuildContext(
     logger.debug("Knowledge FTS search returned no results or errored");
   }
 
+  // Fallback: if knowledge store returned nothing, synthesize from node descriptions
+  if (knowledgeResults.length === 0 && relevantNodes.length > 0) {
+    knowledgeResults = relevantNodes
+      .filter((n) => n.description)
+      .slice(0, 3)
+      .map((n, i) => ({
+        id: `fallback-${i}`,
+        sourceType: "node_context",
+        title: n.title,
+        content: n.description ?? n.title,
+        score: 0.5,
+      }));
+  }
+
   // Stage 3: Expand context for top results within budget
   const expandedContexts: TaskContext[] = [];
   const basePayload = JSON.stringify({ query, relevantNodes, knowledgeResults });

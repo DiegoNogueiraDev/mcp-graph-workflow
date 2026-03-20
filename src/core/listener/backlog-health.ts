@@ -53,8 +53,16 @@ export function analyzeBacklogHealth(doc: GraphDocument): BacklogHealthReport {
       };
     });
 
-  // Clean for new cycle = no stale tasks and limited tech debt
-  const cleanForNewCycle = staleTasks.length === 0 && techDebtIndicators.length <= 3;
+  // Aging statistics
+  const agingDays = [...backlogTasks, ...readyTasks].map((t) => {
+    const created = new Date(t.createdAt).getTime();
+    return Math.floor((now - created) / (1000 * 60 * 60 * 24));
+  });
+  const avgDays = agingDays.length > 0 ? Math.round(agingDays.reduce((a, b) => a + b, 0) / agingDays.length) : 0;
+  const maxDays = agingDays.length > 0 ? Math.max(...agingDays) : 0;
+
+  // Clean for new cycle = no stale tasks, limited tech debt, and reasonable backlog size
+  const cleanForNewCycle = staleTasks.length === 0 && techDebtIndicators.length <= 3 && backlogTasks.length <= 50;
 
   // Type and priority distribution (backlog + ready tasks only)
   const activePool = [...backlogTasks, ...readyTasks];
@@ -81,5 +89,6 @@ export function analyzeBacklogHealth(doc: GraphDocument): BacklogHealthReport {
     cleanForNewCycle,
     typeDistribution,
     priorityDistribution,
+    aging: { avgDays, maxDays },
   };
 }

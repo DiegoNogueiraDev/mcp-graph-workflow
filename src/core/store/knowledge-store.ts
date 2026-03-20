@@ -172,7 +172,7 @@ export class KnowledgeStore {
 
     return rows.map((row) => ({
       ...rowToDoc(row),
-      score: -row.score,
+      score: Math.abs(row.score),
     }));
   }
 

@@ -21,6 +21,7 @@ import { GraphEdgeSchema } from "../../schemas/edge.schema.js";
 import { z } from "zod/v4";
 
 import { STORE_DIR, LEGACY_STORE_DIR, DB_FILE } from "../utils/constants.js";
+import { normalizeNewlines } from "../utils/text.js";
 
 // ── Row types (SQLite ↔ JS) ─────────────────────────────
 
@@ -444,7 +445,8 @@ export class SqliteStore {
       throw err;
     }
     const pid = this.ensureProject();
-    const row = nodeToRow(node, pid);
+    const normalized = { ...node, description: normalizeNewlines(node.description) };
+    const row = nodeToRow(normalized, pid);
     this.db
       .prepare(
         `INSERT INTO nodes
@@ -555,7 +557,7 @@ export class SqliteStore {
     }
     if (fields.description !== undefined) {
       setClauses.push("description = ?");
-      params.push(fields.description ?? null);
+      params.push(normalizeNewlines(fields.description) ?? null);
     }
     if (fields.type !== undefined) {
       setClauses.push("type = ?");
@@ -684,15 +686,17 @@ export class SqliteStore {
     }
     const pid = this.ensureProject();
     const row = edgeToRow(edge, pid);
-    this.db
+    const result = this.db
       .prepare(
-        `INSERT INTO edges
+        `INSERT OR IGNORE INTO edges
           (id, project_id, from_node, to_node, relation_type, weight, reason, metadata, created_at)
          VALUES
           (@id, @project_id, @from_node, @to_node, @relation_type, @weight, @reason, @metadata, @created_at)`,
       )
       .run(row);
-    this._eventBus?.emitTyped("edge:created", { edgeId: edge.id, from: edge.from, to: edge.to, relationType: edge.relationType });
+    if (result.changes > 0) {
+      this._eventBus?.emitTyped("edge:created", { edgeId: edge.id, from: edge.from, to: edge.to, relationType: edge.relationType });
+    }
   }
 
   getEdgesFrom(nodeId: string): GraphEdge[] {
@@ -809,7 +813,7 @@ export class SqliteStore {
         const row = edgeToRow(edge, pid);
         this.db
           .prepare(
-            `INSERT INTO edges
+            `INSERT OR IGNORE INTO edges
               (id, project_id, from_node, to_node, relation_type, weight, reason, metadata, created_at)
              VALUES
               (@id, @project_id, @from_node, @to_node, @relation_type, @weight, @reason, @metadata, @created_at)`,
@@ -937,7 +941,7 @@ export class SqliteStore {
 
     return rows.map((row) => ({
       ...rowToNode(row),
-      score: -row.score,
+      score: Math.abs(row.score),
     }));
   }
 
