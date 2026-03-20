@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.5.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.4.0...mcp-graph-v5.5.0) (2026-03-20)
+
+
+### Features
+
+* **code:** improve ts-analyzer resilience and init-project robustness ([146ea54](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/146ea540005ba01498525c17f0d1ff00078521a3))
+* **graph:** fix hierarchy and relationships in PRD import and graph operations ([6da62a6](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/6da62a68b13999ae6a501b6e3bb9bdfb46fa0779))
+* **tools:** consolidate node and validate tools with deprecation shim ([912a560](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/912a5601f6e2d74f9b11a28d96ba8bcf969e9a6e))
+
+
+### Bug Fixes
+
+* remove unused variables to pass lint ([eeb4726](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/eeb4726de0e9a01836c36fed570bdc6794bab852))
+
 ## [5.4.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.3.0...mcp-graph-v5.4.0) (2026-03-18)
 
 
