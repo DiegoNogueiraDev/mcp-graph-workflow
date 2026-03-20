@@ -483,10 +483,10 @@ describe("convertToGraph", () => {
     // Assert
     const constraintNode = result.nodes.find((n) => n.title === "Constraint A")!;
     const taskA = result.nodes.find((n) => n.title === "Task A")!;
-    const taskB = result.nodes.find((n) => n.title === "Task B")!;
+    const _taskB = result.nodes.find((n) => n.title === "Task B")!;
 
     const relatedEdges = result.edges.filter((e) => e.relationType === "related_to" && e.from === constraintNode.id);
-    // Should only link to Task A (same parent), not Task B
+    // Should only link to Task A (same parent), not Task B (different parent)
     expect(relatedEdges).toHaveLength(1);
     expect(relatedEdges[0].to).toBe(taskA.id);
   });

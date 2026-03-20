@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from "node:fs";
+import { mkdirSync, writeFileSync, existsSync, rmSync } from "node:fs";
 import path from "node:path";
 import { runUpdate } from "../mcp/init-project.js";
 import { STORE_DIR } from "../core/utils/constants.js";
@@ -97,7 +97,6 @@ describe("runUpdate", () => {
     const report = await runUpdate(TEST_DIR, { dryRun: true });
 
     // Files should NOT exist (dry run skips writes)
-    const mcpJsonPath = path.join(TEST_DIR, ".mcp.json");
     // .mcp.json should not be created by dry run alone
     // (it didn't exist before, so dry run should report "created" but not write)
     const claudeStep = report.steps.find((s) => s.step === "claude-md");
