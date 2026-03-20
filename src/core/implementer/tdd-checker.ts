@@ -12,6 +12,7 @@ import type {
   TddHint,
 } from "../../schemas/implementer-schema.js";
 import { parseAc } from "../analyzer/ac-parser.js";
+import { getNodeAcTexts } from "../utils/ac-helpers.js";
 import { logger } from "../utils/logger.js";
 
 const UNIT_KEYWORDS = [
@@ -40,7 +41,7 @@ export function checkTddAdherence(doc: GraphDocument, nodeId?: string): TddCheck
   const allSuggested: SuggestedTestSpec[] = [];
 
   for (const node of tasks) {
-    const acs = node.acceptanceCriteria ?? [];
+    const acs = getNodeAcTexts(doc, node.id);
     if (acs.length === 0) continue;
 
     const parsed = acs.map((ac) => parseAc(ac));
@@ -107,15 +108,29 @@ export function generateTddHints(node: GraphNode): TddHint[] {
   return hints;
 }
 
+/**
+ * Generate TDD hints from raw AC text strings — works for both inline and child-node sourced.
+ */
+export function generateTddHintsFromTexts(acTexts: string[]): TddHint[] {
+  if (acTexts.length === 0) return [];
+  const hints: TddHint[] = [];
+  for (const ac of acTexts) {
+    const parsed = parseAc(ac);
+    const specs = generateTestSpecsFromAc(ac, parsed);
+    hints.push(...specs);
+  }
+  return hints;
+}
+
 function selectTasks(doc: GraphDocument, nodeId?: string): GraphNode[] {
   if (nodeId) {
     const node = doc.nodes.find((n) => n.id === nodeId);
     return node ? [node] : [];
   }
+  // Include tasks that have AC either inline or via child AC nodes
   return doc.nodes.filter(
     (n) => (n.type === "task" || n.type === "subtask") &&
-      n.acceptanceCriteria &&
-      n.acceptanceCriteria.length > 0,
+      getNodeAcTexts(doc, n.id).length > 0,
   );
 }
 

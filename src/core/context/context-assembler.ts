@@ -9,6 +9,7 @@ import { KnowledgeStore } from "../store/knowledge-store.js";
 import { buildTieredContext, type ContextTier } from "./tiered-context.js";
 import { compressWithBm25 } from "./bm25-compressor.js";
 import { estimateTokens } from "./token-estimator.js";
+import { DEFAULT_TOKEN_BUDGET } from "../utils/constants.js";
 import { logger } from "../utils/logger.js";
 import type { LifecyclePhase } from "../planner/lifecycle-phase.js";
 
@@ -56,7 +57,7 @@ export function assembleContext(
   query: string,
   options?: AssemblerOptions,
 ): AssembledContext {
-  const tokenBudget = options?.tokenBudget ?? 4000;
+  const tokenBudget = options?.tokenBudget ?? DEFAULT_TOKEN_BUDGET;
   const tier = options?.tier ?? "standard";
   const maxKnowledgeChunks = options?.maxKnowledgeChunks ?? 5;
 
@@ -164,13 +165,33 @@ export function assembleContext(
 }
 
 /**
- * Find relevant node IDs via FTS search.
+ * Find relevant node IDs via FTS search with substring fallback.
  */
 function findRelevantNodeIds(store: SqliteStore, query: string): string[] {
   try {
     const results = store.searchNodes(query, 5);
-    return results.map((r) => r.id);
+    if (results.length > 0) return results.map((r) => r.id);
   } catch {
+    logger.debug("FTS search failed in context assembler, falling back to substring");
+  }
+
+  // Fallback: simple substring match on title/description
+  try {
+    const allNodes = store.getAllNodes();
+    const lowerQuery = query.toLowerCase();
+    const words = lowerQuery.split(/\s+/).filter((w) => w.length > 2);
+    if (words.length === 0) return [];
+    return allNodes
+      .filter((n) =>
+        words.some((w) =>
+          n.title.toLowerCase().includes(w) ||
+          (n.description ?? "").toLowerCase().includes(w),
+        ),
+      )
+      .slice(0, 10)
+      .map((n) => n.id);
+  } catch {
+    logger.debug("Substring fallback also failed in context assembler");
     return [];
   }
 }

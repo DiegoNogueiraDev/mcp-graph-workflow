@@ -4,27 +4,19 @@
 
 import type { GraphDocument } from "../graph/graph-types.js";
 import type { HandoffReadinessReport, HandoffReadinessCheck } from "../../schemas/handoff-schema.js";
-import type { AdrGrade } from "../../schemas/designer-schema.js";
 import { assessRisks } from "../analyzer/risk-assessment.js";
 import { analyzeScope } from "../analyzer/scope-analyzer.js";
 import { detectBottlenecks } from "../insights/bottleneck-detector.js";
 import { calculateVelocity } from "../planner/velocity.js";
 import { detectCycles } from "../planner/dependency-chain.js";
 import { checkDocCompleteness } from "./doc-completeness.js";
+import { scoreToGrade } from "../utils/grading.js";
+import { TASK_TYPES } from "../utils/node-type-sets.js";
+import { nodeHasAc } from "../utils/ac-helpers.js";
 import { logger } from "../utils/logger.js";
-
-const TASK_TYPES = new Set(["task", "subtask"]);
 
 export interface HandoffReadinessOptions {
   knowledgeCount?: number;
-}
-
-function scoreToGrade(score: number): AdrGrade {
-  if (score >= 90) return "A";
-  if (score >= 75) return "B";
-  if (score >= 60) return "C";
-  if (score >= 40) return "D";
-  return "F";
 }
 
 export function checkHandoffReadiness(
@@ -76,9 +68,9 @@ export function checkHandoffReadiness(
     severity: "required",
   });
 
-  // 4. ac_coverage — ≥80% tasks with AC
+  // 4. ac_coverage — ≥80% tasks with AC (inline or child AC nodes)
   const tasksWithAC = tasks.filter(
-    (t) => t.acceptanceCriteria && t.acceptanceCriteria.length > 0,
+    (t) => nodeHasAc(doc, t.id),
   );
   const acCoverage = tasks.length > 0 ? Math.round((tasksWithAC.length / tasks.length) * 100) : 100;
   const acPass = acCoverage >= 80;

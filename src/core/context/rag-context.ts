@@ -8,6 +8,7 @@ import { KnowledgeStore } from "../store/knowledge-store.js";
 import { searchNodes } from "../search/fts-search.js";
 import { buildTaskContext, type TaskContext } from "./compact-context.js";
 import { estimateTokens } from "./token-estimator.js";
+import { DEFAULT_TOKEN_BUDGET } from "../utils/constants.js";
 import { logger } from "../utils/logger.js";
 import type { LifecyclePhase } from "../planner/lifecycle-phase.js";
 
@@ -53,13 +54,36 @@ interface RagNodeSummary {
 export function ragBuildContext(
   store: SqliteStore,
   query: string,
-  tokenBudget: number = 4000,
+  tokenBudget: number = DEFAULT_TOKEN_BUDGET,
   phase?: LifecyclePhase,
 ): RagContext {
   logger.info(`RAG context: query="${query}", budget=${tokenBudget} tokens, phase=${phase ?? "none"}`);
 
-  // Stage 1: Search for relevant nodes with TF-IDF reranking
-  const searchResults = searchNodes(store, query, { limit: 10, rerank: true });
+  // Stage 1: Search for relevant nodes with TF-IDF reranking + substring fallback
+  let searchResults = searchNodes(store, query, { limit: 10, rerank: true });
+
+  // Fallback: if FTS returns nothing, try substring match
+  if (searchResults.length === 0) {
+    logger.debug("RAG FTS returned 0 results, falling back to substring search");
+    try {
+      const allNodes = store.getAllNodes();
+      const lowerQuery = query.toLowerCase();
+      const words = lowerQuery.split(/\s+/).filter((w) => w.length > 2);
+      if (words.length > 0) {
+        const matched = allNodes
+          .filter((n) =>
+            words.some((w) =>
+              n.title.toLowerCase().includes(w) ||
+              (n.description ?? "").toLowerCase().includes(w),
+            ),
+          )
+          .slice(0, 10);
+        searchResults = matched.map((node) => ({ node, score: 0.5 }));
+      }
+    } catch {
+      logger.debug("RAG substring fallback also failed");
+    }
+  }
 
   const relevantNodes: RagNodeSummary[] = searchResults.map((r) => {
     const summary: RagNodeSummary = {

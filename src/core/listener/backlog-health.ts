@@ -4,9 +4,8 @@
 
 import type { GraphDocument } from "../graph/graph-types.js";
 import type { BacklogHealthReport } from "../../schemas/listener-schema.js";
+import { TASK_TYPES } from "../utils/node-type-sets.js";
 import { logger } from "../utils/logger.js";
-
-const TASK_TYPES = new Set(["task", "subtask"]);
 const TECH_DEBT_KEYWORDS = ["tech-debt", "refactor", "fix", "debt", "cleanup", "deprecat"];
 const STALE_THRESHOLD_DAYS = 30;
 
@@ -57,6 +56,16 @@ export function analyzeBacklogHealth(doc: GraphDocument): BacklogHealthReport {
   // Clean for new cycle = no stale tasks and limited tech debt
   const cleanForNewCycle = staleTasks.length === 0 && techDebtIndicators.length <= 3;
 
+  // Type and priority distribution (backlog + ready tasks only)
+  const activePool = [...backlogTasks, ...readyTasks];
+  const typeDistribution: Record<string, number> = {};
+  const priorityDistribution: Record<string, number> = {};
+  for (const t of activePool) {
+    typeDistribution[t.type] = (typeDistribution[t.type] ?? 0) + 1;
+    const pKey = String(t.priority);
+    priorityDistribution[pKey] = (priorityDistribution[pKey] ?? 0) + 1;
+  }
+
   logger.info("backlog-health", {
     backlogCount: backlogTasks.length,
     readyCount: readyTasks.length,
@@ -70,5 +79,7 @@ export function analyzeBacklogHealth(doc: GraphDocument): BacklogHealthReport {
     staleTasks,
     techDebtIndicators,
     cleanForNewCycle,
+    typeDistribution,
+    priorityDistribution,
   };
 }

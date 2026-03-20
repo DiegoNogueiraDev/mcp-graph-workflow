@@ -4,25 +4,17 @@
 
 import type { GraphDocument } from "../graph/graph-types.js";
 import type { ListenerReadinessReport, ListenerReadinessCheck } from "../../schemas/listener-schema.js";
-import type { AdrGrade } from "../../schemas/designer-schema.js";
 import { analyzeScope } from "../analyzer/scope-analyzer.js";
+import { detectBottlenecks } from "../insights/bottleneck-detector.js";
 import { calculateVelocity } from "../planner/velocity.js";
 import { analyzeBacklogHealth } from "./backlog-health.js";
+import { scoreToGrade } from "../utils/grading.js";
+import { TASK_TYPES } from "../utils/node-type-sets.js";
 import { logger } from "../utils/logger.js";
-
-const TASK_TYPES = new Set(["task", "subtask"]);
 
 export interface ListeningReadinessOptions {
   hasSnapshots?: boolean;
   knowledgeCount?: number;
-}
-
-function scoreToGrade(score: number): AdrGrade {
-  if (score >= 90) return "A";
-  if (score >= 75) return "B";
-  if (score >= 60) return "C";
-  if (score >= 40) return "D";
-  return "F";
 }
 
 export function checkListeningReadiness(
@@ -70,8 +62,11 @@ export function checkListeningReadiness(
     severity: "required",
   });
 
-  // 4. no_blocked — zero blocked tasks
-  const blockedTasks = tasks.filter((n) => n.status === "blocked" || n.blocked === true);
+  // 4. no_blocked — zero blocked tasks (status-based + dependency-based for consistency)
+  const bottlenecks = detectBottlenecks(doc);
+  const bottleneckIds = new Set(bottlenecks.blockedTasks.map((b) => b.id));
+  const statusBlocked = tasks.filter((n) => (n.status === "blocked" || n.blocked === true) && !bottleneckIds.has(n.id));
+  const blockedTasks = [...bottlenecks.blockedTasks, ...statusBlocked.map((n) => ({ id: n.id, title: n.title }))];
   const noBlocked = blockedTasks.length === 0;
   checks.push({
     name: "no_blocked",

@@ -1,4 +1,5 @@
 import type { GraphDocument } from "../graph/graph-types.js";
+import { nodeHasAc } from "../utils/ac-helpers.js";
 import { parseAc } from "../analyzer/ac-parser.js";
 import { checkDesignReadiness } from "../designer/definition-of-ready.js";
 import { checkDefinitionOfDone } from "../implementer/definition-of-done.js";
@@ -31,9 +32,7 @@ export interface PhaseGuidance {
   suggestedSkills?: string[];
 }
 
-const DESIGN_ONLY_TYPES = new Set(["requirement", "epic", "decision", "constraint", "milestone", "risk", "acceptance_criteria"]);
-const TASK_TYPES = new Set(["task", "subtask"]);
-const FEEDBACK_TYPES = new Set(["requirement", "risk", "constraint"]);
+import { TASK_TYPES, DESIGN_ONLY_TYPES, FEEDBACK_TYPES } from "../utils/node-type-sets.js";
 
 export interface PhaseDetectionOptions {
   hasSnapshots?: boolean;
@@ -335,16 +334,24 @@ export function validatePhaseTransition(
 
 // ── Tool Phase Restrictions ────────────────────
 
-const TOOL_PHASE_RESTRICTIONS: Record<string, Set<LifecyclePhase>> = {
-  update_status: new Set(["ANALYZE"]),
-  plan_sprint: new Set(["ANALYZE"]),
-  validate_task: new Set(["ANALYZE", "DESIGN", "PLAN"]),
+const PHASE_RECOMMENDED_TOOLS: Record<LifecyclePhase, Set<string>> = {
+  ANALYZE: new Set(["import_prd", "node", "edge", "search", "analyze"]),
+  DESIGN: new Set(["node", "edge", "analyze", "write_memory", "read_memory"]),
+  PLAN: new Set(["plan_sprint", "analyze", "sync_stack_docs", "decompose", "node", "edge"]),
+  IMPLEMENT: new Set(["next", "context", "update_status", "node", "analyze", "write_memory", "validate", "validate_task", "rag_context", "edge"]),
+  VALIDATE: new Set(["validate", "analyze", "update_status", "validate_task"]),
+  REVIEW: new Set(["analyze", "export", "metrics", "validate_task"]),
+  HANDOFF: new Set(["export", "snapshot", "write_memory", "validate_task"]),
+  LISTENING: new Set(["import_prd", "node", "analyze", "manage_skill", "list_skills", "validate_task"]),
 };
 
 const ALWAYS_ALLOWED_TOOLS = new Set([
   "init", "set_phase", "list", "show", "search", "metrics", "export", "snapshot",
   "add_node", "edge", "import_prd", "context", "rag_context", "next",
   "sync_stack_docs", "reindex_knowledge", "analyze", "validate_ac",
+  "read_memory", "list_memories", "delete_memory", "write_memory",
+  "update_node", "delete_node", "move_node", "clone_node", "node",
+  "bulk_update_status", "decompose",
 ]);
 
 /**
@@ -361,15 +368,21 @@ export function checkToolGate(
     return [];
   }
 
-  const restrictions = TOOL_PHASE_RESTRICTIONS[toolName];
-  if (!restrictions || !restrictions.has(phase)) {
+  const recommended = PHASE_RECOMMENDED_TOOLS[phase];
+  if (recommended?.has(toolName)) {
+    return [];
+  }
+
+  // If the tool isn't known to any phase's recommended list, it's an unknown/external tool — allow it
+  const isKnownTool = Object.values(PHASE_RECOMMENDED_TOOLS).some((s) => s.has(toolName));
+  if (!isKnownTool) {
     return [];
   }
 
   const severity = mode === "strict" ? "error" : "warning";
   return [{
     code: "tool_phase_blocked",
-    message: `Tool "${toolName}" não é permitida na fase ${phase}. Avance para a fase apropriada primeiro.`,
+    message: `Tool "${toolName}" não é recomendada na fase ${phase}. Avance para a fase apropriada primeiro.`,
     severity,
   }];
 }
@@ -396,11 +409,10 @@ export function checkStatusGate(
   const node = doc.nodes.find((n) => n.id === nodeId);
 
   if (newStatus === "done" && phase === "IMPLEMENT") {
-    // Check if node or parent has acceptance criteria
-    const hasAC = node?.acceptanceCriteria && node.acceptanceCriteria.length > 0;
+    // Check if node or parent has acceptance criteria (inline or child AC nodes)
+    const hasAC = nodeHasAc(doc, nodeId);
     const parentId = node?.parentId;
-    const parent = parentId ? doc.nodes.find((n) => n.id === parentId) : undefined;
-    const parentHasAC = parent?.acceptanceCriteria && parent.acceptanceCriteria.length > 0;
+    const parentHasAC = parentId ? nodeHasAc(doc, parentId) : false;
     const globalAC = doc.nodes.some((n) => n.type === "acceptance_criteria");
 
     if (!hasAC && !parentHasAC && !globalAC) {

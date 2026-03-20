@@ -4,22 +4,16 @@
  */
 
 import type { GraphDocument } from "../graph/graph-types.js";
-import type { ImplementDoneReport, DodCheck, ImplementGrade } from "../../schemas/implementer-schema.js";
+import type { ImplementDoneReport, DodCheck } from "../../schemas/implementer-schema.js";
 import { validateAcQuality } from "../analyzer/ac-validator.js";
 import { parseAc } from "../analyzer/ac-parser.js";
+import { nodeHasAc, getNodeAcTexts } from "../utils/ac-helpers.js";
 import { findTransitiveBlockers } from "../planner/dependency-chain.js";
+import { scoreToGrade } from "../utils/grading.js";
+import { XP_SIZE_ORDER } from "../utils/xp-sizing.js";
 import { logger } from "../utils/logger.js";
 
-const XP_SIZE_ORDER: Record<string, number> = { XS: 1, S: 2, M: 3, L: 4, XL: 5 };
 const LARGE_XP_THRESHOLD = 4; // L=4, XL=5
-
-function scoreToGrade(score: number): ImplementGrade {
-  if (score >= 90) return "A";
-  if (score >= 75) return "B";
-  if (score >= 60) return "C";
-  if (score >= 40) return "D";
-  return "F";
-}
 
 /**
  * Check Definition of Done for a specific task node.
@@ -42,10 +36,9 @@ export function checkDefinitionOfDone(doc: GraphDocument, nodeId: string): Imple
 
   // ── Required checks ──
 
-  // 1. has_acceptance_criteria — task or parent has AC
-  const hasAc = (node.acceptanceCriteria && node.acceptanceCriteria.length > 0);
-  const parent = node.parentId ? doc.nodes.find((n) => n.id === node.parentId) : undefined;
-  const parentHasAc = parent?.acceptanceCriteria && parent.acceptanceCriteria.length > 0;
+  // 1. has_acceptance_criteria — task or parent has AC (inline or child AC nodes)
+  const hasAc = nodeHasAc(doc, nodeId);
+  const parentHasAc = node.parentId ? nodeHasAc(doc, node.parentId) : false;
   const acPass = !!(hasAc || parentHasAc);
   checks.push({
     name: "has_acceptance_criteria",
@@ -131,8 +124,8 @@ export function checkDefinitionOfDone(doc: GraphDocument, nodeId: string): Imple
     severity: "recommended",
   });
 
-  // 7. has_testable_ac — at least 1 AC is testable
-  const acs = node.acceptanceCriteria ?? [];
+  // 7. has_testable_ac — at least 1 AC is testable (inline or child AC nodes)
+  const acs = getNodeAcTexts(doc, nodeId);
   const parsedAcs = acs.map((ac) => parseAc(ac));
   const testableCount = parsedAcs.filter((p) => p.isTestable).length;
   const hasTestableAc = testableCount > 0;

@@ -19,13 +19,15 @@ const DASHED_RELATIONS = new Set(["depends_on", "blocks", "related_to"]);
 
 function escapeMermaid(text: string): string {
   return text
-    .replace(/&/g, "#amp;")
-    .replace(/"/g, "#quot;")
-    .replace(/</g, "#lt;")
-    .replace(/>/g, "#gt;");
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
-function filterNodes(
+const REDUNDANT_EDGE_TYPES = new Set(["child_of"]);
+
+export function filterNodes(
   nodes: GraphNode[],
   options?: MermaidExportOptions,
 ): GraphNode[] {
@@ -93,10 +95,15 @@ export function graphToMermaid(
     lines.push(`  ${node.id}["${escapeMermaid(node.title)}"]`);
   }
 
+  const renderedEdges = new Set<string>();
   for (const edge of edges) {
-    if (!nodeIds.has(edge.from) || !nodeIds.has(edge.to)) {
-      continue;
-    }
+    if (!nodeIds.has(edge.from) || !nodeIds.has(edge.to)) continue;
+    if (REDUNDANT_EDGE_TYPES.has(edge.relationType)) continue;
+
+    const edgeKey = `${edge.from}-${edge.to}-${edge.relationType}`;
+    if (renderedEdges.has(edgeKey)) continue;
+    renderedEdges.add(edgeKey);
+
     const arrow = DASHED_RELATIONS.has(edge.relationType) ? "-.->" : "-->";
     lines.push(`  ${edge.from} ${arrow}|${edge.relationType}| ${edge.to}`);
   }

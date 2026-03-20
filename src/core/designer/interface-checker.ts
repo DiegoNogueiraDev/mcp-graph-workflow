@@ -4,6 +4,7 @@
 
 import type { GraphDocument } from "../graph/graph-types.js";
 import type { InterfaceReport, InterfaceCheckResult } from "../../schemas/designer-schema.js";
+import { nodeHasAc } from "../utils/ac-helpers.js";
 import { logger } from "../utils/logger.js";
 
 const INTERFACE_NODE_TYPES = new Set(["epic", "requirement", "decision"]);
@@ -43,7 +44,7 @@ export function checkInterfaces(doc: GraphDocument): InterfaceReport {
 
   const results: InterfaceCheckResult[] = interfaceNodes.map((node) => {
     const hasDescription = !!node.description && node.description.trim().length > 0;
-    const hasAC = !!node.acceptanceCriteria && node.acceptanceCriteria.length > 0;
+    const hasAC = nodeHasAc(doc, node.id);
     const hasEdges = (nodeEdges.get(node.id)?.size ?? 0) > 0;
     const hasConstraintLink = nodeConstraintLinks.get(node.id) ?? false;
 

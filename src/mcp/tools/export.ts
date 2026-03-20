@@ -1,9 +1,10 @@
 import { z } from "zod/v4";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { SqliteStore } from "../../core/store/sqlite-store.js";
-import { graphToMermaid } from "../../core/graph/mermaid-export.js";
+import { graphToMermaid, filterNodes } from "../../core/graph/mermaid-export.js";
 import type { NodeStatus, NodeType } from "../../core/graph/graph-types.js";
 import { logger } from "../../core/utils/logger.js";
+import { mcpText } from "../response-helpers.js";
 
 export function registerExport(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -22,12 +23,18 @@ export function registerExport(server: McpServer, store: SqliteStore): void {
       const doc = store.toGraphDocument();
 
       if (action === "json") {
-        logger.info("tool:export:ok", { format: "json", nodes: doc.nodes.length });
-        return {
-          content: [
-            { type: "text" as const, text: JSON.stringify(doc, null, 2) },
-          ],
-        };
+        let filteredDoc = doc;
+        if ((filterType && filterType.length > 0) || (filterStatus && filterStatus.length > 0)) {
+          const filteredNodes = filterNodes(doc.nodes, {
+            filterType: filterType as NodeType[] | undefined,
+            filterStatus: filterStatus as NodeStatus[] | undefined,
+          });
+          const nodeIds = new Set(filteredNodes.map((n) => n.id));
+          const filteredEdges = doc.edges.filter((e) => nodeIds.has(e.from) && nodeIds.has(e.to));
+          filteredDoc = { ...doc, nodes: filteredNodes, edges: filteredEdges };
+        }
+        logger.info("tool:export:ok", { format: "json", nodes: filteredDoc.nodes.length });
+        return mcpText(filteredDoc);
       }
 
       // action === "mermaid"

@@ -5,24 +5,16 @@
 
 import type { GraphDocument } from "../graph/graph-types.js";
 import type { ReviewReadinessReport, ReviewReadinessCheck } from "../../schemas/reviewer-schema.js";
-import type { AdrGrade } from "../../schemas/designer-schema.js";
 import { analyzeScope } from "../analyzer/scope-analyzer.js";
 import { assessRisks } from "../analyzer/risk-assessment.js";
 import { detectBottlenecks } from "../insights/bottleneck-detector.js";
 import { validateAcQuality } from "../analyzer/ac-validator.js";
 import { calculateVelocity } from "../planner/velocity.js";
 import { detectCycles } from "../planner/dependency-chain.js";
+import { scoreToGrade } from "../utils/grading.js";
+import { TASK_TYPES } from "../utils/node-type-sets.js";
+import { nodeHasAc } from "../utils/ac-helpers.js";
 import { logger } from "../utils/logger.js";
-
-const TASK_TYPES = new Set(["task", "subtask"]);
-
-function scoreToGrade(score: number): AdrGrade {
-  if (score >= 90) return "A";
-  if (score >= 75) return "B";
-  if (score >= 60) return "C";
-  if (score >= 40) return "D";
-  return "F";
-}
 
 export function checkReviewReadiness(doc: GraphDocument): ReviewReadinessReport {
   const checks: ReviewReadinessCheck[] = [];
@@ -60,9 +52,9 @@ export function checkReviewReadiness(doc: GraphDocument): ReviewReadinessReport 
     severity: "required",
   });
 
-  // 3. ac_coverage — ≥70% done tasks with AC
+  // 3. ac_coverage — ≥70% done tasks with AC (inline or child AC nodes)
   const doneWithAC = doneTasks.filter(
-    (t) => (t.acceptanceCriteria && t.acceptanceCriteria.length > 0),
+    (t) => nodeHasAc(doc, t.id),
   );
   const acCoverage = doneTasks.length > 0 ? Math.round((doneWithAC.length / doneTasks.length) * 100) : 100;
   const acCoveragePass = acCoverage >= 70;

@@ -8,13 +8,13 @@ import type { LifecyclePhase } from "../planner/lifecycle-phase.js";
 import { KnowledgeStore } from "../store/knowledge-store.js";
 import { logger } from "../utils/logger.js";
 
+import { TASK_TYPES, DESIGN_TYPES } from "../utils/node-type-sets.js";
+import { nodeHasAc } from "../utils/ac-helpers.js";
+
 export interface PhaseSummaryResult {
   indexed: boolean;
   summaryText: string;
 }
-
-const TASK_TYPES = new Set(["task", "subtask"]);
-const DESIGN_TYPES = new Set(["decision", "constraint", "risk", "acceptance_criteria"]);
 
 /**
  * Generate and index a phase summary document into the knowledge store.
@@ -110,7 +110,7 @@ function buildPhaseSummaryText(
       break;
     }
     case "VALIDATE": {
-      const tasksWithAc = tasks.filter((n) => n.acceptanceCriteria && n.acceptanceCriteria.length > 0);
+      const tasksWithAc = tasks.filter((n) => nodeHasAc(doc, n.id));
       sections.push(`Tasks with acceptance criteria: ${tasksWithAc.length}/${tasks.length}.`);
       break;
     }

@@ -21,6 +21,8 @@ export const BacklogHealthReportSchema = z.object({
   staleTasks: z.array(StaleTaskSchema),
   techDebtIndicators: z.array(TechDebtIndicatorSchema),
   cleanForNewCycle: z.boolean(),
+  typeDistribution: z.record(z.string(), z.number()),
+  priorityDistribution: z.record(z.string(), z.number()),
 });
 
 // ── Listener Readiness ──
