@@ -3,6 +3,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import { searchNodes } from "../../core/search/fts-search.js";
 import { logger } from "../../core/utils/logger.js";
+import { mcpText } from "../response-helpers.js";
 
 export function registerSearch(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -37,18 +38,7 @@ export function registerSearch(server: McpServer, store: SqliteStore): void {
       }));
 
       logger.info("tool:search:ok", { query, total: items.length });
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(
-              { query, total: items.length, results: items },
-              null,
-              2,
-            ),
-          },
-        ],
-      };
+      return mcpText({ query, total: items.length, results: items });
     },
   );
 }

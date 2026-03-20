@@ -101,6 +101,20 @@ describe("classifyText", () => {
     expect(classifyText("Definition of done").type).toBe("acceptance_criteria");
   });
 
+  it("detects Gherkin/BDD acceptance criteria", () => {
+    expect(classifyText("Given a user is logged in, When they click logout, Then the session ends").type).toBe("acceptance_criteria");
+    expect(classifyText("When the user submits the form, Then a confirmation is shown").type).toBe("acceptance_criteria");
+    expect(classifyText("Dado que o usuário está logado, Quando clicar em sair, Então a sessão encerra").type).toBe("acceptance_criteria");
+    expect(classifyText("Quando o usuário submeter, Então uma confirmação aparece").type).toBe("acceptance_criteria");
+  });
+
+  it("detects declarative user/system acceptance criteria", () => {
+    expect(classifyText("Usuário pode fazer login com sucesso").type).toBe("acceptance_criteria");
+    expect(classifyText("Usuário consegue visualizar o dashboard").type).toBe("acceptance_criteria");
+    expect(classifyText("User can log in successfully").type).toBe("acceptance_criteria");
+    expect(classifyText("User should be able to export data").type).toBe("acceptance_criteria");
+  });
+
   it("detects risks", () => {
     expect(classifyText("Risco de performance").type).toBe("risk");
     expect(classifyText("Risk of data loss").type).toBe("risk");
@@ -114,6 +128,32 @@ describe("classifyText", () => {
     // "não deve" matches constraint, "deve" matches requirement
     // constraint patterns are checked first
     expect(classifyText("Não deve falhar").type).toBe("constraint");
+  });
+
+  // ── Bug 2: "sem" in mid-sentence should NOT be constraint ──
+
+  it("does not classify 'sem' in mid-sentence as constraint", () => {
+    expect(classifyText("Teste verifica que shutdown completa sem erros").type).not.toBe("constraint");
+    expect(classifyText("Validar que processo termina sem falhas").type).not.toBe("constraint");
+  });
+
+  it("classifies 'Sem' at start of text as constraint", () => {
+    expect(classifyText("Sem Docker").type).toBe("constraint");
+    expect(classifyText("Sem dependencias externas").type).toBe("constraint");
+  });
+
+  // ── Bug 1: Checkbox patterns should be acceptance_criteria ──
+
+  it("classifies checkbox [ ] as acceptance_criteria", () => {
+    const result = classifyText("[ ] Testes unitarios passam");
+    expect(result.type).toBe("acceptance_criteria");
+    expect(result.confidence).toBeGreaterThanOrEqual(0.85);
+  });
+
+  it("classifies checked checkbox [x] as acceptance_criteria", () => {
+    const result = classifyText("[x] Login funciona");
+    expect(result.type).toBe("acceptance_criteria");
+    expect(result.confidence).toBeGreaterThanOrEqual(0.85);
   });
 });
 
@@ -249,6 +289,37 @@ describe("extractEntities", () => {
     expect(types).toContain("risk");
   });
 
+  it("detects AC items after bold AC labels in task sections", () => {
+    const prd = `## Task: Implementar Login
+
+Descrição do task
+
+**Critérios de aceite:**
+- Login funciona com email e senha
+- Sessão expira após 30 minutos
+- Mensagem de erro para credenciais inválidas
+`;
+    const result = extractEntities(prd);
+    const taskBlock = result.blocks.find((b) => b.type === "task");
+    expect(taskBlock).toBeDefined();
+    const acItems = taskBlock!.items.filter((i) => i.type === "acceptance_criteria");
+    expect(acItems.length).toBe(3);
+  });
+
+  it("preserves AC classification from Gherkin patterns inside task blocks", () => {
+    const prd = `## Task: User Auth
+- Implementar validação de senha
+- Given user enters correct password, When they submit, Then they are logged in
+`;
+    const result = extractEntities(prd);
+    const taskBlock = result.blocks.find((b) => b.type === "task");
+    expect(taskBlock).toBeDefined();
+    const subtasks = taskBlock!.items.filter((i) => i.type === "subtask");
+    const acs = taskBlock!.items.filter((i) => i.type === "acceptance_criteria");
+    expect(subtasks.length).toBe(1); // "Implementar validação"
+    expect(acs.length).toBe(1);      // Gherkin pattern
+  });
+
   it("does not promote items in non-task/non-epic sections", () => {
     const prd = `## Requisitos
 - Deve processar rápido
@@ -259,6 +330,24 @@ describe("extractEntities", () => {
     // Items inside requirement section should NOT be promoted to subtask
     const subtasks = reqBlock?.items.filter((i) => i.type === "subtask") ?? [];
     expect(subtasks).toHaveLength(0);
+  });
+
+  // ── Bug 1: Checkbox items in task sections → acceptance_criteria, not subtask ──
+
+  it("classifies checkbox items inside task sections as acceptance_criteria, not subtask", () => {
+    const prd = `## Task: Implementar Auth
+
+- [ ] Testes unitarios passam
+- [ ] Login funciona com email
+- [x] Sessao expira corretamente
+`;
+    const result = extractEntities(prd);
+    const taskBlock = result.blocks.find((b) => b.type === "task");
+    expect(taskBlock).toBeDefined();
+    const acItems = taskBlock!.items.filter((i) => i.type === "acceptance_criteria");
+    const subtaskItems = taskBlock!.items.filter((i) => i.type === "subtask");
+    expect(acItems.length).toBe(3);
+    expect(subtaskItems.length).toBe(0);
   });
 
   it("produces correct summary counts", () => {

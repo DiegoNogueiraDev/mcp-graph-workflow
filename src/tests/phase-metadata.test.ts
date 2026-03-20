@@ -29,15 +29,15 @@ describe("phase-metadata", () => {
   });
 
   describe("applyPhaseBoost", () => {
-    it("should make BM25 score closer to 0 (better) with boost > 1", () => {
-      const originalScore = -10;
+    it("should increase positive score (higher = better) with boost > 1", () => {
+      const originalScore = 10;
       const boostedScore = applyPhaseBoost(originalScore, 2.0);
-      expect(boostedScore).toBe(-5);
-      expect(boostedScore).toBeGreaterThan(originalScore); // closer to 0
+      expect(boostedScore).toBe(20);
+      expect(boostedScore).toBeGreaterThan(originalScore);
     });
 
     it("should not change score with boost = 1", () => {
-      expect(applyPhaseBoost(-10, 1.0)).toBe(-10);
+      expect(applyPhaseBoost(10, 1.0)).toBe(10);
     });
 
     it("should handle zero score", () => {

@@ -12,6 +12,7 @@ import { KnowledgeStore } from "../../core/store/knowledge-store.js";
 import { indexCapture } from "../../core/rag/capture-indexer.js";
 import { validateAcQuality } from "../../core/analyzer/ac-validator.js";
 import { logger } from "../../core/utils/logger.js";
+import { mcpText, mcpError } from "../response-helpers.js";
 
 export function registerValidate(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -33,10 +34,7 @@ export function registerValidate(server: McpServer, store: SqliteStore): void {
 
       if (action === "task") {
         if (!url) {
-          return {
-            content: [{ type: "text" as const, text: JSON.stringify({ error: "url is required for task action" }) }],
-            isError: true,
-          };
+          return mcpError("url is required for task action");
         }
 
         const result = await runValidation(url, { compareUrl, selector });
@@ -69,9 +67,7 @@ export function registerValidate(server: McpServer, store: SqliteStore): void {
         }
 
         logger.info("tool:validate:task:ok", { nodeId, url });
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify(response, null, 2) }],
-        };
+        return mcpText(response);
       }
 
       // action === "ac"
@@ -79,9 +75,7 @@ export function registerValidate(server: McpServer, store: SqliteStore): void {
       const report = validateAcQuality(doc, nodeId, all ?? !nodeId);
 
       logger.info("tool:validate:ac:ok", { nodes: report.nodes.length, score: report.overallScore });
-      return {
-        content: [{ type: "text" as const, text: JSON.stringify({ ok: true, ...report }, null, 2) }],
-      };
+      return mcpText({ ok: true, ...report });
     },
   );
 }

@@ -8,6 +8,7 @@ import type { SqliteStore } from "../store/sqlite-store.js";
 import { KnowledgeStore } from "../store/knowledge-store.js";
 import { findNextTask } from "./next-task.js";
 import { calculateVelocity } from "./velocity.js";
+import { XP_SIZE_POINTS } from "../utils/xp-sizing.js";
 import { logger } from "../utils/logger.js";
 
 export interface PlanningReport {
@@ -70,9 +71,8 @@ export function generatePlanningReport(
   // Velocity
   const velocity = calculateVelocity(doc);
 
-  const XP_POINTS: Record<string, number> = { XS: 1, S: 2, M: 3, L: 5, XL: 8 };
   const estimatedPoints = eligibleNodes.reduce(
-    (sum, n) => sum + (XP_POINTS[n.xpSize ?? "M"] ?? 3),
+    (sum, n) => sum + (XP_SIZE_POINTS[n.xpSize ?? "M"] ?? 3),
     0,
   );
 

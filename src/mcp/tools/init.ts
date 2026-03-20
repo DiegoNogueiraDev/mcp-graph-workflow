@@ -2,6 +2,7 @@ import { z } from "zod/v4";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import { logger } from "../../core/utils/logger.js";
+import { mcpText } from "../response-helpers.js";
 
 export function registerInit(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -12,18 +13,7 @@ export function registerInit(server: McpServer, store: SqliteStore): void {
       logger.debug("tool:init", { projectName });
       const project = store.initProject(projectName || undefined);
       logger.info("tool:init:ok", { projectId: project.id });
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(
-              { ok: true, project },
-              null,
-              2,
-            ),
-          },
-        ],
-      };
+      return mcpText({ ok: true, project });
     },
   );
 }

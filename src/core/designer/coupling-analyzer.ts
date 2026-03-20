@@ -33,7 +33,10 @@ export function analyzeCoupling(doc: GraphDocument): CouplingReport {
     parentMap.set(node.id, node.parentId);
   }
 
+  const COUPLING_EDGE_TYPES = new Set(["depends_on", "blocks", "related_to", "implements", "derived_from", "priority_over"]);
+
   for (const edge of edges) {
+    if (!COUPLING_EDGE_TYPES.has(edge.relationType)) continue;
     // from → to: from has fanOut, to has fanIn
     fanOutMap.set(edge.from, (fanOutMap.get(edge.from) ?? 0) + 1);
     fanInMap.set(edge.to, (fanInMap.get(edge.to) ?? 0) + 1);

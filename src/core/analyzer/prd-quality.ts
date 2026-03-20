@@ -10,7 +10,8 @@
  */
 
 import type { GraphDocument } from "../graph/graph-types.js";
-import type { PrdQualityReport, PrdQualitySection, SectionQuality, PrdQualityGrade } from "../../schemas/analyzer-schema.js";
+import type { PrdQualityReport, PrdQualitySection, SectionQuality } from "../../schemas/analyzer-schema.js";
+import { scoreToGrade } from "../utils/grading.js";
 import { logger } from "../utils/logger.js";
 
 const SECTION_WEIGHTS = {
@@ -20,14 +21,6 @@ const SECTION_WEIGHTS = {
   risks: 15,
   constraints: 15,
 } as const;
-
-function scoreToGrade(score: number): PrdQualityGrade {
-  if (score >= 90) return "A";
-  if (score >= 75) return "B";
-  if (score >= 60) return "C";
-  if (score >= 40) return "D";
-  return "F";
-}
 
 function assessQuality(ratio: number): SectionQuality {
   if (ratio <= 0) return "missing";
@@ -44,7 +37,7 @@ export function analyzePrdQuality(doc: GraphDocument): PrdQualityReport {
   const reqNodes = nodes.filter((n) => n.type === "epic" || n.type === "requirement");
   const reqWithDesc = reqNodes.filter((n) => n.description && n.description.trim().length > 0);
   const reqRatio = reqNodes.length > 0 ? reqWithDesc.length / reqNodes.length : 0;
-  const reqQuality = assessQuality(reqNodes.length > 0 ? (reqNodes.length >= 1 ? Math.min(1, reqRatio + 0.3) : 0) : 0);
+  const reqQuality = assessQuality(reqRatio);
 
   const reqIssues: string[] = [];
   const reqSuggestions: string[] = [];
@@ -92,7 +85,7 @@ export function analyzePrdQuality(doc: GraphDocument): PrdQualityReport {
   // ── Tasks ──
   const tasksWithEstimate = tasks.filter((n) => n.estimateMinutes || n.xpSize);
   const taskRatio = tasks.length > 0 ? Math.min(1, tasksWithEstimate.length / tasks.length) : 0;
-  const taskQuality = assessQuality(tasks.length > 0 ? Math.min(1, (tasks.length >= 1 ? 0.5 : 0) + taskRatio * 0.5) : 0);
+  const taskQuality = assessQuality(taskRatio);
 
   const taskIssues: string[] = [];
   const taskSuggestions: string[] = [];
@@ -147,6 +140,13 @@ export function analyzePrdQuality(doc: GraphDocument): PrdQualityReport {
     issues: constraintIssues,
     suggestions: constraintSuggestions,
   });
+
+  // Cap quality at "adequate" when issues exist
+  for (const section of sections) {
+    if (section.issues.length > 0 && section.quality === "strong") {
+      section.quality = "adequate";
+    }
+  }
 
   // ── Final score ──
   const qualityToScore: Record<SectionQuality, number> = {

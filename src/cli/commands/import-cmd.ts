@@ -4,6 +4,7 @@ import { SqliteStore } from "../../core/store/sqlite-store.js";
 import { readFileContent } from "../../core/parser/file-reader.js";
 import { extractEntities } from "../../core/parser/extract.js";
 import { convertToGraph } from "../../core/importer/prd-to-graph.js";
+import { getErrorMessage } from "../../core/utils/errors.js";
 import { logger } from "../../core/utils/logger.js";
 
 function output(msg: string): void {
@@ -35,7 +36,7 @@ export function importCommand(): Command {
         output(`Imported: ${graph.nodes.length} nodes, ${graph.edges.length} edges`);
         output(`Source: ${filePath}`);
       } catch (err) {
-        logger.error(`Import failed: ${err instanceof Error ? err.message : String(err)}`);
+        logger.error(`Import failed: ${getErrorMessage(err)}`);
         process.exit(1);
       } finally {
         store.close();

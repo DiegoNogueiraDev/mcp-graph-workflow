@@ -8,6 +8,7 @@ import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import { NodeTypeSchema, XpSizeSchema, PrioritySchema } from "../../schemas/node.schema.js";
 import { NodeNotFoundError } from "../../core/utils/errors.js";
 import { logger } from "../../core/utils/logger.js";
+import { mcpText, mcpError } from "../response-helpers.js";
 
 export function registerUpdateNode(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -37,23 +38,11 @@ export function registerUpdateNode(server: McpServer, store: SqliteStore): void 
       if (!updated) {
         const err = new NodeNotFoundError(id);
         logger.warn("tool:update_node:fail", { error: err.message });
-        return {
-          content: [
-            { type: "text" as const, text: JSON.stringify({ error: err.message, _deprecated: "Use 'node' tool with action:'update'" }) },
-          ],
-          isError: true,
-        };
+        return mcpError(err);
       }
 
       logger.info("tool:update_node:ok", { id });
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify({ ok: true, node: updated, _deprecated: "Use 'node' tool with action:'update'" }, null, 2),
-          },
-        ],
-      };
+      return mcpText({ ok: true, node: updated, _deprecated: "Use 'node' tool with action:'update'" });
     },
   );
 }

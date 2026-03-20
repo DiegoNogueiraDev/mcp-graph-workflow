@@ -8,9 +8,11 @@ import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import type { RelationType } from "../../core/graph/graph-types.js";
 import { NodeTypeSchema, NodeStatusSchema, XpSizeSchema, PrioritySchema } from "../../schemas/node.schema.js";
 import { NodeNotFoundError } from "../../core/utils/errors.js";
+import { DEFAULT_NODE_STATUS, DEFAULT_NODE_PRIORITY } from "../../core/utils/constants.js";
 import { generateId } from "../../core/utils/id.js";
 import { now } from "../../core/utils/time.js";
 import { logger } from "../../core/utils/logger.js";
+import { mcpText, mcpError } from "../response-helpers.js";
 
 export function registerAddNode(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -38,12 +40,7 @@ export function registerAddNode(server: McpServer, store: SqliteStore): void {
         const parent = store.getNodeById(args.parentId);
         if (!parent) {
           const err = new NodeNotFoundError(args.parentId);
-          return {
-            content: [
-              { type: "text" as const, text: JSON.stringify({ error: `Parent not found: ${err.message}`, _deprecated: "Use 'node' tool with action:'add'" }) },
-            ],
-            isError: true,
-          };
+          return mcpError(`Parent not found: ${err.message}. _deprecated: Use 'node' tool with action:'add'`);
         }
       }
 
@@ -53,8 +50,8 @@ export function registerAddNode(server: McpServer, store: SqliteStore): void {
         type: args.type,
         title: args.title,
         description: args.description,
-        status: args.status ?? "backlog" as const,
-        priority: args.priority ?? (3 as const),
+        status: args.status ?? DEFAULT_NODE_STATUS,
+        priority: args.priority ?? DEFAULT_NODE_PRIORITY,
         xpSize: args.xpSize,
         estimateMinutes: args.estimateMinutes,
         tags: args.tags,
@@ -87,14 +84,7 @@ export function registerAddNode(server: McpServer, store: SqliteStore): void {
       }
 
       logger.info("tool:add_node:ok", { nodeId: node.id, type: node.type });
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify({ ok: true, node, _deprecated: "Use 'node' tool with action:'add'" }, null, 2),
-          },
-        ],
-      };
+      return mcpText({ ok: true, node, _deprecated: "Use 'node' tool with action:'add'" });
     },
   );
 }

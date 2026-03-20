@@ -10,9 +10,11 @@ import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import type { RelationType } from "../../core/graph/graph-types.js";
 import { NodeTypeSchema, NodeStatusSchema, XpSizeSchema, PrioritySchema } from "../../schemas/node.schema.js";
 import { NodeNotFoundError } from "../../core/utils/errors.js";
+import { DEFAULT_NODE_STATUS, DEFAULT_NODE_PRIORITY } from "../../core/utils/constants.js";
 import { generateId } from "../../core/utils/id.js";
 import { now } from "../../core/utils/time.js";
 import { logger } from "../../core/utils/logger.js";
+import { mcpText, mcpError, normalizeNewlines } from "../response-helpers.js";
 
 export function registerNode(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -42,20 +44,14 @@ export function registerNode(server: McpServer, store: SqliteStore): void {
 
       if (action === "add") {
         if (!type || !title) {
-          return {
-            content: [{ type: "text" as const, text: JSON.stringify({ error: "type and title are required for add action" }) }],
-            isError: true,
-          };
+          return mcpError("type and title are required for add action");
         }
 
         if (parentId) {
           const parent = store.getNodeById(parentId);
           if (!parent) {
             const err = new NodeNotFoundError(parentId);
-            return {
-              content: [{ type: "text" as const, text: JSON.stringify({ error: `Parent not found: ${err.message}` }) }],
-              isError: true,
-            };
+            return mcpError(`Parent not found: ${err.message}`);
           }
         }
 
@@ -64,9 +60,9 @@ export function registerNode(server: McpServer, store: SqliteStore): void {
           id: generateId("node"),
           type,
           title,
-          description,
-          status: status ?? "backlog" as const,
-          priority: priority ?? (3 as const),
+          description: normalizeNewlines(description),
+          status: status ?? DEFAULT_NODE_STATUS,
+          priority: priority ?? DEFAULT_NODE_PRIORITY,
           xpSize,
           estimateMinutes,
           tags,
@@ -99,22 +95,17 @@ export function registerNode(server: McpServer, store: SqliteStore): void {
         }
 
         logger.info("tool:node:add:ok", { nodeId: node.id, type: node.type });
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify({ ok: true, node }, null, 2) }],
-        };
+        return mcpText({ ok: true, node });
       }
 
       if (action === "update") {
         if (!id) {
-          return {
-            content: [{ type: "text" as const, text: JSON.stringify({ error: "id is required for update action" }) }],
-            isError: true,
-          };
+          return mcpError("id is required for update action");
         }
 
         const fields: Record<string, unknown> = {};
         if (title !== undefined) fields.title = title;
-        if (description !== undefined) fields.description = description;
+        if (description !== undefined) fields.description = normalizeNewlines(description);
         if (type !== undefined) fields.type = type;
         if (priority !== undefined) fields.priority = priority;
         if (xpSize !== undefined) fields.xpSize = xpSize;
@@ -171,40 +162,27 @@ export function registerNode(server: McpServer, store: SqliteStore): void {
         if (!updated) {
           const err = new NodeNotFoundError(id);
           logger.warn("tool:node:update:fail", { error: err.message });
-          return {
-            content: [{ type: "text" as const, text: JSON.stringify({ error: err.message }) }],
-            isError: true,
-          };
+          return mcpError(err);
         }
 
         logger.info("tool:node:update:ok", { id });
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify({ ok: true, node: updated }, null, 2) }],
-        };
+        return mcpText({ ok: true, node: updated });
       }
 
       // action === "delete"
       if (!id) {
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify({ error: "id is required for delete action" }) }],
-          isError: true,
-        };
+        return mcpError("id is required for delete action");
       }
 
       const deleted = store.deleteNode(id);
       if (!deleted) {
         const err = new NodeNotFoundError(id);
         logger.warn("tool:node:delete:fail", { error: err.message });
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify({ error: err.message }) }],
-          isError: true,
-        };
+        return mcpError(err);
       }
 
       logger.info("tool:node:delete:ok", { id });
-      return {
-        content: [{ type: "text" as const, text: JSON.stringify({ ok: true, deletedId: id }, null, 2) }],
-      };
+      return mcpText({ ok: true, deletedId: id });
     },
   );
 }

@@ -327,7 +327,6 @@ describe("MCP Memory & RAG Tool Handlers", () => {
       });
       const parsed = parseResult(result);
 
-      expect(parsed.ok).toBe(false);
       expect(parsed.error).toContain("already imported");
       expect(result.isError).toBe(true);
     });

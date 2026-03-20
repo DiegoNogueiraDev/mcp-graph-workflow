@@ -4,6 +4,7 @@ import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import { buildTaskContext } from "../../core/context/compact-context.js";
 import { NodeNotFoundError } from "../../core/utils/errors.js";
 import { logger } from "../../core/utils/logger.js";
+import { mcpText, mcpError } from "../response-helpers.js";
 
 export function registerContext(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -17,23 +18,11 @@ export function registerContext(server: McpServer, store: SqliteStore): void {
       if (!ctx) {
         const err = new NodeNotFoundError(id);
         logger.warn("tool:context:fail", { error: err.message });
-        return {
-          content: [
-            { type: "text" as const, text: JSON.stringify({ error: err.message }) },
-          ],
-          isError: true,
-        };
+        return mcpError(err);
       }
 
       logger.info("tool:context:ok", { id });
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(ctx, null, 2),
-          },
-        ],
-      };
+      return mcpText(ctx);
     },
   );
 }

@@ -5,6 +5,7 @@ import { detectCurrentPhase, getPhaseGuidance, validatePhaseTransition, type Lif
 import { KnowledgeStore } from "../../core/store/knowledge-store.js";
 import { generateAndIndexPhaseSummary } from "../../core/rag/phase-summary.js";
 import { logger } from "../../core/utils/logger.js";
+import { mcpText, mcpError } from "../response-helpers.js";
 
 const VALID_PHASES = ["ANALYZE", "DESIGN", "PLAN", "IMPLEMENT", "VALIDATE", "REVIEW", "HANDOFF", "LISTENING", "auto"] as const;
 
@@ -40,20 +41,13 @@ export function registerSetPhase(server: McpServer, store: SqliteStore): void {
         const currentMode = mode ?? (store.getProjectSetting("lifecycle_strictness_mode") as StrictnessMode | null) ?? "strict";
 
         logger.info("tool:set_phase:ok", { action: "auto", detectedPhase, mode: currentMode });
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: JSON.stringify({
-                ok: true,
-                action: "reset_to_auto",
-                detectedPhase,
-                mode: currentMode,
-                reminder: guidance.reminder,
-              }, null, 2),
-            },
-          ],
-        };
+        return mcpText({
+          ok: true,
+          action: "reset_to_auto",
+          detectedPhase,
+          mode: currentMode,
+          reminder: guidance.reminder,
+        });
       }
 
       // Validate phase transition gate
@@ -69,23 +63,7 @@ export function registerSetPhase(server: McpServer, store: SqliteStore): void {
 
         if (!gateResult.allowed && currentMode === "strict" && !force) {
           logger.warn("tool:set_phase:gate_blocked", { from: currentPhase, to: phase, unmetConditions: gateResult.unmetConditions });
-          return {
-            content: [
-              {
-                type: "text" as const,
-                text: JSON.stringify({
-                  ok: false,
-                  error: "phase_gate_blocked",
-                  from: currentPhase,
-                  to: phase,
-                  reason: gateResult.reason,
-                  unmetConditions: gateResult.unmetConditions,
-                  hint: "Use force:true para bypass, ou complete as condições listadas",
-                }, null, 2),
-              },
-            ],
-            isError: true,
-          };
+          return mcpError(`phase_gate_blocked: from ${currentPhase} to ${phase}. ${gateResult.reason}. Unmet: ${JSON.stringify(gateResult.unmetConditions)}. Hint: Use force:true para bypass, ou complete as condições listadas`);
         }
 
         if (!gateResult.allowed && force) {
@@ -114,21 +92,14 @@ export function registerSetPhase(server: McpServer, store: SqliteStore): void {
       const guidance = getPhaseGuidance(phase);
 
       logger.info("tool:set_phase:ok", { action: "override", phase, mode: currentMode, phaseSummaryIndexed });
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify({
-              ok: true,
-              action: "override",
-              phase,
-              mode: currentMode,
-              reminder: guidance.reminder,
-              phaseSummaryIndexed,
-            }, null, 2),
-          },
-        ],
-      };
+      return mcpText({
+        ok: true,
+        action: "override",
+        phase,
+        mode: currentMode,
+        reminder: guidance.reminder,
+        phaseSummaryIndexed,
+      });
     },
   );
 }

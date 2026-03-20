@@ -172,7 +172,7 @@ export class KnowledgeStore {
 
     return rows.map((row) => ({
       ...rowToDoc(row),
-      score: row.score,
+      score: -row.score,
     }));
   }
 
@@ -199,7 +199,7 @@ export class KnowledgeStore {
       };
     });
 
-    // Re-sort by boosted score (BM25: closer to 0 = better)
+    // Re-sort by boosted score (higher = better)
     boosted.sort((a, b) => b.score - a.score);
 
     return boosted.slice(0, limit);

@@ -7,6 +7,7 @@ import { NodeNotFoundError } from "../../core/utils/errors.js";
 import { generateId } from "../../core/utils/id.js";
 import { now } from "../../core/utils/time.js";
 import { logger } from "../../core/utils/logger.js";
+import { mcpText, mcpError } from "../response-helpers.js";
 
 export function registerEdge(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -30,43 +31,31 @@ export function registerEdge(server: McpServer, store: SqliteStore): void {
       logger.debug("tool:edge", { action, from, to, relationType });
       if (action === "add") {
         if (!from || !to || !relationType) {
-          return {
-            content: [
-              { type: "text" as const, text: JSON.stringify({ error: "from, to, and relationType are required for add action" }) },
-            ],
-            isError: true,
-          };
+          return mcpError("from, to, and relationType are required for add action");
         }
 
         if (from === to) {
-          return {
-            content: [
-              { type: "text" as const, text: JSON.stringify({ error: "Self-referencing edges are not allowed" }) },
-            ],
-            isError: true,
-          };
+          return mcpError("Self-referencing edges are not allowed");
         }
 
         const fromNode = store.getNodeById(from);
         if (!fromNode) {
-          const err = new NodeNotFoundError(from);
-          return {
-            content: [
-              { type: "text" as const, text: JSON.stringify({ error: err.message }) },
-            ],
-            isError: true,
-          };
+          return mcpError(new NodeNotFoundError(from));
         }
 
         const toNode = store.getNodeById(to);
         if (!toNode) {
-          const err = new NodeNotFoundError(to);
-          return {
-            content: [
-              { type: "text" as const, text: JSON.stringify({ error: err.message }) },
-            ],
-            isError: true,
-          };
+          return mcpError(new NodeNotFoundError(to));
+        }
+
+        // Check for duplicate edge
+        const existingEdges = store.getEdgesFrom(from);
+        const duplicate = existingEdges.find(
+          (e) => e.to === to && e.relationType === (relationType as RelationType),
+        );
+        if (duplicate) {
+          logger.info("tool:edge:ok", { action: "existing", edgeId: duplicate.id, from, to, relationType });
+          return mcpText({ ok: true, edge: duplicate, existing: true });
         }
 
         const edge = {
@@ -82,39 +71,21 @@ export function registerEdge(server: McpServer, store: SqliteStore): void {
         store.insertEdge(edge);
 
         logger.info("tool:edge:ok", { action: "add", edgeId: edge.id, from, to, relationType });
-        return {
-          content: [
-            { type: "text" as const, text: JSON.stringify({ ok: true, edge }, null, 2) },
-          ],
-        };
+        return mcpText({ ok: true, edge });
       }
 
       if (action === "delete") {
         if (!id) {
-          return {
-            content: [
-              { type: "text" as const, text: JSON.stringify({ error: "id is required for delete action" }) },
-            ],
-            isError: true,
-          };
+          return mcpError("id is required for delete action");
         }
 
         const deleted = store.deleteEdge(id);
         if (!deleted) {
-          return {
-            content: [
-              { type: "text" as const, text: JSON.stringify({ error: `Edge not found: ${id}` }) },
-            ],
-            isError: true,
-          };
+          return mcpError(`Edge not found: ${id}`);
         }
 
         logger.info("tool:edge:ok", { action: "delete", deletedId: id });
-        return {
-          content: [
-            { type: "text" as const, text: JSON.stringify({ ok: true, deletedId: id }, null, 2) },
-          ],
-        };
+        return mcpText({ ok: true, deletedId: id });
       }
 
       // action === "list"
@@ -123,13 +94,7 @@ export function registerEdge(server: McpServer, store: SqliteStore): void {
       if (nodeId) {
         const node = store.getNodeById(nodeId);
         if (!node) {
-          const err = new NodeNotFoundError(nodeId);
-          return {
-            content: [
-              { type: "text" as const, text: JSON.stringify({ error: err.message }) },
-            ],
-            isError: true,
-          };
+          return mcpError(new NodeNotFoundError(nodeId));
         }
 
         const dir = direction ?? "both";
@@ -149,11 +114,7 @@ export function registerEdge(server: McpServer, store: SqliteStore): void {
       }
 
       logger.info("tool:edge:ok", { action: "list", total: edges.length });
-      return {
-        content: [
-          { type: "text" as const, text: JSON.stringify({ total: edges.length, edges }, null, 2) },
-        ],
-      };
+      return mcpText({ total: edges.length, edges });
     },
   );
 }

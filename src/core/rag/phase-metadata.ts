@@ -64,11 +64,10 @@ export function getPhaseBoost(currentPhase: LifecyclePhase, docPhase: string | u
 
 /**
  * Apply phase boost to a BM25 score.
- * BM25 scores are negative (closer to 0 = better match).
- * Boosting means dividing by the weight (making score closer to 0).
+ * Scores are positive (higher = better match) after negation in the store layer.
+ * Boosting means multiplying by the weight (making score higher = more relevant).
  */
 export function applyPhaseBoost(score: number, boost: number): number {
   if (boost <= 0) return score;
-  // BM25 scores are negative — dividing by boost makes them closer to 0 (better)
-  return score / boost;
+  return score * boost;
 }

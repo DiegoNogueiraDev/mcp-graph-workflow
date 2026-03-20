@@ -8,6 +8,7 @@ import { createMcpContext7Fetcher } from "../../core/docs/mcp-context7-fetcher.j
 import { detectStack } from "../../core/docs/stack-detector.js";
 import { indexCachedDocs } from "../../core/rag/docs-indexer.js";
 import { logger } from "../../core/utils/logger.js";
+import { mcpText } from "../response-helpers.js";
 
 export function registerSyncStackDocs(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -47,12 +48,7 @@ export function registerSyncStackDocs(server: McpServer, store: SqliteStore): vo
       }
 
       if (libNames.length === 0) {
-        return {
-          content: [{
-            type: "text" as const,
-            text: JSON.stringify({ ok: false, message: "No libraries detected to sync" }),
-          }],
-        };
+        return mcpText({ ok: false, message: "No libraries detected to sync" });
       }
 
       const results: Array<{ lib: string; status: string }> = [];
@@ -73,17 +69,12 @@ export function registerSyncStackDocs(server: McpServer, store: SqliteStore): vo
       const indexResult = indexCachedDocs(knowledgeStore, docsCacheStore);
 
       logger.info("tool:sync_stack_docs:ok", { librariesProcessed: results.length, knowledgeIndexed: indexResult.documentsIndexed });
-      return {
-        content: [{
-          type: "text" as const,
-          text: JSON.stringify({
-            ok: true,
-            librariesProcessed: results.length,
-            results,
-            knowledgeIndexed: indexResult.documentsIndexed,
-          }, null, 2),
-        }],
-      };
+      return mcpText({
+        ok: true,
+        librariesProcessed: results.length,
+        results,
+        knowledgeIndexed: indexResult.documentsIndexed,
+      });
     },
   );
 }

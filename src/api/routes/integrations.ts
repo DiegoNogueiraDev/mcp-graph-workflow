@@ -5,6 +5,7 @@ import { readMemory, readAllMemories, writeMemory, deleteMemory } from "../../co
 import { migrateSerenaMemories } from "../../core/memory/memory-migrator.js";
 import { buildEnrichedContext } from "../../core/integrations/enriched-context.js";
 import { KnowledgeStore } from "../../core/store/knowledge-store.js";
+import { KnowledgeSourceTypeSchema } from "../../schemas/knowledge.schema.js";
 
 export function createIntegrationsRouter(storeRef: StoreRef, getBasePath: () => string): Router {
   const router = Router();
@@ -115,7 +116,7 @@ export function createIntegrationsRouter(storeRef: StoreRef, getBasePath: () => 
   router.get("/knowledge-status", (_req, res, next) => {
     try {
       const knowledgeStore = new KnowledgeStore(storeRef.current.getDb());
-      const sourceTypes = ["upload", "memory", "serena", "code_context", "docs", "web_capture"] as const;
+      const sourceTypes = KnowledgeSourceTypeSchema.options;
       const statuses = sourceTypes.map((st) => ({
         source: st,
         documentCount: knowledgeStore.count(st),

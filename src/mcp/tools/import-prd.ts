@@ -8,6 +8,7 @@ import { convertToGraph } from "../../core/importer/prd-to-graph.js";
 import { KnowledgeStore } from "../../core/store/knowledge-store.js";
 import { indexPrdContent } from "../../core/rag/prd-indexer.js";
 import { logger } from "../../core/utils/logger.js";
+import { mcpText, mcpError } from "../response-helpers.js";
 
 export function registerImportPrd(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -30,23 +31,7 @@ export function registerImportPrd(server: McpServer, store: SqliteStore): void {
       // 2. Check for previous import
       const alreadyImported = store.hasImport(sourceFileName);
       if (alreadyImported && !force) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: JSON.stringify(
-                {
-                  ok: false,
-                  error: `File "${sourceFileName}" was already imported. Use force=true to re-import (this will replace all nodes from the previous import).`,
-                  sourceFile: sourceFileName,
-                },
-                null,
-                2,
-              ),
-            },
-          ],
-          isError: true,
-        };
+        return mcpError(`File "${sourceFileName}" was already imported. Use force=true to re-import (this will replace all nodes from the previous import).`);
       }
 
       // 3. If force re-import, clear previous nodes
@@ -89,31 +74,20 @@ export function registerImportPrd(server: McpServer, store: SqliteStore): void {
         knowledgeDocsIndexed,
       });
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(
-              {
-                ok: true,
-                sourceFile: sourceFileName,
-                originalSizeChars: sizeBytes,
-                ...stats,
-                knowledgeDocsIndexed,
-                ...(cleared
-                  ? {
-                      reimported: true,
-                      previousNodesDeleted: cleared.nodesDeleted,
-                      previousEdgesDeleted: cleared.edgesDeleted,
-                    }
-                  : {}),
-              },
-              null,
-              2,
-            ),
-          },
-        ],
-      };
+      return mcpText({
+        ok: true,
+        sourceFile: sourceFileName,
+        originalSizeChars: sizeBytes,
+        ...stats,
+        knowledgeDocsIndexed,
+        ...(cleared
+          ? {
+              reimported: true,
+              previousNodesDeleted: cleared.nodesDeleted,
+              previousEdgesDeleted: cleared.edgesDeleted,
+            }
+          : {}),
+      });
     },
   );
 }

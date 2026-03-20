@@ -4,7 +4,9 @@ import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import { ragBuildContext } from "../../core/context/rag-context.js";
 import { assembleContext } from "../../core/context/context-assembler.js";
 import { detectCurrentPhase, type LifecyclePhase } from "../../core/planner/lifecycle-phase.js";
+import { DEFAULT_TOKEN_BUDGET } from "../../core/utils/constants.js";
 import { logger } from "../../core/utils/logger.js";
+import { mcpText } from "../response-helpers.js";
 
 export function registerRagContext(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -26,7 +28,7 @@ export function registerRagContext(server: McpServer, store: SqliteStore): void 
     },
     async ({ query, tokenBudget, detail }) => {
       logger.debug("tool:rag_context", { query, tier: detail });
-      const budget = tokenBudget ?? 4000;
+      const budget = tokenBudget ?? DEFAULT_TOKEN_BUDGET;
 
       // Detect current lifecycle phase for phase-aware knowledge boosting
       let currentPhase: LifecyclePhase | undefined;
@@ -50,28 +52,14 @@ export function registerRagContext(server: McpServer, store: SqliteStore): void 
         });
 
         logger.info("tool:rag_context:ok", { query, tier: detail, phase: currentPhase });
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: JSON.stringify(ctx, null, 2),
-            },
-          ],
-        };
+        return mcpText(ctx);
       }
 
       // Default: use existing RAG context builder with phase awareness
       const ctx = ragBuildContext(store, query, budget, currentPhase);
 
       logger.info("tool:rag_context:ok", { query, tier: "standard", phase: currentPhase });
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(ctx, null, 2),
-          },
-        ],
-      };
+      return mcpText(ctx);
     },
   );
 }

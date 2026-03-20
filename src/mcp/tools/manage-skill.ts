@@ -19,6 +19,7 @@ import { getBuiltInSkills, getSkillsByPhase, getSkillByName } from "../../core/s
 import type { LifecyclePhase } from "../../core/planner/lifecycle-phase.js";
 import { CustomSkillInputSchema } from "../../schemas/skill.schema.js";
 import { logger } from "../../core/utils/logger.js";
+import { mcpText, mcpError } from "../response-helpers.js";
 
 export function registerManageSkill(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -56,10 +57,7 @@ export function registerManageSkill(server: McpServer, store: SqliteStore): void
 
       const project = store.getProject();
       if (!project) {
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify({ error: "No active project. Run init first." }) }],
-          isError: true,
-        };
+        return mcpError("No active project. Run init first.");
       }
 
       const db = store.getDb();
@@ -72,27 +70,16 @@ export function registerManageSkill(server: McpServer, store: SqliteStore): void
             if (skillName) {
               const skill = getSkillByName(skillName);
               if (!skill) {
-                return {
-                  content: [{
-                    type: "text" as const,
-                    text: JSON.stringify({ error: `Skill '${skillName}' not found` }, null, 2),
-                  }],
-                  isError: true,
-                };
+                return mcpError(`Skill '${skillName}' not found`);
               }
 
-              return {
-                content: [{
-                  type: "text" as const,
-                  text: JSON.stringify({
-                    name: skill.name,
-                    description: skill.description,
-                    category: skill.category,
-                    phases: skill.phases,
-                    instructions: skill.instructions,
-                  }, null, 2),
-                }],
-              };
+              return mcpText({
+                name: skill.name,
+                description: skill.description,
+                category: skill.category,
+                phases: skill.phases,
+                instructions: skill.instructions,
+              });
             }
 
             // List skills (optionally filtered by phase)
@@ -108,122 +95,78 @@ export function registerManageSkill(server: McpServer, store: SqliteStore): void
             }));
 
             logger.info("tool:manage_skill:list:ok", { count: summary.length, phase: phase ?? "all" });
-            return {
-              content: [{
-                type: "text" as const,
-                text: JSON.stringify({
-                  total: summary.length,
-                  ...(phase ? { phase } : {}),
-                  skills: summary,
-                }, null, 2),
-              }],
-            };
+            return mcpText({
+              total: summary.length,
+              ...(phase ? { phase } : {}),
+              skills: summary,
+            });
           }
 
           case "enable":
           case "disable": {
             if (!skillName) {
-              return {
-                content: [{ type: "text" as const, text: JSON.stringify({ error: "skillName required for enable/disable" }) }],
-                isError: true,
-              };
+              return mcpError("skillName required for enable/disable");
             }
             setSkillEnabled(db, projectId, skillName, action === "enable");
-            return {
-              content: [{ type: "text" as const, text: JSON.stringify({ ok: true, skillName, enabled: action === "enable" }) }],
-            };
+            return mcpText({ ok: true, skillName, enabled: action === "enable" });
           }
 
           case "create": {
             if (!data) {
-              return {
-                content: [{ type: "text" as const, text: JSON.stringify({ error: "data required for create" }) }],
-                isError: true,
-              };
+              return mcpError("data required for create");
             }
             const parsed = CustomSkillInputSchema.safeParse(data);
             if (!parsed.success) {
-              return {
-                content: [{ type: "text" as const, text: JSON.stringify({ error: "Validation failed", details: parsed.error.issues }) }],
-                isError: true,
-              };
+              return mcpError(`Validation failed: ${JSON.stringify(parsed.error.issues)}`);
             }
             const created = createCustomSkill(db, projectId, parsed.data);
             logger.info("tool:manage_skill:created", { id: created.id, name: created.name });
-            return {
-              content: [{ type: "text" as const, text: JSON.stringify(created, null, 2) }],
-            };
+            return mcpText(created);
           }
 
           case "update": {
             if (!skillId || !data) {
-              return {
-                content: [{ type: "text" as const, text: JSON.stringify({ error: "skillId and data required for update" }) }],
-                isError: true,
-              };
+              return mcpError("skillId and data required for update");
             }
             const updated = updateCustomSkill(db, projectId, skillId, data as Record<string, unknown>);
-            return {
-              content: [{ type: "text" as const, text: JSON.stringify(updated, null, 2) }],
-            };
+            return mcpText(updated);
           }
 
           case "delete": {
             if (!skillId && !skillName) {
-              return {
-                content: [{ type: "text" as const, text: JSON.stringify({ error: "skillId or skillName required for delete" }) }],
-                isError: true,
-              };
+              return mcpError("skillId or skillName required for delete");
             }
             if (skillId) {
               deleteCustomSkill(db, projectId, skillId);
             } else if (skillName) {
               const skill = getCustomSkillByName(db, projectId, skillName);
               if (!skill) {
-                return {
-                  content: [{ type: "text" as const, text: JSON.stringify({ error: `Custom skill '${skillName}' not found` }) }],
-                  isError: true,
-                };
+                return mcpError(`Custom skill '${skillName}' not found`);
               }
               deleteCustomSkill(db, projectId, skill.id);
             }
-            return {
-              content: [{ type: "text" as const, text: JSON.stringify({ ok: true, deleted: skillId ?? skillName }) }],
-            };
+            return mcpText({ ok: true, deleted: skillId ?? skillName });
           }
 
           case "list_custom": {
             const customs = getCustomSkills(db, projectId);
-            return {
-              content: [{
-                type: "text" as const,
-                text: JSON.stringify({ total: customs.length, skills: customs }, null, 2),
-              }],
-            };
+            return mcpText({ total: customs.length, skills: customs });
           }
 
           case "get_preferences": {
             const prefs = getSkillPreferences(db, projectId);
             const obj: Record<string, boolean> = {};
             for (const [k, v] of prefs) obj[k] = v;
-            return {
-              content: [{ type: "text" as const, text: JSON.stringify({ preferences: obj }, null, 2) }],
-            };
+            return mcpText({ preferences: obj });
           }
 
           default:
-            return {
-              content: [{ type: "text" as const, text: JSON.stringify({ error: `Unknown action: ${action as string}` }) }],
-              isError: true,
-            };
+            return mcpError(`Unknown action: ${action as string}`);
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         logger.error("tool:manage_skill:error", { action, error: message });
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify({ error: message }) }],
-          isError: true,
-        };
+        return mcpError(message);
       }
     },
   );

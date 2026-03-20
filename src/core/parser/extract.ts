@@ -40,6 +40,36 @@ export function extractEntities(rawText: string): ExtractionResult {
     classifySection(sec.title, sec.body, sec.level, sec.startLine, sec.endLine),
   );
 
+  // Detect items following bold AC labels (e.g., **Critérios de aceite:**)
+  const acLabelPattern = /\*\*(?:crit[eé]rios?\s+de\s+aceite|acceptance\s+criteria|definition\s+of\s+done)\s*:?\s*\*\*/i;
+  for (const block of blocks) {
+    if (block.type === "task" || block.type === "epic") {
+      const bodyLines = block.description.split("\n");
+      let inAcSection = false;
+      for (const line of bodyLines) {
+        if (acLabelPattern.test(line)) {
+          inAcSection = true;
+          continue;
+        }
+        // Exit AC section on next bold label or heading
+        if (inAcSection && /^\*\*[^*]+\*\*/.test(line) && !acLabelPattern.test(line)) {
+          inAcSection = false;
+        }
+        if (inAcSection) {
+          const bulletMatch = line.match(/^\s*[-]\s+(.+)$/);
+          if (bulletMatch) {
+            const bulletText = bulletMatch[1].trim();
+            const matchingItem = block.items.find((item) => item.text === bulletText);
+            if (matchingItem) {
+              matchingItem.type = "acceptance_criteria";
+              matchingItem.confidence = 0.85;
+            }
+          }
+        }
+      }
+    }
+  }
+
   // Promote items inside task-sections to subtask if they're generic or tasks
   for (const block of blocks) {
     if (block.type === "task" || block.type === "epic") {

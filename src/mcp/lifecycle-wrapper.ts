@@ -49,13 +49,18 @@ export interface LifecycleBlockOptions {
  * Build the _lifecycle block to append to MCP tool responses.
  * Optionally includes top-3 knowledge snippets relevant to the current phase.
  */
+const READ_ONLY_TOOLS = new Set([
+  "list", "show", "search", "metrics", "export", "context", "rag_context",
+  "analyze", "snapshot", "next", "list_memories", "read_memory", "list_skills",
+]);
+
 export function buildLifecycleBlock(doc: GraphDocument, options?: LifecycleBlockOptions): LifecycleBlock {
   const phase = detectCurrentPhase(doc, {
     hasSnapshots: options?.hasSnapshots,
     phaseOverride: options?.phaseOverride,
   });
   const guidance = getPhaseGuidance(phase);
-  const warnings = options?.toolName
+  const warnings = options?.toolName && !READ_ONLY_TOOLS.has(options.toolName)
     ? detectWarnings(doc, phase, options.toolName, options?.mode)
     : [];
 

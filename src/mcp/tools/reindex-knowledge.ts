@@ -9,6 +9,7 @@ import { indexCachedDocs } from "../../core/rag/docs-indexer.js";
 import { indexSkills } from "../../core/rag/skill-indexer.js";
 import { indexAllEmbeddings } from "../../core/rag/rag-pipeline.js";
 import { logger } from "../../core/utils/logger.js";
+import { mcpText } from "../response-helpers.js";
 
 export function registerReindexKnowledge(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -54,14 +55,7 @@ export function registerReindexKnowledge(server: McpServer, store: SqliteStore):
       results.totalKnowledge = knowledgeStore.count();
 
       logger.info("tool:reindex_knowledge:ok", { totalKnowledge: results.totalKnowledge });
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(results, null, 2),
-          },
-        ],
-      };
+      return mcpText(results);
     },
   );
 }

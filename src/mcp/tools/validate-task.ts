@@ -9,6 +9,7 @@ import { runValidation } from "../../core/capture/validate-runner.js";
 import { KnowledgeStore } from "../../core/store/knowledge-store.js";
 import { indexCapture } from "../../core/rag/capture-indexer.js";
 import { logger } from "../../core/utils/logger.js";
+import { mcpText } from "../response-helpers.js";
 
 export function registerValidateTask(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -64,12 +65,7 @@ export function registerValidateTask(server: McpServer, store: SqliteStore): voi
       }
 
       logger.info("tool:validate_task:ok", { nodeId, url });
-      return {
-        content: [{
-          type: "text" as const,
-          text: JSON.stringify(response, null, 2),
-        }],
-      };
+      return mcpText(response);
     },
   );
 }

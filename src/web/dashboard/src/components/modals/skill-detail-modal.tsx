@@ -1,5 +1,6 @@
 import React from "react";
 import type { Skill } from "@/lib/types";
+import { PHASE_COLORS } from "@/lib/constants";
 
 interface SkillDetailModalProps {
   skill: Skill | null;
@@ -8,11 +9,6 @@ interface SkillDetailModalProps {
   onDelete?: (id: string) => void;
   onEdit?: (skill: Skill) => void;
 }
-
-const PHASE_COLORS: Record<string, string> = {
-  ANALYZE: "#8b5cf6", DESIGN: "#3b82f6", PLAN: "#06b6d4", IMPLEMENT: "#10b981",
-  VALIDATE: "#f59e0b", REVIEW: "#ef4444", HANDOFF: "#ec4899", LISTENING: "#6b7280",
-};
 
 export function SkillDetailModal({ skill, onClose, onToggle, onDelete, onEdit }: SkillDetailModalProps): React.JSX.Element | null {
   if (!skill) return null;

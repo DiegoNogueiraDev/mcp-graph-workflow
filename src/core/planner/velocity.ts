@@ -8,11 +8,8 @@
  */
 
 import type { GraphDocument, GraphNode } from "../graph/graph-types.js";
+import { XP_SIZE_POINTS } from "../utils/xp-sizing.js";
 import { logger } from "../utils/logger.js";
-
-const XP_SIZE_POINTS: Record<string, number> = {
-  XS: 1, S: 2, M: 3, L: 5, XL: 8,
-};
 
 export interface SprintVelocity {
   sprint: string;

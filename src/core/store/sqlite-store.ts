@@ -937,7 +937,7 @@ export class SqliteStore {
 
     return rows.map((row) => ({
       ...rowToNode(row),
-      score: row.score,
+      score: -row.score,
     }));
   }
 

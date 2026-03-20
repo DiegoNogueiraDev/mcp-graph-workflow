@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import path from "node:path";
 import { runInit } from "../../mcp/init-project.js";
+import { getErrorMessage } from "../../core/utils/errors.js";
 import { logger } from "../../core/utils/logger.js";
 
 function output(msg: string): void {
@@ -22,7 +23,7 @@ export function initCommand(): Command {
         output(`Import PRD: mcp-graph import <file.md>`);
         output(`Stats: mcp-graph stats`);
       } catch (error) {
-        logger.error("Init failed", { error: error instanceof Error ? error.message : String(error) });
+        logger.error("Init failed", { error: getErrorMessage(error) });
         process.exitCode = 1;
       }
     });

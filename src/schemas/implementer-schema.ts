@@ -1,9 +1,13 @@
 import { z } from "zod/v4";
+import { GradeSchema } from "./grade-schema.js";
+import { ReadinessSeveritySchema } from "./readiness-schema.js";
 
 // ── Shared ──
 
-export const ImplementGradeSchema = z.enum(["A", "B", "C", "D", "F"]);
-export const DodSeveritySchema = z.enum(["required", "recommended"]);
+/** @deprecated Use GradeSchema from grade-schema.ts */
+export const ImplementGradeSchema = GradeSchema;
+/** @deprecated Use ReadinessSeveritySchema from readiness-schema.ts */
+export const DodSeveritySchema = ReadinessSeveritySchema;
 
 // ── Definition of Done ──
 

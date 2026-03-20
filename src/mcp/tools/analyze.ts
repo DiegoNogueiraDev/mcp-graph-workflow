@@ -31,6 +31,7 @@ import { checkDefinitionOfDone } from "../../core/implementer/definition-of-done
 import { checkTddAdherence } from "../../core/implementer/tdd-checker.js";
 import { calculateSprintProgress } from "../../core/implementer/sprint-progress.js";
 import { logger } from "../../core/utils/logger.js";
+import { mcpText, mcpError } from "../response-helpers.js";
 
 const ANALYZE_MODES = z.enum([
   "prd_quality",
@@ -76,46 +77,46 @@ export function registerAnalyze(server: McpServer, store: SqliteStore): void {
         case "prd_quality": {
           const report = analyzePrdQuality(doc);
           logger.info("tool:analyze:prd_quality:ok", { score: report.score, grade: report.grade });
-          return jsonResponse({ ok: true, mode, ...report });
+          return mcpText({ ok: true, mode, ...report });
         }
 
         case "scope": {
           const analysis = analyzeScope(doc);
           logger.info("tool:analyze:scope:ok", { orphans: analysis.orphans.length });
-          return jsonResponse({ ok: true, mode, ...analysis });
+          return mcpText({ ok: true, mode, ...analysis });
         }
 
         case "ready": {
           const readiness = checkDefinitionOfReady(doc);
           logger.info("tool:analyze:ready:ok", { ready: readiness.readyForNextPhase });
-          return jsonResponse({ ok: true, mode, ...readiness });
+          return mcpText({ ok: true, mode, ...readiness });
         }
 
         case "risk": {
           const matrix = assessRisks(doc);
           logger.info("tool:analyze:risk:ok", { total: matrix.summary.total });
-          return jsonResponse({ ok: true, mode, ...matrix });
+          return mcpText({ ok: true, mode, ...matrix });
         }
 
         case "blockers": {
           if (!nodeId) {
-            return errorResponse("nodeId is required for 'blockers' mode");
+            return mcpError("nodeId is required for 'blockers' mode");
           }
           const blockers = findTransitiveBlockers(doc, nodeId);
           logger.info("tool:analyze:blockers:ok", { nodeId, blockerCount: blockers.length });
-          return jsonResponse({ ok: true, mode, nodeId, blockers });
+          return mcpText({ ok: true, mode, nodeId, blockers });
         }
 
         case "cycles": {
           const cycles = detectCycles(doc);
           logger.info("tool:analyze:cycles:ok", { cycleCount: cycles.length });
-          return jsonResponse({ ok: true, mode, cycles });
+          return mcpText({ ok: true, mode, cycles });
         }
 
         case "critical_path": {
           const path = findCriticalPath(doc);
           logger.info("tool:analyze:critical_path:ok", { pathLength: path.length });
-          return jsonResponse({ ok: true, mode, criticalPath: path });
+          return mcpText({ ok: true, mode, criticalPath: path });
         }
 
         case "decompose": {
@@ -124,7 +125,7 @@ export function registerAnalyze(server: McpServer, store: SqliteStore): void {
             results = results.filter((r) => r.node.id === nodeId);
           }
           logger.info("tool:analyze:decompose:ok", { count: results.length });
-          return jsonResponse({ ok: true, mode, results });
+          return mcpText({ ok: true, mode, results });
         }
 
         case "adr": {
@@ -133,7 +134,7 @@ export function registerAnalyze(server: McpServer, store: SqliteStore): void {
           logger.info("tool:analyze:adr:ok", { grade: adrReport.overallGrade });
           const response: Record<string, unknown> = { ok: true, mode, ...adrReport };
           if (phase !== "DESIGN") response._info = `Modo adr é específico da fase DESIGN (fase atual: ${phase})`;
-          return jsonResponse(response);
+          return mcpText(response);
         }
 
         case "traceability": {
@@ -142,7 +143,7 @@ export function registerAnalyze(server: McpServer, store: SqliteStore): void {
           logger.info("tool:analyze:traceability:ok", { coverageRate: traceReport.coverageRate });
           const response: Record<string, unknown> = { ok: true, mode, ...traceReport };
           if (phase !== "DESIGN") response._info = `Modo traceability é específico da fase DESIGN (fase atual: ${phase})`;
-          return jsonResponse(response);
+          return mcpText(response);
         }
 
         case "coupling": {
@@ -151,7 +152,7 @@ export function registerAnalyze(server: McpServer, store: SqliteStore): void {
           logger.info("tool:analyze:coupling:ok", { highCoupling: couplingReport.highCouplingNodes.length });
           const response: Record<string, unknown> = { ok: true, mode, ...couplingReport };
           if (phase !== "DESIGN") response._info = `Modo coupling é específico da fase DESIGN (fase atual: ${phase})`;
-          return jsonResponse(response);
+          return mcpText(response);
         }
 
         case "interfaces": {
@@ -160,7 +161,7 @@ export function registerAnalyze(server: McpServer, store: SqliteStore): void {
           logger.info("tool:analyze:interfaces:ok", { overallScore: ifReport.overallScore });
           const response: Record<string, unknown> = { ok: true, mode, ...ifReport };
           if (phase !== "DESIGN") response._info = `Modo interfaces é específico da fase DESIGN (fase atual: ${phase})`;
-          return jsonResponse(response);
+          return mcpText(response);
         }
 
         case "tech_risk": {
@@ -169,7 +170,7 @@ export function registerAnalyze(server: McpServer, store: SqliteStore): void {
           logger.info("tool:analyze:tech_risk:ok", { riskScore: techRiskReport.riskScore });
           const response: Record<string, unknown> = { ok: true, mode, ...techRiskReport };
           if (phase !== "DESIGN") response._info = `Modo tech_risk é específico da fase DESIGN (fase atual: ${phase})`;
-          return jsonResponse(response);
+          return mcpText(response);
         }
 
         case "design_ready": {
@@ -178,19 +179,19 @@ export function registerAnalyze(server: McpServer, store: SqliteStore): void {
           logger.info("tool:analyze:design_ready:ok", { ready: readinessReport.ready, grade: readinessReport.grade });
           const response: Record<string, unknown> = { ok: true, mode, ...readinessReport };
           if (phase !== "DESIGN") response._info = `Modo design_ready é específico da fase DESIGN (fase atual: ${phase})`;
-          return jsonResponse(response);
+          return mcpText(response);
         }
 
         case "implement_done": {
           if (!nodeId) {
-            return errorResponse("nodeId is required for 'implement_done' mode");
+            return mcpError("nodeId is required for 'implement_done' mode");
           }
           const phase = detectCurrentPhase(doc);
           const dodReport = checkDefinitionOfDone(doc, nodeId);
           logger.info("tool:analyze:implement_done:ok", { nodeId, ready: dodReport.ready, grade: dodReport.grade });
           const dodResponse: Record<string, unknown> = { ok: true, mode, ...dodReport };
           if (phase !== "IMPLEMENT") dodResponse._info = `Modo implement_done é específico da fase IMPLEMENT (fase atual: ${phase})`;
-          return jsonResponse(dodResponse);
+          return mcpText(dodResponse);
         }
 
         case "tdd_check": {
@@ -199,7 +200,7 @@ export function registerAnalyze(server: McpServer, store: SqliteStore): void {
           logger.info("tool:analyze:tdd_check:ok", { tasks: tddReport.tasks.length, overallTestability: tddReport.overallTestability });
           const tddResponse: Record<string, unknown> = { ok: true, mode, ...tddReport };
           if (phase !== "IMPLEMENT") tddResponse._info = `Modo tdd_check é específico da fase IMPLEMENT (fase atual: ${phase})`;
-          return jsonResponse(tddResponse);
+          return mcpText(tddResponse);
         }
 
         case "progress": {
@@ -208,7 +209,7 @@ export function registerAnalyze(server: McpServer, store: SqliteStore): void {
           logger.info("tool:analyze:progress:ok", { done: progressReport.burndown.done, total: progressReport.burndown.total });
           const progressResponse: Record<string, unknown> = { ok: true, mode, ...progressReport };
           if (phase !== "IMPLEMENT") progressResponse._info = `Modo progress é específico da fase IMPLEMENT (fase atual: ${phase})`;
-          return jsonResponse(progressResponse);
+          return mcpText(progressResponse);
         }
 
         case "validate_ready": {
@@ -217,19 +218,19 @@ export function registerAnalyze(server: McpServer, store: SqliteStore): void {
           logger.info("tool:analyze:validate_ready:ok", { ready: valReport.ready, grade: valReport.grade });
           const valResponse: Record<string, unknown> = { ok: true, mode, ...valReport };
           if (phase !== "VALIDATE" && phase !== "IMPLEMENT") valResponse._info = `Modo validate_ready é específico das fases IMPLEMENT/VALIDATE (fase atual: ${phase})`;
-          return jsonResponse(valResponse);
+          return mcpText(valResponse);
         }
 
         case "done_integrity": {
           const doneReport = checkDoneIntegrity(doc);
           logger.info("tool:analyze:done_integrity:ok", { passed: doneReport.passed, issues: doneReport.issues.length });
-          return jsonResponse({ ok: true, mode, ...doneReport });
+          return mcpText({ ok: true, mode, ...doneReport });
         }
 
         case "status_flow": {
           const flowReport = checkStatusFlow(doc);
           logger.info("tool:analyze:status_flow:ok", { complianceRate: flowReport.complianceRate });
-          return jsonResponse({ ok: true, mode, ...flowReport });
+          return mcpText({ ok: true, mode, ...flowReport });
         }
 
         case "review_ready": {
@@ -238,7 +239,7 @@ export function registerAnalyze(server: McpServer, store: SqliteStore): void {
           logger.info("tool:analyze:review_ready:ok", { ready: revReport.ready, grade: revReport.grade });
           const revResponse: Record<string, unknown> = { ok: true, mode, ...revReport };
           if (phase !== "REVIEW" && phase !== "VALIDATE") revResponse._info = `Modo review_ready é específico das fases VALIDATE/REVIEW (fase atual: ${phase})`;
-          return jsonResponse(revResponse);
+          return mcpText(revResponse);
         }
 
         case "handoff_ready": {
@@ -249,13 +250,13 @@ export function registerAnalyze(server: McpServer, store: SqliteStore): void {
           logger.info("tool:analyze:handoff_ready:ok", { ready: hoReport.ready, grade: hoReport.grade });
           const hoResponse: Record<string, unknown> = { ok: true, mode, ...hoReport };
           if (phase !== "HANDOFF" && phase !== "REVIEW") hoResponse._info = `Modo handoff_ready é específico das fases REVIEW/HANDOFF (fase atual: ${phase})`;
-          return jsonResponse(hoResponse);
+          return mcpText(hoResponse);
         }
 
         case "doc_completeness": {
           const docReport = checkDocCompleteness(doc);
           logger.info("tool:analyze:doc_completeness:ok", { coverageRate: docReport.coverageRate });
-          return jsonResponse({ ok: true, mode, ...docReport });
+          return mcpText({ ok: true, mode, ...docReport });
         }
 
         case "listening_ready": {
@@ -268,32 +269,19 @@ export function registerAnalyze(server: McpServer, store: SqliteStore): void {
           logger.info("tool:analyze:listening_ready:ok", { ready: lisReport.ready, grade: lisReport.grade });
           const lisResponse: Record<string, unknown> = { ok: true, mode, ...lisReport };
           if (phase !== "LISTENING" && phase !== "HANDOFF") lisResponse._info = `Modo listening_ready é específico das fases HANDOFF/LISTENING (fase atual: ${phase})`;
-          return jsonResponse(lisResponse);
+          return mcpText(lisResponse);
         }
 
         case "backlog_health": {
           const healthReport = analyzeBacklogHealth(doc);
           logger.info("tool:analyze:backlog_health:ok", { clean: healthReport.cleanForNewCycle, stale: healthReport.staleTasks.length });
-          return jsonResponse({ ok: true, mode, ...healthReport });
+          return mcpText({ ok: true, mode, ...healthReport });
         }
 
         default: {
-          return errorResponse(`Unknown analyze mode: ${mode as string}`);
+          return mcpError(`Unknown analyze mode: ${mode as string}`);
         }
       }
     },
   );
-}
-
-function jsonResponse(data: Record<string, unknown>): { content: Array<{ type: "text"; text: string }> } {
-  return {
-    content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
-  };
-}
-
-function errorResponse(message: string): { content: Array<{ type: "text"; text: string }>; isError: true } {
-  return {
-    content: [{ type: "text" as const, text: JSON.stringify({ error: message }) }],
-    isError: true,
-  };
 }

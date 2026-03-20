@@ -33,7 +33,7 @@ const REQUIREMENT_PATTERNS = [
 ];
 
 const CONSTRAINT_PATTERNS = [
-  /\bnão deve\b/i, /\bsem\b/i, /\brestrição/i, /\bnão depender/i,
+  /\bnão deve\b/i, /^sem\s/i, /\brestrição/i, /\bnão depender/i,
   /\bnão exigir/i, /\bconstraint/i, /\bwithout\b/i, /\bnot allowed/i,
   /\bfora do escopo/i,
 ];
@@ -48,6 +48,12 @@ const TASK_PATTERNS = [
 const ACCEPTANCE_PATTERNS = [
   /\baceite\b/i, /\bcritério/i, /\bdone\b/i, /\bacceptance/i,
   /\bcriterion/i, /\bcriteria/i, /\bdefinition of done/i,
+  // Gherkin/BDD format
+  /\bgiven\b.+\bwhen\b/i, /\bwhen\b.+\bthen\b/i,
+  /\bdado\b.+\bquando\b/i, /\bquando\b.+\bent[aã]o\b/i,
+  // Declarative AC patterns (user/system can/should)
+  /\busu[aá]rio\s+(pode|consegue|deve\s+poder)\b/i,
+  /\buser\s+(can|should\s+be\s+able\s+to)\b/i,
 ];
 
 const RISK_PATTERNS = [
@@ -63,8 +69,11 @@ function matchesAny(text: string, patterns: RegExp[]): boolean {
   return patterns.some((p) => p.test(text));
 }
 
+const CHECKBOX_PATTERN = /^\[[ x]\]\s/i;
+
 export function classifyText(text: string): { type: BlockType; confidence: number } {
   // Order matters: more specific checks first
+  if (CHECKBOX_PATTERN.test(text)) return { type: "acceptance_criteria", confidence: 0.9 };
   if (matchesAny(text, CONSTRAINT_PATTERNS)) return { type: "constraint", confidence: 0.8 };
   if (matchesAny(text, ACCEPTANCE_PATTERNS)) return { type: "acceptance_criteria", confidence: 0.8 };
   if (matchesAny(text, RISK_PATTERNS)) return { type: "risk", confidence: 0.7 };

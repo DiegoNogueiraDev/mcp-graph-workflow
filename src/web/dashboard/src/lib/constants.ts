@@ -45,6 +45,17 @@ export const ALL_TYPES: NodeType[] = [
   "milestone", "acceptance_criteria", "risk", "decision",
 ];
 
+// ── Lifecycle Phases ──────────────────────────────
+
+export const LIFECYCLE_PHASES = [
+  "ANALYZE", "DESIGN", "PLAN", "IMPLEMENT", "VALIDATE", "REVIEW", "HANDOFF", "LISTENING",
+] as const;
+
+export const PHASE_COLORS: Record<string, string> = {
+  ANALYZE: "#8b5cf6", DESIGN: "#3b82f6", PLAN: "#06b6d4", IMPLEMENT: "#10b981",
+  VALIDATE: "#f59e0b", REVIEW: "#ef4444", HANDOFF: "#ec4899", LISTENING: "#6b7280",
+};
+
 // ── Code Graph ─────────────────────────────────
 
 export const CODE_SYMBOL_COLORS: Record<string, string> = {

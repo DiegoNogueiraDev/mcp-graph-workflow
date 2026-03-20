@@ -4,6 +4,7 @@ import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import { calculateVelocity } from "../../core/planner/velocity.js";
 import { buildTaskContext } from "../../core/context/compact-context.js";
 import { logger } from "../../core/utils/logger.js";
+import { mcpText } from "../response-helpers.js";
 
 export function registerMetrics(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -25,14 +26,7 @@ export function registerMetrics(server: McpServer, store: SqliteStore): void {
         }
 
         logger.info("tool:metrics:velocity:ok", { sprintCount: summary.sprints.length });
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: JSON.stringify({ ok: true, mode: "velocity", ...summary }, null, 2),
-            },
-          ],
-        };
+        return mcpText({ ok: true, mode: "velocity", ...summary });
       }
 
       // mode === "stats"
@@ -69,24 +63,13 @@ export function registerMetrics(server: McpServer, store: SqliteStore): void {
       }
 
       logger.info("tool:metrics:stats:ok", { totalNodes: stats.totalNodes, totalEdges: stats.totalEdges });
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(
-              {
-                ok: true,
-                mode: "stats",
-                project: project?.name ?? null,
-                ...stats,
-                contextReduction,
-              },
-              null,
-              2,
-            ),
-          },
-        ],
-      };
+      return mcpText({
+        ok: true,
+        mode: "stats",
+        project: project?.name ?? null,
+        ...stats,
+        contextReduction,
+      });
     },
   );
 }

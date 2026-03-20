@@ -64,15 +64,20 @@ export function buildTraceabilityMatrix(doc: GraphDocument): TraceabilityReport 
     .map((e) => e.requirementId);
 
   const coveredCount = matrix.filter((e) => e.coverage !== "none").length;
-  const coverageRate = requirements.length > 0
-    ? Math.round((coveredCount / requirements.length) * 10000) / 100
-    : 100;
 
   // Find orphan decisions: not linked to any requirement
   const linkedDecisionIds = new Set(matrix.flatMap((e) => e.linkedDecisions));
   const orphanDecisions = decisions
     .filter((d) => !linkedDecisionIds.has(d.id))
     .map((d) => d.id);
+
+  // Include orphan decisions in coverage calculation
+  const linkedDecisionCount = decisions.length - orphanDecisions.length;
+  const totalItems = requirements.length + decisions.length;
+  const linkedItems = coveredCount + linkedDecisionCount;
+  const coverageRate = totalItems > 0
+    ? Math.round((linkedItems / totalItems) * 10000) / 100
+    : 100;
 
   logger.info("traceability-matrix", { requirements: requirements.length, coverageRate });
 

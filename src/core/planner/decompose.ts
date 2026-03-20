@@ -8,11 +8,8 @@
  */
 
 import type { GraphDocument, GraphNode } from "../graph/graph-types.js";
+import { XP_SIZE_ORDER } from "../utils/xp-sizing.js";
 import { logger } from "../utils/logger.js";
-
-const XP_SIZE_ORDER: Record<string, number> = {
-  XS: 1, S: 2, M: 3, L: 4, XL: 5,
-};
 
 const ESTIMATE_THRESHOLD = 120; // minutes
 const AC_THRESHOLD = 5;

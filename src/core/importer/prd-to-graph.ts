@@ -2,7 +2,7 @@
  * Converts parser extraction results into graph nodes and edges.
  */
 
-import type { GraphNode, GraphEdge, NodeType, NodeStatus } from "../graph/graph-types.js";
+import type { GraphNode, GraphEdge, NodeType, NodeStatus, XpSize } from "../graph/graph-types.js";
 import type { ExtractionResult } from "../parser/extract.js";
 import type { ClassifiedBlock } from "../parser/classify.js";
 import { generateId } from "../utils/id.js";
@@ -42,6 +42,40 @@ function defaultPriorityForType(type: NodeType): 1 | 2 | 3 | 4 | 5 {
   }
 }
 
+const SIZE_PATTERN = /\*\*(?:Size|Tamanho)\s*:\s*\*\*\s*(XS|S|M|L|XL)\b/i;
+
+function extractXpSize(description: string | undefined): XpSize | undefined {
+  if (!description) return undefined;
+  const match = description.match(SIZE_PATTERN);
+  if (!match) return undefined;
+  return match[1].toUpperCase() as XpSize;
+}
+
+const PRIORITY_PATTERN = /\*\*(?:Priority|Prioridade)\s*:\s*\*\*\s*(high|medium|low|alta|m[eé]dia|baixa|[1-5])\b/i;
+
+function extractPriority(description: string | undefined): 1 | 2 | 3 | 4 | 5 | undefined {
+  if (!description) return undefined;
+  const match = description.match(PRIORITY_PATTERN);
+  if (!match) return undefined;
+  const val = match[1].toLowerCase();
+  if (val === "high" || val === "alta" || val === "1") return 1;
+  if (val === "2") return 2;
+  if (val === "medium" || val === "média" || val === "media" || val === "3") return 3;
+  if (val === "4") return 4;
+  if (val === "low" || val === "baixa" || val === "5") return 5;
+  return undefined;
+}
+
+const TAGS_PATTERN = /\*\*(?:Tags?)\s*:\s*\*\*\s*(.+)/i;
+
+function extractTags(description: string | undefined): string[] | undefined {
+  if (!description) return undefined;
+  const match = description.match(TAGS_PATTERN);
+  if (!match) return undefined;
+  const tags = match[1].split(/,/).map((s) => s.trim().toLowerCase()).filter(Boolean);
+  return tags.length > 0 ? tags : undefined;
+}
+
 function createNodeFromBlock(
   block: ClassifiedBlock,
   sourceFile: string,
@@ -51,7 +85,8 @@ function createNodeFromBlock(
   if (!nodeType) return null;
 
   const timestamp = now();
-  return {
+  const xpSize = extractXpSize(block.description);
+  const node: GraphNode = {
     id: generateId("node"),
     type: nodeType,
     title: block.title,
@@ -72,6 +107,18 @@ function createNodeFromBlock(
     createdAt: timestamp,
     updatedAt: timestamp,
   };
+  if (xpSize) {
+    node.xpSize = xpSize;
+  }
+  const extractedPriority = extractPriority(block.description);
+  if (extractedPriority) {
+    node.priority = extractedPriority;
+  }
+  const extractedTags = extractTags(block.description);
+  if (extractedTags) {
+    node.tags = extractedTags;
+  }
+  return node;
 }
 
 function createEdge(
@@ -262,6 +309,25 @@ export function convertToGraph(
       }
       if (nearestParent) {
         edges.push(createEdge(ac.id, nearestParent.id, "implements", "Acceptance criteria for epic", true, 0.6));
+      }
+    }
+  }
+
+  // Pass 4.5: Parse explicit **Depends on:** / **Depende de:** references
+  const DEPENDS_PATTERN = /\*\*(?:Depends?\s+on|Depende\s+de)\s*:\s*\*\*\s*(.+)/i;
+  for (const node of nodes) {
+    if (!node.description) continue;
+    const match = node.description.match(DEPENDS_PATTERN);
+    if (!match) continue;
+
+    const depRefs = match[1].split(/,\s*| e | and /).map((s) => s.trim()).filter(Boolean);
+    for (const ref of depRefs) {
+      const refLower = ref.toLowerCase();
+      const target = nodes.find((n) => n.id !== node.id && n.title.toLowerCase() === refLower);
+      if (target) {
+        edges.push(
+          createEdge(node.id, target.id, "depends_on", `Explicit depends_on: "${ref}"`, false, 0.85),
+        );
       }
     }
   }

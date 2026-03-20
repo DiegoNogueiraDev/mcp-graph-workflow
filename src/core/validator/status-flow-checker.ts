@@ -4,9 +4,8 @@
 
 import type { GraphDocument } from "../graph/graph-types.js";
 import type { StatusFlowReport, StatusFlowViolation } from "../../schemas/validator-schema.js";
+import { TASK_TYPES } from "../utils/node-type-sets.js";
 import { logger } from "../utils/logger.js";
-
-const TASK_TYPES = new Set(["task", "subtask"]);
 
 export function checkStatusFlow(doc: GraphDocument): StatusFlowReport {
   const violations: StatusFlowViolation[] = [];

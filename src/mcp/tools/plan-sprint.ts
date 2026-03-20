@@ -5,6 +5,7 @@ import { generatePlanningReport } from "../../core/planner/planning-report.js";
 import { findEnhancedNextTask } from "../../core/planner/enhanced-next.js";
 import { KnowledgeStore } from "../../core/store/knowledge-store.js";
 import { logger } from "../../core/utils/logger.js";
+import { mcpText } from "../response-helpers.js";
 
 export function registerPlanSprint(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -24,32 +25,22 @@ export function registerPlanSprint(server: McpServer, store: SqliteStore): void 
         const result = findEnhancedNextTask(doc, store);
 
         if (!result) {
-          return {
-            content: [{
-              type: "text" as const,
-              text: JSON.stringify({ message: "No tasks available" }),
-            }],
-          };
+          return mcpText({ message: "No tasks available" });
         }
 
         logger.info("tool:plan_sprint:ok", { mode: "next", taskId: result.task.node.id });
-        return {
-          content: [{
-            type: "text" as const,
-            text: JSON.stringify({
-              task: {
-                id: result.task.node.id,
-                title: result.task.node.title,
-                type: result.task.node.type,
-                priority: result.task.node.priority,
-                xpSize: result.task.node.xpSize,
-              },
-              knowledgeCoverage: result.knowledgeCoverage,
-              velocityContext: result.velocityContext,
-              enhancedReason: result.enhancedReason,
-            }, null, 2),
-          }],
-        };
+        return mcpText({
+          task: {
+            id: result.task.node.id,
+            title: result.task.node.title,
+            type: result.task.node.type,
+            priority: result.task.node.priority,
+            xpSize: result.task.node.xpSize,
+          },
+          knowledgeCoverage: result.knowledgeCoverage,
+          velocityContext: result.velocityContext,
+          enhancedReason: result.enhancedReason,
+        });
       }
 
       // Default: full planning report
@@ -75,12 +66,7 @@ export function registerPlanSprint(server: McpServer, store: SqliteStore): void 
       }
 
       logger.info("tool:plan_sprint:ok", { mode: "report" });
-      return {
-        content: [{
-          type: "text" as const,
-          text: JSON.stringify(report, null, 2),
-        }],
-      };
+      return mcpText(report);
     },
   );
 }

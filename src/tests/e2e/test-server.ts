@@ -95,6 +95,33 @@ async function startServer(): Promise<void> {
     });
   }
 
+  // Insert explicit hierarchy data as safety net for drill-down E2E tests.
+  // This guarantees known parent-child relationships regardless of parser changes.
+  const ts = new Date().toISOString();
+  const hierarchyNodes = [
+    { id: "e2e-epic-auth", type: "epic" as const, title: "Auth Epic (E2E)", status: "backlog" as const, priority: 1 as const, createdAt: ts, updatedAt: ts },
+    { id: "e2e-task-login", type: "task" as const, title: "Login Task (E2E)", status: "backlog" as const, priority: 2 as const, parentId: "e2e-epic-auth", createdAt: ts, updatedAt: ts },
+    { id: "e2e-sub-email", type: "subtask" as const, title: "Email Input (E2E)", status: "backlog" as const, priority: 3 as const, parentId: "e2e-task-login", createdAt: ts, updatedAt: ts },
+    { id: "e2e-sub-pass", type: "subtask" as const, title: "Password Input (E2E)", status: "backlog" as const, priority: 3 as const, parentId: "e2e-task-login", createdAt: ts, updatedAt: ts },
+    { id: "e2e-task-register", type: "task" as const, title: "Register Task (E2E)", status: "ready" as const, priority: 2 as const, parentId: "e2e-epic-auth", createdAt: ts, updatedAt: ts },
+    { id: "e2e-epic-catalog", type: "epic" as const, title: "Catalog Epic (E2E)", status: "backlog" as const, priority: 1 as const, createdAt: ts, updatedAt: ts },
+    { id: "e2e-task-products", type: "task" as const, title: "Product List (E2E)", status: "in_progress" as const, priority: 2 as const, parentId: "e2e-epic-catalog", createdAt: ts, updatedAt: ts },
+  ];
+  const hierarchyEdges = [
+    { id: "e2e-edge-auth-login-po", from: "e2e-epic-auth", to: "e2e-task-login", relationType: "parent_of" as const, createdAt: ts },
+    { id: "e2e-edge-login-auth-co", from: "e2e-task-login", to: "e2e-epic-auth", relationType: "child_of" as const, createdAt: ts },
+    { id: "e2e-edge-login-email-po", from: "e2e-task-login", to: "e2e-sub-email", relationType: "parent_of" as const, createdAt: ts },
+    { id: "e2e-edge-email-login-co", from: "e2e-sub-email", to: "e2e-task-login", relationType: "child_of" as const, createdAt: ts },
+    { id: "e2e-edge-login-pass-po", from: "e2e-task-login", to: "e2e-sub-pass", relationType: "parent_of" as const, createdAt: ts },
+    { id: "e2e-edge-pass-login-co", from: "e2e-sub-pass", to: "e2e-task-login", relationType: "child_of" as const, createdAt: ts },
+    { id: "e2e-edge-auth-register-po", from: "e2e-epic-auth", to: "e2e-task-register", relationType: "parent_of" as const, createdAt: ts },
+    { id: "e2e-edge-register-auth-co", from: "e2e-task-register", to: "e2e-epic-auth", relationType: "child_of" as const, createdAt: ts },
+    { id: "e2e-edge-catalog-products-po", from: "e2e-epic-catalog", to: "e2e-task-products", relationType: "parent_of" as const, createdAt: ts },
+    { id: "e2e-edge-products-catalog-co", from: "e2e-task-products", to: "e2e-epic-catalog", relationType: "child_of" as const, createdAt: ts },
+  ];
+  storeManager.store.bulkInsert(hierarchyNodes, hierarchyEdges);
+  logger.info("E2E hierarchy data inserted", { nodes: hierarchyNodes.length, edges: hierarchyEdges.length });
+
   const app = express();
   app.use(express.json());
 

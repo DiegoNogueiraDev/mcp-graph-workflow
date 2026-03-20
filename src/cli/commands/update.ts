@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import path from "node:path";
 import { runUpdate } from "../../mcp/init-project.js";
+import { getErrorMessage } from "../../core/utils/errors.js";
 import { logger } from "../../core/utils/logger.js";
 import type { UpdateStepResult } from "../../mcp/init-project.js";
 
@@ -56,9 +57,9 @@ export function updateCommand(): Command {
         }
       } catch (err) {
         if (opts.json) {
-          output(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }, null, 2));
+          output(JSON.stringify({ error: getErrorMessage(err) }, null, 2));
         } else {
-          logger.error(`Update failed: ${err instanceof Error ? err.message : String(err)}`);
+          logger.error(`Update failed: ${getErrorMessage(err)}`);
           output("\nRun 'mcp-graph init' to initialize this project first.");
         }
         process.exitCode = 1;

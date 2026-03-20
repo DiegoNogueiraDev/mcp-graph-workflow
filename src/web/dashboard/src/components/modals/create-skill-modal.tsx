@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useEffect } from "react";
 import type { CustomSkillInput, Skill } from "@/lib/types";
-
-const LIFECYCLE_PHASES = ["ANALYZE", "DESIGN", "PLAN", "IMPLEMENT", "VALIDATE", "REVIEW", "HANDOFF", "LISTENING"] as const;
+import { LIFECYCLE_PHASES } from "@/lib/constants";
 const CATEGORIES = ["know-me", "software-design", "security", "testing", "cost-reducer", "research", "ddd", "frontend-design", "other"] as const;
 
 interface CreateSkillModalProps {

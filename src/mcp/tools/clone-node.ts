@@ -6,6 +6,7 @@ import { NodeNotFoundError } from "../../core/utils/errors.js";
 import { generateId } from "../../core/utils/id.js";
 import { now } from "../../core/utils/time.js";
 import { logger } from "../../core/utils/logger.js";
+import { mcpText, mcpError } from "../response-helpers.js";
 
 function cloneSingle(
   store: SqliteStore,
@@ -87,24 +88,14 @@ export function registerCloneNode(server: McpServer, store: SqliteStore): void {
       const source = store.getNodeById(id);
       if (!source) {
         const err = new NodeNotFoundError(id);
-        return {
-          content: [
-            { type: "text" as const, text: JSON.stringify({ error: err.message }) },
-          ],
-          isError: true,
-        };
+        return mcpError(err);
       }
 
       if (newParentId) {
         const parent = store.getNodeById(newParentId);
         if (!parent) {
           const err = new NodeNotFoundError(newParentId);
-          return {
-            content: [
-              { type: "text" as const, text: JSON.stringify({ error: `Parent not found: ${err.message}` }) },
-            ],
-            isError: true,
-          };
+          return mcpError(`Parent not found: ${err.message}`);
         }
       }
 
@@ -115,26 +106,12 @@ export function registerCloneNode(server: McpServer, store: SqliteStore): void {
         const cloned: GraphNode[] = [];
         cloneDeep(store, id, parentForClone, timestamp, cloned);
         logger.info("tool:clone_node:ok", { sourceId: id, deep: true, clonedCount: cloned.length });
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: JSON.stringify({ ok: true, clonedCount: cloned.length, nodes: cloned }, null, 2),
-            },
-          ],
-        };
+        return mcpText({ ok: true, clonedCount: cloned.length, nodes: cloned });
       }
 
       const clone = cloneSingle(store, source, parentForClone, timestamp);
       logger.info("tool:clone_node:ok", { sourceId: id, deep: false, cloneId: clone.id });
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify({ ok: true, node: clone }, null, 2),
-          },
-        ],
-      };
+      return mcpText({ ok: true, node: clone });
     },
   );
 }

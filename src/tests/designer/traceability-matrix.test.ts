@@ -41,8 +41,10 @@ describe("buildTraceabilityMatrix", () => {
     const doc = makeDoc([{ type: "epic" }, { type: "decision" }]);
     const report = buildTraceabilityMatrix(doc);
     expect(report.matrix).toHaveLength(0);
-    expect(report.coverageRate).toBe(100);
+    // With orphan decision, coverage is less than 100%
+    expect(report.coverageRate).toBe(0);
     expect(report.orphanRequirements).toHaveLength(0);
+    expect(report.orphanDecisions).toHaveLength(1);
   });
 
   it("should mark requirement as 'none' when no linked decisions or constraints", () => {
@@ -150,9 +152,10 @@ describe("buildTraceabilityMatrix", () => {
       ],
     );
     const report = buildTraceabilityMatrix(doc);
-    // req1=full, req2=partial, req3=none
-    // coverageRate = 2/3 covered (non-none) ≈ 66.67%
-    expect(report.coverageRate).toBeCloseTo(66.67, 0);
+    // req1=full, req2=partial, req3=none, dec1=linked
+    // totalItems = 3 reqs + 1 dec = 4, linkedItems = 2 covered reqs + 1 linked dec = 3
+    // coverageRate = 3/4 = 75%
+    expect(report.coverageRate).toBe(75);
     expect(report.orphanRequirements).toContain("req3");
   });
 

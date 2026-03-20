@@ -28,3 +28,22 @@ export const GLOBAL_MEMORIES_DIR = path.join(GLOBAL_DB_DIR, "memories");
 
 /** Global config file (~/.mcp-graph/config.json) */
 export const GLOBAL_CONFIG_FILE = path.join(GLOBAL_DB_DIR, "config.json");
+
+// ── Node defaults ──
+
+/** Default status for newly created nodes */
+export const DEFAULT_NODE_STATUS = "backlog" as const;
+
+/** Default priority for newly created nodes (1=critical, 5=optional) */
+export const DEFAULT_NODE_PRIORITY = 3 as const;
+
+// ── Token budget defaults ──
+
+/** Default token budget for context assembly and RAG queries */
+export const DEFAULT_TOKEN_BUDGET = 4000;
+
+/** Default max tokens per chunk in text chunking */
+export const DEFAULT_CHUNK_MAX_TOKENS = 500;
+
+/** Default overlap tokens between chunks */
+export const DEFAULT_CHUNK_OVERLAP = 50;

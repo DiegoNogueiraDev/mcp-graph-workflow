@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { SqliteStore } from "../../core/store/sqlite-store.js";
+import { getErrorMessage } from "../../core/utils/errors.js";
 import { logger } from "../../core/utils/logger.js";
 
 function output(msg: string): void {
@@ -34,7 +35,7 @@ export function statsCommand(): Command {
           output(`Total edges: ${stats.totalEdges}`);
         }
       } catch (err) {
-        logger.error(`Stats failed: ${err instanceof Error ? err.message : String(err)}`);
+        logger.error(`Stats failed: ${getErrorMessage(err)}`);
         process.exit(1);
       } finally {
         store.close();

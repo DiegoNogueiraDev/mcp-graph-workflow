@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { runDoctor } from "../../core/doctor/doctor-runner.js";
+import { getErrorMessage } from "../../core/utils/errors.js";
 import { logger } from "../../core/utils/logger.js";
 import type { CheckResult } from "../../core/doctor/doctor-types.js";
 
@@ -56,7 +57,7 @@ export function doctorCommand(): Command {
           process.exit(1);
         }
       } catch (err) {
-        logger.error(`Doctor failed: ${err instanceof Error ? err.message : String(err)}`);
+        logger.error(`Doctor failed: ${getErrorMessage(err)}`);
         process.exit(1);
       }
     });

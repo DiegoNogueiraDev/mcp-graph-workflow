@@ -1,8 +1,11 @@
 import { z } from "zod/v4";
+import { GradeSchema } from "./grade-schema.js";
+import { ReadinessSeveritySchema as _ReadinessSeveritySchema, BaseReadinessCheckSchema, BaseReadinessReportSchema } from "./readiness-schema.js";
 
 // ── ADR Validation ──
 
-export const AdrGradeSchema = z.enum(["A", "B", "C", "D", "F"]);
+/** @deprecated Use GradeSchema from grade-schema.ts */
+export const AdrGradeSchema = GradeSchema;
 
 export const AdrValidationResultSchema = z.object({
   nodeId: z.string(),
@@ -125,22 +128,12 @@ export type TechRiskReport = z.infer<typeof TechRiskReportSchema>;
 
 // ── Design Readiness (Definition of Ready for DESIGN→PLAN) ──
 
-export const ReadinessSeveritySchema = z.enum(["required", "recommended"]);
+/** @deprecated Use ReadinessSeveritySchema from readiness-schema.ts */
+export const ReadinessSeveritySchema = _ReadinessSeveritySchema;
 
-export const DesignReadinessCheckSchema = z.object({
-  name: z.string(),
-  passed: z.boolean(),
-  details: z.string(),
-  severity: ReadinessSeveritySchema,
-});
+export const DesignReadinessCheckSchema = BaseReadinessCheckSchema;
 
-export const DesignReadinessReportSchema = z.object({
-  checks: z.array(DesignReadinessCheckSchema),
-  ready: z.boolean(),
-  score: z.number().min(0).max(100),
-  grade: AdrGradeSchema,
-  summary: z.string(),
-});
+export const DesignReadinessReportSchema = BaseReadinessReportSchema;
 
 export type ReadinessSeverity = z.infer<typeof ReadinessSeveritySchema>;
 export type DesignReadinessCheck = z.infer<typeof DesignReadinessCheckSchema>;

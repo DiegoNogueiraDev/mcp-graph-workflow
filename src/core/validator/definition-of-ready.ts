@@ -5,7 +5,6 @@
 
 import type { GraphDocument } from "../graph/graph-types.js";
 import type { ValidationReadinessReport, ValidationReadinessCheck } from "../../schemas/validator-schema.js";
-import type { AdrGrade } from "../../schemas/designer-schema.js";
 import { validateAcQuality } from "../analyzer/ac-validator.js";
 import { assessRisks } from "../analyzer/risk-assessment.js";
 import { detectBottlenecks } from "../insights/bottleneck-detector.js";
@@ -13,17 +12,9 @@ import { calculateMetrics } from "../insights/metrics-calculator.js";
 import { detectCycles } from "../planner/dependency-chain.js";
 import { checkDoneIntegrity } from "./done-integrity-checker.js";
 import { checkStatusFlow } from "./status-flow-checker.js";
+import { scoreToGrade } from "../utils/grading.js";
+import { TASK_TYPES } from "../utils/node-type-sets.js";
 import { logger } from "../utils/logger.js";
-
-const TASK_TYPES = new Set(["task", "subtask"]);
-
-function scoreToGrade(score: number): AdrGrade {
-  if (score >= 90) return "A";
-  if (score >= 75) return "B";
-  if (score >= 60) return "C";
-  if (score >= 40) return "D";
-  return "F";
-}
 
 export function checkValidationReadiness(doc: GraphDocument): ValidationReadinessReport {
   const checks: ValidationReadinessCheck[] = [];

@@ -7,6 +7,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import { NodeNotFoundError } from "../../core/utils/errors.js";
 import { logger } from "../../core/utils/logger.js";
+import { mcpText, mcpError } from "../response-helpers.js";
 
 export function registerDeleteNode(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -21,23 +22,11 @@ export function registerDeleteNode(server: McpServer, store: SqliteStore): void 
       if (!deleted) {
         const err = new NodeNotFoundError(id);
         logger.warn("tool:delete_node:fail", { error: err.message });
-        return {
-          content: [
-            { type: "text" as const, text: JSON.stringify({ error: err.message, _deprecated: "Use 'node' tool with action:'delete'" }) },
-          ],
-          isError: true,
-        };
+        return mcpError(err);
       }
 
       logger.info("tool:delete_node:ok", { id });
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify({ ok: true, deletedId: id, _deprecated: "Use 'node' tool with action:'delete'" }, null, 2),
-          },
-        ],
-      };
+      return mcpText({ ok: true, deletedId: id, _deprecated: "Use 'node' tool with action:'delete'" });
     },
   );
 }

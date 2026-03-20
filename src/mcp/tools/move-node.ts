@@ -6,6 +6,7 @@ import { generateId } from "../../core/utils/id.js";
 import { now } from "../../core/utils/time.js";
 import type { RelationType } from "../../core/graph/graph-types.js";
 import { logger } from "../../core/utils/logger.js";
+import { mcpText, mcpError } from "../response-helpers.js";
 
 export function registerMoveNode(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -20,45 +21,25 @@ export function registerMoveNode(server: McpServer, store: SqliteStore): void {
       const node = store.getNodeById(id);
       if (!node) {
         const err = new NodeNotFoundError(id);
-        return {
-          content: [
-            { type: "text" as const, text: JSON.stringify({ error: err.message }) },
-          ],
-          isError: true,
-        };
+        return mcpError(err);
       }
 
       if (newParentId !== null) {
         if (newParentId === id) {
-          return {
-            content: [
-              { type: "text" as const, text: JSON.stringify({ error: "A node cannot be its own parent" }) },
-            ],
-            isError: true,
-          };
+          return mcpError("A node cannot be its own parent");
         }
 
         const newParent = store.getNodeById(newParentId);
         if (!newParent) {
           const err = new NodeNotFoundError(newParentId);
-          return {
-            content: [
-              { type: "text" as const, text: JSON.stringify({ error: `New parent not found: ${err.message}` }) },
-            ],
-            isError: true,
-          };
+          return mcpError(`New parent not found: ${err.message}`);
         }
 
         // Detect circularity: walk up from newParentId to check if id is an ancestor
         let current = newParent;
         while (current.parentId) {
           if (current.parentId === id) {
-            return {
-              content: [
-                { type: "text" as const, text: JSON.stringify({ error: "Circular reference detected: target parent is a descendant of this node" }) },
-              ],
-              isError: true,
-            };
+            return mcpError("Circular reference detected: target parent is a descendant of this node");
           }
           const parent = store.getNodeById(current.parentId);
           if (!parent) break;
@@ -109,18 +90,11 @@ export function registerMoveNode(server: McpServer, store: SqliteStore): void {
       const updated = store.getNodeById(id);
 
       logger.info("tool:move_node:ok", { nodeId: id, from: oldParentId ?? null, to: newParentId });
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify({
-              ok: true,
-              moved: { id, from: oldParentId ?? null, to: newParentId },
-              node: updated,
-            }, null, 2),
-          },
-        ],
-      };
+      return mcpText({
+        ok: true,
+        moved: { id, from: oldParentId ?? null, to: newParentId },
+        node: updated,
+      });
     },
   );
 }

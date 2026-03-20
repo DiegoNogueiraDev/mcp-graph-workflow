@@ -491,6 +491,176 @@ describe("convertToGraph", () => {
     expect(relatedEdges[0].to).toBe(taskA.id);
   });
 
+  // ── Bug 3: xpSize extraction from description ──────────
+
+  it("extrai xpSize do description com **Size:** M", () => {
+    // Arrange
+    const extraction = makeExtraction([
+      makeBlock({
+        type: "task",
+        title: "Task with size",
+        description: "**Size:** M\nDescricao da task",
+      }),
+    ]);
+
+    // Act
+    const result = convertToGraph(extraction, "prd.md");
+
+    // Assert
+    const node = result.nodes.find((n) => n.title === "Task with size")!;
+    expect(node.xpSize).toBe("M");
+  });
+
+  it("extrai xpSize do description com **Tamanho:** L", () => {
+    // Arrange
+    const extraction = makeExtraction([
+      makeBlock({
+        type: "task",
+        title: "Task PT",
+        description: "**Tamanho:** L",
+      }),
+    ]);
+
+    // Act
+    const result = convertToGraph(extraction, "prd.md");
+
+    // Assert
+    expect(result.nodes[0].xpSize).toBe("L");
+  });
+
+  it("nao seta xpSize quando description nao tem Size", () => {
+    // Arrange
+    const extraction = makeExtraction([
+      makeBlock({
+        type: "task",
+        title: "No size",
+        description: "Just a normal description",
+      }),
+    ]);
+
+    // Act
+    const result = convertToGraph(extraction, "prd.md");
+
+    // Assert
+    expect(result.nodes[0].xpSize).toBeUndefined();
+  });
+
+  it("nao seta xpSize para valor invalido como HUGE", () => {
+    // Arrange
+    const extraction = makeExtraction([
+      makeBlock({
+        type: "task",
+        title: "Invalid size",
+        description: "**Size:** HUGE",
+      }),
+    ]);
+
+    // Act
+    const result = convertToGraph(extraction, "prd.md");
+
+    // Assert
+    expect(result.nodes[0].xpSize).toBeUndefined();
+  });
+
+  // ── Bug 4: Explicit **Depends on:** creates edges ─────
+
+  it("cria edge depends_on a partir de **Depends on:** explicito", () => {
+    // Arrange
+    const extraction = makeExtraction([
+      makeBlock({ type: "task", title: "Setup Database", level: 2 }),
+      makeBlock({
+        type: "task",
+        title: "Build API",
+        description: "**Depends on:** Setup Database",
+        level: 2,
+      }),
+    ]);
+
+    // Act
+    const result = convertToGraph(extraction, "prd.md");
+
+    // Assert
+    const buildApi = result.nodes.find((n) => n.title === "Build API")!;
+    const setupDb = result.nodes.find((n) => n.title === "Setup Database")!;
+    const explicitDeps = result.edges.filter(
+      (e) => e.relationType === "depends_on" && !e.metadata?.inferred,
+    );
+    expect(explicitDeps.length).toBeGreaterThanOrEqual(1);
+    expect(explicitDeps.some((e) => e.from === buildApi.id && e.to === setupDb.id)).toBe(true);
+  });
+
+  it("cria edge depends_on a partir de **Depende de:** (PT)", () => {
+    // Arrange
+    const extraction = makeExtraction([
+      makeBlock({ type: "task", title: "Configurar DB", level: 2 }),
+      makeBlock({
+        type: "task",
+        title: "Criar API",
+        description: "**Depende de:** Configurar DB",
+        level: 2,
+      }),
+    ]);
+
+    // Act
+    const result = convertToGraph(extraction, "prd.md");
+
+    // Assert
+    const criarApi = result.nodes.find((n) => n.title === "Criar API")!;
+    const configurarDb = result.nodes.find((n) => n.title === "Configurar DB")!;
+    const explicitDeps = result.edges.filter(
+      (e) => e.relationType === "depends_on" && !e.metadata?.inferred,
+    );
+    expect(explicitDeps.some((e) => e.from === criarApi.id && e.to === configurarDb.id)).toBe(true);
+  });
+
+  it("cria multiplas edges para deps separadas por virgula", () => {
+    // Arrange
+    const extraction = makeExtraction([
+      makeBlock({ type: "task", title: "Task A", level: 2 }),
+      makeBlock({ type: "task", title: "Task B", level: 2 }),
+      makeBlock({
+        type: "task",
+        title: "Task C",
+        description: "**Depends on:** Task A, Task B",
+        level: 2,
+      }),
+    ]);
+
+    // Act
+    const result = convertToGraph(extraction, "prd.md");
+
+    // Assert
+    const taskA = result.nodes.find((n) => n.title === "Task A")!;
+    const taskB = result.nodes.find((n) => n.title === "Task B")!;
+    const taskC = result.nodes.find((n) => n.title === "Task C")!;
+    const explicitDeps = result.edges.filter(
+      (e) => e.relationType === "depends_on" && !e.metadata?.inferred,
+    );
+    expect(explicitDeps.some((e) => e.from === taskC.id && e.to === taskA.id)).toBe(true);
+    expect(explicitDeps.some((e) => e.from === taskC.id && e.to === taskB.id)).toBe(true);
+  });
+
+  it("ignora referencia a task inexistente no Depends on (graceful)", () => {
+    // Arrange
+    const extraction = makeExtraction([
+      makeBlock({
+        type: "task",
+        title: "Task A",
+        description: "**Depends on:** Nonexistent Task",
+        level: 2,
+      }),
+    ]);
+
+    // Act
+    const result = convertToGraph(extraction, "prd.md");
+
+    // Assert
+    const explicitDeps = result.edges.filter(
+      (e) => e.relationType === "depends_on" && !e.metadata?.inferred,
+    );
+    expect(explicitDeps).toHaveLength(0);
+  });
+
   it("constraints sem parent linkam a todos os tasks (fallback)", () => {
     // Arrange — all at level 2, no parent hierarchy
     const extraction = makeExtraction([

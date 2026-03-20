@@ -11,17 +11,10 @@ import { analyzeCoupling } from "./coupling-analyzer.js";
 import { checkInterfaces } from "./interface-checker.js";
 import { assessTechRisks } from "./tech-risk-assessor.js";
 import { detectCycles } from "../planner/dependency-chain.js";
+import { scoreToGrade } from "../utils/grading.js";
 import { logger } from "../utils/logger.js";
 
 const GRADE_ORDER: Record<AdrGrade, number> = { A: 4, B: 3, C: 2, D: 1, F: 0 };
-
-function scoreToGrade(score: number): AdrGrade {
-  if (score >= 90) return "A";
-  if (score >= 75) return "B";
-  if (score >= 60) return "C";
-  if (score >= 40) return "D";
-  return "F";
-}
 
 export function checkDesignReadiness(doc: GraphDocument): DesignReadinessReport {
   const checks: DesignReadinessCheck[] = [];

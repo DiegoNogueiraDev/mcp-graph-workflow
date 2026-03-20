@@ -3,7 +3,7 @@ import { z } from "zod/v4";
 import type { StoreRef } from "../../core/store/store-manager.js";
 import type { NodeType, NodeStatus } from "../../core/graph/graph-types.js";
 import { NodeNotFoundError } from "../../core/utils/errors.js";
-import { NodeTypeSchema, NodeStatusSchema, GraphNodeSchema } from "../../schemas/node.schema.js";
+import { NodeTypeSchema, NodeStatusSchema, GraphNodeSchema, PrioritySchema, XpSizeSchema } from "../../schemas/node.schema.js";
 import { validateBody } from "../middleware/validate.js";
 import { generateId } from "../../core/utils/id.js";
 import { now } from "../../core/utils/time.js";
@@ -17,8 +17,8 @@ const UpdateNodeBodySchema = z.object({
   description: z.string().nullable().optional(),
   type: NodeTypeSchema.optional(),
   status: NodeStatusSchema.optional(),
-  priority: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]).optional(),
-  xpSize: z.enum(["XS", "S", "M", "L", "XL"]).nullable().optional(),
+  priority: PrioritySchema.optional(),
+  xpSize: XpSizeSchema.nullable().optional(),
   estimateMinutes: z.number().nullable().optional(),
   tags: z.array(z.string()).nullable().optional(),
   parentId: z.string().nullable().optional(),

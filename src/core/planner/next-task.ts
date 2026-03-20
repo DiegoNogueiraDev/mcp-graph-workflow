@@ -9,11 +9,8 @@
  */
 
 import type { GraphDocument, GraphNode, GraphEdge } from "../graph/graph-types.js";
+import { XP_SIZE_ORDER } from "../utils/xp-sizing.js";
 import { logger } from "../utils/logger.js";
-
-const XP_SIZE_ORDER: Record<string, number> = {
-  XS: 1, S: 2, M: 3, L: 4, XL: 5,
-};
 
 export interface NextTaskResult {
   node: GraphNode;
@@ -71,6 +68,15 @@ export function findNextTask(doc: GraphDocument): NextTaskResult | null {
   // Step 4: Topological rank from priority_over edges (Kahn's algorithm)
   const priorityRank = computePriorityRank(unblocked, doc.edges);
 
+  // Step 4.5: Compute blocking impact (how many downstream tasks depend on each)
+  const blockingImpact = new Map<string, number>();
+  for (const node of unblocked) {
+    const impact = doc.edges.filter(
+      (e) => e.to === node.id && e.relationType === "depends_on",
+    ).length;
+    blockingImpact.set(node.id, impact);
+  }
+
   // Step 5: Sort
   unblocked.sort((a, b) => {
     // Priority_over topological rank ASC (lower rank = higher priority)
@@ -79,6 +85,11 @@ export function findNextTask(doc: GraphDocument): NextTaskResult | null {
     if (rankA !== rankB) return rankA - rankB;
     // Priority ASC (1 = critical, 5 = optional)
     if (a.priority !== b.priority) return a.priority - b.priority;
+
+    // Blocking impact DESC (more downstream = higher priority)
+    const impactA = blockingImpact.get(a.id) ?? 0;
+    const impactB = blockingImpact.get(b.id) ?? 0;
+    if (impactA !== impactB) return impactB - impactA;
 
     // XP size ASC
     const sizeA = XP_SIZE_ORDER[a.xpSize || "M"] ?? 3;

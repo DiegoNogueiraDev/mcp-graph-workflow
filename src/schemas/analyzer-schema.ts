@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { GradeSchema } from "./grade-schema.js";
 
 // ── PRD Quality ──
 
@@ -11,7 +12,8 @@ export const PrdQualitySectionSchema = z.object({
   suggestions: z.array(z.string()),
 });
 
-export const PrdQualityGradeSchema = z.enum(["A", "B", "C", "D", "F"]);
+/** @deprecated Use GradeSchema from grade-schema.ts */
+export const PrdQualityGradeSchema = GradeSchema;
 
 export const PrdQualityReportSchema = z.object({
   score: z.number().min(0).max(100),

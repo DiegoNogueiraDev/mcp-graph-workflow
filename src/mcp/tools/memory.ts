@@ -15,6 +15,7 @@ import {
 } from "../../core/memory/memory-reader.js";
 import { indexMemories } from "../../core/rag/memory-indexer.js";
 import { logger } from "../../core/utils/logger.js";
+import { mcpText, mcpError, normalizeNewlines } from "../response-helpers.js";
 
 export function registerMemory(server: McpServer, store: SqliteStore): void {
   // ── write_memory ─────────────────────────────
@@ -29,23 +30,19 @@ export function registerMemory(server: McpServer, store: SqliteStore): void {
       logger.debug("tool:write_memory", { name });
       const basePath = process.cwd();
 
-      await writeMemory(basePath, name, content);
+      const normalizedContent = normalizeNewlines(content) ?? content;
+      await writeMemory(basePath, name, normalizedContent);
 
       // Auto-index into knowledge store
       const knowledgeStore = new KnowledgeStore(store.getDb());
       const indexResult = await indexMemories(knowledgeStore, basePath);
 
-      return {
-        content: [{
-          type: "text" as const,
-          text: JSON.stringify({
-            ok: true,
-            name,
-            sizeBytes: Buffer.byteLength(content, "utf-8"),
-            indexed: indexResult.documentsIndexed,
-          }, null, 2),
-        }],
-      };
+      return mcpText({
+        ok: true,
+        name,
+        sizeBytes: Buffer.byteLength(normalizedContent, "utf-8"),
+        indexed: indexResult.documentsIndexed,
+      });
     },
   );
 
@@ -62,21 +59,10 @@ export function registerMemory(server: McpServer, store: SqliteStore): void {
 
       const memory = await readMemory(basePath, name);
       if (!memory) {
-        return {
-          content: [{
-            type: "text" as const,
-            text: JSON.stringify({ error: `Memory not found: ${name}` }),
-          }],
-          isError: true,
-        };
+        return mcpError(`Memory not found: ${name}`);
       }
 
-      return {
-        content: [{
-          type: "text" as const,
-          text: JSON.stringify(memory, null, 2),
-        }],
-      };
+      return mcpText(memory);
     },
   );
 
@@ -91,15 +77,10 @@ export function registerMemory(server: McpServer, store: SqliteStore): void {
 
       const names = await listMemories(basePath);
 
-      return {
-        content: [{
-          type: "text" as const,
-          text: JSON.stringify({
-            count: names.length,
-            memories: names,
-          }, null, 2),
-        }],
-      };
+      return mcpText({
+        count: names.length,
+        memories: names,
+      });
     },
   );
 
@@ -116,13 +97,7 @@ export function registerMemory(server: McpServer, store: SqliteStore): void {
 
       const deleted = await deleteMemory(basePath, name);
       if (!deleted) {
-        return {
-          content: [{
-            type: "text" as const,
-            text: JSON.stringify({ error: `Memory not found: ${name}` }),
-          }],
-          isError: true,
-        };
+        return mcpError(`Memory not found: ${name}`);
       }
 
       // Remove from knowledge store
@@ -136,12 +111,7 @@ export function registerMemory(server: McpServer, store: SqliteStore): void {
         }
       }
 
-      return {
-        content: [{
-          type: "text" as const,
-          text: JSON.stringify({ ok: true, name, knowledgeDocsRemoved: removed }),
-        }],
-      };
+      return mcpText({ ok: true, name, knowledgeDocsRemoved: removed });
     },
   );
 }

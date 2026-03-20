@@ -235,6 +235,7 @@ export function buildTaskContext(
   const derivedFromNodes: TaskSummary[] = [];
   let edgeParent: TaskSummary | null = null;
   const edgeChildren: TaskSummary[] = [];
+  const edgeChildrenIds = new Set<string>();
 
   // Edges where something blocks this node: edge.relationType === "blocks" AND edge.to === nodeId
   for (const edge of incomingEdges) {
@@ -260,7 +261,10 @@ export function buildTaskContext(
       if (parentNode) edgeParent = toTaskSummary(parentNode);
     } else if (edge.relationType === "child_of") {
       const childNode = store.getNodeById(edge.from);
-      if (childNode) edgeChildren.push(toTaskSummary(childNode));
+      if (childNode && !edgeChildrenIds.has(childNode.id)) {
+        edgeChildrenIds.add(childNode.id);
+        edgeChildren.push(toTaskSummary(childNode));
+      }
     }
   }
 
@@ -294,7 +298,10 @@ export function buildTaskContext(
       if (parentNode) edgeParent = toTaskSummary(parentNode);
     } else if (edge.relationType === "parent_of") {
       const childNode = store.getNodeById(edge.to);
-      if (childNode) edgeChildren.push(toTaskSummary(childNode));
+      if (childNode && !edgeChildrenIds.has(childNode.id)) {
+        edgeChildrenIds.add(childNode.id);
+        edgeChildren.push(toTaskSummary(childNode));
+      }
     }
   }
 
@@ -386,6 +393,7 @@ export function buildNaiveNeighborhood(
   const derivedFromNodes: GraphNode[] = [];
   let edgeParent: GraphNode | null = null;
   const edgeChildren: GraphNode[] = [];
+  const edgeChildrenIds = new Set<string>();
 
   for (const edge of incomingEdges) {
     if (edge.relationType === "blocks") {
@@ -402,7 +410,10 @@ export function buildNaiveNeighborhood(
       if (pNode) edgeParent = pNode;
     } else if (edge.relationType === "child_of") {
       const cNode = store.getNodeById(edge.from);
-      if (cNode) edgeChildren.push(cNode);
+      if (cNode && !edgeChildrenIds.has(cNode.id)) {
+        edgeChildrenIds.add(cNode.id);
+        edgeChildren.push(cNode);
+      }
     }
   }
 
@@ -427,7 +438,10 @@ export function buildNaiveNeighborhood(
       if (pNode) edgeParent = pNode;
     } else if (edge.relationType === "parent_of") {
       const cNode = store.getNodeById(edge.to);
-      if (cNode) edgeChildren.push(cNode);
+      if (cNode && !edgeChildrenIds.has(cNode.id)) {
+        edgeChildrenIds.add(cNode.id);
+        edgeChildren.push(cNode);
+      }
     }
   }
 

@@ -7,9 +7,8 @@ import type { GraphDocument } from "../graph/graph-types.js";
 import type { SprintProgressReport, VelocityTrendDirection } from "../../schemas/implementer-schema.js";
 import { calculateVelocity } from "../planner/velocity.js";
 import { findTransitiveBlockers, findCriticalPath } from "../planner/dependency-chain.js";
+import { TASK_TYPES } from "../utils/node-type-sets.js";
 import { logger } from "../utils/logger.js";
-
-const TASK_TYPES = new Set(["task", "subtask"]);
 
 /**
  * Calculate sprint progress with burndown, velocity, blockers, and ETA.

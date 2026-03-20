@@ -37,7 +37,11 @@ export function validateAcQuality(doc: GraphDocument, nodeId?: string, all?: boo
   const reports: AcNodeReport[] = [];
 
   for (const node of targetNodes) {
-    const acs = node.acceptanceCriteria ?? [];
+    const inlineAcs = node.acceptanceCriteria ?? [];
+    const childAcNodes = nodes.filter(
+      (n) => n.type === "acceptance_criteria" && n.parentId === node.id,
+    );
+    const acs = inlineAcs.length > 0 ? inlineAcs : childAcNodes.map((n) => n.title);
     if (acs.length === 0) continue;
 
     const parsedAcs = acs.map((ac) => parseAc(ac));
@@ -75,7 +79,12 @@ export function validateAcQuality(doc: GraphDocument, nodeId?: string, all?: boo
 function selectTargetNodes(nodes: GraphNode[], nodeId?: string, all?: boolean): GraphNode[] {
   if (nodeId) {
     const node = nodes.find((n) => n.id === nodeId);
-    return node ? [node] : [];
+    if (!node) return [];
+    // Include the node itself + direct children that are tasks/subtasks
+    const children = nodes.filter(
+      (n) => n.parentId === nodeId && (n.type === "task" || n.type === "subtask"),
+    );
+    return [node, ...children];
   }
 
   if (all) {

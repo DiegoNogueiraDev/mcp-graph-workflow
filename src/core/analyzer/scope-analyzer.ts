@@ -5,10 +5,8 @@
 import type { GraphDocument } from "../graph/graph-types.js";
 import type { ScopeAnalysis, OrphanNode, CoverageMatrix } from "../../schemas/analyzer-schema.js";
 import { detectCycles } from "../planner/dependency-chain.js";
+import { TASK_TYPES, REQUIREMENT_TYPES } from "../utils/node-type-sets.js";
 import { logger } from "../utils/logger.js";
-
-const TASK_TYPES = new Set(["task", "subtask"]);
-const REQUIREMENT_TYPES = new Set(["epic", "requirement"]);
 
 export function analyzeScope(doc: GraphDocument): ScopeAnalysis {
   const { nodes, edges } = doc;

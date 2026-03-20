@@ -3,13 +3,7 @@ import { useSkills } from "@/hooks/use-skills";
 import { SkillDetailModal } from "@/components/modals/skill-detail-modal";
 import { CreateSkillModal } from "@/components/modals/create-skill-modal";
 import type { Skill, Recommendation, CustomSkillInput } from "@/lib/types";
-
-const LIFECYCLE_PHASES = ["ANALYZE", "DESIGN", "PLAN", "IMPLEMENT", "VALIDATE", "REVIEW", "HANDOFF", "LISTENING"] as const;
-
-const PHASE_COLORS: Record<string, string> = {
-  ANALYZE: "#8b5cf6", DESIGN: "#3b82f6", PLAN: "#06b6d4", IMPLEMENT: "#10b981",
-  VALIDATE: "#f59e0b", REVIEW: "#ef4444", HANDOFF: "#ec4899", LISTENING: "#6b7280",
-};
+import { LIFECYCLE_PHASES, PHASE_COLORS } from "@/lib/constants";
 
 const TOKEN_BUDGET = 4000;
 

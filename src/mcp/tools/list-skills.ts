@@ -7,6 +7,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { getBuiltInSkills, getSkillsByPhase, getSkillByName } from "../../core/skills/built-in-skills.js";
 import type { LifecyclePhase } from "../../core/planner/lifecycle-phase.js";
 import { logger } from "../../core/utils/logger.js";
+import { mcpText, mcpError } from "../response-helpers.js";
 
 export function registerListSkills(server: McpServer): void {
   server.tool(
@@ -30,28 +31,17 @@ export function registerListSkills(server: McpServer): void {
       if (name) {
         const skill = getSkillByName(name);
         if (!skill) {
-          return {
-            content: [{
-              type: "text" as const,
-              text: JSON.stringify({ error: `Skill '${name}' not found`, _deprecated: "Use 'manage_skill' tool with action:'list'" }, null, 2),
-            }],
-            isError: true,
-          };
+          return mcpError(`Skill '${name}' not found. Use 'manage_skill' tool with action:'list'`);
         }
 
-        return {
-          content: [{
-            type: "text" as const,
-            text: JSON.stringify({
-              name: skill.name,
-              description: skill.description,
-              category: skill.category,
-              phases: skill.phases,
-              instructions: skill.instructions,
-              _deprecated: "Use 'manage_skill' tool with action:'list'",
-            }, null, 2),
-          }],
-        };
+        return mcpText({
+          name: skill.name,
+          description: skill.description,
+          category: skill.category,
+          phases: skill.phases,
+          instructions: skill.instructions,
+          _deprecated: "Use 'manage_skill' tool with action:'list'",
+        });
       }
 
       // List skills (optionally filtered by phase)
@@ -67,17 +57,12 @@ export function registerListSkills(server: McpServer): void {
       }));
 
       logger.info("tool:list_skills:ok", { count: summary.length, phase: phase ?? "all" });
-      return {
-        content: [{
-          type: "text" as const,
-          text: JSON.stringify({
-            total: summary.length,
-            ...(phase ? { phase } : {}),
-            skills: summary,
-            _deprecated: "Use 'manage_skill' tool with action:'list'",
-          }, null, 2),
-        }],
-      };
+      return mcpText({
+        total: summary.length,
+        ...(phase ? { phase } : {}),
+        skills: summary,
+        _deprecated: "Use 'manage_skill' tool with action:'list'",
+      });
     },
   );
 }
