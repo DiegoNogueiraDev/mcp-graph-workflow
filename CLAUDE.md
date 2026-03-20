@@ -61,7 +61,7 @@ src/
 | Capability | Key Modules | Docs |
 |------------|-------------|------|
 | PRD Import | parser/, importer/ | — |
-| 29 MCP Tools | mcp/tools/ | [MCP Tools Reference](docs/MCP-TOOLS-REFERENCE.md) |
+| 30 MCP Tools | mcp/tools/ | [MCP Tools Reference](docs/MCP-TOOLS-REFERENCE.md) |
 | 17 REST API Routers | api/routes/ | [REST API Reference](docs/REST-API-REFERENCE.md) |
 | Knowledge Store + RAG | store/knowledge-store, rag/ | [Knowledge Pipeline](docs/KNOWLEDGE-PIPELINE.md) |
 | Tiered Context Compression | context/ | [Knowledge Pipeline](docs/KNOWLEDGE-PIPELINE.md) |
@@ -314,9 +314,9 @@ Dados armazenados em `workflow-graph/graph.db` (local, gitignored).
 
 | Tool | Quando usar |
 |------|-------------|
-| `add_node` | Criar node manualmente (task, milestone, phase, epic) |
-| `update_node` | Atualizar campos de um node (title, description, AC, tags) |
-| `delete_node` | Remover node do grafo (cascata em filhos) |
+| `node` | **Consolidated** — Criar/atualizar/remover nodes (action: add/update/delete). Substitui add_node, update_node, delete_node |
+| `update_node` | ⚠️ **Deprecated** → usar `node { action: "update" }` |
+| `delete_node` | ⚠️ **Deprecated** → usar `node { action: "delete" }` |
 | `move_node` | Mover node para outro parent |
 | `clone_node` | Clonar node com filhos (deep copy) |
 | `edge` | Criar/remover relações entre nodes (depends_on, blocks, related_to) |
@@ -355,8 +355,8 @@ Dados armazenados em `workflow-graph/graph.db` (local, gitignored).
 
 | Tool | Quando usar |
 |------|-------------|
-| `validate_task` | Validar com Playwright (A/B comparison, CSS selector scoping, auto-index knowledge) |
-| `validate_ac` | Validar critérios de aceitação de uma task (checklist automático) |
+| `validate` | **Consolidated** — Validar task com Playwright ou AC quality (action: task/ac). Substitui validate_task, validate_ac |
+| `validate_ac` | ⚠️ **Deprecated** → usar `validate { action: "ac" }` |
 
 ### Modos do analyze por fase
 
@@ -396,14 +396,14 @@ next → context → [implementar com TDD] → update_status → next
 
 ### Lifecycle (8 fases)
 
-1. **ANALYZE** — Criar PRD, definir requisitos (`import_prd`, `add_node`)
-2. **DESIGN** — Arquitetura, decisões técnicas (`add_node`, `edge`, `analyze`)
+1. **ANALYZE** — Criar PRD, definir requisitos (`import_prd`, `node`)
+2. **DESIGN** — Arquitetura, decisões técnicas (`node`, `edge`, `analyze`)
 3. **PLAN** — Sprint planning, decomposição (`plan_sprint`, `analyze`, `sync_stack_docs`)
 4. **IMPLEMENT** — TDD Red→Green→Refactor (`next`, `context`, `update_status`, `analyze` — modes: implement_done, tdd_check, progress)
-5. **VALIDATE** — Testes E2E, critérios de aceitação (`validate_task`, `metrics`)
+5. **VALIDATE** — Testes E2E, critérios de aceitação (`validate`, `metrics`)
 6. **REVIEW** — Code review, blast radius (`export`, `metrics`)
 7. **HANDOFF** — PR, documentação, entrega (`export`, `snapshot`)
-8. **LISTENING** — Feedback, novo ciclo (`add_node`, `import_prd`)
+8. **LISTENING** — Feedback, novo ciclo (`node`, `import_prd`)
 
 ### Pipeline de Conhecimento (Knowledge Store + RAG)
 

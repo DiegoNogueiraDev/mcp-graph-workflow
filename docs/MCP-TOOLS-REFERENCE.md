@@ -1,17 +1,20 @@
 # MCP Tools Reference
 
 > 30 tools organized in 7 categories — complete parameter reference.
+>
+> **v5.5.0:** `node` (3 actions) and `validate` (2 actions) consolidate 5 individual tools. The old names (`add_node`, `update_node`, `delete_node`, `validate_task`, `validate_ac`) still work as deprecated shims — they will be removed in v7.0.
 
 ## Summary
 
 | Category | Tools | Count |
 |----------|-------|-------|
-| [Graph CRUD](#graph-crud) | init, import_prd, add_node, update_node, delete_node, edge, move_node, clone_node, export | 9 |
+| [Graph CRUD](#graph-crud) | init, import_prd, **node** *(add/update/delete)*, edge, move_node, clone_node, export | 7 |
 | [Querying](#querying) | list, show, search, rag_context | 4 |
 | [Planning & Execution](#planning--execution) | next, update_status, decompose, velocity, dependencies, plan_sprint | 6 |
 | [Knowledge & RAG](#knowledge--rag) | context, reindex_knowledge, sync_stack_docs | 3 |
-| [Validation](#validation) | validate_task | 1 |
+| [Validation](#validation) | **validate** *(ac/task)* | 1 |
 | [Snapshots & Stats](#snapshots--stats) | stats, snapshot | 2 |
+| [Deprecated](#deprecated-tools) | add_node, update_node, delete_node, validate_task, validate_ac | 5 |
 
 ---
 
@@ -34,9 +37,15 @@ Import a PRD file and convert it into graph nodes and edges.
 | `filePath` | string | Yes | — | Path to the PRD text file (.md, .txt, .pdf, .html) |
 | `force` | boolean | No | `false` | Force re-import: delete nodes from previous import before importing |
 
-### `add_node`
+### `node`
 
-Create a single node in the graph.
+Unified CRUD for graph nodes. Replaces `add_node`, `update_node`, and `delete_node` (v5.5.0).
+
+| Param | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `action` | "add"\|"update"\|"delete" | Yes | — | Action to perform |
+
+**action: "add"** — Create a new node:
 
 | Param | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
@@ -48,15 +57,13 @@ Create a single node in the graph.
 | `xpSize` | XpSize | No | — | Size estimate: XS, S, M, L, XL |
 | `estimateMinutes` | number | No | — | Time estimate in minutes |
 | `tags` | string[] | No | — | Tags for categorization |
-| `parentId` | string\|null | No | — | Parent node ID |
+| `parentId` | string\|null | No | — | Parent node ID (auto-creates parent_of/child_of edges) |
 | `sprint` | string\|null | No | — | Sprint identifier |
 | `acceptanceCriteria` | string[] | No | — | Acceptance criteria |
 | `blocked` | boolean | No | — | Whether the node is blocked |
 | `metadata` | object | No | — | Custom metadata |
 
-### `update_node`
-
-Update arbitrary fields of a node.
+**action: "update"** — Update fields of an existing node:
 
 | Param | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
@@ -69,16 +76,14 @@ Update arbitrary fields of a node.
 | `estimateMinutes` | number | No | — | New time estimate |
 | `tags` | string[] | No | — | New tags array |
 | `sprint` | string\|null | No | — | Sprint assignment (null to clear) |
-| `parentId` | string\|null | No | — | New parent node ID (null to clear) |
+| `parentId` | string\|null | No | — | New parent node ID (null to clear; auto-updates edges) |
 | `acceptanceCriteria` | string[] | No | — | New acceptance criteria |
 
-### `delete_node`
-
-Delete a node and all its associated edges.
+**action: "delete"** — Delete a node with cascade:
 
 | Param | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `id` | string | Yes | — | Node ID to delete |
+| `id` | string | Yes | — | Node ID to delete (cascades to children and edges) |
 
 ### `edge`
 
@@ -284,9 +289,15 @@ Auto-detect project stack and sync documentation via Context7.
 
 ## Validation
 
-### `validate_task`
+### `validate`
 
-Run browser-based validation for a task with optional A/B comparison.
+Unified validation tool. Replaces `validate_task` and `validate_ac` (v5.5.0).
+
+| Param | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `action` | "task"\|"ac" | Yes | — | Action to perform |
+
+**action: "task"** — Browser-based validation with optional A/B comparison:
 
 | Param | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
@@ -294,6 +305,13 @@ Run browser-based validation for a task with optional A/B comparison.
 | `compareUrl` | string (URL) | No | — | Second URL for A/B comparison |
 | `selector` | string | No | — | CSS selector to scope extraction |
 | `nodeId` | string | No | — | Associate validation with a graph node |
+
+**action: "ac"** — Validate acceptance criteria quality:
+
+| Param | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `nodeId` | string | No | — | Specific node to validate (if omitted, validates all nodes with AC) |
+| `all` | boolean | No | `true` | Validate all nodes with AC (only when nodeId is omitted) |
 
 ---
 
@@ -349,6 +367,22 @@ The `analyze` tool is a gateway for all project analysis modes. Each mode provid
 | `interfaces` | DESIGN | Interface-first quality check |
 | `tech_risk` | DESIGN | Technical risk scoring |
 | `design_ready` | DESIGN | DESIGN→PLAN gate readiness |
+
+---
+
+## Deprecated Tools
+
+> **These tools still work but are deprecated since v5.5.0 and will be removed in v7.0.** Migrate to the consolidated tools shown below.
+
+| Deprecated Tool | Migrate To | Notes |
+|----------------|------------|-------|
+| `add_node` | `node { action: "add", ... }` | Same parameters |
+| `update_node` | `node { action: "update", ... }` | Same parameters |
+| `delete_node` | `node { action: "delete", ... }` | Now supports cascade delete of children |
+| `validate_task` | `validate { action: "task", ... }` | Same parameters |
+| `validate_ac` | `validate { action: "ac", ... }` | Same parameters |
+
+Deprecated tools log a warning on each call and include a `_deprecated` field in their response.
 
 ---
 

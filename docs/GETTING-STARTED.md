@@ -450,7 +450,7 @@ The 10 most-used commands at a glance:
 
 - **[User Guide](USER-GUIDE.md)** — Day-to-day workflows: sprint planning, knowledge pipeline, Code Graph, multi-project, and more
 - **[Advanced Guide](ADVANCED-GUIDE.md)** — Lifecycle methodology, 25 analyze modes, RAG tuning, architecture, and extensibility
-- Full 29-tool reference: [MCP-TOOLS-REFERENCE.md](MCP-TOOLS-REFERENCE.md)
+- Full 30-tool reference: [MCP-TOOLS-REFERENCE.md](MCP-TOOLS-REFERENCE.md)
 - REST API: [REST-API-REFERENCE.md](REST-API-REFERENCE.md)
 - Knowledge Pipeline: [KNOWLEDGE-PIPELINE.md](KNOWLEDGE-PIPELINE.md)
 - Integrations: [INTEGRATIONS-GUIDE.md](INTEGRATIONS-GUIDE.md)

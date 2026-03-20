@@ -24,18 +24,19 @@ Thin orchestration layer. Commands call core functions and format output. No bus
 
 **Protocol:** Model Context Protocol (Streamable HTTP + Stdio)
 
-30 tools registered (25 core + 4 memory + 1 skills) via `@modelcontextprotocol/sdk`. Two transport modes:
+30 tools registered (22 core + 2 consolidated + 5 deprecated shims + 1 skills) via `@modelcontextprotocol/sdk`. Two transport modes:
 
 - **HTTP** (`server.ts`) — Express server with `/mcp` endpoint + REST API + static dashboard
 - **Stdio** (`stdio.ts`) — Standard I/O transport for direct MCP client integration
 
 Tool categories:
-- **Graph CRUD** (12) — init, import_prd, add_node, update_node, delete_node, add_edge, delete_edge, list_edges, move_node, clone_node, export_graph, export_mermaid
+- **Graph CRUD** (9) — init, import_prd, node (add/update/delete), edge (add/delete/list), move_node, clone_node, export
 - **Querying** (4) — list, show, search, rag_context
 - **Planning & Execution** (6) — next, update_status, decompose, velocity, dependencies, plan_sprint
 - **Knowledge & RAG** (3) — context, reindex_knowledge, sync_stack_docs
-- **Validation** (1) — validate_task
+- **Validation** (1) — validate (task/ac)
 - **Snapshots & Stats** (4) — stats, create_snapshot, restore_snapshot, list_snapshots
+- **Deprecated shims** (5) — add_node, update_node, delete_node, validate_task, validate_ac (removed in v7.0)
 
 See [MCP Tools Reference](./MCP-TOOLS-REFERENCE.md) for full parameter documentation.
 

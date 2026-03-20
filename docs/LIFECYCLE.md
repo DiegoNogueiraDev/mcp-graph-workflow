@@ -18,7 +18,7 @@ graph TD
     IMPLEMENT --> |update_status| GRAPH
     CYCLE --> |all done| DELIVER[Entrega]
     DELIVER --> FEEDBACK[Feedback]
-    FEEDBACK --> |add_node| GRAPH
+    FEEDBACK --> |node| GRAPH
 ```
 
 ---
@@ -449,13 +449,13 @@ sequenceDiagram
 **Objetivo:** Demo para stakeholders, coletar feedback, alimentar próxima iteração.
 
 **Protocolo mcp-graph:**
-- Cada feedback → `add_node` com tipo `task` ou `requirement`
+- Cada feedback → `node { action: "add" }` com tipo `task` ou `requirement`
 - Volta para ANALYZE com contexto acumulado
 
 ```mermaid
 graph TD
     DEMO[Demo para Stakeholder] --> FB{Feedback?}
-    FB --> |Sim| ADD[mcp-graph add_node<br/>type=task]
+    FB --> |Sim| ADD[mcp-graph node<br/>action=add, type=task]
     ADD --> ANALYZE[Volta para ANALYZE]
     FB --> |Não| DONE[Iteração completa ✅]
 ```
@@ -596,7 +596,7 @@ graph TD
 | **PLAN** | `plan_sprint` | Sprint planning com velocity e riscos |
 | **PLAN** | `decompose` | Detectar tasks para breakdown |
 | **PLAN** | `sync_stack_docs` | Sincronizar docs da stack via Context7 |
-| **PLAN** | `add_node`, `add_edge` | Criar tarefas manualmente |
+| **PLAN** | `node`, `edge` | Criar tarefas manualmente |
 | **DESIGN** | Code Intelligence `impact_analysis` | Blast radius analysis de símbolo antes de definir arquitetura |
 | **IMPLEMENT** | `next` | Próxima task knowledge-aware (coverage + velocity) |
 | **IMPLEMENT** | `context`, `rag_context` | Contexto token-budgeted para task atual |
@@ -604,11 +604,11 @@ graph TD
 | **IMPLEMENT** | `reindex_knowledge` | Rebuild indexes de todas as fontes |
 | **IMPLEMENT** | `update_status → in_progress` | Marcar início |
 | **IMPLEMENT** | `update_status → done` | Marcar conclusão |
-| **VALIDATE** | `validate_task` | Validação browser + A/B testing + indexação |
+| **VALIDATE** | `validate` | Validação browser (action: task) + AC quality (action: ac) |
 | **REVIEW** | Code Intelligence `impact_analysis` | Verificar blast radius das mudanças no review |
 | **REVIEW** | `export_graph`, `export_mermaid` | Exportar para visualização |
 | **HANDOFF** | `update_status (bulk) → done` | Fechar PRD |
-| **LISTENING** | `add_node` | Registrar feedback |
+| **LISTENING** | `node` | Registrar feedback (action: add) |
 
 ---
 
@@ -752,7 +752,7 @@ sequenceDiagram
 
     Note over U,PW: FASE 8: LISTENING
     U->>A: "Funciona! Adicionar 2FA"
-    A->>MCP: add_node("Add 2FA", type=task)
+    A->>MCP: node { action: "add", title: "Add 2FA", type: "task" }
     Note over U,PW: → Volta para ANALYZE
 ```
 

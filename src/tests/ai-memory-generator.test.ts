@@ -149,6 +149,44 @@ describe("copilot instructions enrichment", () => {
   });
 });
 
+describe("copilot instructions parity", () => {
+  it("should include mandatory execution rule", () => {
+    const content = generateCopilotInstructions("test");
+    expect(content).toContain("fonte de verdade ABSOLUTA");
+  });
+
+  it("should include full tool table by category", () => {
+    const content = generateCopilotInstructions("test");
+    expect(content).toContain("Projeto & Grafo");
+    expect(content).toContain("Contexto & RAG");
+    expect(content).toContain("28 tools + 6 deprecated");
+  });
+
+  it("should include analyze modes", () => {
+    const content = generateCopilotInstructions("test");
+    expect(content).toContain("prd_quality");
+    expect(content).toContain("implement_done");
+  });
+
+  it("should include knowledge pipeline", () => {
+    const content = generateCopilotInstructions("test");
+    expect(content).toContain("Knowledge");
+    expect(content).toContain("reindex_knowledge");
+  });
+
+  it("should include skills section", () => {
+    const content = generateCopilotInstructions("test");
+    expect(content).toContain("Skills Built-in");
+    expect(content).toContain("Self-Healing");
+  });
+
+  it("should include CLI commands", () => {
+    const content = generateCopilotInstructions("test");
+    expect(content).toContain("npx mcp-graph");
+    expect(content).toContain("doctor");
+  });
+});
+
 describe("skills section", () => {
   it("should include manage_skill tool in CLAUDE.md", () => {
     const section = generateClaudeMdSection("test");
@@ -180,5 +218,20 @@ describe("idempotency", () => {
     const section2 = generateClaudeMdSection("test");
 
     expect(section1).toBe(section2);
+  });
+});
+
+describe("structural parity (anti-drift)", () => {
+  it("both outputs should have identical content between markers", () => {
+    const claude = generateClaudeMdSection("test");
+    const copilot = generateCopilotInstructions("test");
+
+    const extractBody = (s: string): string => {
+      const start = s.indexOf(MARKER_START) + MARKER_START.length;
+      const end = s.indexOf(MARKER_END);
+      return s.substring(start, end).trim();
+    };
+
+    expect(extractBody(copilot)).toBe(extractBody(claude));
   });
 });

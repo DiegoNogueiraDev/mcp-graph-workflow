@@ -48,7 +48,7 @@ Use `analyze { mode: "progress" }` during a sprint for a live burndown view with
 When creating or updating tasks, set the sprint field:
 
 ```
-update_node { nodeId: "<ID>", sprint: "Sprint 1" }
+node { action: "update", id: "<ID>", sprint: "Sprint 1" }
 ```
 
 Then filter by sprint:
@@ -425,9 +425,9 @@ Analyzes the task and reports:
 
 1. **Detect** — run `decompose` or `analyze { mode: "decompose" }` to find oversized tasks
 2. **Review** — evaluate the suggested subtask breakdown
-3. **Create subtasks** — use `add_node` for each subtask:
+3. **Create subtasks** — use `node` for each subtask:
    ```
-   add_node { title: "Setup auth middleware", type: "subtask", parentId: "<PARENT_ID>" }
+   node { action: "add", title: "Setup auth middleware", type: "subtask", parentId: "<PARENT_ID>" }
    ```
 4. **Add dependencies** — link subtasks:
    ```
@@ -439,7 +439,7 @@ Analyzes the task and reports:
 
 ## 9. Browser Validation (Playwright)
 
-The `validate_task` tool uses Playwright for browser-based validation.
+The `validate` tool (action: `task`) uses Playwright for browser-based validation. The legacy name `validate_task` also works but is deprecated.
 
 ### Single URL Validation
 
@@ -489,7 +489,7 @@ This loop maximizes token efficiency and keeps the graph in sync with real work.
 Use tags to categorize tasks across sprints and domains:
 
 ```
-update_node { nodeId: "<ID>", tags: ["frontend", "auth", "high-priority"] }
+node { action: "update", id: "<ID>", tags: ["frontend", "auth", "high-priority"] }
 ```
 
 Then filter: `list { tags: "frontend" }`.

@@ -203,10 +203,8 @@ npx mcp-graph doctor --json    # Diagn\u00F3stico em JSON estruturado
 npx mcp-graph serve --port 3000  # Dashboard visual
 \`\`\``;
 
-export function generateClaudeMdSection(projectName: string): string {
-  return `
-${MARKER_START}
-## mcp-graph \u2014 ${projectName}
+function buildSectionBody(projectName: string): string {
+  return `## mcp-graph \u2014 ${projectName}
 
 Este projeto usa **mcp-graph** para gest\u00E3o de execu\u00E7\u00E3o via grafo persistente (SQLite).
 Dados armazenados em \`workflow-graph/graph.db\` (local, gitignored).
@@ -219,7 +217,7 @@ ${TOOL_TABLE_FULL}
 
 ${ANALYZE_MODES_SECTION}
 
-### Fluxo de trabalho OBRIGATÓRIO
+### Fluxo de trabalho OBRIGAT\u00D3RIO
 
 \`\`\`
 next \u2192 context \u2192 [implementar com TDD] \u2192 update_status \u2192 next
@@ -233,45 +231,20 @@ ${SKILLS_SECTION}
 
 ${XP_PRINCIPLES}
 
-${CLI_COMMANDS}
+${CLI_COMMANDS}`;
+}
+
+export function generateClaudeMdSection(projectName: string): string {
+  return `
+${MARKER_START}
+${buildSectionBody(projectName)}
 ${MARKER_END}
 `;
 }
 
 export function generateCopilotInstructions(projectName: string): string {
   return `${MARKER_START}
-## mcp-graph \u2014 ${projectName}
-
-Este projeto usa **mcp-graph** para gest\u00E3o de execu\u00E7\u00E3o via grafo persistente.
-Dados em \`workflow-graph/graph.db\`.
-
-### Ferramentas MCP (principais)
-
-| Tool | Uso |
-|------|-----|
-| \`next\` | Pr\u00F3xima task recomendada (prioridade + deps + knowledge coverage + TDD hints) |
-| \`context\` | Contexto comprimido (token-efficient, ~73% redu\u00E7\u00E3o) |
-| \`update_status\` | Mudar status (backlog\u2192ready\u2192in_progress\u2192done) |
-| \`import_prd\` | Importar PRD \u2192 segmentar \u2192 classificar \u2192 extrair \u2192 criar grafo |
-| \`plan_sprint\` | Planejamento de sprint (capacity, velocity) |
-| \`analyze\` | 24 modos de an\u00E1lise por fase do lifecycle |
-| \`set_phase\` | For\u00E7ar/resetar fase do lifecycle (gate checks) |
-| \`validate_task\` | Validar com Playwright (A/B, CSS scoping) |
-| \`validate_ac\` | Validar crit\u00E9rios de aceita\u00E7\u00E3o (checklist autom\u00E1tico) |
-| \`rag_context\` | Contexto RAG phase-aware (budget 60/30/10) |
-| \`list_skills\` | Listar skills built-in (filtrar por fase) |
-| \`manage_skill\` | Habilitar/desabilitar skills, CRUD de custom skills |
-
-#### Skills
-40 skills built-in mapeadas ao lifecycle. Use \`list_skills\` para descobrir por fase.
-Skills-chave: \`create-prd-chat-mode\` (ANALYZE), \`subagent-driven-development\` (IMPLEMENT), \`code-reviewer\` (REVIEW).
-Custom skills: \`manage_skill\` (create/enable/disable).
-
-### Fluxo: \`next \u2192 context \u2192 [TDD] \u2192 update_status \u2192 next\`
-
-${LIFECYCLE_SUMMARY}
-
-${XP_PRINCIPLES}
+${buildSectionBody(projectName)}
 ${MARKER_END}
 `;
 }

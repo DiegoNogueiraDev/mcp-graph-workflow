@@ -45,7 +45,7 @@ Modes:
 
 **Objective:** Define technical architecture before any code.
 
-**Tools:** `add_node`, `edge`, `analyze`
+**Tools:** `node`, `edge`, `analyze`
 
 **Native systems:** Code Intelligence for impact analysis of existing code.
 
@@ -79,7 +79,7 @@ Modes:
 
 **Objective:** Validate everything works end-to-end with real browser testing.
 
-**Tools:** `validate_task`, `analyze`
+**Tools:** `validate`, `analyze`
 
 **Gate → REVIEW:** All validation tasks pass, no regressions.
 
@@ -111,7 +111,7 @@ Modes:
 
 **Objective:** Collect stakeholder feedback, feed next iteration.
 
-**Tools:** `add_node`, `import_prd`
+**Tools:** `node`, `import_prd`
 
 **Gate → ANALYZE:** New feedback registered as tasks.
 
@@ -379,7 +379,7 @@ CLI → MCP → API → Core → Store → Dashboard → Skills → Integrations
 ```
 
 - **CLI layer** (`src/cli/`) — Commander.js commands, thin orchestration only
-- **MCP layer** (`src/mcp/`) — 30 MCP tool wrappers with lifecycle annotations
+- **MCP layer** (`src/mcp/`) — 30 tools registered (22 core + 2 consolidated + 5 deprecated shims + 1 skills) with lifecycle annotations
 - **API layer** (`src/api/`) — Express REST API with 17+ routers, 44+ endpoints
 - **Core layer** (`src/core/`) — Pure business logic, typed errors, no framework coupling
 - **Store layer** (`src/core/store/`) — SQLite persistence with migrations
