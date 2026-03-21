@@ -22,6 +22,7 @@ import { registerPlanSprint } from "./plan-sprint.js";
 import { registerSetPhase } from "./set-phase.js";
 import { registerMemory } from "./memory.js";
 import { registerManageSkill } from "./manage-skill.js";
+import { registerJourney } from "./journey.js";
 // Consolidated tools
 import { registerNode } from "./node.js";
 import { registerValidate } from "./validate.js";
@@ -58,6 +59,7 @@ export function registerAllTools(server: McpServer, store: SqliteStore): void {
   registerSetPhase(server, store);
   registerMemory(server, store);
   registerManageSkill(server, store);
+  registerJourney(server, store);
 
   // Consolidated tools
   registerNode(server, store);

@@ -7,6 +7,8 @@ import { EmbeddingStore } from "../../core/rag/embedding-store.js";
 import { indexMemories } from "../../core/rag/memory-indexer.js";
 import { indexCachedDocs } from "../../core/rag/docs-indexer.js";
 import { indexSkills } from "../../core/rag/skill-indexer.js";
+import { indexJourneyMaps } from "../../core/rag/journey-indexer.js";
+import { JourneyStore } from "../../core/journey/journey-store.js";
 import { indexAllEmbeddings } from "../../core/rag/rag-pipeline.js";
 import { logger } from "../../core/utils/logger.js";
 import { mcpText } from "../response-helpers.js";
@@ -21,7 +23,7 @@ export function registerReindexKnowledge(server: McpServer, store: SqliteStore):
         .optional()
         .describe("Project base path for finding memories (default: cwd)"),
       sources: z
-        .array(z.enum(["memory", "serena", "docs", "skills", "embeddings"]))
+        .array(z.enum(["memory", "serena", "docs", "skills", "journey", "embeddings"]))
         .optional()
         .describe("Which sources to reindex. 'serena' is an alias for 'memory'. (default: all)"),
     },
@@ -44,6 +46,14 @@ export function registerReindexKnowledge(server: McpServer, store: SqliteStore):
 
       if (allSources || sources?.includes("skills")) {
         results.skills = await indexSkills(knowledgeStore, projectPath);
+      }
+
+      if (allSources || sources?.includes("journey")) {
+        const project = store.getProject();
+        if (project) {
+          const journeyStore = new JourneyStore(store.getDb(), project.id);
+          results.journey = indexJourneyMaps(knowledgeStore, journeyStore);
+        }
       }
 
       if (allSources || sources?.includes("embeddings")) {
