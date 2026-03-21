@@ -82,7 +82,7 @@ describe("API /api/v1/import", () => {
   it("should reject unsupported file formats", async () => {
     const res = await request(ctx.app)
       .post("/api/v1/import")
-      .attach("file", Buffer.from("test"), { filename: "data.json", contentType: "application/json" });
+      .attach("file", Buffer.from("test"), { filename: "data.zip", contentType: "application/zip" });
 
     expect(res.status).toBe(400);
     expect(res.body.error).toContain("Unsupported");

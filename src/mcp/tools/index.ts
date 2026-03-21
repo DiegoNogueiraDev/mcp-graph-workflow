@@ -30,6 +30,7 @@ import { registerSiebelEnv } from "./siebel-env.js";
 import { registerSiebelValidate } from "./siebel-validate.js";
 import { registerSiebelSearch } from "./siebel-search.js";
 import { registerSiebelGenerateSif } from "./siebel-generate-sif.js";
+import { registerSiebelImportDocs } from "./siebel-import-docs.js";
 // Consolidated tools
 import { registerNode } from "./node.js";
 import { registerValidate } from "./validate.js";
@@ -75,6 +76,7 @@ export function registerAllTools(server: McpServer, store: SqliteStore): void {
   registerSiebelValidate(server, store);
   registerSiebelSearch(server, store);
   registerSiebelGenerateSif(server, store);
+  registerSiebelImportDocs(server, store);
 
   // Consolidated tools
   registerNode(server, store);
