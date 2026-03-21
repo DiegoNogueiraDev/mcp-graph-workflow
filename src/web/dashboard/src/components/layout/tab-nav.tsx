@@ -7,10 +7,10 @@ interface TabNavProps {
   onTabChange: (tab: TabId) => void;
 }
 
-const TABS: Array<{ id: TabId; label: string }> = [
+const TABS: Array<{ id: TabId; label: string; badge?: string }> = [
   { id: "graph", label: "Graph" },
   { id: "prd-backlog", label: "PRD & Backlog" },
-  { id: "journey", label: "Journey" },
+  { id: "journey", label: "Journey", badge: "Beta" },
   { id: "gitnexus", label: "Code Graph" },
   { id: "memories", label: "Memories" },
   { id: "insights", label: "Insights" },
@@ -43,6 +43,11 @@ export const TabNav = memo(function TabNav({ activeTab, onTabChange }: TabNavPro
           }`}
         >
           {tab.label}
+          {tab.badge && (
+            <span className="ml-1.5 text-[9px] font-bold uppercase px-1 py-0.5 rounded bg-red-500 text-white leading-none">
+              {tab.badge}
+            </span>
+          )}
         </button>
       ))}
     </nav>
