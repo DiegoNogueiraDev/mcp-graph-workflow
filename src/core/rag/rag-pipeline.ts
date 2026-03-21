@@ -314,6 +314,56 @@ export async function indexAllEmbeddings(
 }
 
 /**
+ * Incremental index — embed only the specified knowledge documents
+ * without rebuilding the full vocabulary.
+ *
+ * Uses existing vocabulary if available (from a prior full index).
+ * Falls back to full index if no vocabulary exists.
+ */
+export async function incrementalIndex(
+  store: SqliteStore,
+  embeddingStore: EmbeddingStore,
+  docIds: string[],
+): Promise<{ indexed: number; fullReindex: boolean }> {
+  if (docIds.length === 0) {
+    return { indexed: 0, fullReindex: false };
+  }
+
+  // If no active vocabulary, do a full index instead
+  if (!activeVectorizer || activeVectorizer.vocabSize === 0) {
+    logger.info("No active vocabulary — performing full index for incremental request");
+    const result = await indexAllEmbeddings(store, embeddingStore);
+    return { indexed: result.nodes + result.knowledge, fullReindex: true };
+  }
+
+  const knowledgeStore = new KnowledgeStore(store.getDb());
+  let indexed = 0;
+
+  for (const docId of docIds) {
+    const doc = knowledgeStore.getById(docId);
+    if (!doc) {
+      logger.debug("Incremental index: doc not found, skipping", { docId });
+      continue;
+    }
+
+    const text = [doc.title, doc.content].join(" | ");
+    const vector = activeVectorizer.embed(text);
+
+    embeddingStore.upsert({
+      id: `knowledge:${doc.id}`,
+      source: "knowledge",
+      sourceId: doc.id,
+      text,
+      embedding: vector,
+    });
+    indexed++;
+  }
+
+  logger.info("Incremental embedding index complete", { indexed, total: docIds.length });
+  return { indexed, fullReindex: false };
+}
+
+/**
  * Semantic search using embeddings.
  * Embeds the query and finds similar documents.
  */
