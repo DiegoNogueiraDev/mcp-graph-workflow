@@ -10,6 +10,9 @@ import { indexSkills } from "../../core/rag/skill-indexer.js";
 import { indexJourneyMaps } from "../../core/rag/journey-indexer.js";
 import { JourneyStore } from "../../core/journey/journey-store.js";
 import { indexAllEmbeddings } from "../../core/rag/rag-pipeline.js";
+import { decayStaleKnowledge } from "../../core/rag/knowledge-quality.js";
+import { linkBySharedContext } from "../../core/rag/knowledge-linker.js";
+import { runSynthesisCycle } from "../../core/rag/knowledge-synthesizer.js";
 import { logger } from "../../core/utils/logger.js";
 import { mcpText } from "../response-helpers.js";
 
@@ -23,9 +26,9 @@ export function registerReindexKnowledge(server: McpServer, store: SqliteStore):
         .optional()
         .describe("Project base path for finding memories (default: cwd)"),
       sources: z
-        .array(z.enum(["memory", "serena", "docs", "skills", "journey", "embeddings"]))
+        .array(z.enum(["memory", "serena", "docs", "skills", "journey", "embeddings", "quality", "relations", "synthesis"]))
         .optional()
-        .describe("Which sources to reindex. 'serena' is an alias for 'memory'. (default: all)"),
+        .describe("Which sources to reindex. 'quality' recalculates scores, 'relations' links docs, 'synthesis' generates insights. (default: all)"),
     },
     async ({ basePath, sources }) => {
       logger.debug("tool:reindex_knowledge", {});
@@ -60,6 +63,18 @@ export function registerReindexKnowledge(server: McpServer, store: SqliteStore):
         const embeddingStore = new EmbeddingStore(store);
         embeddingStore.clear();
         results.embeddings = await indexAllEmbeddings(store, embeddingStore);
+      }
+
+      if (allSources || sources?.includes("quality")) {
+        results.quality = decayStaleKnowledge(store.getDb());
+      }
+
+      if (allSources || sources?.includes("relations")) {
+        results.relations = linkBySharedContext(store.getDb());
+      }
+
+      if (sources?.includes("synthesis")) {
+        results.synthesis = runSynthesisCycle(store.getDb());
       }
 
       results.totalKnowledge = knowledgeStore.count();

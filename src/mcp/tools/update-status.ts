@@ -4,6 +4,8 @@ import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import type { NodeStatus } from "../../core/graph/graph-types.js";
 import { NodeStatusSchema } from "../../schemas/node.schema.js";
 import { NodeNotFoundError } from "../../core/utils/errors.js";
+import { KnowledgeStore } from "../../core/store/knowledge-store.js";
+import { indexDecision } from "../../core/rag/decision-indexer.js";
 import { logger } from "../../core/utils/logger.js";
 import { mcpText, mcpError } from "../response-helpers.js";
 
@@ -23,8 +25,9 @@ export function registerUpdateStatus(server: McpServer, store: SqliteStore): voi
       id: z.union([z.string(), z.array(z.string())]).describe("Node ID (string) or array of node IDs for bulk update"),
       status: NodeStatusSchema.describe("The new status"),
       force: z.boolean().optional().describe("Force status change, bypass transition validation"),
+      rationale: z.string().optional().describe("AI rationale/learnings for the status change — required when transitioning to done"),
     },
-    async ({ id, status, force }) => {
+    async ({ id, status, force, rationale }) => {
       const ids = Array.isArray(id) ? id : [id];
       const isBulk = ids.length > 1;
 
@@ -74,8 +77,27 @@ export function registerUpdateStatus(server: McpServer, store: SqliteStore): voi
       }
 
       logger.info("tool:update_status:ok", { id: ids[0], status });
+
+      // Auto-capture AI decision when transitioning to done
+      if (status === "done" && rationale) {
+        try {
+          const knowledgeStore = new KnowledgeStore(store.getDb());
+          indexDecision(knowledgeStore, {
+            nodeId: ids[0],
+            title: updated.title,
+            rationale,
+            tags: updated.tags ?? [],
+          });
+        } catch (err) {
+          logger.warn("tool:update_status:decision_index_failed", { error: String(err) });
+        }
+      }
+
       const result: Record<string, unknown> = { ok: true, node: updated };
       if (transitionWarning) result.warning = transitionWarning;
+      if (status === "done" && !rationale) {
+        result.hint = "Tip: provide a 'rationale' parameter when marking tasks done to capture learnings for future RAG context.";
+      }
       return mcpText(result);
     },
   );

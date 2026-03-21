@@ -353,7 +353,7 @@ const migrations: Migration[] = [
   },
   {
     version: 11,
-    description: "Journey maps — screens, edges, and variants for website journey mapping",
+    description: "Journey maps + Knowledge quality scoring, usage tracking, and cross-source relations",
     sql: `
       CREATE TABLE IF NOT EXISTS journey_maps (
         id          TEXT PRIMARY KEY,
@@ -412,6 +412,39 @@ const migrations: Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_journey_edges_from ON journey_edges(from_screen);
       CREATE INDEX IF NOT EXISTS idx_journey_edges_to ON journey_edges(to_screen);
       CREATE INDEX IF NOT EXISTS idx_journey_variants_map ON journey_variants(map_id);
+
+      ALTER TABLE knowledge_documents ADD COLUMN quality_score REAL DEFAULT 0.5;
+      ALTER TABLE knowledge_documents ADD COLUMN usage_count INTEGER DEFAULT 0;
+      ALTER TABLE knowledge_documents ADD COLUMN last_accessed_at TEXT;
+      ALTER TABLE knowledge_documents ADD COLUMN staleness_days INTEGER DEFAULT 0;
+
+      CREATE INDEX IF NOT EXISTS idx_knowledge_quality ON knowledge_documents(quality_score);
+      CREATE INDEX IF NOT EXISTS idx_knowledge_usage ON knowledge_documents(usage_count);
+
+      CREATE TABLE IF NOT EXISTS knowledge_relations (
+        id          TEXT PRIMARY KEY,
+        from_doc_id TEXT NOT NULL,
+        to_doc_id   TEXT NOT NULL,
+        relation    TEXT NOT NULL,
+        score       REAL DEFAULT 1.0,
+        created_at  TEXT NOT NULL,
+        UNIQUE(from_doc_id, to_doc_id, relation)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_krel_from ON knowledge_relations(from_doc_id);
+      CREATE INDEX IF NOT EXISTS idx_krel_to ON knowledge_relations(to_doc_id);
+
+      CREATE TABLE IF NOT EXISTS knowledge_usage_log (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        doc_id      TEXT NOT NULL,
+        query       TEXT NOT NULL,
+        action      TEXT NOT NULL,
+        context     TEXT,
+        created_at  TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_kusage_doc ON knowledge_usage_log(doc_id);
+      CREATE INDEX IF NOT EXISTS idx_kusage_action ON knowledge_usage_log(action);
     `,
   },
 ];

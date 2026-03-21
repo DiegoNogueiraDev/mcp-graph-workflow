@@ -8,7 +8,11 @@ export type GraphEventType =
   | "bulk:updated"
   | "knowledge:indexed"
   | "knowledge:deleted"
+  | "knowledge:quality_updated"
   | "phase:transitioned"
+  | "sprint:planned"
+  | "validation:completed"
+  | "code:reindexed"
   | "log:entry"
   | "error:detected"
   | "healing:memory_created"
@@ -112,4 +116,24 @@ export interface SiebelObjectsIndexedEvent extends GraphEvent {
 export interface SiebelSifGeneratedEvent extends GraphEvent {
   type: "siebel:sif_generated";
   payload: { objectCount: number; requestDescription: string; validationStatus: string };
+}
+
+export interface SprintPlannedEvent extends GraphEvent {
+  type: "sprint:planned";
+  payload: { taskCount: number; velocity: number; capacity: number };
+}
+
+export interface ValidationCompletedEvent extends GraphEvent {
+  type: "validation:completed";
+  payload: { nodeId?: string; action: string; passRate?: number };
+}
+
+export interface CodeReindexedEvent extends GraphEvent {
+  type: "code:reindexed";
+  payload: { symbolCount: number; fileCount: number };
+}
+
+export interface KnowledgeQualityUpdatedEvent extends GraphEvent {
+  type: "knowledge:quality_updated";
+  payload: { updated: number };
 }
