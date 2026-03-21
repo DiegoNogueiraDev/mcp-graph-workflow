@@ -22,6 +22,13 @@ import { registerPlanSprint } from "./plan-sprint.js";
 import { registerSetPhase } from "./set-phase.js";
 import { registerMemory } from "./memory.js";
 import { registerManageSkill } from "./manage-skill.js";
+// Siebel CRM integration tools
+import { registerSiebelImportSif } from "./siebel-import-sif.js";
+import { registerSiebelAnalyze } from "./siebel-analyze.js";
+import { registerSiebelComposer } from "./siebel-composer.js";
+import { registerSiebelEnv } from "./siebel-env.js";
+import { registerSiebelValidate } from "./siebel-validate.js";
+import { registerSiebelSearch } from "./siebel-search.js";
 // Consolidated tools
 import { registerNode } from "./node.js";
 import { registerValidate } from "./validate.js";
@@ -58,6 +65,14 @@ export function registerAllTools(server: McpServer, store: SqliteStore): void {
   registerSetPhase(server, store);
   registerMemory(server, store);
   registerManageSkill(server, store);
+
+  // Siebel CRM integration tools
+  registerSiebelImportSif(server, store);
+  registerSiebelAnalyze(server, store);
+  registerSiebelComposer(server, store);
+  registerSiebelEnv(server, store);
+  registerSiebelValidate(server, store);
+  registerSiebelSearch(server, store);
 
   // Consolidated tools
   registerNode(server, store);

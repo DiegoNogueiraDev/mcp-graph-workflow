@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<REPOSITORY NAME="Siebel Repository" UPDATED="2024-01-15 10:30:00">
+  <PROJECT NAME="Account (SSE)" UPDATED="2024-01-15 10:30:00">
+    <APPLET NAME="Account List Applet" CHANGED="2024-01-10" BUS_COMP="Account" CLASS="CSSFrameList">
+      <APPLET_WEB_TEMPLATE NAME="Base" WEB_TEMPLATE="Applet List (Base)" />
+      <CONTROL NAME="Name" FIELD="Name" HTML_TYPE="Text" CAPTION="Name" />
+      <CONTROL NAME="Location" FIELD="Location" HTML_TYPE="Text" CAPTION="Location" />
+      <LIST_COLUMN NAME="Name" FIELD="Name" DISPLAY_NAME="Name" />
+      <LIST_COLUMN NAME="Location" FIELD="Location" DISPLAY_NAME="Location" />
+    </APPLET>
+    <APPLET NAME="Account Form Applet" CHANGED="2024-01-11" BUS_COMP="Account" CLASS="CSSFrameBase">
+      <CONTROL NAME="Name" FIELD="Name" HTML_TYPE="Text" CAPTION="Name" />
+      <CONTROL NAME="Account Status" FIELD="Account Status" HTML_TYPE="Text" CAPTION="Status" />
+    </APPLET>
+    <BUSINESS_COMPONENT NAME="Account" TABLE="S_ORG_EXT" CLASS="CSSBCBase" CHANGED="2024-01-09">
+      <FIELD NAME="Name" COLUMN="NAME" TYPE="DTYPE_TEXT" REQUIRED="Y" />
+      <FIELD NAME="Location" COLUMN="LOC" TYPE="DTYPE_TEXT" />
+      <FIELD NAME="Account Status" COLUMN="ACCNT_STATUS_CD" TYPE="DTYPE_TEXT" />
+      <LINK NAME="Account Contact" CHILD_BC="Contact" SOURCE_FIELD="Id" DEST_FIELD="Account Id" />
+    </BUSINESS_COMPONENT>
+    <BUSINESS_COMPONENT NAME="Contact" TABLE="S_CONTACT" CLASS="CSSBCBase" CHANGED="2024-01-09">
+      <FIELD NAME="First Name" COLUMN="FST_NAME" TYPE="DTYPE_TEXT" />
+      <FIELD NAME="Last Name" COLUMN="LAST_NAME" TYPE="DTYPE_TEXT" REQUIRED="Y" />
+    </BUSINESS_COMPONENT>
+    <BUSINESS_OBJECT NAME="Account" CHANGED="2024-01-08">
+      <BUSINESS_OBJECT_COMPONENT NAME="Account" BUS_COMP="Account" />
+      <BUSINESS_OBJECT_COMPONENT NAME="Contact" BUS_COMP="Contact" LINK="Account Contact" />
+    </BUSINESS_OBJECT>
+    <VIEW NAME="Account List View" BUS_OBJECT="Account" CHANGED="2024-01-12">
+      <VIEW_WEB_TEMPLATE NAME="Base" WEB_TEMPLATE="View Detail (Base)" />
+      <VIEW_APPLET NAME="Account List Applet" APPLET="Account List Applet" />
+    </VIEW>
+    <VIEW NAME="Account Detail View" BUS_OBJECT="Account" CHANGED="2024-01-12">
+      <VIEW_APPLET NAME="Account Form Applet" APPLET="Account Form Applet" />
+      <VIEW_APPLET NAME="Account List Applet" APPLET="Account List Applet" />
+    </VIEW>
+    <SCREEN NAME="Accounts Screen" CHANGED="2024-01-08">
+      <SCREEN_VIEW NAME="Account List View" VIEW="Account List View" />
+      <SCREEN_VIEW NAME="Account Detail View" VIEW="Account Detail View" />
+    </SCREEN>
+    <WORKFLOW NAME="Account Update Workflow" CHANGED="2024-01-14" BUS_OBJECT="Account">
+      <WORKFLOW_STEP NAME="Start" TYPE="Start" />
+      <WORKFLOW_STEP NAME="Update Account" TYPE="Business Service" BUS_SERVICE="Account Update BS" />
+      <WORKFLOW_STEP NAME="End" TYPE="End" />
+    </WORKFLOW>
+    <BUSINESS_SERVICE NAME="Account Update BS" CHANGED="2024-01-13" CLASS="CSSService">
+      <BUSINESS_SERVICE_METHOD NAME="UpdateAccount" />
+    </BUSINESS_SERVICE>
+    <INTEGRATION_OBJECT NAME="Account IO" CHANGED="2024-01-13" BUS_COMP="Account">
+      <INTEGRATION_COMPONENT NAME="Account" BUS_COMP="Account" />
+    </INTEGRATION_OBJECT>
+    <WEB_TEMPLATE NAME="Applet List (Base)" CHANGED="2024-01-07" TYPE="Applet" />
+    <WEB_TEMPLATE NAME="View Detail (Base)" CHANGED="2024-01-07" TYPE="View" />
+  </PROJECT>
+</REPOSITORY>

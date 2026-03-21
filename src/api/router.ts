@@ -22,6 +22,7 @@ import { createKnowledgeRouter } from "./routes/knowledge.js";
 import { createBenchmarkRouter } from "./routes/benchmark.js";
 import { createLogsRouter } from "./routes/logs.js";
 import { createFolderRouter } from "./routes/folder.js";
+import { createSiebelRouter } from "./routes/siebel.js";
 import { errorHandler } from "./middleware/error-handler.js";
 import { requestLogger } from "./middleware/request-logger.js";
 import { setLogListener } from "../core/utils/logger.js";
@@ -70,6 +71,7 @@ export function createApiRouter(storeOrOptions: SqliteStore | ApiRouterOptions):
   router.use("/rag", createRagRouter(storeRef));
   router.use("/knowledge", createKnowledgeRouter(storeRef));
   router.use("/benchmark", createBenchmarkRouter(storeRef));
+  router.use("/siebel", createSiebelRouter(storeRef, getBasePath));
   router.use("/logs", createLogsRouter());
 
   if (storeManager) {
