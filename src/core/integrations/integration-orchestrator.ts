@@ -76,6 +76,10 @@ export class IntegrationOrchestrator {
       this.onSiebelObjectsIndexed(event);
     });
 
+    this.eventBus.on("siebel:sif_generated", (event) => {
+      this.onSiebelSifGenerated(event);
+    });
+
     logger.info("IntegrationOrchestrator registered", { autoReindex: this.autoReindex });
   }
 
@@ -159,6 +163,15 @@ export class IntegrationOrchestrator {
   private onSiebelObjectsIndexed(event: GraphEvent): void {
     const { source, documentsIndexed } = event.payload;
     logger.info("Orchestrator: Siebel objects indexed", { source, documentsIndexed });
+    this.updateStatus("siebel_sif", "idle");
+  }
+
+  /**
+   * Handle siebel:sif_generated — track SIF generation events.
+   */
+  private onSiebelSifGenerated(event: GraphEvent): void {
+    const { objectCount, requestDescription, validationStatus } = event.payload;
+    logger.info("Orchestrator: Siebel SIF generated", { objectCount, requestDescription, validationStatus });
     this.updateStatus("siebel_sif", "idle");
   }
 

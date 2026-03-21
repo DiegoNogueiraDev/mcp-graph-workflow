@@ -229,11 +229,11 @@ export function SiebelTab(): React.JSX.Element {
               </p>
             </div>
             <div>
-              <label className="block text-xs font-medium mb-1.5">Documentation (PDF, HTML, TXT, MD)</label>
+              <label className="block text-xs font-medium mb-1.5">Documentation (PDF, HTML, DOC, DOCX, TXT, MD)</label>
               <input
                 ref={docsFileRef}
                 type="file"
-                accept=".pdf,.html,.htm,.txt,.md"
+                accept=".pdf,.html,.htm,.txt,.md,.doc,.docx"
                 onChange={handleDocsUpload}
                 className="block w-full text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-[var(--color-accent)] file:text-white hover:file:opacity-90 cursor-pointer"
               />

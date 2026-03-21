@@ -285,7 +285,7 @@ export function createSiebelRouter(storeRef: StoreRef, getBasePath: () => string
     try {
       if (!isSupportedFormat(file.originalname)) {
         res.status(400).json({
-          error: `Unsupported file format. Supported: .md, .txt, .pdf, .html, .htm`,
+          error: `Unsupported file format. Supported: .md, .txt, .pdf, .html, .htm, .doc, .docx`,
         });
         return;
       }
