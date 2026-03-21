@@ -27,8 +27,8 @@ describe("isSupportedFormat", () => {
 
   it("should reject unsupported formats", () => {
     expect(isSupportedFormat("image.png")).toBe(false);
-    expect(isSupportedFormat("data.json")).toBe(false);
     expect(isSupportedFormat("code.ts")).toBe(false);
+    expect(isSupportedFormat("archive.zip")).toBe(false);
   });
 });
 

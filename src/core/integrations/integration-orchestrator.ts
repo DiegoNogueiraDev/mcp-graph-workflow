@@ -67,6 +67,19 @@ export class IntegrationOrchestrator {
       this.onKnowledgeIndexed(event);
     });
 
+    // Siebel integration events
+    this.eventBus.on("siebel:sif_imported", (event) => {
+      this.onSiebelSifImported(event);
+    });
+
+    this.eventBus.on("siebel:objects_indexed", (event) => {
+      this.onSiebelObjectsIndexed(event);
+    });
+
+    this.eventBus.on("siebel:sif_generated", (event) => {
+      this.onSiebelSifGenerated(event);
+    });
+
     logger.info("IntegrationOrchestrator registered", { autoReindex: this.autoReindex });
   }
 
@@ -76,7 +89,7 @@ export class IntegrationOrchestrator {
   getStatuses(): IntegrationStatus[] {
     // Refresh document counts
     const knowledgeStore = new KnowledgeStore(this.store.getDb());
-    const sourceTypes = ["upload", "memory", "serena", "code_context", "docs", "web_capture"] as const;
+    const sourceTypes = ["upload", "memory", "serena", "code_context", "docs", "web_capture", "siebel_sif", "siebel_composer"] as const;
 
     for (const st of sourceTypes) {
       const existing = this.statuses.get(st);
@@ -135,8 +148,35 @@ export class IntegrationOrchestrator {
     logger.info("Orchestrator: knowledge indexed", { source, count: event.payload.documentsIndexed });
   }
 
+  /**
+   * Handle siebel:sif_imported — track Siebel SIF imports.
+   */
+  private onSiebelSifImported(event: GraphEvent): void {
+    const { fileName, objectCount } = event.payload;
+    logger.info("Orchestrator: Siebel SIF imported", { fileName, objectCount });
+    this.updateStatus("siebel_sif", "idle");
+  }
+
+  /**
+   * Handle siebel:objects_indexed — track Siebel knowledge indexing.
+   */
+  private onSiebelObjectsIndexed(event: GraphEvent): void {
+    const { source, documentsIndexed } = event.payload;
+    logger.info("Orchestrator: Siebel objects indexed", { source, documentsIndexed });
+    this.updateStatus("siebel_sif", "idle");
+  }
+
+  /**
+   * Handle siebel:sif_generated — track SIF generation events.
+   */
+  private onSiebelSifGenerated(event: GraphEvent): void {
+    const { objectCount, requestDescription, validationStatus } = event.payload;
+    logger.info("Orchestrator: Siebel SIF generated", { objectCount, requestDescription, validationStatus });
+    this.updateStatus("siebel_sif", "idle");
+  }
+
   private initStatuses(): void {
-    const sourceTypes = ["upload", "memory", "serena", "code_context", "docs", "web_capture"] as const;
+    const sourceTypes = ["upload", "memory", "serena", "code_context", "docs", "web_capture", "siebel_sif", "siebel_composer"] as const;
     const knowledgeStore = new KnowledgeStore(this.store.getDb());
 
     for (const st of sourceTypes) {

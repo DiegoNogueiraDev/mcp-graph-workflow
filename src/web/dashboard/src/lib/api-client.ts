@@ -198,4 +198,42 @@ export const apiClient = {
     }),
   getJourneyScreenshots: () =>
     request<{ files: Array<{ name: string; size: number; url: string }> }>("/journey/screenshots"),
+
+  // Siebel
+  siebelGetObjects: (params?: { type?: string; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.type) qs.set("type", params.type);
+    if (params?.limit) qs.set("limit", String(params.limit));
+    const query = qs.toString();
+    return request<{ objects: Array<{ title: string; sourceType: string; siebelType?: string; siebelProject?: string; contentPreview: string }>; total: number }>(
+      `/siebel/objects${query ? "?" + query : ""}`,
+    );
+  },
+  siebelGetTemplates: () =>
+    request<{ templates: Array<{ type: string; xmlTag: string; requiredAttrs: string[]; optionalAttrs: string[]; childTags: string[] }> }>(
+      "/siebel/generate/templates",
+    ),
+  siebelPrepareGeneration: (data: { description: string; objectTypes: string[]; basedOnProject?: string; properties?: Record<string, string> }) =>
+    request<{ prompt: string; templates: string[]; existingObjectsCount: number; relatedDocsCount: number; validationRules: string[] }>(
+      "/siebel/generate/prepare",
+      { method: "POST", body: JSON.stringify(data) },
+    ),
+  siebelFinalizeGeneration: (data: { generatedXml: string; description?: string; objectTypes?: string[] }) =>
+    request<{ sifContent: string; objects: Array<{ name: string; type: string }>; validation: { status: string; messages: Array<{ level: string; message: string; objectName?: string }>; score: number }; metadata: { generatedAt: string; requestDescription: string; objectCount: number } }>(
+      "/siebel/generate/finalize",
+      { method: "POST", body: JSON.stringify(data) },
+    ),
+  siebelUploadDocs: async (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    const res = await fetch(`${BASE}/siebel/upload-docs`, { method: "POST", body: form });
+    const body = await res.json();
+    if (!res.ok) throw new ApiError(body.error || `HTTP ${res.status}`, res.status);
+    return body as { ok: boolean; fileName: string; format: string; chunksIndexed: number; textLength: number };
+  },
+  siebelImportSif: (content: string, fileName?: string, mapToGraph?: boolean) =>
+    request<{ metadata: unknown; objectCount: number; dependencyCount: number; nodesCreated?: number; edgesCreated?: number; documentsIndexed?: number }>(
+      "/siebel/import",
+      { method: "POST", body: JSON.stringify({ content, fileName, mapToGraph }) },
+    ),
 };

@@ -1,17 +1,19 @@
 import { memo } from "react";
+import { BetaBadge } from "./beta-badge";
 
-export type TabId = "graph" | "prd-backlog" | "journey" | "gitnexus" | "memories" | "insights" | "skills" | "context" | "benchmark" | "logs";
+export type TabId = "graph" | "prd-backlog" | "journey" | "gitnexus" | "memories" | "insights" | "skills" | "context" | "benchmark" | "logs" | "siebel";
 
 interface TabNavProps {
   activeTab: TabId;
   onTabChange: (tab: TabId) => void;
 }
 
-const TABS: Array<{ id: TabId; label: string; badge?: string }> = [
+const TABS: Array<{ id: TabId; label: string; beta?: boolean }> = [
   { id: "graph", label: "Graph" },
   { id: "prd-backlog", label: "PRD & Backlog" },
-  { id: "journey", label: "Journey", badge: "Beta" },
+  { id: "journey", label: "Journey", beta: true },
   { id: "gitnexus", label: "Code Graph" },
+  { id: "siebel", label: "Siebel", beta: true },
   { id: "memories", label: "Memories" },
   { id: "insights", label: "Insights" },
   { id: "skills", label: "Skills" },
@@ -43,11 +45,7 @@ export const TabNav = memo(function TabNav({ activeTab, onTabChange }: TabNavPro
           }`}
         >
           {tab.label}
-          {tab.badge && (
-            <span className="ml-1.5 text-[9px] font-bold uppercase px-1 py-0.5 rounded bg-red-500 text-white leading-none">
-              {tab.badge}
-            </span>
-          )}
+          {tab.beta && <BetaBadge />}
         </button>
       ))}
     </nav>

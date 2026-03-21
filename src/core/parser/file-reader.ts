@@ -2,10 +2,15 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { readPdfBuffer } from "./read-pdf.js";
 import { readHtmlContent } from "./read-html.js";
+import { readDocxContent } from "./read-docx.js";
 import { logger } from "../utils/logger.js";
 import { ValidationError } from "../utils/errors.js";
 
-const SUPPORTED_EXTENSIONS = new Set([".md", ".txt", ".pdf", ".html", ".htm"]);
+const SUPPORTED_EXTENSIONS = new Set([
+  ".md", ".txt", ".pdf", ".html", ".htm",
+  ".doc", ".docx",
+  ".yaml", ".yml", ".json", ".wsdl", ".sif",
+]);
 
 export interface FileReadResult {
   text: string;
@@ -50,6 +55,16 @@ export async function readFileContent(
       text = await readHtmlContent(html);
       break;
     }
+    case ".doc":
+    case ".docx": {
+      text = await readDocxContent(filePath);
+      break;
+    }
+    case ".yaml":
+    case ".yml":
+    case ".json":
+    case ".wsdl":
+    case ".sif":
     case ".md":
     case ".txt":
     default: {
