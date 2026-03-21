@@ -3,6 +3,8 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import { ragBuildContext } from "../../core/context/rag-context.js";
 import { assembleContext } from "../../core/context/context-assembler.js";
+import { multiStrategySearch } from "../../core/rag/multi-strategy-retrieval.js";
+import { recordUsage } from "../../core/rag/knowledge-quality.js";
 import { detectCurrentPhase, type LifecyclePhase } from "../../core/planner/lifecycle-phase.js";
 import { DEFAULT_TOKEN_BUDGET } from "../../core/utils/constants.js";
 import { logger } from "../../core/utils/logger.js";
@@ -25,8 +27,12 @@ export function registerRagContext(server: McpServer, store: SqliteStore): void 
         .enum(["summary", "standard", "deep"])
         .optional()
         .describe("Context detail level: summary (~20 tok/node), standard (~150 tok/node), deep (~500+ tok/node). Default: standard"),
+      strategy: z
+        .enum(["fts", "multi"])
+        .optional()
+        .describe("Search strategy: 'fts' (traditional BM25), 'multi' (multi-strategy with quality + relations). Default: fts"),
     },
-    async ({ query, tokenBudget, detail }) => {
+    async ({ query, tokenBudget, detail, strategy }) => {
       logger.debug("tool:rag_context", { query, tier: detail });
       const budget = tokenBudget ?? DEFAULT_TOKEN_BUDGET;
 
@@ -51,8 +57,45 @@ export function registerRagContext(server: McpServer, store: SqliteStore): void 
           phase: currentPhase,
         });
 
-        logger.info("tool:rag_context:ok", { query, tier: detail, phase: currentPhase });
+        logger.info("tool:rag_context:ok", { query, tier: detail, phase: currentPhase, strategy });
         return mcpText(ctx);
+      }
+
+      // Multi-strategy search mode
+      if (strategy === "multi") {
+        const multiResults = multiStrategySearch(store.getDb(), query, {
+          limit: 10,
+          phase: currentPhase,
+        });
+
+        // Record usage for retrieved docs
+        try {
+          for (const result of multiResults.slice(0, 5)) {
+            recordUsage(store.getDb(), result.id, query, "retrieved", { tool: "rag_context", strategy: "multi" });
+          }
+        } catch {
+          // Usage recording is best-effort
+        }
+
+        logger.info("tool:rag_context:ok", { query, strategy: "multi", phase: currentPhase, results: multiResults.length });
+        return mcpText({
+          query,
+          strategy: "multi",
+          results: multiResults.map((r) => ({
+            id: r.id,
+            sourceType: r.sourceType,
+            title: r.title,
+            content: r.content.length > 500 ? r.content.slice(0, 500) + "..." : r.content,
+            score: r.score,
+            qualityScore: r.qualityScore,
+            strategies: r.strategies,
+          })),
+          tokenUsage: {
+            budget,
+            used: multiResults.reduce((sum, r) => sum + r.content.length / 4, 0),
+            remaining: budget,
+          },
+        });
       }
 
       // Default: use existing RAG context builder with phase awareness
