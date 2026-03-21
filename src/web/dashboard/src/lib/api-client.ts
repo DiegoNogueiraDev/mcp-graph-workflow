@@ -1,4 +1,4 @@
-import type { GraphDocument, GraphEdge, GraphNode, GraphStats, IntegrationStatus, CodeGraphStatus, ProjectMemory, ReindexResult, LogEntry, FolderInfo, OpenFolderResult, BrowseResult, CodeGraphData, ImpactResult, KnowledgeStats, Skill, CustomSkill, CustomSkillInput, ContextBudget } from "./types";
+import type { GraphDocument, GraphEdge, GraphNode, GraphStats, IntegrationStatus, CodeGraphStatus, ProjectMemory, ReindexResult, LogEntry, FolderInfo, OpenFolderResult, BrowseResult, CodeGraphData, ImpactResult, KnowledgeStats, Skill, CustomSkill, CustomSkillInput, ContextBudget, JourneyMap, JourneyMapFull } from "./types";
 
 const BASE = "/api/v1";
 
@@ -183,4 +183,19 @@ export const apiClient = {
     return request<{ logs: LogEntry[]; total: number }>(`/logs${query ? "?" + query : ""}`);
   },
   clearLogs: () => request<null>("/logs", { method: "DELETE" }),
+
+  // Journey
+  getJourneyMaps: () => request<{ maps: JourneyMap[] }>("/journey/maps"),
+  getJourneyMap: (id: string) => request<JourneyMapFull>(`/journey/maps/${id}`),
+  createJourneyMap: (data: { name: string; url?: string; description?: string }) =>
+    request<JourneyMap>("/journey/maps", { method: "POST", body: JSON.stringify(data) }),
+  deleteJourneyMap: (id: string) =>
+    request<null>(`/journey/maps/${id}`, { method: "DELETE" }),
+  importJourneyMap: (data: Record<string, unknown>) =>
+    request<{ id: string; screensCreated: number; edgesCreated: number }>("/journey/maps/import", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  getJourneyScreenshots: () =>
+    request<{ files: Array<{ name: string; size: number; url: string }> }>("/journey/screenshots"),
 };

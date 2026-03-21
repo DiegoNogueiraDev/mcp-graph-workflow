@@ -264,3 +264,66 @@ export interface ServeResult {
   message: string;
   port?: number;
 }
+
+// ── Journey types ───────────────────────────────────
+
+export interface JourneyMap {
+  id: string;
+  name: string;
+  url?: string;
+  description?: string;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface JourneyField {
+  name: string;
+  type: string;
+  required?: boolean;
+  label?: string;
+  options?: string[];
+}
+
+export interface JourneyScreen {
+  id: string;
+  mapId: string;
+  title: string;
+  description?: string;
+  screenshot?: string;
+  url?: string;
+  screenType: string;
+  fields?: JourneyField[];
+  ctas?: string[];
+  metadata?: Record<string, unknown>;
+  positionX: number;
+  positionY: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface JourneyEdge {
+  id: string;
+  mapId: string;
+  from: string;
+  to: string;
+  label?: string;
+  type: string;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface JourneyVariant {
+  id: string;
+  mapId: string;
+  name: string;
+  description?: string;
+  path: string[];
+  createdAt: string;
+}
+
+export interface JourneyMapFull extends JourneyMap {
+  screens: JourneyScreen[];
+  edges: JourneyEdge[];
+  variants: JourneyVariant[];
+}

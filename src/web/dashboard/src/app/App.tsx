@@ -13,6 +13,7 @@ import { OpenFolderModal } from "@/components/modals/open-folder-modal";
 // Lazy-load tabs
 const GraphTab = lazy(() => import("@/components/tabs/graph-tab").then((m) => ({ default: m.GraphTab })));
 const PrdBacklogTab = lazy(() => import("@/components/tabs/prd-backlog-tab").then((m) => ({ default: m.PrdBacklogTab })));
+const JourneyTab = lazy(() => import("@/components/tabs/journey-tab").then((m) => ({ default: m.JourneyTab })));
 const GitNexusTab = lazy(() => import("@/components/tabs/gitnexus-tab").then((m) => ({ default: m.GitNexusTab })));
 const MemoriesTab = lazy(() => import("@/components/tabs/memories-tab").then((m) => ({ default: m.MemoriesTab })));
 const InsightsTab = lazy(() => import("@/components/tabs/insights-tab").then((m) => ({ default: m.InsightsTab })));
@@ -104,6 +105,7 @@ function AppContent(): React.JSX.Element {
                 <div style={{ display: activeTab === "prd-backlog" ? "contents" : "none" }}>
                   {graph && <PrdBacklogTab graph={graph} />}
                 </div>
+                {activeTab === "journey" && <JourneyTab />}
                 {activeTab === "gitnexus" && <GitNexusTab />}
                 {activeTab === "memories" && <MemoriesTab />}
                 {activeTab === "insights" && <InsightsTab />}

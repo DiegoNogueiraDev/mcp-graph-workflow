@@ -351,6 +351,69 @@ const migrations: Migration[] = [
         ON edges(project_id, from_node, to_node, relation_type);
     `,
   },
+  {
+    version: 11,
+    description: "Journey maps — screens, edges, and variants for website journey mapping",
+    sql: `
+      CREATE TABLE IF NOT EXISTS journey_maps (
+        id          TEXT PRIMARY KEY,
+        project_id  TEXT NOT NULL REFERENCES projects(id),
+        name        TEXT NOT NULL,
+        url         TEXT,
+        description TEXT,
+        metadata    TEXT, -- JSON object
+        created_at  TEXT NOT NULL,
+        updated_at  TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS journey_screens (
+        id          TEXT PRIMARY KEY,
+        map_id      TEXT NOT NULL REFERENCES journey_maps(id) ON DELETE CASCADE,
+        project_id  TEXT NOT NULL REFERENCES projects(id),
+        title       TEXT NOT NULL,
+        description TEXT,
+        screenshot  TEXT, -- filename relative to journey-screenshots/
+        url         TEXT,
+        screen_type TEXT NOT NULL DEFAULT 'page',
+        fields      TEXT, -- JSON array
+        ctas        TEXT, -- JSON array
+        metadata    TEXT, -- JSON object
+        position_x  REAL DEFAULT 0,
+        position_y  REAL DEFAULT 0,
+        created_at  TEXT NOT NULL,
+        updated_at  TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS journey_edges (
+        id          TEXT PRIMARY KEY,
+        map_id      TEXT NOT NULL REFERENCES journey_maps(id) ON DELETE CASCADE,
+        project_id  TEXT NOT NULL REFERENCES projects(id),
+        from_screen TEXT NOT NULL REFERENCES journey_screens(id) ON DELETE CASCADE,
+        to_screen   TEXT NOT NULL REFERENCES journey_screens(id) ON DELETE CASCADE,
+        label       TEXT,
+        edge_type   TEXT NOT NULL DEFAULT 'navigation',
+        metadata    TEXT, -- JSON object
+        created_at  TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS journey_variants (
+        id          TEXT PRIMARY KEY,
+        map_id      TEXT NOT NULL REFERENCES journey_maps(id) ON DELETE CASCADE,
+        project_id  TEXT NOT NULL REFERENCES projects(id),
+        name        TEXT NOT NULL,
+        description TEXT,
+        path        TEXT NOT NULL, -- JSON array of screen IDs
+        created_at  TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_journey_maps_project ON journey_maps(project_id);
+      CREATE INDEX IF NOT EXISTS idx_journey_screens_map ON journey_screens(map_id);
+      CREATE INDEX IF NOT EXISTS idx_journey_edges_map ON journey_edges(map_id);
+      CREATE INDEX IF NOT EXISTS idx_journey_edges_from ON journey_edges(from_screen);
+      CREATE INDEX IF NOT EXISTS idx_journey_edges_to ON journey_edges(to_screen);
+      CREATE INDEX IF NOT EXISTS idx_journey_variants_map ON journey_variants(map_id);
+    `,
+  },
 ];
 
 export function runMigrations(db: Database.Database): void {
