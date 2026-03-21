@@ -1,6 +1,6 @@
 # MCP Tools Reference
 
-> 30 tools organized in 7 categories — complete parameter reference.
+> 31 tools organized in 8 categories — complete parameter reference.
 >
 > **v5.5.0:** `node` (3 actions) and `validate` (2 actions) consolidate 5 individual tools. The old names (`add_node`, `update_node`, `delete_node`, `validate_task`, `validate_ac`) still work as deprecated shims — they will be removed in v7.0.
 
@@ -14,6 +14,7 @@
 | [Knowledge & RAG](#knowledge--rag) | context, reindex_knowledge, sync_stack_docs | 3 |
 | [Validation](#validation) | **validate** *(ac/task)* | 1 |
 | [Snapshots & Stats](#snapshots--stats) | stats, snapshot | 2 |
+| [User Journeys](#user-journeys) | journey | 1 |
 | [Deprecated](#deprecated-tools) | add_node, update_node, delete_node, validate_task, validate_ac | 5 |
 
 ---
@@ -367,6 +368,27 @@ The `analyze` tool is a gateway for all project analysis modes. Each mode provid
 | `interfaces` | DESIGN | Interface-first quality check |
 | `tech_risk` | DESIGN | Technical risk scoring |
 | `design_ready` | DESIGN | DESIGN→PLAN gate readiness |
+
+---
+
+## User Journeys
+
+### `journey`
+
+Manage and query website journey maps — screen flows, form fields, CTAs, A/B variants. Indexes journey data into the knowledge store for RAG queries.
+
+| Param | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `action` | `"list"` \| `"get"` \| `"search"` \| `"index"` | Yes | — | Action to perform |
+| `mapId` | string | For `get` | — | Journey map ID |
+| `query` | string | For `search` | — | Search query for screens |
+
+**Actions:**
+
+- **`list`** — Returns all journey maps with id, name, url, description.
+- **`get`** — Returns a compact AI-optimized representation of a specific map: screens with fields, CTAs, navigation edges (navigatesTo), variants, and summary stats.
+- **`search`** — Full-text search across all screens by title, description, fields, CTAs, and URL.
+- **`index`** — Indexes all journey maps into the knowledge store. Each screen becomes a searchable document with form fields, CTAs, navigation context, and metadata. Makes journey data discoverable via `rag_context`.
 
 ---
 

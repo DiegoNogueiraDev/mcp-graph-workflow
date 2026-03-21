@@ -42,6 +42,7 @@ src/
     events/          # event-bus, event-types (GraphEventBus)
     graph/           # graph-types, graph-indexes, mermaid-export
     importer/        # import-prd, prd-to-graph
+    journey/         # journey-store (website journey mapping)
     insights/        # bottleneck-detector, metrics-calculator, skill-recommender
     integrations/    # integration-orchestrator, enriched-context, mcp-servers-config, mcp-deps-installer, tool-status
     parser/          # classify, extract, normalize, read-file, segment, file-reader, read-pdf, read-html
@@ -51,7 +52,7 @@ src/
     store/           # sqlite-store, migrations, knowledge-store
     utils/           # errors, fs, id, logger, time
   api/               # Express REST API — 17 routers, 44 endpoints
-  mcp/tools/         # MCP tool wrappers (30 tools)
+  mcp/tools/         # MCP tool wrappers (31 tools)
   schemas/           # Zod schemas (node, edge, graph, knowledge)
   web/dashboard/     # React + Tailwind + React Flow dashboard
 ```
@@ -61,7 +62,7 @@ src/
 | Capability | Key Modules | Docs |
 |------------|-------------|------|
 | PRD Import | parser/, importer/ | — |
-| 30 MCP Tools | mcp/tools/ | [MCP Tools Reference](docs/MCP-TOOLS-REFERENCE.md) |
+| 31 MCP Tools | mcp/tools/ | [MCP Tools Reference](docs/MCP-TOOLS-REFERENCE.md) |
 | 17 REST API Routers | api/routes/ | [REST API Reference](docs/REST-API-REFERENCE.md) |
 | Knowledge Store + RAG | store/knowledge-store, rag/ | [Knowledge Pipeline](docs/KNOWLEDGE-PIPELINE.md) |
 | Tiered Context Compression | context/ | [Knowledge Pipeline](docs/KNOWLEDGE-PIPELINE.md) |
@@ -296,7 +297,7 @@ mcp-graph is the **single source of truth** for all work. The execution graph mu
 Este projeto usa **mcp-graph** para gestão de execução via grafo persistente (SQLite).
 Dados armazenados em `workflow-graph/graph.db` (local, gitignored).
 
-### Ferramentas MCP disponíveis (30 tools)
+### Ferramentas MCP disponíveis (31 tools)
 
 #### Projeto & Grafo
 
@@ -358,6 +359,12 @@ Dados armazenados em `workflow-graph/graph.db` (local, gitignored).
 | `validate` | **Consolidated** — Validar task com Playwright ou AC quality (action: task/ac). Substitui validate_task, validate_ac |
 | `validate_ac` | ⚠️ **Deprecated** → usar `validate { action: "ac" }` |
 
+#### Jornadas de Usuário
+
+| Tool | Quando usar |
+|------|-------------|
+| `journey` | Gerenciar journey maps — screen flows, fields, CTAs, variantes A/B (action: list/get/search/index). `index` sincroniza no knowledge store para RAG. |
+
 ### Modos do analyze por fase
 
 | Fase | Modo | O que verifica |
@@ -413,6 +420,7 @@ Fontes indexadas automaticamente:
 - **Browser captures** — ao validar com `validate_task`
 - **Stack docs** — ao sincronizar com `sync_stack_docs`
 - **Sprint reports** — ao gerar com `plan_sprint`
+- **Journey maps** — ao executar `journey { action: "index" }` ou `reindex_knowledge`
 
 Recuperação: `rag_context` monta contexto phase-aware com budget de tokens:
 - 60% contexto do grafo (nodes, deps, status)

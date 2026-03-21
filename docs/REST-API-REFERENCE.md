@@ -1,6 +1,6 @@
 # REST API Reference
 
-> 18 routers, 47 endpoints — all served from `mcp-graph serve`.
+> 19 routers, 59 endpoints — all served from `mcp-graph serve`.
 
 ## Base URL
 
@@ -461,3 +461,41 @@ All endpoints return errors in a consistent format:
 ```
 
 Common status codes: `400` (validation), `404` (not found), `409` (conflict), `503` (integration unavailable).
+
+---
+
+## Journey Maps
+
+Website journey mapping — screen flows, form fields, CTAs, A/B variants.
+
+### Maps
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/journey/maps` | List all journey maps |
+| POST | `/journey/maps` | Create a journey map (`{ name, url?, description? }`) |
+| GET | `/journey/maps/:id` | Get map with screens, edges, variants |
+| DELETE | `/journey/maps/:id` | Delete map (cascades to screens/edges/variants) |
+| POST | `/journey/maps/import` | Bulk import from JSON (`{ journey, screens[], edges[], variants? }`) |
+
+### Screens
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/journey/maps/:id/screens` | Add screen (`{ title, screenType, url?, fields?, ctas?, metadata? }`) |
+| PATCH | `/journey/screens/:id` | Update screen (`{ title?, positionX?, positionY? }`) |
+| DELETE | `/journey/screens/:id` | Delete screen |
+
+### Edges
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/journey/maps/:id/edges` | Add edge (`{ from, to, label?, type? }`) |
+| DELETE | `/journey/edges/:id` | Delete edge |
+
+### Screenshots
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/journey/screenshots` | List available screenshot files |
+| GET | `/journey/screenshots/:mapId/:filename` | Serve a screenshot image |

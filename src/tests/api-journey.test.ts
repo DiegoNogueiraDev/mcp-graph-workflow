@@ -235,4 +235,88 @@ describe("Journey API", () => {
       expect(res.status).toBe(404);
     });
   });
+
+  describe("PATCH /journey/screens/:id", () => {
+    it("should update an existing screen", async () => {
+      const mapRes = await request(app)
+        .post("/api/v1/journey/maps")
+        .send({ name: "Test" });
+      const screenRes = await request(app)
+        .post(`/api/v1/journey/maps/${mapRes.body.id}/screens`)
+        .send({ title: "Original", screenType: "page" });
+
+      const res = await request(app)
+        .patch(`/api/v1/journey/screens/${screenRes.body.id}`)
+        .send({ title: "Updated", positionX: 42 });
+
+      expect(res.status).toBe(200);
+      expect(res.body.title).toBe("Updated");
+      expect(res.body.positionX).toBe(42);
+    });
+
+    it("should return 404 for non-existent screen", async () => {
+      const res = await request(app)
+        .patch("/api/v1/journey/screens/nonexistent")
+        .send({ title: "X" });
+      expect(res.status).toBe(404);
+    });
+  });
+
+  describe("DELETE /journey/screens/:id", () => {
+    it("should delete an existing screen", async () => {
+      const mapRes = await request(app)
+        .post("/api/v1/journey/maps")
+        .send({ name: "Test" });
+      const screenRes = await request(app)
+        .post(`/api/v1/journey/maps/${mapRes.body.id}/screens`)
+        .send({ title: "ToDelete", screenType: "page" });
+
+      const res = await request(app)
+        .delete(`/api/v1/journey/screens/${screenRes.body.id}`);
+      expect(res.status).toBe(204);
+    });
+
+    it("should return 404 for non-existent screen", async () => {
+      const res = await request(app)
+        .delete("/api/v1/journey/screens/nonexistent");
+      expect(res.status).toBe(404);
+    });
+  });
+
+  describe("DELETE /journey/edges/:id", () => {
+    it("should delete an existing edge", async () => {
+      const mapRes = await request(app)
+        .post("/api/v1/journey/maps")
+        .send({ name: "Test" });
+      const mapId = mapRes.body.id;
+      const s1 = await request(app)
+        .post(`/api/v1/journey/maps/${mapId}/screens`)
+        .send({ title: "A", screenType: "page" });
+      const s2 = await request(app)
+        .post(`/api/v1/journey/maps/${mapId}/screens`)
+        .send({ title: "B", screenType: "page" });
+      const edgeRes = await request(app)
+        .post(`/api/v1/journey/maps/${mapId}/edges`)
+        .send({ from: s1.body.id, to: s2.body.id });
+
+      const res = await request(app)
+        .delete(`/api/v1/journey/edges/${edgeRes.body.id}`);
+      expect(res.status).toBe(204);
+    });
+
+    it("should return 404 for non-existent edge", async () => {
+      const res = await request(app)
+        .delete("/api/v1/journey/edges/nonexistent");
+      expect(res.status).toBe(404);
+    });
+  });
+
+  describe("GET /journey/screenshots", () => {
+    it("should return 200 with files array", async () => {
+      const res = await request(app).get("/api/v1/journey/screenshots");
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty("files");
+      expect(Array.isArray(res.body.files)).toBe(true);
+    });
+  });
 });
