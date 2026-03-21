@@ -14,7 +14,8 @@ export type GraphEventType =
   | "healing:memory_created"
   | "siebel:sif_imported"
   | "siebel:composer_action"
-  | "siebel:objects_indexed";
+  | "siebel:objects_indexed"
+  | "siebel:sif_generated";
 
 export interface GraphEvent {
   type: GraphEventType;
@@ -106,4 +107,9 @@ export interface SiebelComposerActionEvent extends GraphEvent {
 export interface SiebelObjectsIndexedEvent extends GraphEvent {
   type: "siebel:objects_indexed";
   payload: { source: string; documentsIndexed: number };
+}
+
+export interface SiebelSifGeneratedEvent extends GraphEvent {
+  type: "siebel:sif_generated";
+  payload: { objectCount: number; requestDescription: string; validationStatus: string };
 }

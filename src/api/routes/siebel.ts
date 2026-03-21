@@ -14,8 +14,20 @@ import {
   addEnvironment,
   removeEnvironment,
 } from "../../core/siebel/siebel-config.js";
+import { prepareSifGeneration, finalizeSifGeneration } from "../../core/siebel/sif-generator.js";
+import { listTemplates } from "../../core/siebel/sif-templates.js";
+import { readFileContent, isSupportedFormat } from "../../core/parser/file-reader.js";
+import { chunkText } from "../../core/rag/chunk-text.js";
 import { STORE_DIR } from "../../core/utils/constants.js";
+import { logger } from "../../core/utils/logger.js";
+import multer from "multer";
 import path from "node:path";
+import { unlink } from "node:fs/promises";
+
+const siebelUpload = multer({
+  dest: "/tmp/mcp-graph-siebel-uploads/",
+  limits: { fileSize: 10 * 1024 * 1024 },
+});
 
 export function createSiebelRouter(storeRef: StoreRef, getBasePath: () => string): Router {
   const router = Router();
@@ -182,6 +194,147 @@ export function createSiebelRouter(storeRef: StoreRef, getBasePath: () => string
       res.json({ environments: envs });
     } catch (err) {
       next(err);
+    }
+  });
+
+  /**
+   * GET /api/v1/siebel/generate/templates — List available SIF templates
+   */
+  router.get("/generate/templates", (_req, res) => {
+    const templates = listTemplates();
+    res.json({
+      templates: templates.map((t) => ({
+        type: t.type,
+        xmlTag: t.xmlTag,
+        requiredAttrs: t.requiredAttrs,
+        optionalAttrs: t.optionalAttrs,
+        childTags: t.childTags,
+      })),
+    });
+  });
+
+  /**
+   * POST /api/v1/siebel/generate/prepare — Prepare SIF generation context + prompt
+   * Body: { description: string, objectTypes: string[], basedOnProject?: string, properties?: Record }
+   */
+  router.post("/generate/prepare", (req, res, next) => {
+    try {
+      const { description, objectTypes, basedOnProject, properties } = req.body;
+
+      if (!description || !objectTypes || objectTypes.length === 0) {
+        res.status(400).json({ error: "description and objectTypes are required" });
+        return;
+      }
+
+      const knowledgeStore = new KnowledgeStore(storeRef.current.getDb());
+      const context = prepareSifGeneration(knowledgeStore, {
+        description,
+        objectTypes,
+        basedOnProject,
+        properties,
+      });
+
+      res.json({
+        prompt: context.prompt,
+        templates: context.templates.map((t) => t.type),
+        existingObjectsCount: context.existingObjects.length,
+        relatedDocsCount: context.relatedDocs.length,
+        validationRules: context.validationRules,
+      });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  /**
+   * POST /api/v1/siebel/generate/finalize — Validate generated SIF XML and index
+   * Body: { generatedXml: string, description?: string, objectTypes?: string[] }
+   */
+  router.post("/generate/finalize", (req, res, next) => {
+    try {
+      const { generatedXml, description = "SIF generation", objectTypes = [] } = req.body;
+
+      if (!generatedXml) {
+        res.status(400).json({ error: "generatedXml is required" });
+        return;
+      }
+
+      const knowledgeStore = new KnowledgeStore(storeRef.current.getDb());
+      const result = finalizeSifGeneration(knowledgeStore, generatedXml, {
+        description,
+        objectTypes,
+      });
+
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  /**
+   * POST /api/v1/siebel/upload-docs — Upload documentation as Siebel context
+   * Multipart: file field, supports PDF, HTML, TXT, MD, DOC, DOCX
+   */
+  router.post("/upload-docs", siebelUpload.single("file"), async (req, res, next) => {
+    const file = req.file;
+    if (!file) {
+      res.status(400).json({ error: "No file uploaded. Send a file with field name 'file'." });
+      return;
+    }
+
+    try {
+      if (!isSupportedFormat(file.originalname)) {
+        res.status(400).json({
+          error: `Unsupported file format. Supported: .md, .txt, .pdf, .html, .htm`,
+        });
+        return;
+      }
+
+      const fileResult = await readFileContent(file.path);
+      const knowledgeStore = new KnowledgeStore(storeRef.current.getDb());
+
+      const sourceId = `siebel_docs:${file.originalname}`;
+      knowledgeStore.deleteBySource("siebel_docs", sourceId);
+
+      const chunks = chunkText(fileResult.text);
+      let indexed = 0;
+
+      for (const chunk of chunks) {
+        knowledgeStore.insert({
+          sourceType: "siebel_docs",
+          sourceId,
+          title: `${file.originalname} [${chunk.index + 1}/${chunks.length}]`,
+          content: chunk.content,
+          chunkIndex: chunk.index,
+          metadata: {
+            fileName: file.originalname,
+            format: fileResult.format,
+            sizeBytes: fileResult.sizeBytes,
+          },
+        });
+        indexed++;
+      }
+
+      logger.info("Siebel docs uploaded and indexed", {
+        fileName: file.originalname,
+        chunks: String(indexed),
+      });
+
+      res.status(201).json({
+        ok: true,
+        fileName: file.originalname,
+        format: fileResult.format,
+        chunksIndexed: indexed,
+        textLength: fileResult.text.length,
+      });
+    } catch (err) {
+      next(err);
+    } finally {
+      try {
+        await unlink(file.path);
+      } catch {
+        // Cleanup failure is non-fatal
+      }
     }
   });
 

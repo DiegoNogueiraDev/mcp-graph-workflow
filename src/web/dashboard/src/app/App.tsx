@@ -20,6 +20,7 @@ const SkillsTab = lazy(() => import("@/components/tabs/skills-tab").then((m) => 
 const ContextTab = lazy(() => import("@/components/tabs/context-tab").then((m) => ({ default: m.ContextTab })));
 const BenchmarkTab = lazy(() => import("@/components/tabs/benchmark-tab").then((m) => ({ default: m.BenchmarkTab })));
 const LogsTab = lazy(() => import("@/components/tabs/logs-tab").then((m) => ({ default: m.LogsTab })));
+const SiebelTab = lazy(() => import("@/components/tabs/siebel-tab").then((m) => ({ default: m.SiebelTab })));
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -111,6 +112,7 @@ function AppContent(): React.JSX.Element {
                 {activeTab === "context" && <ContextTab />}
                 {activeTab === "benchmark" && <BenchmarkTab />}
                 {activeTab === "logs" && <LogsTab />}
+                {activeTab === "siebel" && <SiebelTab />}
               </Suspense>
             </ErrorBoundary>
           )}

@@ -157,6 +157,62 @@ export const SiebelImpactResultSchema = z.object({
   riskLevel: z.enum(["low", "medium", "high", "critical"]),
 });
 
+/**
+ * Subset of Siebel object types that can be generated as SIF templates.
+ */
+export const SifTemplateTypeSchema = z.enum([
+  "applet",
+  "business_component",
+  "business_object",
+  "view",
+  "screen",
+  "workflow",
+  "business_service",
+  "integration_object",
+]);
+
+/**
+ * Request to generate a new SIF file.
+ */
+export const SifGenerationRequestSchema = z.object({
+  description: z.string().min(1),
+  objectTypes: z.array(SiebelObjectTypeSchema).min(1),
+  basedOnProject: z.string().optional(),
+  properties: z.record(z.string(), z.string()).optional(),
+});
+
+/**
+ * Validation message for a generated SIF.
+ */
+export const SifValidationMessageSchema = z.object({
+  level: z.enum(["error", "warning", "info"]),
+  message: z.string(),
+  objectName: z.string().optional(),
+});
+
+/**
+ * Validation result for a generated SIF.
+ */
+export const SifValidationResultSchema = z.object({
+  status: z.enum(["valid", "warnings", "invalid"]),
+  messages: z.array(SifValidationMessageSchema),
+  score: z.number().int().min(0).max(100),
+});
+
+/**
+ * Result of SIF generation including content, objects, validation, and metadata.
+ */
+export const SifGenerationResultSchema = z.object({
+  sifContent: z.string(),
+  objects: z.array(SiebelObjectRefSchema),
+  validation: SifValidationResultSchema,
+  metadata: z.object({
+    generatedAt: z.string(),
+    requestDescription: z.string(),
+    objectCount: z.number().int().min(0),
+  }),
+});
+
 // ---- Inferred TypeScript types ----
 
 export type SiebelObjectType = z.infer<typeof SiebelObjectTypeSchema>;
@@ -183,3 +239,8 @@ export type SiebelSifParseResult = z.infer<typeof SiebelSifParseResultSchema>;
 export type SiebelComposerAction = z.infer<typeof SiebelComposerActionSchema>;
 export type SiebelComposerResult = z.infer<typeof SiebelComposerResultSchema>;
 export type SiebelImpactResult = z.infer<typeof SiebelImpactResultSchema>;
+export type SifTemplateType = z.infer<typeof SifTemplateTypeSchema>;
+export type SifGenerationRequest = z.infer<typeof SifGenerationRequestSchema>;
+export type SifValidationMessage = z.infer<typeof SifValidationMessageSchema>;
+export type SifValidationResult = z.infer<typeof SifValidationResultSchema>;
+export type SifGenerationResult = z.infer<typeof SifGenerationResultSchema>;
