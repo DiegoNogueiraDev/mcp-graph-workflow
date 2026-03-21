@@ -13,11 +13,12 @@ import type { SqliteStore } from "../store/sqlite-store.js";
 import { KnowledgeStore } from "../store/knowledge-store.js";
 import { EmbeddingStore } from "./embedding-store.js";
 import { indexAllEmbeddings, semanticSearch } from "./rag-pipeline.js";
+import { multiStrategySearch } from "./multi-strategy-retrieval.js";
 import { logger } from "../utils/logger.js";
 
 export interface MemoryRagOptions {
-  /** Search mode: fts (keyword), semantic (embeddings), hybrid (both) */
-  mode?: "fts" | "semantic" | "hybrid";
+  /** Search mode: fts (keyword), semantic (embeddings), hybrid (both), multi (multi-strategy) */
+  mode?: "fts" | "semantic" | "hybrid" | "multi";
   /** Maximum results to return */
   limit?: number;
 }
@@ -33,7 +34,7 @@ export interface MemoryRagResultItem {
 
 export interface MemoryRagResult {
   query: string;
-  mode: "fts" | "semantic" | "hybrid";
+  mode: "fts" | "semantic" | "hybrid" | "multi";
   results: MemoryRagResultItem[];
   totalMemoryDocuments: number;
 }
@@ -62,6 +63,24 @@ export async function queryMemories(
 
   const results: MemoryRagResultItem[] = [];
   const seenIds = new Set<string>();
+
+  // Multi-strategy search (combines FTS, graph, quality, recency)
+  if (mode === "multi") {
+    const multiResults = multiStrategySearch(store.getDb(), query, { limit });
+    for (const r of multiResults) {
+      if (!MEMORY_SOURCE_TYPES.has(r.sourceType)) continue;
+      results.push({
+        id: r.id,
+        title: r.title,
+        content: r.content,
+        sourceId: r.sourceId,
+        score: r.score,
+        method: "fts",
+      });
+    }
+
+    return { query, mode, results: results.slice(0, limit), totalMemoryDocuments };
+  }
 
   // FTS search
   if (mode === "fts" || mode === "hybrid") {
