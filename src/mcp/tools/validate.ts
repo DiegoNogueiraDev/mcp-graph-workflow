@@ -10,6 +10,7 @@ import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import { runValidation } from "../../core/capture/validate-runner.js";
 import { KnowledgeStore } from "../../core/store/knowledge-store.js";
 import { indexCapture } from "../../core/rag/capture-indexer.js";
+import { indexAcValidationResult } from "../../core/rag/validation-indexer.js";
 import { validateAcQuality } from "../../core/analyzer/ac-validator.js";
 import { logger } from "../../core/utils/logger.js";
 import { mcpText, mcpError } from "../response-helpers.js";
@@ -73,6 +74,26 @@ export function registerValidate(server: McpServer, store: SqliteStore): void {
       // action === "ac"
       const doc = store.toGraphDocument();
       const report = validateAcQuality(doc, nodeId, all ?? !nodeId);
+
+      // Index AC validation results into knowledge store
+      if (report.nodes.length > 0) {
+        try {
+          const knowledgeStore = new KnowledgeStore(store.getDb());
+          for (const nodeReport of report.nodes) {
+            indexAcValidationResult(knowledgeStore, {
+              nodeId: nodeReport.nodeId,
+              acResults: nodeReport.investChecks.map((c) => ({
+                criterion: c.criterion,
+                passed: c.passed,
+                reason: !c.passed ? c.details : undefined,
+              })),
+              overallScore: nodeReport.score,
+            });
+          }
+        } catch (err) {
+          logger.warn("tool:validate:ac:index_failed", { error: String(err) });
+        }
+      }
 
       logger.info("tool:validate:ac:ok", { nodes: report.nodes.length, score: report.overallScore });
       return mcpText({ ok: true, ...report });

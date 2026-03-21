@@ -51,14 +51,21 @@ export function registerPlanSprint(server: McpServer, store: SqliteStore): void 
         const knowledgeStore = new KnowledgeStore(store.getDb());
         const planText = JSON.stringify(report, null, 2);
         const sourceId = `sprint_plan:${new Date().toISOString()}`;
+        const taskCount = report.recommendedOrder.length;
+        const velocity = report.summary.avgVelocity ?? 0;
+        const capacity = report.summary.estimatedPoints;
+
         knowledgeStore.insert({
           sourceType: "sprint_plan",
           sourceId,
           title: "Sprint Planning Report",
-          content: planText.length > 2000 ? planText.slice(0, 2000) : planText,
+          content: planText.length > 4000 ? planText.slice(0, 4000) : planText,
           metadata: {
             phase: "PLAN",
             generatedAt: new Date().toISOString(),
+            taskCount,
+            velocity,
+            capacity,
           },
         });
       } catch (err) {
