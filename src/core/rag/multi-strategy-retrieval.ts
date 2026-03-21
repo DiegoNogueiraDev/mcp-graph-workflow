@@ -79,7 +79,7 @@ export function multiStrategySearch(
   }
 
   // Strategy 2: Graph traversal — follow relations from FTS results
-  let graphResults: Array<{ id: string; score: number }> = [];
+  const graphResults: Array<{ id: string; score: number }> = [];
   if (ftsResults.length > 0) {
     const relatedIds = new Set<string>();
     for (const ftsResult of ftsResults.slice(0, 3)) {

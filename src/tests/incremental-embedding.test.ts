@@ -1,6 +1,4 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import Database from "better-sqlite3";
-import { runMigrations, configureDb } from "../core/store/migrations.js";
 import { SqliteStore } from "../core/store/sqlite-store.js";
 import { KnowledgeStore } from "../core/store/knowledge-store.js";
 import { EmbeddingStore } from "../core/rag/embedding-store.js";
