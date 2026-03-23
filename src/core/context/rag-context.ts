@@ -99,14 +99,28 @@ export function ragBuildContext(
     return summary;
   });
 
-  // Stage 2: Search knowledge store with optional phase-aware boosting
+  // Stage 2: Search knowledge store with quality-weighted, phase-aware boosting
   const knowledgeStore = new KnowledgeStore(store.getDb());
   let knowledgeResults: KnowledgeSummary[] = [];
   try {
-    const kResults = phase
-      ? knowledgeStore.searchWithPhaseBoost(query, phase, 5)
-      : knowledgeStore.search(query, 5);
-    knowledgeResults = kResults.map((r) => ({
+    // Use quality-weighted search when available, fall back to phase-boosted or basic search
+    let kResults: Array<{ id: string; sourceType: string; title: string; content: string; score: number }>;
+    try {
+      if (phase) {
+        const phaseResults = knowledgeStore.searchWithPhaseBoost(query, phase, 10);
+        // Apply quality weighting on top of phase-boosted results
+        kResults = phaseResults.map((r) => ({
+          ...r,
+          score: r.score * (r.metadata?.qualityScore as number ?? (r as Record<string, unknown>).qualityScore as number ?? 1),
+        }));
+      } else {
+        kResults = knowledgeStore.searchWithQuality(query, 10);
+      }
+    } catch {
+      // Fall back to basic search if quality columns not yet available
+      kResults = knowledgeStore.search(query, 10);
+    }
+    knowledgeResults = kResults.slice(0, 5).map((r) => ({
       id: r.id,
       sourceType: r.sourceType,
       title: r.title,

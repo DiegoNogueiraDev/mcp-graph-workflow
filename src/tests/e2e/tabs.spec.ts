@@ -20,6 +20,18 @@ test.describe("Tab Navigation & Theme", () => {
     await expect(page.getByRole("button", { name: "Code Graph" })).toBeVisible();
   });
 
+  test("Journey tab loads without error", async ({ page }) => {
+    await page.getByRole("button", { name: "Journey" }).click();
+    await page.waitForTimeout(500);
+    await expect(page.getByRole("button", { name: "Journey" })).toBeVisible();
+  });
+
+  test("Siebel tab loads without error", async ({ page }) => {
+    await page.getByRole("button", { name: "Siebel" }).click();
+    await page.waitForTimeout(500);
+    await expect(page.getByRole("button", { name: "Siebel" })).toBeVisible();
+  });
+
   test("theme toggle switches dark/light mode", async ({ page }) => {
     const body = page.locator("body");
     const initialIsDark = await body.evaluate((el) => el.classList.contains("dark"));
@@ -50,7 +62,7 @@ test.describe("Tab Navigation & Theme", () => {
   });
 
   test("all tabs are present in navigation", async ({ page }) => {
-    const tabNames = ["Graph", "PRD & Backlog", "Code Graph", "Memories", "Insights", "Benchmark", "Logs"];
+    const tabNames = ["Graph", "PRD & Backlog", "Journey", "Code Graph", "Siebel", "Memories", "Insights", "Skills", "Context", "Benchmark", "Logs"];
     for (const name of tabNames) {
       const exact = name === "Graph"; // avoid matching "Code Graph"
       await expect(page.getByRole("button", { name, exact })).toBeVisible();

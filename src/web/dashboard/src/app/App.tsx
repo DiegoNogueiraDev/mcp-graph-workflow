@@ -13,6 +13,7 @@ import { OpenFolderModal } from "@/components/modals/open-folder-modal";
 // Lazy-load tabs
 const GraphTab = lazy(() => import("@/components/tabs/graph-tab").then((m) => ({ default: m.GraphTab })));
 const PrdBacklogTab = lazy(() => import("@/components/tabs/prd-backlog-tab").then((m) => ({ default: m.PrdBacklogTab })));
+const JourneyTab = lazy(() => import("@/components/tabs/journey-tab").then((m) => ({ default: m.JourneyTab })));
 const GitNexusTab = lazy(() => import("@/components/tabs/gitnexus-tab").then((m) => ({ default: m.GitNexusTab })));
 const MemoriesTab = lazy(() => import("@/components/tabs/memories-tab").then((m) => ({ default: m.MemoriesTab })));
 const InsightsTab = lazy(() => import("@/components/tabs/insights-tab").then((m) => ({ default: m.InsightsTab })));
@@ -20,6 +21,7 @@ const SkillsTab = lazy(() => import("@/components/tabs/skills-tab").then((m) => 
 const ContextTab = lazy(() => import("@/components/tabs/context-tab").then((m) => ({ default: m.ContextTab })));
 const BenchmarkTab = lazy(() => import("@/components/tabs/benchmark-tab").then((m) => ({ default: m.BenchmarkTab })));
 const LogsTab = lazy(() => import("@/components/tabs/logs-tab").then((m) => ({ default: m.LogsTab })));
+const SiebelTab = lazy(() => import("@/components/tabs/siebel-tab").then((m) => ({ default: m.SiebelTab })));
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -104,6 +106,7 @@ function AppContent(): React.JSX.Element {
                 <div style={{ display: activeTab === "prd-backlog" ? "contents" : "none" }}>
                   {graph && <PrdBacklogTab graph={graph} />}
                 </div>
+                {activeTab === "journey" && <JourneyTab />}
                 {activeTab === "gitnexus" && <GitNexusTab />}
                 {activeTab === "memories" && <MemoriesTab />}
                 {activeTab === "insights" && <InsightsTab />}
@@ -111,6 +114,7 @@ function AppContent(): React.JSX.Element {
                 {activeTab === "context" && <ContextTab />}
                 {activeTab === "benchmark" && <BenchmarkTab />}
                 {activeTab === "logs" && <LogsTab />}
+                {activeTab === "siebel" && <SiebelTab />}
               </Suspense>
             </ErrorBoundary>
           )}

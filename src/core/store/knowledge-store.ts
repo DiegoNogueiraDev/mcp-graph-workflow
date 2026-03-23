@@ -262,4 +262,93 @@ export class KnowledgeStore {
       .all(sourceId) as KnowledgeRow[];
     return rows.map(rowToDoc);
   }
+
+  /**
+   * Update the quality score for a document.
+   */
+  updateQualityScore(id: string, score: number): void {
+    this.db
+      .prepare("UPDATE knowledge_documents SET quality_score = ? WHERE id = ?")
+      .run(score, id);
+  }
+
+  /**
+   * Record access on a document — update last_accessed_at + increment usage_count.
+   */
+  recordAccess(id: string): void {
+    const timestamp = now();
+    this.db
+      .prepare("UPDATE knowledge_documents SET last_accessed_at = ?, usage_count = usage_count + 1 WHERE id = ?")
+      .run(timestamp, id);
+  }
+
+  /**
+   * Batch update staleness_days for all documents.
+   */
+  batchUpdateStaleness(): number {
+    const rows = this.db
+      .prepare("SELECT id, created_at FROM knowledge_documents")
+      .all() as Array<{ id: string; created_at: string }>;
+
+    const update = this.db.prepare("UPDATE knowledge_documents SET staleness_days = ? WHERE id = ?");
+    let updated = 0;
+
+    this.db.transaction(() => {
+      for (const row of rows) {
+        const ageMs = Date.now() - new Date(row.created_at).getTime();
+        const days = Math.max(0, Math.floor(ageMs / (24 * 60 * 60 * 1000)));
+        update.run(days, row.id);
+        updated++;
+      }
+    })();
+
+    return updated;
+  }
+
+  /**
+   * Search with quality score weighting applied to BM25 results.
+   */
+  searchWithQuality(
+    query: string,
+    limit: number = 20,
+    options?: { minQuality?: number },
+  ): Array<KnowledgeDocument & { score: number; qualityScore: number }> {
+    const minQuality = options?.minQuality ?? 0;
+    const rows = this.db
+      .prepare(
+        `SELECT kd.*, bm25(knowledge_fts) AS bm25_score, COALESCE(kd.quality_score, 0.5) AS q_score
+         FROM knowledge_fts fts
+         JOIN knowledge_documents kd ON kd.rowid = fts.rowid
+         WHERE knowledge_fts MATCH ?
+           AND COALESCE(kd.quality_score, 0.5) >= ?
+         ORDER BY (bm25(knowledge_fts) * COALESCE(kd.quality_score, 0.5))
+         LIMIT ?`,
+      )
+      .all(query, minQuality, limit) as Array<KnowledgeRow & { bm25_score: number; q_score: number }>;
+
+    return rows.map((row) => ({
+      ...rowToDoc(row),
+      score: Math.abs(row.bm25_score) * row.q_score,
+      qualityScore: row.q_score,
+    }));
+  }
+
+  /**
+   * Get related documents via knowledge_relations table.
+   */
+  getRelated(docId: string, limit: number = 10): KnowledgeDocument[] {
+    const rows = this.db
+      .prepare(
+        `SELECT kd.* FROM knowledge_relations kr
+         JOIN knowledge_documents kd ON kd.id = kr.to_doc_id
+         WHERE kr.from_doc_id = ?
+         UNION
+         SELECT kd.* FROM knowledge_relations kr
+         JOIN knowledge_documents kd ON kd.id = kr.from_doc_id
+         WHERE kr.to_doc_id = ?
+         LIMIT ?`,
+      )
+      .all(docId, docId, limit) as KnowledgeRow[];
+    return rows.map(rowToDoc);
+  }
 }

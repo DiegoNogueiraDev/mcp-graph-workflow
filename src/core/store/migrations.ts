@@ -351,6 +351,102 @@ const migrations: Migration[] = [
         ON edges(project_id, from_node, to_node, relation_type);
     `,
   },
+  {
+    version: 11,
+    description: "Journey maps + Knowledge quality scoring, usage tracking, and cross-source relations",
+    sql: `
+      CREATE TABLE IF NOT EXISTS journey_maps (
+        id          TEXT PRIMARY KEY,
+        project_id  TEXT NOT NULL REFERENCES projects(id),
+        name        TEXT NOT NULL,
+        url         TEXT,
+        description TEXT,
+        metadata    TEXT, -- JSON object
+        created_at  TEXT NOT NULL,
+        updated_at  TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS journey_screens (
+        id          TEXT PRIMARY KEY,
+        map_id      TEXT NOT NULL REFERENCES journey_maps(id) ON DELETE CASCADE,
+        project_id  TEXT NOT NULL REFERENCES projects(id),
+        title       TEXT NOT NULL,
+        description TEXT,
+        screenshot  TEXT, -- filename relative to journey-screenshots/
+        url         TEXT,
+        screen_type TEXT NOT NULL DEFAULT 'page',
+        fields      TEXT, -- JSON array
+        ctas        TEXT, -- JSON array
+        metadata    TEXT, -- JSON object
+        position_x  REAL DEFAULT 0,
+        position_y  REAL DEFAULT 0,
+        created_at  TEXT NOT NULL,
+        updated_at  TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS journey_edges (
+        id          TEXT PRIMARY KEY,
+        map_id      TEXT NOT NULL REFERENCES journey_maps(id) ON DELETE CASCADE,
+        project_id  TEXT NOT NULL REFERENCES projects(id),
+        from_screen TEXT NOT NULL REFERENCES journey_screens(id) ON DELETE CASCADE,
+        to_screen   TEXT NOT NULL REFERENCES journey_screens(id) ON DELETE CASCADE,
+        label       TEXT,
+        edge_type   TEXT NOT NULL DEFAULT 'navigation',
+        metadata    TEXT, -- JSON object
+        created_at  TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS journey_variants (
+        id          TEXT PRIMARY KEY,
+        map_id      TEXT NOT NULL REFERENCES journey_maps(id) ON DELETE CASCADE,
+        project_id  TEXT NOT NULL REFERENCES projects(id),
+        name        TEXT NOT NULL,
+        description TEXT,
+        path        TEXT NOT NULL, -- JSON array of screen IDs
+        created_at  TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_journey_maps_project ON journey_maps(project_id);
+      CREATE INDEX IF NOT EXISTS idx_journey_screens_map ON journey_screens(map_id);
+      CREATE INDEX IF NOT EXISTS idx_journey_edges_map ON journey_edges(map_id);
+      CREATE INDEX IF NOT EXISTS idx_journey_edges_from ON journey_edges(from_screen);
+      CREATE INDEX IF NOT EXISTS idx_journey_edges_to ON journey_edges(to_screen);
+      CREATE INDEX IF NOT EXISTS idx_journey_variants_map ON journey_variants(map_id);
+
+      ALTER TABLE knowledge_documents ADD COLUMN quality_score REAL DEFAULT 0.5;
+      ALTER TABLE knowledge_documents ADD COLUMN usage_count INTEGER DEFAULT 0;
+      ALTER TABLE knowledge_documents ADD COLUMN last_accessed_at TEXT;
+      ALTER TABLE knowledge_documents ADD COLUMN staleness_days INTEGER DEFAULT 0;
+
+      CREATE INDEX IF NOT EXISTS idx_knowledge_quality ON knowledge_documents(quality_score);
+      CREATE INDEX IF NOT EXISTS idx_knowledge_usage ON knowledge_documents(usage_count);
+
+      CREATE TABLE IF NOT EXISTS knowledge_relations (
+        id          TEXT PRIMARY KEY,
+        from_doc_id TEXT NOT NULL,
+        to_doc_id   TEXT NOT NULL,
+        relation    TEXT NOT NULL,
+        score       REAL DEFAULT 1.0,
+        created_at  TEXT NOT NULL,
+        UNIQUE(from_doc_id, to_doc_id, relation)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_krel_from ON knowledge_relations(from_doc_id);
+      CREATE INDEX IF NOT EXISTS idx_krel_to ON knowledge_relations(to_doc_id);
+
+      CREATE TABLE IF NOT EXISTS knowledge_usage_log (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        doc_id      TEXT NOT NULL,
+        query       TEXT NOT NULL,
+        action      TEXT NOT NULL,
+        context     TEXT,
+        created_at  TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_kusage_doc ON knowledge_usage_log(doc_id);
+      CREATE INDEX IF NOT EXISTS idx_kusage_action ON knowledge_usage_log(action);
+    `,
+  },
 ];
 
 export function runMigrations(db: Database.Database): void {
