@@ -32,6 +32,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * lint errors — remove unused imports, use const for non-reassigned vars ([42b2419](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/42b24198d6fd366a671544674a144bdd339fa24e))
 * polish Siebel integration gaps for master readiness ([aead8c6](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/aead8c6304da57b541beddf82c214a2f39203ba8))
 
+## [5.6.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.5.3...mcp-graph-v5.6.0) (2026-03-23)
+
+
+### Features
+
+* add journey MCP tool and RAG knowledge indexer ([be09f8a](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/be09f8a55d65980ea7041a850994338520309057))
+* add Journey tab for website screen mapping with React Flow ([52e7613](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/52e761382e0a4b0712a91b8fc26729e184ce0d55))
+* add journey tests (store + API completeness) and update docs ([9ace186](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/9ace1863d013d0b3ef7c844af9aaf4c2e6abc207))
+* add knowledge quality engine with scoring, decay, and usage tracking (Phases 1-2) ([489f772](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/489f772344f302a3662314d7358c1e988225856f))
+* add red Beta badge to Journey tab in navigation ([1798bc8](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/1798bc848a45f56a4142420916f6f50b964c446d))
+* add Siebel CRM 15 integration with SIF parser, Composer automation, and 6 MCP tools ([65356cc](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/65356cc62bb516edf4b4a22113ed0811898aec39))
+* add SIF generation pipeline with RAG context, dashboard Siebel tab (Beta), and 4 new API endpoints ([f12ffb4](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/f12ffb4de8508d1a6d79681628fe3912260dd430))
+* add Swagger/WSDL parser, DOC/DOCX parser, and import docs MCP tool (Phase 3B) ([c46d7e6](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/c46d7e61afa0dfd872ffb507a7812aea3f14fb48))
+* auto-capture knowledge from AI decisions, validations, and code analysis (Phase 3) ([ab8c353](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/ab8c353e1bd1df52758ca19d51d7ffa4cbda3cae))
+* content-type-aware smart chunking for RAG pipeline (Phase 4) ([f8499e3](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/f8499e329bd968cd2086bbb9ab5ae23ea24b05e8))
+* cross-source knowledge linking via shared nodeId and tags (Phase 5) ([f9a1749](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/f9a174971127542aac7e49a9d8f8f4eaec98e3eb))
+* incremental embedding updates and multi-strategy retrieval (Phases 6-7) ([65e42d9](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/65e42d9be799febb44114d4c8a79cb6733f78194))
+* knowledge feedback loop and enhanced MCP tools (Phase 8) ([ad8360a](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/ad8360a2ac33cf2b24cbbb3a387dacf2ab937e62))
+* multi-strategy retrieval with RRF fusion and source diversity (Phase 6) ([6d2adcb](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/6d2adcb26ce3010235008ef3077efdf08c53b3e6))
+* self-learning knowledge synthesizer for pattern detection (Phase 5B) ([288d958](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/288d958ca09b3aeffe644f8847683fda2b2876c9))
+
+
+### Bug Fixes
+
+* lint errors — remove unused imports, use const for non-reassigned vars ([42b2419](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/42b24198d6fd366a671544674a144bdd339fa24e))
+* polish Siebel integration gaps for master readiness ([aead8c6](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/aead8c6304da57b541beddf82c214a2f39203ba8))
+
 ## [5.5.3](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.5.2...mcp-graph-v5.5.3) (2026-03-20)
 
 
