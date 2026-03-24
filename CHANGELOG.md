@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.6.1](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.6.0...mcp-graph-v5.6.1) (2026-03-24)
+
+
+### Bug Fixes
+
+* code graph indexing returns 0 symbols when typescript unavailable ([b69f69e](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/b69f69eaf67e5032e88e21fb07091d262d5b4f7f))
+
 ## [5.6.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.5.3...mcp-graph-v5.6.0) (2026-03-23)
 
 
