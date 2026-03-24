@@ -10,6 +10,7 @@ import { CodeIndexer } from "../../core/code/code-indexer.js";
 import { getSymbolContext, analyzeImpact, getFullGraph } from "../../core/code/graph-traversal.js";
 import { searchCodeSymbols } from "../../core/code/code-search.js";
 import { detectProcesses } from "../../core/code/process-detector.js";
+import { isTypeScriptAvailable } from "../../core/code/ts-analyzer.js";
 import type { StoreRef } from "../../core/store/store-manager.js";
 import { logger } from "../../core/utils/logger.js";
 
@@ -44,11 +45,12 @@ export function createCodeGraphRouter(options: CodeGraphRouterOptions): Router {
   }
 
   // ── GET /status ───────────────────────────────
-  router.get("/status", (_req, res, next) => {
+  router.get("/status", async (_req, res, next) => {
     try {
       const codeStore = getCodeStore();
       const projectId = getProjectId();
       const meta = codeStore.getIndexMeta(projectId);
+      const typescriptAvailable = await isTypeScriptAvailable();
 
       res.json({
         indexed: meta !== null,
@@ -58,6 +60,7 @@ export function createCodeGraphRouter(options: CodeGraphRouterOptions): Router {
         fileCount: meta?.fileCount ?? 0,
         lastIndexed: meta?.lastIndexed ?? null,
         gitHash: meta?.gitHash ?? null,
+        typescriptAvailable,
       });
     } catch (err) {
       next(err);

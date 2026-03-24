@@ -44,6 +44,16 @@ export function resetTypeScriptLoader(): void {
 }
 
 /**
+ * Check if the typescript package is available at runtime.
+ * Used for diagnostics — returns false when typescript is not installed
+ * (e.g., mcp-graph installed as production dependency without typescript).
+ */
+export async function isTypeScriptAvailable(): Promise<boolean> {
+  const tsLib = await loadTypeScript();
+  return tsLib !== null;
+}
+
+/**
  * Analyze a single TypeScript file syntactically.
  * Returns extracted symbols and relations with paths relative to basePath.
  * Returns empty result if the typescript package is unavailable.

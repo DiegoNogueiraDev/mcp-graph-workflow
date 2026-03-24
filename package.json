@@ -73,7 +73,6 @@
     "graphology": "^0.26.0",
     "supertest": "^7.2.2",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3",
     "typescript-eslint": "^8.57.0",
     "vitest": "^4.0.18"
   },
@@ -92,5 +91,16 @@
     "update-notifier": "^7.3.1",
     "yaml": "^2.8.2",
     "zod": "^4.3.6"
+  },
+  "optionalDependencies": {
+    "typescript": ">=5.0.0"
+  },
+  "peerDependencies": {
+    "typescript": ">=5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "typescript": {
+      "optional": true
+    }
   }
 }

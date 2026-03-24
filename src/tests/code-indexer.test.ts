@@ -71,6 +71,15 @@ describe("CodeIndexer", () => {
     });
   });
 
+  describe("typescriptAvailable field", () => {
+    it("should include typescriptAvailable: true in IndexResult when typescript is installed", async () => {
+      const result = await indexer.indexDirectory(FIXTURE_DIR, FIXTURE_DIR);
+
+      expect(result).toHaveProperty("typescriptAvailable");
+      expect(result.typescriptAvailable).toBe(true);
+    });
+  });
+
   describe("reindex (incremental)", () => {
     it("should clear old data before reindexing", async () => {
       await indexer.indexDirectory(FIXTURE_DIR, FIXTURE_DIR);

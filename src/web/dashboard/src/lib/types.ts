@@ -155,6 +155,7 @@ export interface CodeGraphStatus {
   fileCount: number;
   lastIndexed: string | null;
   gitHash: string | null;
+  typescriptAvailable?: boolean;
 }
 
 /** @deprecated Use CodeGraphStatus instead */

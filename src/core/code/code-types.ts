@@ -176,6 +176,7 @@ export interface IndexResult {
   fileCount: number;
   symbolCount: number;
   relationCount: number;
+  typescriptAvailable: boolean;
 }
 
 // ── Helpers ───────────────────────────────────────────

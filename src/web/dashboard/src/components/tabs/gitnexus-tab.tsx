@@ -412,6 +412,17 @@ export function GitNexusTab(): React.JSX.Element {
         onFolderChanged={handleFolderChanged}
       />
 
+      {/* Warning: TypeScript not available */}
+      {gitNexusStatus?.typescriptAvailable === false && (
+        <div className="flex items-center gap-2 px-4 py-2 border-b border-[var(--color-border)] bg-yellow-500/10 text-yellow-600 dark:text-yellow-400">
+          <span className="text-sm font-medium">TypeScript compiler not found.</span>
+          <span className="text-xs">
+            Code Graph requires the <code className="font-mono bg-yellow-500/10 px-1 rounded">typescript</code> package to analyze source files.
+            Install it: <code className="font-mono bg-yellow-500/10 px-1 rounded">npm install -D typescript</code>
+          </span>
+        </div>
+      )}
+
       {/* 2-panel body: left controls/results + right graph */}
       <div className="flex flex-1 min-h-0">
         {/* Left: Explorer/Filters sidebar (~30%) */}

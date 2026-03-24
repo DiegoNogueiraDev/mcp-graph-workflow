@@ -7,7 +7,7 @@ import { readdirSync } from "node:fs";
 import path from "node:path";
 import type { CodeStore } from "./code-store.js";
 import type { IndexResult } from "./code-types.js";
-import { analyzeFile } from "./ts-analyzer.js";
+import { analyzeFile, isTypeScriptAvailable } from "./ts-analyzer.js";
 import { now } from "../utils/time.js";
 import { logger } from "../utils/logger.js";
 
@@ -38,6 +38,25 @@ export class CodeIndexer {
    * Index specific files.
    */
   async indexFiles(filePaths: string[], basePath: string): Promise<IndexResult> {
+    const typescriptAvailable = await isTypeScriptAvailable();
+
+    if (!typescriptAvailable) {
+      logger.warn("code-indexer:typescript-unavailable", {
+        message: "typescript package not found — code indexing disabled. Install it: npm install -D typescript",
+        fileCount: filePaths.length,
+      });
+
+      this.store.upsertIndexMeta({
+        projectId: this.projectId,
+        lastIndexed: now(),
+        fileCount: 0,
+        symbolCount: 0,
+        relationCount: 0,
+      });
+
+      return { fileCount: 0, symbolCount: 0, relationCount: 0, typescriptAvailable: false };
+    }
+
     let totalSymbols = 0;
     let totalRelations = 0;
     let fileCount = 0;
@@ -105,7 +124,7 @@ export class CodeIndexer {
       relationCount: totalRelations,
     });
 
-    return { fileCount, symbolCount: totalSymbols, relationCount: totalRelations };
+    return { fileCount, symbolCount: totalSymbols, relationCount: totalRelations, typescriptAvailable: true };
   }
 }
 

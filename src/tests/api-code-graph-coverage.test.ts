@@ -40,6 +40,14 @@ describe("API /api/v1/code-graph (coverage)", () => {
       expect(res.body).toHaveProperty("basePath");
       expect(typeof res.body.basePath).toBe("string");
     });
+
+    it("should include typescriptAvailable field in status response", async () => {
+      const res = await request(ctx.app).get("/api/v1/code-graph/status");
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty("typescriptAvailable");
+      expect(typeof res.body.typescriptAvailable).toBe("boolean");
+    });
   });
 
   // ── POST /code-graph/reindex ────────────────────
@@ -53,6 +61,14 @@ describe("API /api/v1/code-graph (coverage)", () => {
       expect(res.body).toHaveProperty("fileCount");
       expect(res.body).toHaveProperty("symbolCount");
       expect(res.body).toHaveProperty("relationCount");
+    });
+
+    it("should include typescriptAvailable field in reindex response", async () => {
+      const res = await request(ctx.app).post("/api/v1/code-graph/reindex");
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty("typescriptAvailable");
+      expect(typeof res.body.typescriptAvailable).toBe("boolean");
     });
   });
 
