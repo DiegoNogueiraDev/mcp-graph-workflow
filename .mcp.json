@@ -10,9 +10,7 @@
     "playwright": {
       "command": "npx",
       "args": [
-        "@playwright/mcp@latest",
-        "--launch-options",
-        "{\"chromiumSandbox\":false,\"args\":[\"--no-sandbox\",\"--disable-setuid-sandbox\"]}"
+        "@playwright/mcp@latest"
       ]
     },
     "context7": {
