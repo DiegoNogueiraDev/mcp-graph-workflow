@@ -14,6 +14,7 @@ import { registerAnalyze } from "./analyze.js";
 import { registerEdge } from "./edge.js";
 import { registerSnapshot } from "./snapshot.js";
 import { registerExport } from "./export.js";
+import { registerImportGraph } from "./import-graph.js";
 import { registerMoveNode } from "./move-node.js";
 import { registerCloneNode } from "./clone-node.js";
 import { registerReindexKnowledge } from "./reindex-knowledge.js";
@@ -63,6 +64,7 @@ export function registerAllTools(server: McpServer, store: SqliteStore): void {
   registerEdge(server, store);
   registerSnapshot(server, store);
   registerExport(server, store);
+  registerImportGraph(server, store);
   registerMoveNode(server, store);
   registerCloneNode(server, store);
   registerReindexKnowledge(server, store);

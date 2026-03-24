@@ -825,6 +825,56 @@ export class SqliteStore {
     this._eventBus?.emitTyped("import:completed", { nodesCreated: nodes.length, edgesCreated: edges.length });
   }
 
+  /**
+   * Merge-insert nodes and edges using INSERT OR IGNORE semantics for both.
+   * Existing nodes (by ID) and edges (by unique constraint) are silently skipped.
+   * Returns actual counts of rows inserted.
+   */
+  mergeInsert(nodes: GraphNode[], edges: GraphEdge[]): { nodesInserted: number; edgesInserted: number } {
+    const pid = this.ensureProject();
+    logger.info("merge-insert:start", { nodes: nodes.length, edges: edges.length });
+
+    let nodesInserted = 0;
+    let edgesInserted = 0;
+
+    this.db.transaction(() => {
+      for (const node of nodes) {
+        const row = nodeToRow(node, pid);
+        const result = this.db
+          .prepare(
+            `INSERT OR IGNORE INTO nodes
+              (id, project_id, type, title, description, status, priority,
+               xp_size, estimate_minutes, tags, parent_id, sprint,
+               source_file, source_start_line, source_end_line, source_confidence,
+               acceptance_criteria, blocked, metadata, created_at, updated_at)
+             VALUES
+              (@id, @project_id, @type, @title, @description, @status, @priority,
+               @xp_size, @estimate_minutes, @tags, @parent_id, @sprint,
+               @source_file, @source_start_line, @source_end_line, @source_confidence,
+               @acceptance_criteria, @blocked, @metadata, @created_at, @updated_at)`,
+          )
+          .run(row);
+        nodesInserted += result.changes;
+      }
+      for (const edge of edges) {
+        const row = edgeToRow(edge, pid);
+        const result = this.db
+          .prepare(
+            `INSERT OR IGNORE INTO edges
+              (id, project_id, from_node, to_node, relation_type, weight, reason, metadata, created_at)
+             VALUES
+              (@id, @project_id, @from_node, @to_node, @relation_type, @weight, @reason, @metadata, @created_at)`,
+          )
+          .run(row);
+        edgesInserted += result.changes;
+      }
+    })();
+
+    logger.info("merge-insert:done", { nodesInserted, edgesInserted });
+    this._eventBus?.emitTyped("import:completed", { nodesCreated: nodesInserted, edgesCreated: edgesInserted });
+    return { nodesInserted, edgesInserted };
+  }
+
   // ── Snapshots ────────────────────────────────────
 
   createSnapshot(): number {
