@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.8.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.7.0...mcp-graph-v5.8.0) (2026-03-25)
+
+
+### Features
+
+* integrate RAG pipeline modules into production code path ([d956fd8](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/d956fd8e0c39f1a59d8fc3414fa7aab313acf478))
+
 ## [5.7.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.6.1...mcp-graph-v5.7.0) (2026-03-25)
 
 
