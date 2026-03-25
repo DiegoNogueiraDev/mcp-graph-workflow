@@ -15,6 +15,7 @@ import { linkBySharedContext } from "../../core/rag/knowledge-linker.js";
 import { runSynthesisCycle } from "../../core/rag/knowledge-synthesizer.js";
 import { logger } from "../../core/utils/logger.js";
 import { mcpText } from "../response-helpers.js";
+import { invalidateRagCache } from "./rag-context.js";
 
 export function registerReindexKnowledge(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -32,6 +33,7 @@ export function registerReindexKnowledge(server: McpServer, store: SqliteStore):
     },
     async ({ basePath, sources }) => {
       logger.debug("tool:reindex_knowledge", {});
+      invalidateRagCache();
       const projectPath = basePath ?? process.cwd();
       const allSources = !sources || sources.length === 0;
       const knowledgeStore = new KnowledgeStore(store.getDb());

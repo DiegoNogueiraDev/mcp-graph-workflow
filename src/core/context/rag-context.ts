@@ -8,6 +8,7 @@ import { KnowledgeStore } from "../store/knowledge-store.js";
 import { searchNodes } from "../search/fts-search.js";
 import { buildTaskContext, type TaskContext } from "./compact-context.js";
 import { estimateTokens } from "./token-estimator.js";
+import { understandQuery } from "../rag/query-understanding.js";
 import { DEFAULT_TOKEN_BUDGET } from "../utils/constants.js";
 import { logger } from "../utils/logger.js";
 import type { LifecyclePhase } from "../planner/lifecycle-phase.js";
@@ -57,10 +58,14 @@ export function ragBuildContext(
   tokenBudget: number = DEFAULT_TOKEN_BUDGET,
   phase?: LifecyclePhase,
 ): RagContext {
-  logger.info(`RAG context: query="${query}", budget=${tokenBudget} tokens, phase=${phase ?? "none"}`);
+  // Query understanding: rewrite query for better FTS matching
+  const understanding = understandQuery(query);
+  const effectiveQuery = understanding.rewrittenQuery || query;
+
+  logger.info(`RAG context: query="${query}", effective="${effectiveQuery}", budget=${tokenBudget} tokens, phase=${phase ?? "none"}, intent=${understanding.intent}`);
 
   // Stage 1: Search for relevant nodes with TF-IDF reranking + substring fallback
-  let searchResults = searchNodes(store, query, { limit: 10, rerank: true });
+  let searchResults = searchNodes(store, effectiveQuery, { limit: 10, rerank: true });
 
   // Fallback: if FTS returns nothing, try substring match
   if (searchResults.length === 0) {
@@ -107,18 +112,18 @@ export function ragBuildContext(
     let kResults: Array<{ id: string; sourceType: string; title: string; content: string; score: number }>;
     try {
       if (phase) {
-        const phaseResults = knowledgeStore.searchWithPhaseBoost(query, phase, 10);
+        const phaseResults = knowledgeStore.searchWithPhaseBoost(effectiveQuery, phase, 10);
         // Apply quality weighting on top of phase-boosted results
         kResults = phaseResults.map((r) => ({
           ...r,
           score: r.score * (r.metadata?.qualityScore as number ?? (r as Record<string, unknown>).qualityScore as number ?? 1),
         }));
       } else {
-        kResults = knowledgeStore.searchWithQuality(query, 10);
+        kResults = knowledgeStore.searchWithQuality(effectiveQuery, 10);
       }
     } catch {
       // Fall back to basic search if quality columns not yet available
-      kResults = knowledgeStore.search(query, 10);
+      kResults = knowledgeStore.search(effectiveQuery, 10);
     }
     knowledgeResults = kResults.slice(0, 5).map((r) => ({
       id: r.id,
