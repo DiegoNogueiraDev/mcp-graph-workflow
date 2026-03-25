@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { RagTracer, type RagTrace, type RagStageTrace } from "../core/rag/rag-trace.js";
+import { RagTracer, type RagTrace } from "../core/rag/rag-trace.js";
 
 describe("rag-trace", () => {
   let tracer: RagTracer;

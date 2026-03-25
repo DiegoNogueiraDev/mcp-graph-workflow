@@ -4,7 +4,6 @@ import {
   detectIntent,
   detectSourceFilter,
   expandQuery,
-  type QueryIntent,
 } from "../core/rag/query-understanding.js";
 
 describe("query-understanding", () => {

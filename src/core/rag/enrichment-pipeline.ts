@@ -53,6 +53,7 @@ export function extractKeywords(text: string, topN: number = DEFAULT_TOP_N): str
 // ── Entity detection patterns ──────────────────────────────
 
 /** PascalCase: at least two words joined (e.g., GraphNode, SqliteStore) */
+// eslint-disable-next-line security/detect-unsafe-regex -- bounded pattern, safe for short identifiers
 const PASCAL_CASE_RE = /\b([A-Z][a-z]+(?:[A-Z][a-z0-9]*)+)\b/g;
 
 /** camelCase: starts lowercase, has at least one uppercase (e.g., findNextTask) */

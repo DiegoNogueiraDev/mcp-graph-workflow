@@ -92,7 +92,7 @@ export function stitchAdjacentChunks(
 
   const stitched: RankedResult[] = [];
 
-  for (const [sourceId, group] of groups) {
+  for (const [_sourceId, group] of groups) {
     // Sort by chunk index
     group.sort((a, b) => (chunkMeta.get(a.id) ?? 0) - (chunkMeta.get(b.id) ?? 0));
 

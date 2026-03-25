@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { mapCitations, buildCitedContext, type Citation } from "../core/rag/citation-mapper.js";
+import { mapCitations, buildCitedContext } from "../core/rag/citation-mapper.js";
 import type { RankedResult } from "../core/rag/multi-strategy-retrieval.js";
 
 function makeResult(overrides: Partial<RankedResult> & { id: string }): RankedResult {
