@@ -47,12 +47,12 @@ src/
     integrations/    # integration-orchestrator, enriched-context, mcp-servers-config, mcp-deps-installer, tool-status
     parser/          # classify, extract, normalize, read-file, segment, file-reader, read-pdf, read-html
     planner/         # next-task, enhanced-next, decompose, dependency-chain, velocity, planning-report
-    rag/             # embedding-store, rag-pipeline, memory-indexer, docs-indexer, capture-indexer, memory-rag-query, chunk-text
+    rag/             # embedding-store, rag-pipeline, memory-indexer, docs-indexer, capture-indexer, memory-rag-query, chunk-text, query-understanding, post-retrieval, enrichment-pipeline, citation-mapper, query-cache, rag-trace, source-contribution, benchmark-indexer
     search/          # fts-search, tfidf, tokenizer
     store/           # sqlite-store, migrations, knowledge-store
     utils/           # errors, fs, id, logger, time
   api/               # Express REST API — 17 routers, 44 endpoints
-  mcp/tools/         # MCP tool wrappers (31 tools)
+  mcp/tools/         # MCP tool wrappers (32 tools)
   schemas/           # Zod schemas (node, edge, graph, knowledge)
   web/dashboard/     # React + Tailwind + React Flow dashboard
 ```
@@ -62,7 +62,7 @@ src/
 | Capability | Key Modules | Docs |
 |------------|-------------|------|
 | PRD Import | parser/, importer/ | — |
-| 31 MCP Tools | mcp/tools/ | [MCP Tools Reference](docs/MCP-TOOLS-REFERENCE.md) |
+| 32 MCP Tools | mcp/tools/ | [MCP Tools Reference](docs/MCP-TOOLS-REFERENCE.md) |
 | 17 REST API Routers | api/routes/ | [REST API Reference](docs/REST-API-REFERENCE.md) |
 | Knowledge Store + RAG | store/knowledge-store, rag/ | [Knowledge Pipeline](docs/KNOWLEDGE-PIPELINE.md) |
 | Tiered Context Compression | context/ | [Knowledge Pipeline](docs/KNOWLEDGE-PIPELINE.md) |
@@ -310,7 +310,7 @@ Dados armazenados em `workflow-graph/graph.db` (local, gitignored).
 
 > **Sem node no grafo = sem código escrito.**
 
-### Ferramentas MCP disponíveis (28 tools + 6 deprecated)
+### Ferramentas MCP disponíveis (29 tools + 6 deprecated)
 
 #### Projeto & Grafo
 
@@ -340,6 +340,7 @@ Dados armazenados em `workflow-graph/graph.db` (local, gitignored).
 | Tool | Quando usar |
 |------|-------------|
 | `import_prd` | Importar PRD → segmentar → classificar → extrair → inferir deps → criar grafo + indexar knowledge |
+| `import_graph` | Importar/mergear grafo externo (JSON string ou arquivo) com merge semântico (INSERT OR IGNORE) |
 | `plan_sprint` | Gerar relatório de planejamento de sprint (capacity, velocity, recomendações) |
 | `analyze` | 24 modos de análise por fase do lifecycle (ver modos abaixo) |
 | `set_phase` | Forçar/resetar fase do lifecycle (strict/advisory, gate checks) |

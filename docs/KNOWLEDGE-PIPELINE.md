@@ -157,6 +157,21 @@ Combines all context sources into a single token-budgeted payload for the LLM.
 
 The assembler achieves **70-85% token reduction** compared to sending raw context, while preserving the information most relevant to the current task.
 
+## Advanced RAG Pipeline Modules
+
+Eight additional modules extend the RAG pipeline with query understanding, post-retrieval processing, caching, and observability. See [RAG Architecture](./RAG-ARCHITECTURE.md) for the full diagram.
+
+| Module | File | Purpose |
+|--------|------|---------|
+| **Query Understanding** | `src/core/rag/query-understanding.ts` | Intent detection, source filtering, query expansion |
+| **Enrichment Pipeline** | `src/core/rag/enrichment-pipeline.ts` | Keyword/entity/summary extraction from text chunks |
+| **Post-Retrieval** | `src/core/rag/post-retrieval.ts` | Deduplication, re-ranking, chunk stitching |
+| **Citation Mapper** | `src/core/rag/citation-mapper.ts` | `[N]` markers for source traceability |
+| **Query Cache** | `src/core/rag/query-cache.ts` | In-memory LRU cache with TTL for query results |
+| **RAG Trace** | `src/core/rag/rag-trace.ts` | Per-stage timing and observability |
+| **Source Contribution** | `src/core/rag/source-contribution.ts` | Hit rate, relevance, and feedback analytics |
+| **Benchmark Indexer** | `src/core/rag/benchmark-indexer.ts` | Index performance metrics as knowledge documents |
+
 ## MCP Tools
 
 | Tool | Purpose |

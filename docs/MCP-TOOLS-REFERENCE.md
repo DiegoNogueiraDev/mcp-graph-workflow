@@ -1,6 +1,6 @@
 # MCP Tools Reference
 
-> 31 tools organized in 8 categories — complete parameter reference.
+> 32 tools organized in 8 categories — complete parameter reference.
 >
 > **v5.5.0:** `node` (3 actions) and `validate` (2 actions) consolidate 5 individual tools. The old names (`add_node`, `update_node`, `delete_node`, `validate_task`, `validate_ac`) still work as deprecated shims — they will be removed in v7.0.
 
@@ -8,7 +8,7 @@
 
 | Category | Tools | Count |
 |----------|-------|-------|
-| [Graph CRUD](#graph-crud) | init, import_prd, **node** *(add/update/delete)*, edge, move_node, clone_node, export | 7 |
+| [Graph CRUD](#graph-crud) | init, import_prd, import_graph, **node** *(add/update/delete)*, edge, move_node, clone_node, export | 8 |
 | [Querying](#querying) | list, show, search, rag_context | 4 |
 | [Planning & Execution](#planning--execution) | next, update_status, decompose, velocity, dependencies, plan_sprint | 6 |
 | [Knowledge & RAG](#knowledge--rag) | context, reindex_knowledge, sync_stack_docs | 3 |
@@ -37,6 +37,18 @@ Import a PRD file and convert it into graph nodes and edges.
 |-------|------|----------|---------|-------------|
 | `filePath` | string | Yes | — | Path to the PRD text file (.md, .txt, .pdf, .html) |
 | `force` | boolean | No | `false` | Force re-import: delete nodes from previous import before importing |
+
+### `import_graph`
+
+Import and merge an external graph (JSON) into the current project. Uses INSERT OR IGNORE semantics — existing local nodes/edges win on conflict.
+
+| Param | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `graph` | string | No | — | JSON string of a GraphDocument (nodes + edges) |
+| `filePath` | string | No | — | Path to a JSON file containing a GraphDocument |
+| `dry_run` | boolean | No | `false` | Preview merge counts without writing to the database |
+
+> One of `graph` or `filePath` must be provided. Returns counts of inserted nodes and edges.
 
 ### `node`
 

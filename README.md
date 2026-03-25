@@ -114,7 +114,7 @@ mcp-graph serve --port 3000    # or: npm run dev
 
 | | Count | Reference |
 |---|---|---|
-| **MCP Tools** | 26 | [MCP-TOOLS-REFERENCE.md](docs/MCP-TOOLS-REFERENCE.md) |
+| **MCP Tools** | 32 | [MCP-TOOLS-REFERENCE.md](docs/MCP-TOOLS-REFERENCE.md) |
 | **REST Endpoints** | 44 (17 routers) | [REST-API-REFERENCE.md](docs/REST-API-REFERENCE.md) |
 | **CLI Commands** | 6 | `init`, `import`, `index`, `stats`, `serve`, `doctor` |
 
@@ -145,7 +145,7 @@ npm run test:all    # Everything
 |----------|-------------|
 | [Getting Started](docs/GETTING-STARTED.md) | Step-by-step guide for new users |
 | [Architecture](docs/ARCHITECTURE-GUIDE.md) | System layers, modules, data flows |
-| [MCP Tools Reference](docs/MCP-TOOLS-REFERENCE.md) | 26 tools with full parameters |
+| [MCP Tools Reference](docs/MCP-TOOLS-REFERENCE.md) | 32 tools with full parameters |
 | [REST API Reference](docs/REST-API-REFERENCE.md) | 17 routers, 44 endpoints |
 | [Knowledge Pipeline](docs/KNOWLEDGE-PIPELINE.md) | RAG, embeddings, context assembly |
 | [Integrations](docs/INTEGRATIONS-GUIDE.md) | Serena, GitNexus, Context7, Playwright |
