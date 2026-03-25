@@ -310,7 +310,7 @@ Dados armazenados em `workflow-graph/graph.db` (local, gitignored).
 
 > **Sem node no grafo = sem código escrito.**
 
-### Ferramentas MCP disponíveis (29 tools + 6 deprecated)
+### Ferramentas MCP disponíveis (28 tools + 6 deprecated)
 
 #### Projeto & Grafo
 
@@ -340,7 +340,6 @@ Dados armazenados em `workflow-graph/graph.db` (local, gitignored).
 | Tool | Quando usar |
 |------|-------------|
 | `import_prd` | Importar PRD → segmentar → classificar → extrair → inferir deps → criar grafo + indexar knowledge |
-| `import_graph` | Importar/mergear grafo externo (JSON string ou arquivo) com merge semântico (INSERT OR IGNORE) |
 | `plan_sprint` | Gerar relatório de planejamento de sprint (capacity, velocity, recomendações) |
 | `analyze` | 24 modos de análise por fase do lifecycle (ver modos abaixo) |
 | `set_phase` | Forçar/resetar fase do lifecycle (strict/advisory, gate checks) |
