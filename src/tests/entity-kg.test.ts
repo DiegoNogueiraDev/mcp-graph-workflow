@@ -181,6 +181,28 @@ describe("EntityStore", () => {
     });
   });
 
+  describe("getRelationsFrom / getRelationsTo", () => {
+    it("should return outgoing relations from an entity", () => {
+      const a = store.upsertEntity("A", "class");
+      const b = store.upsertEntity("B", "class");
+      store.addRelation(a.id, b.id, "uses");
+
+      const from = store.getRelationsFrom(a.id);
+      expect(from.length).toBe(1);
+      expect(from[0].toEntityId).toBe(b.id);
+    });
+
+    it("should return incoming relations to an entity", () => {
+      const a = store.upsertEntity("A", "class");
+      const b = store.upsertEntity("B", "class");
+      store.addRelation(a.id, b.id, "uses");
+
+      const to = store.getRelationsTo(b.id);
+      expect(to.length).toBe(1);
+      expect(to[0].fromEntityId).toBe(a.id);
+    });
+  });
+
   describe("stats", () => {
     it("should return correct counts", () => {
       store.upsertEntity("A", "class", "doc_1");
