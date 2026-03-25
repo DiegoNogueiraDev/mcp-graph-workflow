@@ -13,6 +13,7 @@ import { indexAllEmbeddings } from "../../core/rag/rag-pipeline.js";
 import { decayStaleKnowledge } from "../../core/rag/knowledge-quality.js";
 import { linkBySharedContext } from "../../core/rag/knowledge-linker.js";
 import { runSynthesisCycle } from "../../core/rag/knowledge-synthesizer.js";
+import { reindexAll as reindexEntities } from "../../core/rag/entity-indexer.js";
 import { logger } from "../../core/utils/logger.js";
 import { mcpText } from "../response-helpers.js";
 import { invalidateRagCache } from "./rag-context.js";
@@ -27,7 +28,7 @@ export function registerReindexKnowledge(server: McpServer, store: SqliteStore):
         .optional()
         .describe("Project base path for finding memories (default: cwd)"),
       sources: z
-        .array(z.enum(["memory", "serena", "docs", "skills", "journey", "embeddings", "quality", "relations", "synthesis"]))
+        .array(z.enum(["memory", "serena", "docs", "skills", "journey", "embeddings", "quality", "relations", "synthesis", "entities"]))
         .optional()
         .describe("Which sources to reindex. 'quality' recalculates scores, 'relations' links docs, 'synthesis' generates insights. (default: all)"),
     },
@@ -77,6 +78,15 @@ export function registerReindexKnowledge(server: McpServer, store: SqliteStore):
 
       if (sources?.includes("synthesis")) {
         results.synthesis = runSynthesisCycle(store.getDb());
+      }
+
+      if (allSources || sources?.includes("entities")) {
+        try {
+          results.entities = reindexEntities(store.getDb());
+        } catch (err) {
+          logger.warn("entity-indexer:reindex-failed", { error: String(err) });
+          results.entities = { error: "Entity reindex failed" };
+        }
       }
 
       results.totalKnowledge = knowledgeStore.count();

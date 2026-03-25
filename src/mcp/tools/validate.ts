@@ -11,6 +11,7 @@ import { runValidation } from "../../core/capture/validate-runner.js";
 import { KnowledgeStore } from "../../core/store/knowledge-store.js";
 import { indexCapture } from "../../core/rag/capture-indexer.js";
 import { indexAcValidationResult } from "../../core/rag/validation-indexer.js";
+import { indexEntitiesForSource } from "../../core/rag/entity-index-hook.js";
 import { validateAcQuality } from "../../core/analyzer/ac-validator.js";
 import { logger } from "../../core/utils/logger.js";
 import { mcpText, mcpError } from "../response-helpers.js";
@@ -46,6 +47,7 @@ export function registerValidate(server: McpServer, store: SqliteStore): void {
         if (result.comparison) {
           indexCapture(knowledgeStore, result.comparison);
         }
+        indexEntitiesForSource(store.getDb(), "web_capture");
 
         const response: Record<string, unknown> = {
           ok: true,
@@ -90,6 +92,7 @@ export function registerValidate(server: McpServer, store: SqliteStore): void {
               overallScore: nodeReport.score,
             });
           }
+          indexEntitiesForSource(store.getDb(), "validation_result");
         } catch (err) {
           logger.warn("tool:validate:ac:index_failed", { error: String(err) });
         }

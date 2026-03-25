@@ -12,6 +12,7 @@ import { indexSwaggerContent } from "../../core/rag/swagger-indexer.js";
 import { readFileContent } from "../../core/parser/file-reader.js";
 import { KnowledgeStore } from "../../core/store/knowledge-store.js";
 import { chunkText } from "../../core/rag/chunk-text.js";
+import { indexEntitiesForSource, indexEntitiesForDocs } from "../../core/rag/entity-index-hook.js";
 import { logger } from "../../core/utils/logger.js";
 import { mcpText, mcpError, normalizeNewlines } from "../response-helpers.js";
 import { readFile } from "node:fs/promises";
@@ -48,6 +49,7 @@ export function registerSiebelImportDocs(server: McpServer, store: SqliteStore):
 
           const indexResult = indexSwaggerContent(knowledgeStore, parseResult, fileName);
           documentsIndexed = indexResult.documentsIndexed;
+          indexEntitiesForSource(store.getDb(), "swagger");
 
           return mcpText({
             ok: true,
@@ -94,6 +96,7 @@ export function registerSiebelImportDocs(server: McpServer, store: SqliteStore):
 
         const docs = knowledgeStore.insertChunks(chunkDocs);
         documentsIndexed = docs.length;
+        indexEntitiesForDocs(store.getDb(), docs.map((d) => d.id));
 
         logger.info("Documentation indexed", {
           fileName,

@@ -14,6 +14,7 @@ import {
   deleteMemory,
 } from "../../core/memory/memory-reader.js";
 import { indexMemories } from "../../core/rag/memory-indexer.js";
+import { indexEntitiesForSource } from "../../core/rag/entity-index-hook.js";
 import { logger } from "../../core/utils/logger.js";
 import { mcpText, mcpError, normalizeNewlines } from "../response-helpers.js";
 
@@ -36,6 +37,7 @@ export function registerMemory(server: McpServer, store: SqliteStore): void {
       // Auto-index into knowledge store
       const knowledgeStore = new KnowledgeStore(store.getDb());
       const indexResult = await indexMemories(knowledgeStore, basePath);
+      indexEntitiesForSource(store.getDb(), "memory");
 
       return mcpText({
         ok: true,

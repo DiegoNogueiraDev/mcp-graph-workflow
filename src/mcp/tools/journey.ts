@@ -4,6 +4,7 @@ import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import { JourneyStore } from "../../core/journey/journey-store.js";
 import { KnowledgeStore } from "../../core/store/knowledge-store.js";
 import { indexJourneyMaps } from "../../core/rag/journey-indexer.js";
+import { indexEntitiesForSource } from "../../core/rag/entity-index-hook.js";
 import { logger } from "../../core/utils/logger.js";
 import { mcpText, mcpError } from "../response-helpers.js";
 
@@ -165,6 +166,7 @@ export function registerJourney(server: McpServer, store: SqliteStore): void {
         case "index": {
           const knowledgeStore = new KnowledgeStore(store.getDb());
           const result = indexJourneyMaps(knowledgeStore, journeyStore);
+          indexEntitiesForSource(store.getDb(), "journey");
           logger.info("tool:journey:index", { mapsIndexed: result.mapsIndexed, documentsIndexed: result.documentsIndexed });
           return mcpText({
             action: "index",
