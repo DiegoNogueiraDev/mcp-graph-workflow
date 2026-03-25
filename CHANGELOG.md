@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.9.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.8.0...mcp-graph-v5.9.0) (2026-03-25)
+
+
+### Features
+
+* add Knowledge Graph entity extraction and graph-based RAG retrieval ([3405949](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/340594923d19d3957ed8e9bf6de6647b91305ce9))
+* close RAG indexing gaps — graph nodes, code symbols, skills, clone, import ([7cab61c](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/7cab61c8ad75858fbed766510230ee6a22a7b87b))
+* integrate Knowledge Graph entity indexing into all MCP tools and data sources ([0cae6ae](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/0cae6aee6a8d06ad502919cb541665f899727f24))
+* merge Knowledge Graph entity extraction and graph-based RAG retrieval ([bd7e419](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/bd7e419741867045309c405cdeb627b2325298cd))
+
+
+### Bug Fixes
+
+* remove unused makeEdge import to pass CI lint ([4b30d6b](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/4b30d6b6f8fa6bca5542caddb83048355aabf10e))
+
 ## [5.8.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.7.0...mcp-graph-v5.8.0) (2026-03-25)
 
 
