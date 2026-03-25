@@ -14,10 +14,9 @@ import Database from "better-sqlite3";
 import { runMigrations, configureDb } from "../core/store/migrations.js";
 import { KnowledgeStore } from "../core/store/knowledge-store.js";
 import { EntityStore } from "../core/rag/entity-store.js";
-import { indexDocument, reindexAll } from "../core/rag/entity-indexer.js";
+import { reindexAll } from "../core/rag/entity-indexer.js";
 import {
   indexEntitiesForDoc,
-  indexEntitiesForDocs,
   indexEntitiesForSource,
 } from "../core/rag/entity-index-hook.js";
 import { multiStrategySearch } from "../core/rag/multi-strategy-retrieval.js";

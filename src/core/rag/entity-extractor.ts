@@ -53,6 +53,7 @@ for (const term of TECHNOLOGY_TERMS) {
 // ── Entity extraction patterns ───────────────────────────
 
 /** PascalCase: at least two words joined (e.g., GraphNode, SqliteStore) */
+// eslint-disable-next-line security/detect-unsafe-regex -- bounded pattern, safe for identifiers
 const PASCAL_CASE_RE = /\b([A-Z][a-z]+(?:[A-Z][a-z0-9]*)+)\b/g;
 
 /** camelCase: starts lowercase, has at least one uppercase (e.g., findNextTask) */
@@ -65,12 +66,14 @@ const FILE_PATH_RE = /\b((?:src|lib|dist|test|tests)\/[\w\-./]+\.(?:ts|js|tsx|js
 const SCOPED_PACKAGE_RE = /(@[\w-]+\/[\w-]+)/g;
 
 /** Non-scoped packages after "import" or known patterns */
+// eslint-disable-next-line security/detect-unsafe-regex -- bounded pattern for import statements
 const PACKAGE_IMPORT_RE = /(?:from\s+["'])([a-z][\w-]*(?:\/[\w-]+)?)(?:["'])/g;
 
 /** API endpoints: GET/POST/PUT/DELETE/PATCH /path */
 const API_ENDPOINT_RE = /\b((?:GET|POST|PUT|DELETE|PATCH)\s+\/[\w/\-:{}]+)/g;
 
 /** UPPER_SNAKE_CASE: config constants (at least 2 segments) */
+// eslint-disable-next-line security/detect-unsafe-regex -- bounded quantifiers, safe for identifiers
 const UPPER_SNAKE_RE = /\b([A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+)\b/g;
 
 /** Markdown headings: ## Title */
