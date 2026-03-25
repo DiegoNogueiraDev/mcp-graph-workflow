@@ -8,7 +8,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { SqliteStore } from "../core/store/sqlite-store.js";
 import { KnowledgeStore } from "../core/store/knowledge-store.js";
-import { makeNode, makeEdge } from "./helpers/factories.js";
+import { makeNode } from "./helpers/factories.js";
 import { indexNodeAsKnowledge, removeNodeFromKnowledge, indexAllNodes } from "../core/rag/node-indexer.js";
 import { indexEntitiesForDoc } from "../core/rag/entity-index-hook.js";
 import { EntityStore } from "../core/rag/entity-store.js";
