@@ -14,6 +14,8 @@
 import type Database from "better-sqlite3";
 import { KnowledgeStore } from "../store/knowledge-store.js";
 import { findCrossSourceContext } from "./knowledge-linker.js";
+import { EntityStore } from "./entity-store.js";
+import { decomposeQuery } from "./query-understanding.js";
 import { logger } from "../utils/logger.js";
 
 export interface RankedResult {
@@ -109,12 +111,55 @@ export function multiStrategySearch(
     });
   }
 
-  if (ftsResults.length === 0 && graphResults.length === 0) {
+  // Strategy 4: Entity Graph Traversal — find docs via KG entities
+  const entityGraphResults: Array<{ id: string; score: number }> = [];
+  try {
+    const entityStore = new EntityStore(db);
+    if (entityStore.hasKgTables() && entityStore.stats().entities > 0) {
+      const decomposed = decomposeQuery(query, db);
+
+      if (decomposed.entityMatches.length > 0) {
+        // Extract subgraph around matched entities (2 hops)
+        const seedIds = decomposed.entityMatches.slice(0, 5).map((m) => m.entityId);
+        const subgraph = entityStore.extractSubgraph(seedIds, 2, 50);
+
+        // Convert doc IDs to scored results
+        const docScoreMap = new Map<string, number>();
+        for (const docId of subgraph.docIds) {
+          docScoreMap.set(docId, 0.5);
+        }
+
+        // Boost docs that contain directly matched entities
+        for (const match of decomposed.entityMatches) {
+          const docIds = entityStore.getDocIdsForEntity(match.entityId);
+          for (const docId of docIds) {
+            const current = docScoreMap.get(docId) ?? 0;
+            docScoreMap.set(docId, Math.min(current + match.score * 0.3, 1.0));
+          }
+        }
+
+        for (const [id, score] of docScoreMap) {
+          entityGraphResults.push({ id, score });
+        }
+
+        // Sort by score descending for RRF
+        entityGraphResults.sort((a, b) => b.score - a.score);
+      }
+    }
+  } catch {
+    logger.debug("Entity graph strategy skipped — KG not available");
+  }
+
+  if (ftsResults.length === 0 && graphResults.length === 0 && entityGraphResults.length === 0) {
     return [];
   }
 
-  // Merge via RRF
-  const merged = reciprocalRankFusion([ftsResults, graphResults, recencyResults]);
+  // Merge via RRF — add entity graph results as 4th list
+  const rankedLists = [ftsResults, graphResults, recencyResults];
+  if (entityGraphResults.length > 0) {
+    rankedLists.push(entityGraphResults);
+  }
+  const merged = reciprocalRankFusion(rankedLists);
 
   // Fetch full docs and apply quality multiplier
   const results: RankedResult[] = [];
@@ -129,6 +174,11 @@ export function multiStrategySearch(
     const strategies = strategyMap.get(gr.id) ?? [];
     strategies.push("graph");
     strategyMap.set(gr.id, strategies);
+  }
+  for (const eg of entityGraphResults) {
+    const strategies = strategyMap.get(eg.id) ?? [];
+    strategies.push("entity_graph");
+    strategyMap.set(eg.id, strategies);
   }
 
   for (const item of merged.slice(0, limit)) {
@@ -176,6 +226,7 @@ export function multiStrategySearch(
     query,
     ftsCount: ftsResults.length,
     graphCount: graphResults.length,
+    entityGraphCount: entityGraphResults.length,
     resultCount: results.length,
   });
 
