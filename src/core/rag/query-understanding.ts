@@ -9,8 +9,11 @@
  * - Query rewriting for FTS5 optimization
  */
 
+import type Database from "better-sqlite3";
 import { tokenize } from "../search/tokenizer.js";
 import { extractEntities } from "./enrichment-pipeline.js";
+import { extractEntitiesFromText } from "./entity-extractor.js";
+import { EntityStore } from "./entity-store.js";
 import { logger } from "../utils/logger.js";
 
 export type QueryIntent = "search" | "how_to" | "status" | "debug" | "compare" | "history";
@@ -140,5 +143,114 @@ export function understandQuery(query: string): UnderstandingResult {
     intent,
     expandedTerms,
     sourceTypeFilter,
+  };
+}
+
+// ── Decomposed Query (Knowledge Graph-aware) ─────────────
+
+export interface EntityMatch {
+  entityId: string;
+  name: string;
+  type: string;
+  score: number;
+}
+
+export interface DecomposedQuery extends UnderstandingResult {
+  /** High-level keys: intent + abstract concepts (expanded terms) */
+  highLevelKeys: string[];
+  /** Low-level keys: specific entities and technical terms */
+  lowLevelKeys: string[];
+  /** Entities matched from the Knowledge Graph */
+  entityMatches: EntityMatch[];
+}
+
+/**
+ * Decompose query into high/low level keys with KG entity matching.
+ * Extends understandQuery() — the original function is NOT modified.
+ *
+ * If the KG tables don't exist or are empty, entityMatches will be [].
+ * This ensures graceful degradation when KG is not populated.
+ */
+export function decomposeQuery(query: string, db: Database.Database): DecomposedQuery {
+  const base = understandQuery(query);
+
+  // High-level keys: intent + expanded terms (abstract concepts)
+  const highLevelKeys = [base.intent, ...base.expandedTerms];
+
+  // Low-level keys: extracted entities from the query text (specific terms)
+  const queryEntities = extractEntitiesFromText(query);
+  const lowLevelKeys = [
+    ...base.entities,
+    ...queryEntities.map((e) => e.name),
+  ];
+  // Deduplicate
+  const uniqueLowKeys = [...new Set(lowLevelKeys)];
+
+  // Match against Knowledge Graph entities
+  const entityMatches: EntityMatch[] = [];
+
+  try {
+    const entityStore = new EntityStore(db);
+    if (entityStore.hasKgTables()) {
+      // Search KG for each extracted entity name
+      const searched = new Set<string>();
+      for (const key of uniqueLowKeys) {
+        if (searched.has(key.toLowerCase())) continue;
+        searched.add(key.toLowerCase());
+
+        const matches = entityStore.findByName(key, 3);
+        for (const match of matches) {
+          // Score: exact match = 1.0, partial = 0.6
+          const score = match.normalizedName === key.toLowerCase() ? 1.0 : 0.6;
+          entityMatches.push({
+            entityId: match.id,
+            name: match.name,
+            type: match.type,
+            score,
+          });
+        }
+      }
+
+      // Also try expanded terms against KG
+      for (const term of base.expandedTerms) {
+        if (searched.has(term.toLowerCase())) continue;
+        searched.add(term.toLowerCase());
+
+        const matches = entityStore.findByName(term, 2);
+        for (const match of matches) {
+          entityMatches.push({
+            entityId: match.id,
+            name: match.name,
+            type: match.type,
+            score: 0.4, // Lower score for expanded term matches
+          });
+        }
+      }
+    }
+  } catch {
+    // KG not available — graceful degradation
+    logger.debug("decomposeQuery: KG tables not available, skipping entity matching");
+  }
+
+  // Deduplicate entity matches by entityId, keeping highest score
+  const entityMap = new Map<string, EntityMatch>();
+  for (const em of entityMatches) {
+    const existing = entityMap.get(em.entityId);
+    if (!existing || em.score > existing.score) {
+      entityMap.set(em.entityId, em);
+    }
+  }
+
+  logger.debug("Query decomposed", {
+    highLevelKeys: highLevelKeys.length,
+    lowLevelKeys: uniqueLowKeys.length,
+    entityMatches: entityMap.size,
+  });
+
+  return {
+    ...base,
+    highLevelKeys,
+    lowLevelKeys: uniqueLowKeys,
+    entityMatches: Array.from(entityMap.values()).sort((a, b) => b.score - a.score),
   };
 }

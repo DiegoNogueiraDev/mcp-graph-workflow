@@ -7,6 +7,7 @@ import { DocsSyncer } from "../../core/docs/docs-syncer.js";
 import { createMcpContext7Fetcher } from "../../core/docs/mcp-context7-fetcher.js";
 import { detectStack } from "../../core/docs/stack-detector.js";
 import { indexCachedDocs } from "../../core/rag/docs-indexer.js";
+import { indexEntitiesForSource } from "../../core/rag/entity-index-hook.js";
 import { logger } from "../../core/utils/logger.js";
 import { mcpText } from "../response-helpers.js";
 
@@ -67,6 +68,7 @@ export function registerSyncStackDocs(server: McpServer, store: SqliteStore): vo
 
       // Index synced docs into knowledge store
       const indexResult = indexCachedDocs(knowledgeStore, docsCacheStore);
+      indexEntitiesForSource(store.getDb(), "docs");
 
       logger.info("tool:sync_stack_docs:ok", { librariesProcessed: results.length, knowledgeIndexed: indexResult.documentsIndexed });
       return mcpText({

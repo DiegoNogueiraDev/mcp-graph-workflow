@@ -447,6 +447,57 @@ const migrations: Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_kusage_action ON knowledge_usage_log(action);
     `,
   },
+  {
+    version: 12,
+    description: "Knowledge Graph — entities, relations, mentions with FTS5 index",
+    sql: `
+      CREATE TABLE IF NOT EXISTS kg_entities (
+        id              TEXT PRIMARY KEY,
+        name            TEXT NOT NULL,
+        type            TEXT NOT NULL,
+        normalized_name TEXT NOT NULL,
+        aliases         TEXT DEFAULT '[]',
+        description     TEXT,
+        metadata        TEXT DEFAULT '{}',
+        mention_count   INTEGER DEFAULT 0,
+        created_at      TEXT NOT NULL,
+        updated_at      TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_kg_entities_type ON kg_entities(type);
+      CREATE INDEX IF NOT EXISTS idx_kg_entities_normalized ON kg_entities(normalized_name);
+
+      CREATE VIRTUAL TABLE IF NOT EXISTS kg_entities_fts USING fts5(
+        name, aliases, description
+      );
+
+      CREATE TABLE IF NOT EXISTS kg_relations (
+        id              TEXT PRIMARY KEY,
+        from_entity_id  TEXT NOT NULL REFERENCES kg_entities(id),
+        to_entity_id    TEXT NOT NULL REFERENCES kg_entities(id),
+        relation_type   TEXT NOT NULL,
+        weight          REAL DEFAULT 1.0,
+        source_doc_id   TEXT,
+        created_at      TEXT NOT NULL,
+        UNIQUE(from_entity_id, to_entity_id, relation_type)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_kg_relations_from ON kg_relations(from_entity_id);
+      CREATE INDEX IF NOT EXISTS idx_kg_relations_to ON kg_relations(to_entity_id);
+
+      CREATE TABLE IF NOT EXISTS kg_mentions (
+        id          TEXT PRIMARY KEY,
+        entity_id   TEXT NOT NULL REFERENCES kg_entities(id),
+        doc_id      TEXT NOT NULL,
+        context     TEXT,
+        position    INTEGER DEFAULT 0,
+        created_at  TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_kg_mentions_entity ON kg_mentions(entity_id);
+      CREATE INDEX IF NOT EXISTS idx_kg_mentions_doc ON kg_mentions(doc_id);
+    `,
+  },
 ];
 
 export function runMigrations(db: Database.Database): void {

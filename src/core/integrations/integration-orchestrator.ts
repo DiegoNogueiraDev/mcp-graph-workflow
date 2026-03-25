@@ -16,6 +16,7 @@ import { DocsCacheStore } from "../docs/docs-cache-store.js";
 import { EmbeddingStore } from "../rag/embedding-store.js";
 import { indexCachedDocs } from "../rag/docs-indexer.js";
 import { indexAllEmbeddings } from "../rag/rag-pipeline.js";
+import { indexEntitiesForSource } from "../rag/entity-index-hook.js";
 import { logger } from "../utils/logger.js";
 
 export interface OrchestratorOptions {
@@ -115,6 +116,7 @@ export class IntegrationOrchestrator {
 
       // Re-index docs cache
       const docsResult = indexCachedDocs(knowledgeStore, docsCacheStore);
+      indexEntitiesForSource(this.store.getDb(), "docs");
 
       // Rebuild embeddings
       const embeddingStore = new EmbeddingStore(this.store);

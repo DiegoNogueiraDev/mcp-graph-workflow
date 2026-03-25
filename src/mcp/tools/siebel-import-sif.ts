@@ -10,6 +10,7 @@ import { parseSifFile, parseSifContent } from "../../core/siebel/sif-parser.js";
 import { convertSifToGraph } from "../../core/siebel/sif-to-graph.js";
 import { KnowledgeStore } from "../../core/store/knowledge-store.js";
 import { indexSifContent } from "../../core/rag/siebel-indexer.js";
+import { indexEntitiesForSource } from "../../core/rag/entity-index-hook.js";
 import { logger } from "../../core/utils/logger.js";
 import { mcpText, mcpError, normalizeNewlines } from "../response-helpers.js";
 
@@ -60,6 +61,7 @@ export function registerSiebelImportSif(server: McpServer, store: SqliteStore): 
           const knowledgeStore = new KnowledgeStore(store.getDb());
           const indexResult = indexSifContent(knowledgeStore, parseResult);
           result.documentsIndexed = indexResult.documentsIndexed;
+          indexEntitiesForSource(store.getDb(), "siebel_sif");
         } catch (indexErr) {
           logger.warn("Siebel knowledge indexing failed (non-fatal)", {
             error: String(indexErr),

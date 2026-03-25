@@ -4,6 +4,7 @@ import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import { generatePlanningReport } from "../../core/planner/planning-report.js";
 import { findEnhancedNextTask } from "../../core/planner/enhanced-next.js";
 import { KnowledgeStore } from "../../core/store/knowledge-store.js";
+import { indexEntitiesForDoc } from "../../core/rag/entity-index-hook.js";
 import { logger } from "../../core/utils/logger.js";
 import { mcpText } from "../response-helpers.js";
 
@@ -55,7 +56,7 @@ export function registerPlanSprint(server: McpServer, store: SqliteStore): void 
         const velocity = report.summary.avgVelocity ?? 0;
         const capacity = report.summary.estimatedPoints;
 
-        knowledgeStore.insert({
+        const sprintDoc = knowledgeStore.insert({
           sourceType: "sprint_plan",
           sourceId,
           title: "Sprint Planning Report",
@@ -68,6 +69,7 @@ export function registerPlanSprint(server: McpServer, store: SqliteStore): void 
             capacity,
           },
         });
+        indexEntitiesForDoc(store.getDb(), sprintDoc.id);
       } catch (err) {
         logger.warn("tool:plan_sprint:knowledge_index_failed", { error: String(err) });
       }

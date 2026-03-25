@@ -7,6 +7,7 @@ import { extractEntities } from "../../core/parser/extract.js";
 import { convertToGraph } from "../../core/importer/prd-to-graph.js";
 import { KnowledgeStore } from "../../core/store/knowledge-store.js";
 import { indexPrdContent } from "../../core/rag/prd-indexer.js";
+import { indexEntitiesForSource } from "../../core/rag/entity-index-hook.js";
 import { logger } from "../../core/utils/logger.js";
 import { mcpText, mcpError } from "../response-helpers.js";
 
@@ -60,6 +61,7 @@ export function registerImportPrd(server: McpServer, store: SqliteStore): void {
         const knowledgeStore = new KnowledgeStore(store.getDb());
         const indexResult = indexPrdContent(knowledgeStore, content, sourceFileName, "ANALYZE");
         knowledgeDocsIndexed = indexResult.documentsIndexed;
+        indexEntitiesForSource(store.getDb(), "prd");
       } catch (err) {
         logger.warn("tool:import_prd:knowledge_index_failed", { error: String(err) });
       }

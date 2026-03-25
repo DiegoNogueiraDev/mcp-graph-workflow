@@ -6,6 +6,7 @@ import { NodeStatusSchema } from "../../schemas/node.schema.js";
 import { NodeNotFoundError } from "../../core/utils/errors.js";
 import { KnowledgeStore } from "../../core/store/knowledge-store.js";
 import { indexDecision } from "../../core/rag/decision-indexer.js";
+import { indexEntitiesForSource } from "../../core/rag/entity-index-hook.js";
 import { logger } from "../../core/utils/logger.js";
 import { mcpText, mcpError } from "../response-helpers.js";
 
@@ -88,6 +89,7 @@ export function registerUpdateStatus(server: McpServer, store: SqliteStore): voi
             rationale,
             tags: updated.tags ?? [],
           });
+          indexEntitiesForSource(store.getDb(), "ai_decision");
         } catch (err) {
           logger.warn("tool:update_status:decision_index_failed", { error: String(err) });
         }
