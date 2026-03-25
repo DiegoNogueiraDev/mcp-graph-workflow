@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.7.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.6.1...mcp-graph-v5.7.0) (2026-03-25)
+
+
+### Features
+
+* add import_graph MCP tool for collaborative graph merging ([9d6ac4c](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/9d6ac4c2a477b5473093821d5a39dcc917c62bb6))
+* implement end-to-end RAG architecture with 8 new pipeline modules ([6da39a0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/6da39a0d48b1ad68055a6a694ddcf1e0ba97f741))
+* merge import_graph MCP tool for collaborative graph merging ([44f5bd0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/44f5bd0edfe8102d1db71131f601c3f02bb2dbf0))
+* merge RAG architecture with 8 new pipeline modules ([dcf3634](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/dcf3634240a8fb515706443329e7bdafb2c46e83))
+
+
+### Bug Fixes
+
+* resolve lint errors from RAG architecture merge ([abbb715](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/abbb715b051e67027176d29b361010ba21c2b4cd))
+
 ## [5.6.1](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.6.0...mcp-graph-v5.6.1) (2026-03-24)
 
 
