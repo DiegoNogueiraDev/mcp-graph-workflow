@@ -15,6 +15,7 @@ import { generateId } from "../../core/utils/id.js";
 import { now } from "../../core/utils/time.js";
 import { logger } from "../../core/utils/logger.js";
 import { mcpText, mcpError, normalizeNewlines } from "../response-helpers.js";
+import { indexNodeAsKnowledge, removeNodeFromKnowledge } from "../../core/rag/node-indexer.js";
 
 export function registerNode(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -94,6 +95,7 @@ export function registerNode(server: McpServer, store: SqliteStore): void {
           });
         }
 
+        indexNodeAsKnowledge(store.getDb(), node);
         logger.info("tool:node:add:ok", { nodeId: node.id, type: node.type });
         return mcpText({ ok: true, node });
       }
@@ -165,6 +167,7 @@ export function registerNode(server: McpServer, store: SqliteStore): void {
           return mcpError(err);
         }
 
+        indexNodeAsKnowledge(store.getDb(), updated);
         logger.info("tool:node:update:ok", { id });
         return mcpText({ ok: true, node: updated });
       }
@@ -181,6 +184,7 @@ export function registerNode(server: McpServer, store: SqliteStore): void {
         return mcpError(err);
       }
 
+      removeNodeFromKnowledge(store.getDb(), id);
       logger.info("tool:node:delete:ok", { id });
       return mcpText({ ok: true, deletedId: id });
     },

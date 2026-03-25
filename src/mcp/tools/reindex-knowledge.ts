@@ -14,6 +14,8 @@ import { decayStaleKnowledge } from "../../core/rag/knowledge-quality.js";
 import { linkBySharedContext } from "../../core/rag/knowledge-linker.js";
 import { runSynthesisCycle } from "../../core/rag/knowledge-synthesizer.js";
 import { reindexAll as reindexEntities } from "../../core/rag/entity-indexer.js";
+import { indexAllNodes } from "../../core/rag/node-indexer.js";
+import { indexCodeAnalysis } from "../../core/rag/code-context-indexer.js";
 import { logger } from "../../core/utils/logger.js";
 import { mcpText } from "../response-helpers.js";
 import { invalidateRagCache } from "./rag-context.js";
@@ -28,7 +30,7 @@ export function registerReindexKnowledge(server: McpServer, store: SqliteStore):
         .optional()
         .describe("Project base path for finding memories (default: cwd)"),
       sources: z
-        .array(z.enum(["memory", "serena", "docs", "skills", "journey", "embeddings", "quality", "relations", "synthesis", "entities"]))
+        .array(z.enum(["memory", "serena", "docs", "skills", "journey", "embeddings", "quality", "relations", "synthesis", "entities", "graph", "code"]))
         .optional()
         .describe("Which sources to reindex. 'quality' recalculates scores, 'relations' links docs, 'synthesis' generates insights. (default: all)"),
     },
@@ -78,6 +80,37 @@ export function registerReindexKnowledge(server: McpServer, store: SqliteStore):
 
       if (sources?.includes("synthesis")) {
         results.synthesis = runSynthesisCycle(store.getDb());
+      }
+
+      if (allSources || sources?.includes("graph")) {
+        try {
+          results.graph = indexAllNodes(store.getDb());
+        } catch (err) {
+          logger.warn("node-indexer:reindex-failed", { error: String(err) });
+          results.graph = { error: "Graph node reindex failed" };
+        }
+      }
+
+      if (allSources || sources?.includes("code")) {
+        try {
+          const symbols = store.getDb()
+            .prepare("SELECT name, kind, file_path as file, is_exported as exported FROM code_symbols LIMIT 500")
+            .all() as Array<{ name: string; kind: string; file: string; exported: number }>;
+          if (symbols.length > 0) {
+            results.code = indexCodeAnalysis(
+              new KnowledgeStore(store.getDb()),
+              {
+                symbols: symbols.map((s) => ({ name: s.name, kind: s.kind, file: s.file, exported: s.exported === 1 })),
+                flows: [],
+              },
+            );
+          } else {
+            results.code = { documentsIndexed: 0, note: "No code symbols found. Run code indexer first." };
+          }
+        } catch (err) {
+          logger.warn("code-indexer:reindex-failed", { error: String(err) });
+          results.code = { error: "Code symbol reindex failed" };
+        }
       }
 
       if (allSources || sources?.includes("entities")) {

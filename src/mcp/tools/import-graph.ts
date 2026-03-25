@@ -6,6 +6,8 @@ import { mergeGraph } from "../../core/importer/import-graph.js";
 import type { GraphDocument } from "../../core/graph/graph-types.js";
 import { logger } from "../../core/utils/logger.js";
 import { mcpText, mcpError } from "../response-helpers.js";
+import { indexEntitiesForSource } from "../../core/rag/entity-index-hook.js";
+import { indexNodeAsKnowledge } from "../../core/rag/node-indexer.js";
 
 export function registerImportGraph(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -57,6 +59,18 @@ export function registerImportGraph(server: McpServer, store: SqliteStore): void
       // 3. Merge
       try {
         const result = mergeGraph(store, parsed, { dryRun: dry_run });
+
+        // Index merged nodes into Knowledge Store + KG (skip on dry_run)
+        if (!dry_run && result.nodesInserted > 0) {
+          try {
+            for (const node of parsed.nodes) {
+              indexNodeAsKnowledge(store.getDb(), node);
+            }
+            indexEntitiesForSource(store.getDb(), "graph_node");
+          } catch {
+            logger.warn("import_graph:indexing-failed");
+          }
+        }
 
         logger.info("tool:import_graph:ok", {
           sourceProject: result.sourceProject,

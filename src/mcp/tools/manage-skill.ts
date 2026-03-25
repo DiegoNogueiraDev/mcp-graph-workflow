@@ -20,6 +20,7 @@ import type { LifecyclePhase } from "../../core/planner/lifecycle-phase.js";
 import { CustomSkillInputSchema } from "../../schemas/skill.schema.js";
 import { logger } from "../../core/utils/logger.js";
 import { mcpText, mcpError } from "../response-helpers.js";
+import { indexEntitiesForSource } from "../../core/rag/entity-index-hook.js";
 
 export function registerManageSkill(server: McpServer, store: SqliteStore): void {
   server.tool(
@@ -120,6 +121,7 @@ export function registerManageSkill(server: McpServer, store: SqliteStore): void
               return mcpError(`Validation failed: ${JSON.stringify(parsed.error.issues)}`);
             }
             const created = createCustomSkill(db, projectId, parsed.data);
+            indexEntitiesForSource(db, "skill");
             logger.info("tool:manage_skill:created", { id: created.id, name: created.name });
             return mcpText(created);
           }
@@ -129,6 +131,7 @@ export function registerManageSkill(server: McpServer, store: SqliteStore): void
               return mcpError("skillId and data required for update");
             }
             const updated = updateCustomSkill(db, projectId, skillId, data as Record<string, unknown>);
+            indexEntitiesForSource(db, "skill");
             return mcpText(updated);
           }
 

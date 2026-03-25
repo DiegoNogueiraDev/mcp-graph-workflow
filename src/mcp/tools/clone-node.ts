@@ -7,6 +7,7 @@ import { generateId } from "../../core/utils/id.js";
 import { now } from "../../core/utils/time.js";
 import { logger } from "../../core/utils/logger.js";
 import { mcpText, mcpError } from "../response-helpers.js";
+import { indexNodeAsKnowledge } from "../../core/rag/node-indexer.js";
 
 function cloneSingle(
   store: SqliteStore,
@@ -105,11 +106,15 @@ export function registerCloneNode(server: McpServer, store: SqliteStore): void {
       if (deep) {
         const cloned: GraphNode[] = [];
         cloneDeep(store, id, parentForClone, timestamp, cloned);
+        for (const c of cloned) {
+          indexNodeAsKnowledge(store.getDb(), c);
+        }
         logger.info("tool:clone_node:ok", { sourceId: id, deep: true, clonedCount: cloned.length });
         return mcpText({ ok: true, clonedCount: cloned.length, nodes: cloned });
       }
 
       const clone = cloneSingle(store, source, parentForClone, timestamp);
+      indexNodeAsKnowledge(store.getDb(), clone);
       logger.info("tool:clone_node:ok", { sourceId: id, deep: false, cloneId: clone.id });
       return mcpText({ ok: true, node: clone });
     },
