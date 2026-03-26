@@ -57,9 +57,12 @@ export function registerImportGraph(server: McpServer, store: SqliteStore): void
       }
 
       // 3. Capture existing node IDs before merge (to skip re-indexing)
+      const activeProject = store.getActiveProject();
       const existingNodeIds = new Set(
-        (store.getDb().prepare("SELECT id FROM nodes").all() as Array<{ id: string }>)
-          .map((r) => r.id),
+        (activeProject?.id
+          ? store.getDb().prepare("SELECT id FROM nodes WHERE project_id = ?").all(activeProject.id) as Array<{ id: string }>
+          : store.getDb().prepare("SELECT id FROM nodes").all() as Array<{ id: string }>
+        ).map((r) => r.id),
       );
 
       // 4. Merge

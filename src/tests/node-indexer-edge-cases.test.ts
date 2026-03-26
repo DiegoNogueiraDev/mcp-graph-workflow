@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { SqliteStore } from "../core/store/sqlite-store.js";
 import { KnowledgeStore } from "../core/store/knowledge-store.js";
 import { makeNode } from "./helpers/factories.js";
-import { indexNodeAsKnowledge, removeNodeFromKnowledge, indexAllNodes } from "../core/rag/node-indexer.js";
+import { indexNodeAsKnowledge, indexAllNodes } from "../core/rag/node-indexer.js";
 
 let store: SqliteStore;
 let ks: KnowledgeStore;

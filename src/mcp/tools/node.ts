@@ -177,6 +177,9 @@ export function registerNode(server: McpServer, store: SqliteStore): void {
         return mcpError("id is required for delete action");
       }
 
+      // Clean up knowledge BEFORE deleting node to avoid orphaned docs
+      removeNodeFromKnowledge(store.getDb(), id);
+
       const deleted = store.deleteNode(id);
       if (!deleted) {
         const err = new NodeNotFoundError(id);
@@ -184,7 +187,6 @@ export function registerNode(server: McpServer, store: SqliteStore): void {
         return mcpError(err);
       }
 
-      removeNodeFromKnowledge(store.getDb(), id);
       logger.info("tool:node:delete:ok", { id });
       return mcpText({ ok: true, deletedId: id });
     },

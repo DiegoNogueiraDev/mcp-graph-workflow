@@ -84,7 +84,8 @@ export function registerReindexKnowledge(server: McpServer, store: SqliteStore):
 
       if (allSources || sources?.includes("graph")) {
         try {
-          results.graph = indexAllNodes(store.getDb());
+          const activeProject = store.getActiveProject();
+          results.graph = indexAllNodes(store.getDb(), activeProject?.id);
         } catch (err) {
           logger.warn("node-indexer:reindex-failed", { error: String(err) });
           results.graph = { error: "Graph node reindex failed" };

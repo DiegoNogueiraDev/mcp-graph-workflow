@@ -93,11 +93,11 @@ export function removeNodeFromKnowledge(db: Database.Database, nodeId: string): 
  * Index all existing graph nodes into the Knowledge Store.
  * Used by reindex_knowledge with source "graph".
  */
-export function indexAllNodes(db: Database.Database): { indexed: number } {
+export function indexAllNodes(db: Database.Database, projectId?: string): { indexed: number } {
   try {
-    const rows = db
-      .prepare("SELECT * FROM nodes")
-      .all() as Array<Record<string, unknown>>;
+    const rows = projectId
+      ? db.prepare("SELECT * FROM nodes WHERE project_id = ?").all(projectId) as Array<Record<string, unknown>>
+      : db.prepare("SELECT * FROM nodes").all() as Array<Record<string, unknown>>;
 
     let indexed = 0;
     for (const row of rows) {
