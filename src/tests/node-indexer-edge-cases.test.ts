@@ -159,7 +159,7 @@ describe("node-indexer edge cases", () => {
     expect(docs[0].content).not.toContain("undefined");
   });
 
-  it("should handle corrupted JSON in tags column via direct SQL", () => {
+  it("should skip corrupted rows and continue indexing valid nodes", () => {
     // Arrange — insert a row directly with corrupted JSON in tags
     const db = store.getDb();
     const project = store.getActiveProject()!;
@@ -187,10 +187,16 @@ describe("node-indexer edge cases", () => {
       timestamp,
     );
 
-    // Act — should NOT throw (outer try-catch catches the JSON.parse error)
+    // Also insert a valid node
+    const validNode = makeNode({ title: "Valid node after corrupted" });
+    store.insertNode(validNode);
+
+    // Act — should NOT throw, should skip corrupted row and continue
     const result = indexAllNodes(db);
 
-    // Assert — returns { indexed: 0 } because the crash stops the loop
-    expect(result).toEqual({ indexed: 0 });
+    // Assert — corrupted row skipped, valid node indexed
+    expect(result.indexed).toBeGreaterThanOrEqual(1);
+    const docs = ks.getBySourceId(validNode.id);
+    expect(docs).toHaveLength(1);
   });
 });

@@ -276,11 +276,11 @@ describe("Node Indexer Cross-Source Knowledge Sharing", () => {
     });
   });
 
-  describe("known bugs: orphaned entity mentions on deletion", () => {
-    it("should leave orphaned kg_mentions when knowledge doc is deleted (Bug #3)", () => {
+  describe("entity mention cleanup on deletion", () => {
+    it("should clean up kg_mentions when knowledge doc is deleted", () => {
       // Arrange: node mentioning SqliteStore
       const node = makeNode({
-        title: "Database Layer Bug3",
+        title: "Database Layer Cleanup",
         description: "The SqliteStore class handles persistence",
       });
       indexNodeAsKnowledge(store.getDb(), node);
@@ -300,13 +300,12 @@ describe("Node Indexer Cross-Source Knowledge Sharing", () => {
         // Assert: knowledge doc is gone
         expect(ks.getBySourceId(node.id)).toHaveLength(0);
 
-        // Bug: kg_mentions still reference the deleted doc_id (no CASCADE)
+        // Mentions should be cleaned up (no orphans)
         if (mentionsBefore.length > 0) {
           const mentionsAfter = store.getDb()
             .prepare("SELECT * FROM kg_mentions WHERE doc_id = ?")
             .all(nodeDoc.id) as Array<{ id: string; doc_id: string }>;
-          // This documents the bug: mentions are NOT cleaned up
-          expect(mentionsAfter.length).toBe(mentionsBefore.length);
+          expect(mentionsAfter.length).toBe(0);
         }
       }
     });
