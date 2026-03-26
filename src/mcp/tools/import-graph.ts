@@ -56,23 +56,22 @@ export function registerImportGraph(server: McpServer, store: SqliteStore): void
         return mcpError("Invalid JSON: failed to parse the graph document.");
       }
 
-      // 3. Merge
+      // 3. Capture existing node IDs before merge (to skip re-indexing)
+      const existingNodeIds = new Set(
+        (store.getDb().prepare("SELECT id FROM nodes").all() as Array<{ id: string }>)
+          .map((r) => r.id),
+      );
+
+      // 4. Merge
       try {
         const result = mergeGraph(store, parsed, { dryRun: dry_run });
 
         // Index only newly inserted nodes into Knowledge Store + KG (skip on dry_run)
         if (!dry_run && result.nodesInserted > 0) {
           try {
-            // Build set of pre-existing node IDs to skip re-indexing
-            const skippedIds = new Set(
-              parsed.nodes
-                .filter((n) => result.nodesSkipped > 0)
-                .slice(0, result.nodesSkipped)
-                .map((n) => n.id),
-            );
             for (const node of parsed.nodes) {
-              // Only index nodes that were actually inserted
-              if (!skippedIds.has(node.id)) {
+              // Only index nodes that were actually inserted (not pre-existing)
+              if (!existingNodeIds.has(node.id)) {
                 indexNodeAsKnowledge(store.getDb(), node);
               }
             }
