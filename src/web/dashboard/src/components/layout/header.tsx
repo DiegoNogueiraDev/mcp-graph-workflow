@@ -17,14 +17,14 @@ export const Header = memo(function Header({ stats, onImport, onCapture, onOpenF
   const total = stats?.totalNodes ?? 0;
 
   return (
-    <header className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
+    <header className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-b border-edge bg-surface-alt">
       <div className="flex items-center gap-3">
-        <h1 className="text-lg font-bold text-[var(--color-accent)]">
+        <h1 className="text-lg font-bold text-accent">
           mcp-graph
         </h1>
         <ProjectSelector />
         {total > 0 && (
-          <span className="text-sm text-[var(--color-text-muted)]">
+          <span className="text-sm text-muted">
             {done}/{total} done
           </span>
         )}
@@ -33,7 +33,7 @@ export const Header = memo(function Header({ stats, onImport, onCapture, onOpenF
       <div className="flex items-center gap-2">
         <button
           onClick={onOpenFolder}
-          className="px-3 py-1.5 text-sm border border-[var(--color-border)] rounded hover:bg-[var(--color-bg-tertiary)] transition-colors"
+          className="px-3 py-1.5 text-sm border border-edge rounded hover:bg-surface-elevated transition-colors"
           aria-label="Open project folder"
           title="Open a different project folder"
         >
@@ -41,21 +41,21 @@ export const Header = memo(function Header({ stats, onImport, onCapture, onOpenF
         </button>
         <button
           onClick={onImport}
-          className="px-3 py-1.5 text-sm bg-[var(--color-accent)] text-white rounded hover:bg-[var(--color-accent-light)] transition-colors"
+          className="px-3 py-1.5 text-sm bg-accent text-white rounded hover:bg-accent-light transition-colors"
           aria-label="Import PRD file"
         >
           Import PRD
         </button>
         <button
           onClick={onCapture}
-          className="px-3 py-1.5 text-sm border border-[var(--color-border)] rounded hover:bg-[var(--color-bg-tertiary)] transition-colors"
+          className="px-3 py-1.5 text-sm border border-edge rounded hover:bg-surface-elevated transition-colors"
           aria-label="Capture web content"
         >
           Capture
         </button>
         <button
           onClick={toggleTheme}
-          className="px-2 py-1.5 text-sm border border-[var(--color-border)] rounded hover:bg-[var(--color-bg-tertiary)] transition-colors"
+          className="px-2 py-1.5 text-sm border border-edge rounded hover:bg-surface-elevated transition-colors"
           title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
           aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
         >

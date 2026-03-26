@@ -31,9 +31,9 @@ export function BottleneckCards({ bottlenecks, className }: BottleneckCardsProps
 
   if (totalIssues === 0) {
     return (
-      <div className={`p-4 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-center ${className ?? ""}`}>
+      <div className={`p-4 rounded-xl border border-edge shadow-sm hover:shadow-md transition-shadow bg-surface-alt text-center ${className ?? ""}`}>
         <span className="text-2xl">&#10003;</span>
-        <p className="text-sm text-[var(--color-text-muted)] mt-1">No bottlenecks detected</p>
+        <p className="text-sm text-muted mt-1">No bottlenecks detected</p>
       </div>
     );
   }
@@ -76,11 +76,11 @@ export function BottleneckCards({ bottlenecks, className }: BottleneckCardsProps
         >
           <div className="space-y-1.5">
             {bottlenecks.blockedTasks.slice(0, 15).map((t, i) => (
-              <div key={i} className="flex items-start gap-2 text-xs px-2 py-1.5 rounded bg-[var(--color-bg-tertiary)]">
+              <div key={i} className="flex items-start gap-2 text-xs px-2 py-1.5 rounded bg-surface-elevated">
                 <span className="shrink-0 mt-0.5 w-1.5 h-1.5 rounded-full bg-[#ef4444]" />
                 <div>
                   <span className="font-medium">{t.title}</span>
-                  <span className="text-[var(--color-text-muted)] ml-1">blocked by: {t.blockerTitles.join(", ")}</span>
+                  <span className="text-muted ml-1">blocked by: {t.blockerTitles.join(", ")}</span>
                 </div>
               </div>
             ))}
@@ -98,7 +98,7 @@ export function BottleneckCards({ bottlenecks, className }: BottleneckCardsProps
         >
           <div className="space-y-1">
             {bottlenecks.missingAcceptanceCriteria.slice(0, 15).map((t, i) => (
-              <div key={i} className="flex items-center gap-2 text-xs px-2 py-1 rounded bg-[var(--color-bg-tertiary)]">
+              <div key={i} className="flex items-center gap-2 text-xs px-2 py-1 rounded bg-surface-elevated">
                 <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-[#f59e0b]" />
                 <span>{t.title}</span>
               </div>
@@ -117,10 +117,10 @@ export function BottleneckCards({ bottlenecks, className }: BottleneckCardsProps
         >
           <div className="space-y-1">
             {bottlenecks.oversizedTasks.slice(0, 15).map((t, i) => (
-              <div key={i} className="flex items-center gap-2 text-xs px-2 py-1 rounded bg-[var(--color-bg-tertiary)]">
+              <div key={i} className="flex items-center gap-2 text-xs px-2 py-1 rounded bg-surface-elevated">
                 <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-[#8b5cf6]" />
                 <span>{t.title}</span>
-                <span className="text-[var(--color-text-muted)] ml-auto">{t.estimateMinutes}min</span>
+                <span className="text-muted ml-auto">{t.estimateMinutes}min</span>
               </div>
             ))}
           </div>
@@ -140,7 +140,7 @@ export function BottleneckCards({ bottlenecks, className }: BottleneckCardsProps
               <span key={i} className="flex items-center gap-1">
                 <span className="px-2 py-0.5 rounded bg-[#06b6d420] text-[#06b6d4] font-medium">{title}</span>
                 {i < bottlenecks.criticalPath!.titles.length - 1 && (
-                  <span className="text-[var(--color-text-muted)]">&rarr;</span>
+                  <span className="text-muted">&rarr;</span>
                 )}
               </span>
             ))}
@@ -165,17 +165,17 @@ function CollapsibleSection({
   children: React.ReactNode;
 }): React.JSX.Element {
   return (
-    <div className="rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)] overflow-hidden">
+    <div className="rounded-xl border border-edge shadow-sm hover:shadow-md transition-shadow bg-surface-alt overflow-hidden">
       <button
         type="button"
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium hover:bg-[var(--color-bg-tertiary)] transition-colors"
+        className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium hover:bg-surface-elevated transition-colors"
       >
         <span className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full" style={{ background: color }} />
           {title}
         </span>
-        <span className="text-[var(--color-text-muted)]">{isOpen ? "\u25B2" : "\u25BC"}</span>
+        <span className="text-muted">{isOpen ? "\u25B2" : "\u25BC"}</span>
       </button>
       {isOpen && <div className="px-3 pb-3">{children}</div>}
     </div>

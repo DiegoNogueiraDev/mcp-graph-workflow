@@ -18,13 +18,13 @@ export function SkillDetailModal({ skill, onClose, onToggle, onDelete, onEdit }:
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-[var(--color-bg)] rounded-lg shadow-xl w-full max-w-lg p-6 max-h-[80vh] overflow-y-auto">
+      <div className="bg-surface rounded-lg shadow-xl w-full max-w-lg p-6 max-h-[80vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold truncate">{skill.name}</h2>
-          <button onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text)] text-xl">&times;</button>
+          <button onClick={onClose} className="text-muted hover:text-foreground text-xl">&times;</button>
         </div>
 
-        <p className="text-sm text-[var(--color-text-muted)] mb-4">{skill.description}</p>
+        <p className="text-sm text-muted mb-4">{skill.description}</p>
 
         {/* Badges */}
         <div className="flex flex-wrap gap-2 mb-4">
@@ -35,10 +35,10 @@ export function SkillDetailModal({ skill, onClose, onToggle, onDelete, onEdit }:
           }`}>
             {skill.source}
           </span>
-          <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-[var(--color-border)] text-[var(--color-text-muted)]">
+          <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-edge text-muted">
             {skill.category}
           </span>
-          <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-[var(--color-border)] text-[var(--color-text-muted)]">
+          <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-edge text-muted">
             {skill.estimatedTokens.toLocaleString()} tokens
           </span>
         </div>
@@ -59,13 +59,13 @@ export function SkillDetailModal({ skill, onClose, onToggle, onDelete, onEdit }:
         )}
 
         {/* Toggle */}
-        <div className="flex items-center gap-3 mb-4 p-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
+        <div className="flex items-center gap-3 mb-4 p-3 rounded-xl border border-edge shadow-sm hover:shadow-md transition-shadow bg-surface-alt">
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
               type="checkbox"
               checked={skill.enabled}
               onChange={(e) => onToggle(skill.name, e.target.checked)}
-              className="w-4 h-4 accent-[var(--color-accent)]"
+              className="w-4 h-4 accent-accent"
             />
             {skill.enabled ? "Enabled" : "Disabled"}
           </label>
@@ -77,7 +77,7 @@ export function SkillDetailModal({ skill, onClose, onToggle, onDelete, onEdit }:
             {onEdit && (
               <button
                 onClick={() => onEdit(skill)}
-                className="px-3 py-1.5 text-sm border border-[var(--color-border)] rounded hover:bg-[var(--color-bg-tertiary)]"
+                className="px-3 py-1.5 text-sm border border-edge rounded hover:bg-surface-elevated"
               >
                 Edit
               </button>

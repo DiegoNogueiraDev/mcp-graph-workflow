@@ -67,25 +67,25 @@ export const NodeTable = memo(function NodeTable({ nodes, allNodes = [], onNodeC
   ];
 
   return (
-    <div className="border-t border-[var(--color-border)]">
-      <div className="px-4 py-2 bg-[var(--color-bg-secondary)]">
+    <div className="border-t border-edge">
+      <div className="px-4 py-2 bg-surface-alt">
         <input
           type="text"
           placeholder="Search nodes..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-xs px-2 py-1 text-sm border border-[var(--color-border)] rounded bg-[var(--color-bg)]"
+          className="w-full max-w-xs px-2 py-1 text-sm border border-edge rounded bg-surface"
         />
       </div>
       <div className="overflow-x-auto max-h-64">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-[var(--color-bg-tertiary)]">
+            <tr className="bg-surface-elevated">
               {headers.map((h) => (
                 <th
                   key={h.key}
                   onClick={() => handleSort(h.key)}
-                  className="px-3 py-1.5 text-left text-xs font-medium text-[var(--color-text-muted)] cursor-pointer hover:text-[var(--color-text)]"
+                  className="px-3 py-1.5 text-left text-xs font-medium text-muted cursor-pointer hover:text-foreground"
                 >
                   {h.label}
                   {sortKey === h.key && (sortDir === "asc" ? " ↑" : " ↓")}
@@ -96,7 +96,7 @@ export const NodeTable = memo(function NodeTable({ nodes, allNodes = [], onNodeC
           <tbody>
             {paged.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-3 py-4 text-center text-[var(--color-text-muted)]">
+                <td colSpan={7} className="px-3 py-4 text-center text-muted">
                   No nodes found
                 </td>
               </tr>
@@ -105,7 +105,7 @@ export const NodeTable = memo(function NodeTable({ nodes, allNodes = [], onNodeC
                 <tr
                   key={node.id}
                   onClick={() => onNodeClick(node)}
-                  className="border-t border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] cursor-pointer"
+                  className="border-t border-edge hover:bg-surface-alt cursor-pointer"
                 >
                   <td className="px-3 py-1.5 max-w-[200px] truncate">{node.title}</td>
                   <td className="px-3 py-1.5">
@@ -127,7 +127,7 @@ export const NodeTable = memo(function NodeTable({ nodes, allNodes = [], onNodeC
                   <td className="px-3 py-1.5 text-center">{node.priority}</td>
                   <td className="px-3 py-1.5 text-center">{node.xpSize || "-"}</td>
                   <td className="px-3 py-1.5">{node.sprint || "-"}</td>
-                  <td className="px-3 py-1.5 max-w-[150px] truncate text-[var(--color-text-muted)]">
+                  <td className="px-3 py-1.5 max-w-[150px] truncate text-muted">
                     {node.parentId ? (parentMap.get(node.parentId) ?? "-") : "-"}
                   </td>
                 </tr>
@@ -137,13 +137,13 @@ export const NodeTable = memo(function NodeTable({ nodes, allNodes = [], onNodeC
         </table>
       </div>
       {totalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-1.5 bg-[var(--color-bg-secondary)] border-t border-[var(--color-border)] text-xs text-[var(--color-text-muted)]">
+        <div className="flex items-center justify-between px-4 py-1.5 bg-surface-alt border-t border-edge text-xs text-muted">
           <span>{sorted.length} nodes</span>
           <div className="flex items-center gap-2">
             <button
               disabled={page === 0}
               onClick={() => setPage((p) => Math.max(0, p - 1))}
-              className="px-2 py-0.5 rounded border border-[var(--color-border)] disabled:opacity-30"
+              className="px-2 py-0.5 rounded border border-edge disabled:opacity-30"
             >
               Prev
             </button>
@@ -151,7 +151,7 @@ export const NodeTable = memo(function NodeTable({ nodes, allNodes = [], onNodeC
             <button
               disabled={page >= totalPages - 1}
               onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-              className="px-2 py-0.5 rounded border border-[var(--color-border)] disabled:opacity-30"
+              className="px-2 py-0.5 rounded border border-edge disabled:opacity-30"
             >
               Next
             </button>

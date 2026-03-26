@@ -12,7 +12,7 @@ export function TypeBarChart({ data, className }: TypeBarChartProps): React.JSX.
 
   if (filtered.length === 0) {
     return (
-      <div className={`flex items-center justify-center text-sm text-[var(--color-text-muted)] ${className ?? ""}`}>
+      <div className={`flex items-center justify-center text-sm text-muted ${className ?? ""}`}>
         No node types
       </div>
     );

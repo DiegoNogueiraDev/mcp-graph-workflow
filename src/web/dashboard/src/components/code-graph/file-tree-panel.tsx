@@ -24,20 +24,20 @@ export const FileTreePanel = memo(function FileTreePanel({
   return (
     <div className="flex flex-col min-h-0">
       {/* Search input */}
-      <div className="px-3 py-2 border-b border-[var(--color-border)]">
+      <div className="px-3 py-2 border-b border-edge">
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Search files..."
-          className="w-full text-xs px-2 py-1.5 rounded bg-[var(--color-bg)] border border-[var(--color-border)] focus:outline-none focus:border-[var(--color-accent)]"
+          className="w-full text-xs px-2 py-1.5 rounded bg-surface border border-edge focus:outline-none focus:border-accent"
         />
       </div>
 
       {/* Tree */}
       <div className="overflow-y-auto flex-1 py-1">
         {tree.length === 0 ? (
-          <div className="px-3 py-4 text-xs text-[var(--color-text-muted)] text-center">
+          <div className="px-3 py-4 text-xs text-muted text-center">
             {searchQuery ? "No files match" : "No files indexed"}
           </div>
         ) : (
@@ -102,8 +102,8 @@ function FileTreeItem({
     <>
       <button
         onClick={handleClick}
-        className={`w-full text-left flex items-center gap-1.5 px-2 py-0.5 text-xs hover:bg-[var(--color-bg-tertiary)] transition-colors ${
-          isSelected ? "bg-[var(--color-bg-tertiary)] font-semibold" : ""
+        className={`w-full text-left flex items-center gap-1.5 px-2 py-0.5 text-xs hover:bg-surface-elevated transition-colors ${
+          isSelected ? "bg-surface-elevated font-semibold" : ""
         }`}
         style={{ paddingLeft: `${depth * 14 + 8}px` }}
       >
@@ -111,7 +111,7 @@ function FileTreeItem({
         {hasChildren || item.isDirectory ? (
           <span
             onClick={handleChevronClick}
-            className="w-3 text-center text-[var(--color-text-muted)] hover:text-[var(--color-text)] cursor-pointer shrink-0 text-[10px]"
+            className="w-3 text-center text-muted hover:text-foreground cursor-pointer shrink-0 text-[10px]"
           >
             {isExpanded ? "\u25BE" : "\u25B8"}
           </span>
@@ -131,7 +131,7 @@ function FileTreeItem({
 
         {/* Symbol count */}
         {item.symbolCount > 0 && (
-          <span className="text-[9px] text-[var(--color-text-muted)] ml-auto shrink-0">
+          <span className="text-[9px] text-muted ml-auto shrink-0">
             {item.symbolCount}
           </span>
         )}

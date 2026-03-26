@@ -1,20 +1,36 @@
 @import "tailwindcss";
 
+/* ── Breakpoints Reference ──
+   sm: 640px   (mobile landscape)
+   md: 768px   (tablet)
+   lg: 1024px  (desktop)
+   xl: 1440px  (wide desktop)
+   ────────────────────────── */
+
 @theme {
+  /* ── Brand ── */
   --color-accent: #4263eb;
   --color-accent-light: #5c7cfa;
+
+  /* ── Semantic ── */
   --color-success: #4caf50;
   --color-warning: #ff9800;
   --color-danger: #f44336;
   --color-info: #2196f3;
 
-  --color-bg: #ffffff;
-  --color-bg-secondary: #f8f9fa;
-  --color-bg-tertiary: #e9ecef;
-  --color-text: #212529;
-  --color-text-muted: #6c757d;
-  --color-border: #dee2e6;
+  /* ── Surfaces ── */
+  --color-surface: #ffffff;
+  --color-surface-alt: #f8f9fa;
+  --color-surface-elevated: #e9ecef;
 
+  /* ── Text ── */
+  --color-foreground: #212529;
+  --color-muted: #475569;
+
+  /* ── Border ── */
+  --color-edge: #dee2e6;
+
+  /* ── Node types ── */
   --color-node-epic: #7c3aed;
   --color-node-task: #2196f3;
   --color-node-subtask: #10b981;
@@ -25,6 +41,7 @@
   --color-node-risk: #f97316;
   --color-node-decision: #ec4899;
 
+  /* ── Status ── */
   --color-status-done: #4caf50;
   --color-status-in_progress: #2196f3;
   --color-status-blocked: #f44336;
@@ -33,19 +50,23 @@
 }
 
 .dark {
-  --color-bg: #1a1b1e;
-  --color-bg-secondary: #25262b;
-  --color-bg-tertiary: #2c2e33;
-  --color-text: #c1c2c5;
-  --color-text-muted: #909296;
-  --color-border: #373a40;
+  --color-surface: #1a1b1e;
+  --color-surface-alt: #25262b;
+  --color-surface-elevated: #2c2e33;
+  --color-foreground: #c1c2c5;
+  --color-muted: #909296;
+  --color-edge: #373a40;
 }
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: var(--color-bg);
-  color: var(--color-text);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--color-surface);
+  color: var(--color-foreground);
   transition: background 0.2s, color 0.2s;
 }
 
@@ -65,10 +86,18 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--color-bg-secondary);
+  background: var(--color-surface-alt);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border);
+  background: var(--color-edge);
   border-radius: 3px;
+}
+
+/* ── Global interactivity ── */
+button,
+[role="tab"],
+[role="button"],
+a {
+  cursor: pointer;
 }

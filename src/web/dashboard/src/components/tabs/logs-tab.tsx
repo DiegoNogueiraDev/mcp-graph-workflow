@@ -91,7 +91,7 @@ export function LogsTab(): React.JSX.Element {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full text-[var(--color-text-muted)]">
+      <div className="flex items-center justify-center h-full text-muted">
         Loading logs...
       </div>
     );
@@ -100,12 +100,12 @@ export function LogsTab(): React.JSX.Element {
   return (
     <div className="flex flex-col h-full" data-testid="logs-tab">
       {/* Toolbar */}
-      <div className="flex items-center gap-2 px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
+      <div className="flex items-center gap-2 px-4 py-2 border-b border-edge bg-surface-alt">
         {/* Level filter */}
         <select
           value={levelFilter}
           onChange={(e) => setLevelFilter(e.target.value as LogLevel | "all")}
-          className="px-2 py-1 text-sm rounded border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)]"
+          className="px-2 py-1 text-sm rounded border border-edge bg-surface text-foreground"
           data-testid="log-level-filter"
         >
           <option value="all">All Levels</option>
@@ -122,7 +122,7 @@ export function LogsTab(): React.JSX.Element {
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
           placeholder="Search logs..."
-          className="flex-1 px-2 py-1 text-sm rounded border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] placeholder:text-[var(--color-text-muted)]"
+          className="flex-1 px-2 py-1 text-sm rounded border border-edge bg-surface text-foreground placeholder:text-muted"
           data-testid="log-search"
         />
 
@@ -131,8 +131,8 @@ export function LogsTab(): React.JSX.Element {
           onClick={() => setAutoScroll(!autoScroll)}
           className={`px-2 py-1 text-xs rounded border ${
             autoScroll
-              ? "border-[var(--color-accent)] text-[var(--color-accent)]"
-              : "border-[var(--color-border)] text-[var(--color-text-muted)]"
+              ? "border-accent text-accent"
+              : "border-edge text-muted"
           }`}
           title={autoScroll ? "Auto-scroll enabled" : "Auto-scroll paused"}
         >
@@ -142,14 +142,14 @@ export function LogsTab(): React.JSX.Element {
         {/* Action buttons */}
         <button
           onClick={handleCopy}
-          className="px-2 py-1 text-xs rounded border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+          className="px-2 py-1 text-xs rounded border border-edge text-muted hover:text-foreground"
           title="Copy all visible logs"
         >
           Copy
         </button>
         <button
           onClick={handleDownload}
-          className="px-2 py-1 text-xs rounded border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+          className="px-2 py-1 text-xs rounded border border-edge text-muted hover:text-foreground"
           title="Download logs as .txt"
         >
           Download
@@ -163,14 +163,14 @@ export function LogsTab(): React.JSX.Element {
         </button>
         <button
           onClick={() => void refresh()}
-          className="px-2 py-1 text-xs rounded border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+          className="px-2 py-1 text-xs rounded border border-edge text-muted hover:text-foreground"
           title="Refresh logs"
         >
           Refresh
         </button>
 
         {/* Count */}
-        <span className="text-xs text-[var(--color-text-muted)]">
+        <span className="text-xs text-muted">
           {filteredLogs.length} entries
         </span>
       </div>
@@ -183,16 +183,16 @@ export function LogsTab(): React.JSX.Element {
         data-testid="log-list"
       >
         {filteredLogs.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-[var(--color-text-muted)]">
+          <div className="flex items-center justify-center h-full text-muted">
             No logs to display
           </div>
         ) : (
           filteredLogs.map((entry) => (
             <div
               key={entry.id}
-              className="flex items-start gap-2 py-0.5 hover:bg-[var(--color-bg-secondary)]"
+              className="flex items-start gap-2 py-0.5 hover:bg-surface-alt"
             >
-              <span className="text-[var(--color-text-muted)] shrink-0">
+              <span className="text-muted shrink-0">
                 {formatTime(entry.timestamp)}
               </span>
               <span
@@ -200,9 +200,9 @@ export function LogsTab(): React.JSX.Element {
               >
                 {entry.level}
               </span>
-              <span className="text-[var(--color-text)]">{entry.message}</span>
+              <span className="text-foreground">{entry.message}</span>
               {entry.context && Object.keys(entry.context).length > 0 && (
-                <span className="text-[var(--color-text-muted)]">
+                <span className="text-muted">
                   {formatContext(entry.context)}
                 </span>
               )}

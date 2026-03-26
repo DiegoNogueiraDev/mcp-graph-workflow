@@ -23,10 +23,10 @@ export const HierarchyTreePanel = memo(function HierarchyTreePanel({
 
   if (collapsed) {
     return (
-      <div className="w-8 border-r border-[var(--color-border)] bg-[var(--color-bg-secondary)] flex flex-col items-center pt-2">
+      <div className="w-8 border-r border-edge bg-surface-alt flex flex-col items-center pt-2">
         <button
           onClick={togglePanel}
-          className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] p-1"
+          className="text-xs text-muted hover:text-foreground p-1"
           title="Show tree panel"
         >
           ▸
@@ -36,12 +36,12 @@ export const HierarchyTreePanel = memo(function HierarchyTreePanel({
   }
 
   return (
-    <div className="w-64 border-r border-[var(--color-border)] bg-[var(--color-bg-secondary)] flex flex-col min-h-0">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--color-border)]">
-        <span className="text-xs font-medium text-[var(--color-text-muted)]">Hierarchy</span>
+    <div className="w-64 border-r border-edge bg-surface-alt flex flex-col min-h-0">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-edge">
+        <span className="text-xs font-medium text-muted">Hierarchy</span>
         <button
           onClick={togglePanel}
-          className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+          className="text-xs text-muted hover:text-foreground"
           title="Collapse panel"
         >
           ◂
@@ -49,7 +49,7 @@ export const HierarchyTreePanel = memo(function HierarchyTreePanel({
       </div>
       <div className="overflow-y-auto flex-1 py-1">
         {tree.length === 0 ? (
-          <div className="px-3 py-4 text-xs text-[var(--color-text-muted)] text-center">
+          <div className="px-3 py-4 text-xs text-muted text-center">
             No nodes
           </div>
         ) : (
@@ -110,8 +110,8 @@ function TreeItem({
     <>
       <button
         onClick={handleTitleClick}
-        className={`w-full text-left flex items-center gap-1 px-2 py-1 text-xs hover:bg-[var(--color-bg-tertiary)] transition-colors ${
-          isSelected ? "bg-[var(--color-bg-tertiary)] font-semibold" : ""
+        className={`w-full text-left flex items-center gap-1 px-2 py-1 text-xs hover:bg-surface-elevated transition-colors ${
+          isSelected ? "bg-surface-elevated font-semibold" : ""
         }`}
         style={{ paddingLeft: `${depth * 16 + 8}px` }}
       >
@@ -119,7 +119,7 @@ function TreeItem({
         {hasChildren ? (
           <span
             onClick={handleChevronClick}
-            className="w-4 text-center text-[var(--color-text-muted)] hover:text-[var(--color-text)] cursor-pointer shrink-0"
+            className="w-4 text-center text-muted hover:text-foreground cursor-pointer shrink-0"
           >
             {isExpanded ? "\u25BE" : "\u25B8"}
           </span>
@@ -147,7 +147,7 @@ function TreeItem({
 
         {/* Child count */}
         {hasChildren && (
-          <span className="text-[9px] text-[var(--color-text-muted)] ml-auto shrink-0">
+          <span className="text-[9px] text-muted ml-auto shrink-0">
             {children.length}
           </span>
         )}

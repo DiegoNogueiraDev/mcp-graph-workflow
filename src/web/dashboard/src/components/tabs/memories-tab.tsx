@@ -29,7 +29,7 @@ export function MemoriesTab(): React.JSX.Element {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full text-[var(--color-text-muted)]">
+      <div className="flex items-center justify-center h-full text-muted">
         Loading Memories...
       </div>
     );
@@ -37,7 +37,7 @@ export function MemoriesTab(): React.JSX.Element {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-full text-[var(--color-danger)]">
+      <div className="flex items-center justify-center h-full text-danger">
         Failed to load: {error}
       </div>
     );
@@ -46,7 +46,7 @@ export function MemoriesTab(): React.JSX.Element {
   return (
     <div className="h-full flex flex-col">
       {/* Header bar */}
-      <div className="flex items-center gap-3 px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
+      <div className="flex items-center gap-3 px-4 py-2 border-b border-edge bg-surface-alt">
         <h2 className="text-sm font-semibold">Memories</h2>
 
         <StatusBadge
@@ -54,7 +54,7 @@ export function MemoriesTab(): React.JSX.Element {
           active={memories.length > 0}
         />
 
-        <span className="text-[10px] text-[var(--color-text-muted)]">
+        <span className="text-[10px] text-muted">
           {memories.length} memories
         </span>
       </div>
@@ -133,10 +133,10 @@ function FileExplorerPanel({
 
   if (collapsed) {
     return (
-      <div className="w-8 border-r border-[var(--color-border)] bg-[var(--color-bg-secondary)] flex flex-col items-center pt-2">
+      <div className="w-8 border-r border-edge bg-surface-alt flex flex-col items-center pt-2">
         <button
           onClick={() => setCollapsed(false)}
-          className="text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text)] rotate-90"
+          className="text-[10px] text-muted hover:text-foreground rotate-90"
           title="Expand file explorer"
         >
           Files
@@ -146,31 +146,31 @@ function FileExplorerPanel({
   }
 
   return (
-    <div className="w-64 border-r border-[var(--color-border)] bg-[var(--color-bg-secondary)] flex flex-col overflow-hidden">
-      <div className="flex items-center justify-between px-2 py-1.5 border-b border-[var(--color-border)]">
-        <span className="text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">Files</span>
+    <div className="w-64 border-r border-edge bg-surface-alt flex flex-col overflow-hidden">
+      <div className="flex items-center justify-between px-2 py-1.5 border-b border-edge">
+        <span className="text-[10px] font-semibold text-muted uppercase tracking-wider">Files</span>
         <button
           onClick={() => setCollapsed(true)}
-          className="text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+          className="text-[10px] text-muted hover:text-foreground"
           title="Collapse"
         >
           ✕
         </button>
       </div>
 
-      <div className="px-2 py-1.5 border-b border-[var(--color-border)]">
+      <div className="px-2 py-1.5 border-b border-edge">
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search files..."
-          className="w-full text-[11px] px-2 py-1 rounded bg-[var(--color-bg)] border border-[var(--color-border)] focus:outline-none focus:border-[var(--color-accent)]"
+          className="w-full text-[11px] px-2 py-1 rounded bg-surface border border-edge focus:outline-none focus:border-accent"
         />
       </div>
 
       <div className="flex-1 overflow-y-auto text-[11px]">
         {memories.length === 0 ? (
-          <div className="px-2 py-4 text-center text-[var(--color-text-muted)]">
+          <div className="px-2 py-4 text-center text-muted">
             No memories
           </div>
         ) : (
@@ -219,17 +219,17 @@ function TreeNodeList({
                 if (isFolder) onToggle(node.path);
                 if (node.memory) onSelect(node.memory);
               }}
-              className={`w-full text-left px-2 py-0.5 flex items-center gap-1 hover:bg-[var(--color-bg-tertiary)] transition-colors ${
-                isSelected ? "bg-[var(--color-accent)]15 text-[var(--color-accent)]" : "text-[var(--color-text)]"
+              className={`w-full text-left px-2 py-0.5 flex items-center gap-1 hover:bg-surface-elevated transition-colors ${
+                isSelected ? "bg-accent15 text-accent" : "text-foreground"
               }`}
               style={{ paddingLeft: `${depth * 12 + 8}px` }}
             >
               {isFolder ? (
-                <span className="w-3 text-[9px] text-[var(--color-text-muted)]">
+                <span className="w-3 text-[9px] text-muted">
                   {isExpanded ? "▾" : "▸"}
                 </span>
               ) : (
-                <span className="w-3 text-[9px] text-[var(--color-text-muted)]">·</span>
+                <span className="w-3 text-[9px] text-muted">·</span>
               )}
               <span className="truncate">{node.name}</span>
             </button>
@@ -255,7 +255,7 @@ function TreeNodeList({
 function MemoryContentViewer({ selectedMemory }: { selectedMemory: ProjectMemory | null }): React.JSX.Element {
   if (!selectedMemory) {
     return (
-      <div className="flex items-center justify-center h-full text-[var(--color-text-muted)]">
+      <div className="flex items-center justify-center h-full text-muted">
         <div className="text-center">
           <p className="text-sm mb-1">Select a memory from the explorer</p>
           <p className="text-xs">Project memories appear as navigable files</p>
@@ -266,10 +266,10 @@ function MemoryContentViewer({ selectedMemory }: { selectedMemory: ProjectMemory
 
   return (
     <div className="p-4">
-      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[var(--color-border)]">
+      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-edge">
         <span className="text-sm font-semibold">{selectedMemory.name}</span>
       </div>
-      <pre className="text-xs whitespace-pre-wrap text-[var(--color-text-muted)] font-mono leading-relaxed">
+      <pre className="text-xs whitespace-pre-wrap text-muted font-mono leading-relaxed">
         {selectedMemory.content}
       </pre>
     </div>

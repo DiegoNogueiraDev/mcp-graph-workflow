@@ -353,7 +353,7 @@ export function GitNexusTab(): React.JSX.Element {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full text-[var(--color-text-muted)]">
+      <div className="flex items-center justify-center h-full text-muted">
         Loading Code Graph...
       </div>
     );
@@ -361,7 +361,7 @@ export function GitNexusTab(): React.JSX.Element {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-full text-[var(--color-danger)]">
+      <div className="flex items-center justify-center h-full text-danger">
         Failed to load: {error}
       </div>
     );
@@ -374,7 +374,7 @@ export function GitNexusTab(): React.JSX.Element {
   return (
     <div className="h-full flex flex-col">
       {/* Header bar */}
-      <div className="flex items-center gap-3 px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
+      <div className="flex items-center gap-3 px-4 py-2 border-b border-edge bg-surface-alt">
         <h2 className="text-sm font-semibold">Code Graph — Code Intelligence</h2>
 
         <StatusBadge
@@ -386,20 +386,20 @@ export function GitNexusTab(): React.JSX.Element {
         />
 
         {displayGraph && (
-          <span className="text-[10px] text-[var(--color-text-muted)]">
+          <span className="text-[10px] text-muted">
             {displayGraph.symbols.length} symbols · {displayGraph.relations.length} relations
           </span>
         )}
       </div>
 
       {/* Path bar */}
-      <div className="flex items-center gap-3 px-4 py-1.5 border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
-        <span className="text-[10px] text-[var(--color-text-muted)] whitespace-nowrap font-mono">
+      <div className="flex items-center gap-3 px-4 py-1.5 border-b border-edge bg-surface-alt">
+        <span className="text-[10px] text-muted whitespace-nowrap font-mono">
           {currentPath ? `Current: ${currentPath}` : "No project path"}
         </span>
         <button
           onClick={() => setFolderModalOpen(true)}
-          className="text-[10px] font-medium px-3 py-1 rounded bg-[var(--color-accent)] text-white hover:opacity-90 transition-opacity whitespace-nowrap"
+          className="text-[10px] font-medium px-3 py-1 rounded bg-accent text-white hover:opacity-90 transition-opacity whitespace-nowrap"
         >
           Open Folder...
         </button>
@@ -414,7 +414,7 @@ export function GitNexusTab(): React.JSX.Element {
 
       {/* Warning: TypeScript not available */}
       {gitNexusStatus?.typescriptAvailable === false && (
-        <div className="flex items-center gap-2 px-4 py-2 border-b border-[var(--color-border)] bg-yellow-500/10 text-yellow-600 dark:text-yellow-400">
+        <div className="flex items-center gap-2 px-4 py-2 border-b border-edge bg-yellow-500/10 text-yellow-600 dark:text-yellow-400">
           <span className="text-sm font-medium">TypeScript compiler not found.</span>
           <span className="text-xs">
             Code Graph requires the <code className="font-mono bg-yellow-500/10 px-1 rounded">typescript</code> package to analyze source files.
@@ -426,17 +426,17 @@ export function GitNexusTab(): React.JSX.Element {
       {/* 2-panel body: left controls/results + right graph */}
       <div className="flex flex-1 min-h-0">
         {/* Left: Explorer/Filters sidebar (~30%) */}
-        <div className="w-[30%] min-w-[320px] border-r border-[var(--color-border)] flex flex-col min-h-0">
+        <div className="w-full md:w-[30%] md:min-w-[280px] border-r border-edge flex flex-col min-h-0">
           {/* Sidebar tab bar */}
-          <div className="flex border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
+          <div className="flex border-b border-edge bg-surface-alt">
             {(["explorer", "filters"] as SidebarTab[]).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setSidebarTab(tab)}
                 className={`flex-1 text-xs px-3 py-2 font-medium transition-colors ${
                   sidebarTab === tab
-                    ? "border-b-2 border-[var(--color-accent)] text-[var(--color-accent)]"
-                    : "text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+                    ? "border-b-2 border-accent text-accent"
+                    : "text-muted hover:text-foreground"
                 }`}
               >
                 {tab === "explorer" ? "Explorer" : "Filters"}
@@ -530,10 +530,10 @@ function CollapsibleSection({
   children: React.ReactNode;
 }): React.JSX.Element {
   return (
-    <div className="border-t border-[var(--color-border)]">
+    <div className="border-t border-edge">
       <button
         onClick={onToggle}
-        className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-bg-tertiary)] transition-colors"
+        className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-muted hover:text-foreground hover:bg-surface-elevated transition-colors"
       >
         <span className="text-[10px]">{open ? "\u25BE" : "\u25B8"}</span>
         {title}
@@ -573,7 +573,7 @@ function StatusBadge({
         <button
           onClick={onAction}
           disabled={actionLoading}
-          className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--color-accent)] text-white disabled:opacity-50 hover:opacity-90 transition-opacity"
+          className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-accent text-white disabled:opacity-50 hover:opacity-90 transition-opacity"
         >
           {actionLoading ? "Indexing..." : "Reindex"}
         </button>
@@ -604,7 +604,7 @@ function QueryContent({
       <h3 className="text-sm font-semibold mb-3">Query Code Graph</h3>
 
       {!gitNexusRunning && (
-        <div className="mb-4 p-3 rounded-lg bg-[var(--color-bg-tertiary)] border border-[var(--color-border)] text-sm text-[var(--color-text-muted)]">
+        <div className="mb-4 p-3 rounded-xl border border-edge shadow-sm hover:shadow-md transition-shadow bg-surface-elevated text-sm text-muted">
           Code index not available. Click Reindex to enable code graph queries.
         </div>
       )}
@@ -616,20 +616,20 @@ function QueryContent({
           onChange={(e) => onQueryChange(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && onSubmit()}
           placeholder="e.g., MATCH (n) RETURN n.name LIMIT 20"
-          className="flex-1 text-sm px-3 py-2 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)] focus:outline-none focus:border-[var(--color-accent)]"
+          className="flex-1 text-sm px-3 py-2 rounded-xl border border-edge shadow-sm hover:shadow-md transition-shadow bg-surface-alt focus:outline-none focus:border-accent"
           disabled={!gitNexusRunning}
         />
         <button
           onClick={onSubmit}
           disabled={!gitNexusRunning || result.loading}
-          className="text-sm px-4 py-2 rounded-lg bg-[var(--color-accent)] text-white font-medium disabled:opacity-50 hover:opacity-90 transition-opacity"
+          className="text-sm px-4 py-2 rounded-lg bg-accent text-white font-medium disabled:opacity-50 hover:opacity-90 transition-opacity"
         >
           {result.loading ? "..." : "Query"}
         </button>
       </div>
 
       {result.error && (
-        <div className="p-3 rounded-lg bg-[var(--color-bg-tertiary)] border border-[var(--color-border)] text-sm text-[var(--color-danger)]">
+        <div className="p-3 rounded-xl border border-edge shadow-sm hover:shadow-md transition-shadow bg-surface-elevated text-sm text-danger">
           {result.error}
         </div>
       )}
@@ -685,12 +685,12 @@ function SymbolsTable({
 
   return (
     <div>
-      <div className="text-xs text-[var(--color-text-muted)] mb-2">
+      <div className="text-xs text-muted mb-2">
         {symbols.length} symbols found
       </div>
       <table className="w-full text-xs">
         <thead>
-          <tr className="border-b border-[var(--color-border)] text-left text-[var(--color-text-muted)]">
+          <tr className="border-b border-edge text-left text-muted">
             <th className="py-1.5 px-2 font-medium">Name</th>
             <th className="py-1.5 px-2 font-medium">Kind</th>
             <th className="py-1.5 px-2 font-medium">File</th>
@@ -702,7 +702,7 @@ function SymbolsTable({
             <tr
               key={`${sym.name}-${sym.file ?? ""}-${sym.startLine ?? ""}`}
               onClick={() => onSymbolSelect(sym.name)}
-              className="border-b border-[var(--color-border)] hover:bg-[var(--color-bg-tertiary)] cursor-pointer transition-colors"
+              className="border-b border-edge hover:bg-surface-elevated cursor-pointer transition-colors"
             >
               <td className="py-1 px-2 font-medium">{sym.name}</td>
               <td className="py-1 px-2">
@@ -716,8 +716,8 @@ function SymbolsTable({
                   {sym.kind}
                 </span>
               </td>
-              <td className="py-1 px-2 text-[var(--color-text-muted)] truncate max-w-[200px]">{sym.file ?? "—"}</td>
-              <td className="py-1 px-2 text-[var(--color-text-muted)]">
+              <td className="py-1 px-2 text-muted truncate max-w-[200px]">{sym.file ?? "—"}</td>
+              <td className="py-1 px-2 text-muted">
                 {sym.startLine != null ? `${sym.startLine}–${sym.endLine ?? sym.startLine}` : "—"}
               </td>
             </tr>
@@ -730,17 +730,17 @@ function SymbolsTable({
           <button
             onClick={() => setPage((p) => Math.max(0, p - 1))}
             disabled={page === 0}
-            className="px-2 py-0.5 rounded bg-[var(--color-bg-tertiary)] disabled:opacity-30"
+            className="px-2 py-0.5 rounded bg-surface-elevated disabled:opacity-30"
           >
             Prev
           </button>
-          <span className="text-[var(--color-text-muted)]">
+          <span className="text-muted">
             {page + 1} / {totalPages}
           </span>
           <button
             onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
             disabled={page >= totalPages - 1}
-            className="px-2 py-0.5 rounded bg-[var(--color-bg-tertiary)] disabled:opacity-30"
+            className="px-2 py-0.5 rounded bg-surface-elevated disabled:opacity-30"
           >
             Next
           </button>
@@ -768,7 +768,7 @@ function ImpactCard({
   const riskColor = RISK_COLORS[impact.riskLevel] ?? "#9e9e9e";
 
   return (
-    <div className="rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)] p-4">
+    <div className="rounded-xl border border-edge shadow-sm hover:shadow-md transition-shadow bg-surface-alt p-4">
       <div className="flex items-center gap-2 mb-3">
         <span className="text-sm font-semibold">Impact: {impact.symbol}</span>
         <span
@@ -779,7 +779,7 @@ function ImpactCard({
         </span>
       </div>
 
-      <div className="text-xs text-[var(--color-text-muted)] mb-2">
+      <div className="text-xs text-muted mb-2">
         {impact.affectedSymbols.length} affected symbols
       </div>
 
@@ -788,10 +788,10 @@ function ImpactCard({
           <button
             key={`${sym.name}-${sym.file}`}
             onClick={() => onSymbolSelect(sym.name)}
-            className="w-full text-left flex items-center justify-between px-2 py-1 rounded hover:bg-[var(--color-bg-tertiary)] transition-colors text-xs"
+            className="w-full text-left flex items-center justify-between px-2 py-1 rounded hover:bg-surface-elevated transition-colors text-xs"
           >
             <span className="font-medium">{sym.name}</span>
-            <span className="text-[var(--color-text-muted)] flex items-center gap-2">
+            <span className="text-muted flex items-center gap-2">
               <span className="truncate max-w-[150px]">{sym.file}</span>
               <span>{Math.round(sym.confidence * 100)}%</span>
             </span>
@@ -828,7 +828,7 @@ function SymbolContent({
       <h3 className="text-sm font-semibold mb-3">Symbol Explorer</h3>
 
       {!gitNexusRunning && (
-        <div className="mb-4 p-3 rounded-lg bg-[var(--color-bg-tertiary)] border border-[var(--color-border)] text-sm text-[var(--color-text-muted)]">
+        <div className="mb-4 p-3 rounded-xl border border-edge shadow-sm hover:shadow-md transition-shadow bg-surface-elevated text-sm text-muted">
           Code index not available. Click Reindex to explore symbols.
         </div>
       )}
@@ -840,20 +840,20 @@ function SymbolContent({
           onChange={(e) => onSymbolInputChange(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && onContext(symbolInput)}
           placeholder="e.g., SqliteStore, buildTaskContext"
-          className="flex-1 text-sm px-3 py-2 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)] focus:outline-none focus:border-[var(--color-accent)]"
+          className="flex-1 text-sm px-3 py-2 rounded-xl border border-edge shadow-sm hover:shadow-md transition-shadow bg-surface-alt focus:outline-none focus:border-accent"
           disabled={!gitNexusRunning}
         />
         <button
           onClick={() => onContext(symbolInput)}
           disabled={!gitNexusRunning || !symbolInput.trim()}
-          className="text-sm px-3 py-2 rounded-lg bg-[var(--color-accent)] text-white font-medium disabled:opacity-50 hover:opacity-90 transition-opacity"
+          className="text-sm px-3 py-2 rounded-lg bg-accent text-white font-medium disabled:opacity-50 hover:opacity-90 transition-opacity"
         >
           Context
         </button>
         <button
           onClick={() => onImpact(symbolInput)}
           disabled={!gitNexusRunning || !symbolInput.trim()}
-          className="text-sm px-3 py-2 rounded-lg bg-[var(--color-bg-tertiary)] border border-[var(--color-border)] font-medium disabled:opacity-50 hover:opacity-90 transition-opacity"
+          className="text-sm px-3 py-2 rounded-xl border border-edge shadow-sm hover:shadow-md transition-shadow bg-surface-elevated font-medium disabled:opacity-50 hover:opacity-90 transition-opacity"
         >
           Impact
         </button>
@@ -861,7 +861,7 @@ function SymbolContent({
 
       {contextData && (
         <div className="mb-4">
-          <h4 className="text-xs font-semibold mb-2 text-[var(--color-text-muted)]">Context — {contextData.symbols.length} symbols</h4>
+          <h4 className="text-xs font-semibold mb-2 text-muted">Context — {contextData.symbols.length} symbols</h4>
           <SymbolsTable symbols={contextData.symbols} onSymbolSelect={onSymbolSelect} />
         </div>
       )}
@@ -871,7 +871,7 @@ function SymbolContent({
       )}
 
       {!contextData && !impactData && (
-        <div className="text-center text-[var(--color-text-muted)] text-sm py-8">
+        <div className="text-center text-muted text-sm py-8">
           Enter a symbol name and click Context or Impact to explore
         </div>
       )}
@@ -903,7 +903,7 @@ function CosmosGraphPanel({
 
   if (!fullGraph || fullGraph.symbols.length === 0) {
     return (
-      <div className="flex-1 min-w-[300px] flex items-center justify-center" style={{ background: "#06060f" }}>
+      <div className="flex-1 min-w-0 flex items-center justify-center" style={{ background: "#06060f" }}>
         <div className="text-center text-[#3a3a5a]">
           <p className="text-sm mb-1">No symbol graph</p>
           <p className="text-xs">Query or select a symbol to see its graph</p>
@@ -925,7 +925,7 @@ function CosmosGraphPanel({
   const activeNode = hoveredNode ?? selectedSymbol;
 
   return (
-    <div className="flex-1 min-w-[300px] relative" style={{ background: "#06060f" }}>
+    <div className="flex-1 min-w-0 relative" style={{ background: "#06060f" }}>
       {/* Legend — floating translucent */}
       <div className="absolute top-2 left-2 z-10 flex flex-wrap gap-1 rounded-lg px-2 py-1.5" style={{ background: "#06060fdd" }}>
         {Object.entries(CODE_SYMBOL_COLORS).map(([kind, color]) => (

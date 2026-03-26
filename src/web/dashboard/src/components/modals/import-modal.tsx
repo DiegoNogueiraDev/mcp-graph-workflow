@@ -50,15 +50,15 @@ export function ImportModal({ open, onClose, onImported }: ImportModalProps): Re
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-[var(--color-bg)] rounded-lg shadow-xl w-full max-w-md p-6">
+      <div className="bg-surface rounded-lg shadow-xl w-full max-w-md p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Import PRD</h2>
-          <button onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text)] text-xl">&times;</button>
+          <button onClick={onClose} className="text-muted hover:text-foreground text-xl">&times;</button>
         </div>
 
         <div
           className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors mb-4 ${
-            dragOver ? "border-[var(--color-accent)] bg-[var(--color-accent)]10" : "border-[var(--color-border)]"
+            dragOver ? "border-accent bg-accent10" : "border-edge"
           }`}
           onClick={() => inputRef.current?.click()}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
@@ -72,7 +72,7 @@ export function ImportModal({ open, onClose, onImported }: ImportModalProps): Re
             className="hidden"
             onChange={(e) => { if (e.target.files?.length) setFile(e.target.files[0]); }}
           />
-          <p className="text-sm text-[var(--color-text-muted)]">
+          <p className="text-sm text-muted">
             {file
               ? `Selected: ${file.name} (${formatSize(file.size)})`
               : "Drag & drop a file here\nor click to select"}
@@ -101,14 +101,14 @@ export function ImportModal({ open, onClose, onImported }: ImportModalProps): Re
         <div className="flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="px-3 py-1.5 text-sm border border-[var(--color-border)] rounded hover:bg-[var(--color-bg-tertiary)]"
+            className="px-3 py-1.5 text-sm border border-edge rounded hover:bg-surface-elevated"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={!file || submitting}
-            className="px-3 py-1.5 text-sm bg-[var(--color-accent)] text-white rounded hover:bg-[var(--color-accent-light)] disabled:opacity-50"
+            className="px-3 py-1.5 text-sm bg-accent text-white rounded hover:bg-accent-light disabled:opacity-50"
           >
             {submitting ? "Importing..." : "Import"}
           </button>

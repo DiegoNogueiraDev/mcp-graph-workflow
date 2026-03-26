@@ -188,7 +188,7 @@ export function SiebelTab(): React.JSX.Element {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full text-[var(--color-text-muted)]">
+      <div className="flex items-center justify-center h-full text-muted">
         Loading Siebel...
       </div>
     );
@@ -196,7 +196,7 @@ export function SiebelTab(): React.JSX.Element {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-full text-[var(--color-danger)]">
+      <div className="flex items-center justify-center h-full text-danger">
         {error}
       </div>
     );
@@ -207,10 +207,10 @@ export function SiebelTab(): React.JSX.Element {
       <div className="p-4 space-y-6 max-w-6xl mx-auto">
 
         {/* ── Panel 1: Upload & Context ── */}
-        <section className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
-          <div className="px-4 py-3 border-b border-[var(--color-border)]">
+        <section className="rounded-lg border border-edge bg-surface-alt">
+          <div className="px-4 py-3 border-b border-edge">
             <h3 className="text-sm font-semibold">Upload & Context</h3>
-            <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+            <p className="text-xs text-muted mt-0.5">
               Upload SIF files and documentation to build RAG context for generation
             </p>
           </div>
@@ -222,9 +222,9 @@ export function SiebelTab(): React.JSX.Element {
                 type="file"
                 accept=".sif,.xml"
                 onChange={handleSifUpload}
-                className="block w-full text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-[var(--color-accent)] file:text-white hover:file:opacity-90 cursor-pointer"
+                className="block w-full text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-accent file:text-white hover:file:opacity-90 cursor-pointer"
               />
-              <p className="text-[10px] text-[var(--color-text-muted)] mt-1">
+              <p className="text-[10px] text-muted mt-1">
                 Imports Siebel objects into the graph + knowledge store
               </p>
             </div>
@@ -235,15 +235,15 @@ export function SiebelTab(): React.JSX.Element {
                 type="file"
                 accept=".pdf,.html,.htm,.txt,.md,.doc,.docx"
                 onChange={handleDocsUpload}
-                className="block w-full text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-[var(--color-accent)] file:text-white hover:file:opacity-90 cursor-pointer"
+                className="block w-full text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-accent file:text-white hover:file:opacity-90 cursor-pointer"
               />
-              <p className="text-[10px] text-[var(--color-text-muted)] mt-1">
+              <p className="text-[10px] text-muted mt-1">
                 Indexes documentation as context for SIF generation
               </p>
             </div>
           </div>
           {uploadStatus && (
-            <div className={`px-4 py-2 text-xs border-t border-[var(--color-border)] ${
+            <div className={`px-4 py-2 text-xs border-t border-edge ${
               uploadStatus.startsWith("Error") ? "text-red-500" : "text-green-500"
             }`}>
               {uploadStatus}
@@ -252,24 +252,24 @@ export function SiebelTab(): React.JSX.Element {
         </section>
 
         {/* ── Panel 2: Siebel Objects ── */}
-        <section className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
-          <div className="px-4 py-3 border-b border-[var(--color-border)]">
+        <section className="rounded-lg border border-edge bg-surface-alt">
+          <div className="px-4 py-3 border-b border-edge">
             <h3 className="text-sm font-semibold">
               Indexed Siebel Objects
-              <span className="ml-2 text-xs font-normal text-[var(--color-text-muted)]">
+              <span className="ml-2 text-xs font-normal text-muted">
                 {objects.length} objects
               </span>
             </h3>
           </div>
           {objects.length === 0 ? (
-            <div className="p-4 text-xs text-[var(--color-text-muted)]">
+            <div className="p-4 text-xs text-muted">
               No Siebel objects indexed yet. Upload a .sif file above.
             </div>
           ) : (
             <div className="max-h-64 overflow-auto">
               <table className="w-full text-xs">
-                <thead className="sticky top-0 bg-[var(--color-bg-secondary)]">
-                  <tr className="border-b border-[var(--color-border)]">
+                <thead className="sticky top-0 bg-surface-alt">
+                  <tr className="border-b border-edge">
                     <th className="text-left px-4 py-2 font-medium">Name</th>
                     <th className="text-left px-4 py-2 font-medium">Type</th>
                     <th className="text-left px-4 py-2 font-medium">Project</th>
@@ -278,15 +278,15 @@ export function SiebelTab(): React.JSX.Element {
                 </thead>
                 <tbody>
                   {objects.map((obj, i) => (
-                    <tr key={i} className="border-b border-[var(--color-border)] hover:bg-[var(--color-bg-primary)]">
+                    <tr key={i} className="border-b border-edge hover:bg-surface">
                       <td className="px-4 py-1.5 font-mono">{obj.title}</td>
                       <td className="px-4 py-1.5">
-                        <span className="px-1.5 py-0.5 rounded text-[10px] bg-[var(--color-accent)]/10 text-[var(--color-accent)]">
+                        <span className="px-1.5 py-0.5 rounded text-[10px] bg-accent/10 text-accent">
                           {obj.siebelType ?? obj.sourceType}
                         </span>
                       </td>
-                      <td className="px-4 py-1.5 text-[var(--color-text-muted)]">{obj.siebelProject ?? "-"}</td>
-                      <td className="px-4 py-1.5 text-[var(--color-text-muted)] truncate max-w-xs">{obj.contentPreview}</td>
+                      <td className="px-4 py-1.5 text-muted">{obj.siebelProject ?? "-"}</td>
+                      <td className="px-4 py-1.5 text-muted truncate max-w-xs">{obj.contentPreview}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -296,10 +296,10 @@ export function SiebelTab(): React.JSX.Element {
         </section>
 
         {/* ── Panel 3: SIF Generation ── */}
-        <section className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
-          <div className="px-4 py-3 border-b border-[var(--color-border)]">
+        <section className="rounded-lg border border-edge bg-surface-alt">
+          <div className="px-4 py-3 border-b border-edge">
             <h3 className="text-sm font-semibold">SIF Generation</h3>
-            <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+            <p className="text-xs text-muted mt-0.5">
               Describe what you need, generate context for the LLM, then validate the output
             </p>
           </div>
@@ -312,7 +312,7 @@ export function SiebelTab(): React.JSX.Element {
                 onChange={(e) => setGenDescription(e.target.value)}
                 placeholder="e.g., Create a Business Component for Service Requests with fields: SR Number, Status, Priority"
                 rows={3}
-                className="w-full px-3 py-2 text-xs rounded-md border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
+                className="w-full px-3 py-2 text-xs rounded-md border border-edge bg-surface text-foreground placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
 
@@ -326,8 +326,8 @@ export function SiebelTab(): React.JSX.Element {
                     onClick={() => handleTypeToggle(t.type)}
                     className={`px-2 py-1 text-[10px] rounded-md border transition-colors ${
                       genTypes.includes(t.type)
-                        ? "bg-[var(--color-accent)] text-white border-[var(--color-accent)]"
-                        : "bg-transparent text-[var(--color-text-muted)] border-[var(--color-border)] hover:border-[var(--color-accent)]"
+                        ? "bg-accent text-white border-accent"
+                        : "bg-transparent text-muted border-edge hover:border-accent"
                     }`}
                   >
                     {t.type.replace(/_/g, " ")}
@@ -343,7 +343,7 @@ export function SiebelTab(): React.JSX.Element {
                 value={genProject}
                 onChange={(e) => setGenProject(e.target.value)}
                 placeholder="e.g., Account (SSE)"
-                className="w-full px-3 py-1.5 text-xs rounded-md border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
+                className="w-full px-3 py-1.5 text-xs rounded-md border border-edge bg-surface text-foreground placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
 
@@ -351,7 +351,7 @@ export function SiebelTab(): React.JSX.Element {
             <button
               onClick={handlePrepare}
               disabled={!genDescription.trim() || genLoading}
-              className="px-4 py-1.5 text-xs font-medium rounded-md bg-[var(--color-accent)] text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+              className="px-4 py-1.5 text-xs font-medium rounded-md bg-accent text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
             >
               {genLoading ? "Generating Context..." : "Generate Context & Prompt"}
             </button>
@@ -363,12 +363,12 @@ export function SiebelTab(): React.JSX.Element {
                   <label className="text-xs font-medium">Generated Prompt (copy to LLM)</label>
                   <button
                     onClick={() => navigator.clipboard.writeText(genPrompt)}
-                    className="text-[10px] px-2 py-0.5 rounded bg-[var(--color-bg-primary)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] border border-[var(--color-border)]"
+                    className="text-[10px] px-2 py-0.5 rounded bg-surface text-muted hover:text-foreground border border-edge"
                   >
                     Copy
                   </button>
                 </div>
-                <pre className="text-[10px] p-3 rounded-md bg-[var(--color-bg-primary)] border border-[var(--color-border)] max-h-48 overflow-auto whitespace-pre-wrap text-[var(--color-text-muted)]">
+                <pre className="text-[10px] p-3 rounded-md bg-surface border border-edge max-h-48 overflow-auto whitespace-pre-wrap text-muted">
                   {genPrompt.slice(0, 3000)}
                   {genPrompt.length > 3000 && "\n\n... (truncated for display)"}
                 </pre>
@@ -384,7 +384,7 @@ export function SiebelTab(): React.JSX.Element {
                   onChange={(e) => setGenXml(e.target.value)}
                   placeholder='Paste the XML output from the LLM here (starting with <?xml version="1.0"...)'
                   rows={8}
-                  className="w-full px-3 py-2 text-xs font-mono rounded-md border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
+                  className="w-full px-3 py-2 text-xs font-mono rounded-md border border-edge bg-surface text-foreground placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-accent"
                 />
                 <button
                   onClick={handleFinalize}
@@ -414,17 +414,17 @@ export function SiebelTab(): React.JSX.Element {
                     }`}>
                       {genResult.validation.status === "valid" ? "Valid" : genResult.validation.status === "warnings" ? "Warnings" : "Invalid"}
                     </span>
-                    <span className="text-xs text-[var(--color-text-muted)]">
+                    <span className="text-xs text-muted">
                       Score: {genResult.validation.score}/100
                     </span>
-                    <span className="text-xs text-[var(--color-text-muted)]">
+                    <span className="text-xs text-muted">
                       {genResult.metadata.objectCount} objects
                     </span>
                   </div>
                   {genResult.validation.status !== "invalid" && (
                     <button
                       onClick={handleDownload}
-                      className="px-3 py-1 text-xs font-medium rounded-md bg-[var(--color-accent)] text-white hover:opacity-90"
+                      className="px-3 py-1 text-xs font-medium rounded-md bg-accent text-white hover:opacity-90"
                     >
                       Download SIF
                     </button>
@@ -432,7 +432,7 @@ export function SiebelTab(): React.JSX.Element {
                 </div>
 
                 {genResult.objects.length > 0 && (
-                  <div className="text-xs text-[var(--color-text-muted)]">
+                  <div className="text-xs text-muted">
                     Objects: {genResult.objects.map((o) => `${o.type}:${o.name}`).join(", ")}
                   </div>
                 )}
@@ -443,7 +443,7 @@ export function SiebelTab(): React.JSX.Element {
                       <li key={i} className={`text-[10px] ${
                         msg.level === "error" ? "text-red-500"
                           : msg.level === "warning" ? "text-yellow-600"
-                            : "text-[var(--color-text-muted)]"
+                            : "text-muted"
                       }`}>
                         [{msg.level}] {msg.message}
                         {msg.objectName && ` (${msg.objectName})`}

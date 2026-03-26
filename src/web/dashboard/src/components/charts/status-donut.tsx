@@ -12,7 +12,7 @@ export function StatusDonut({ data, className }: StatusDonutProps): React.JSX.El
 
   if (filtered.length === 0) {
     return (
-      <div className={`flex items-center justify-center text-sm text-[var(--color-text-muted)] ${className ?? ""}`}>
+      <div className={`flex items-center justify-center text-sm text-muted ${className ?? ""}`}>
         No status data
       </div>
     );

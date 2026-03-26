@@ -5,7 +5,7 @@ export function BenchmarkTab(): React.JSX.Element {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full text-[var(--color-text-muted)]">
+      <div className="flex items-center justify-center h-full text-muted">
         Loading benchmark data...
       </div>
     );
@@ -13,7 +13,7 @@ export function BenchmarkTab(): React.JSX.Element {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-full text-[var(--color-danger)]">
+      <div className="flex items-center justify-center h-full text-danger">
         Failed to load: {error}
       </div>
     );
@@ -50,20 +50,20 @@ export function BenchmarkTab(): React.JSX.Element {
         {/* Compression bars per task */}
         {tokenEconomy.perTaskMetrics.length > 0 && (
           <div>
-            <h4 className="text-xs font-medium text-[var(--color-text-muted)] mb-2">
+            <h4 className="text-xs font-medium text-muted mb-2">
               Context Compression per Task (vs Full Graph)
             </h4>
             <div className="space-y-1.5" data-testid="compression-bars">
               {tokenEconomy.perTaskMetrics.slice(0, 15).map((m) => (
                 <div key={m.id} className="flex items-center gap-2 text-xs">
                   <span className="w-32 truncate" title={m.title}>{m.title}</span>
-                  <div className="flex-1 h-3 bg-[var(--color-bg-tertiary)] rounded-full overflow-hidden">
+                  <div className="flex-1 h-3 bg-surface-elevated rounded-full overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-[var(--color-accent)]"
+                      className="h-full rounded-full bg-accent"
                       style={{ width: `${Math.min(m.compressionPercent, 100)}%` }}
                     />
                   </div>
-                  <span className="text-[var(--color-text-muted)] w-24 text-right">
+                  <span className="text-muted w-24 text-right">
                     {m.compressionPercent}% ({m.estimatedTokens} tok)
                   </span>
                 </div>
@@ -116,7 +116,7 @@ export function BenchmarkTab(): React.JSX.Element {
                 {bars.map((bar) => (
                   <div key={bar.label} className="flex items-center gap-2 text-xs">
                     <span className="w-40 truncate" title={bar.label}>{bar.label}</span>
-                    <div className="flex-1 h-3 bg-[var(--color-bg-tertiary)] rounded-full overflow-hidden">
+                    <div className="flex-1 h-3 bg-surface-elevated rounded-full overflow-hidden">
                       <div
                         className="h-full rounded-full"
                         style={{
@@ -125,7 +125,7 @@ export function BenchmarkTab(): React.JSX.Element {
                         }}
                       />
                     </div>
-                    <span className="text-[var(--color-text-muted)] w-20 text-right">
+                    <span className="text-muted w-20 text-right">
                       {bar.tokens.toLocaleString()} tok
                     </span>
                   </div>
@@ -158,10 +158,10 @@ export function BenchmarkTab(): React.JSX.Element {
       {/* Formulas & Justification */}
       <section>
         <h3 className="text-sm font-semibold mb-3">Formulas & Justification</h3>
-        <div className="px-3 py-2 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-xs space-y-1" data-testid="formulas-section">
+        <div className="px-3 py-2 rounded-xl border border-edge shadow-sm hover:shadow-md transition-shadow bg-surface-alt text-xs space-y-1" data-testid="formulas-section">
           {Object.entries(formulas).map(([key, formula]) => (
             <div key={key} className="flex gap-2">
-              <span className="text-[var(--color-text-muted)] font-mono w-40 shrink-0">{key}:</span>
+              <span className="text-muted font-mono w-40 shrink-0">{key}:</span>
               <span>{formula}</span>
             </div>
           ))}
@@ -191,20 +191,20 @@ export function BenchmarkTab(): React.JSX.Element {
             const maxTokens = Math.max(...toolTokenUsage.perTool.map((t) => t.totalTokens), 1);
             return (
               <div>
-                <h4 className="text-xs font-medium text-[var(--color-text-muted)] mb-2">
+                <h4 className="text-xs font-medium text-muted mb-2">
                   Token Usage per Tool
                 </h4>
                 <div className="space-y-1.5" data-testid="tool-token-bars">
                   {toolTokenUsage.perTool.slice(0, 15).map((t) => (
                     <div key={t.toolName} className="flex items-center gap-2 text-xs">
                       <span className="w-32 truncate font-mono" title={t.toolName}>{t.toolName}</span>
-                      <div className="flex-1 h-3 bg-[var(--color-bg-tertiary)] rounded-full overflow-hidden">
+                      <div className="flex-1 h-3 bg-surface-elevated rounded-full overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-[var(--color-accent)]"
+                          className="h-full rounded-full bg-accent"
                           style={{ width: `${Math.min((t.totalTokens / maxTokens) * 100, 100)}%` }}
                         />
                       </div>
-                      <span className="text-[var(--color-text-muted)] w-32 text-right">
+                      <span className="text-muted w-32 text-right">
                         {t.callCount} calls, {t.totalTokens.toLocaleString()} tok
                       </span>
                     </div>
@@ -236,9 +236,9 @@ export function BenchmarkTab(): React.JSX.Element {
 
 function MetricCard({ value, label }: { value: string | number; label: string }): React.JSX.Element {
   return (
-    <div className="p-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-center" data-testid="metric-card">
+    <div className="p-3 rounded-xl border border-edge shadow-sm hover:shadow-md transition-shadow bg-surface-alt text-center" data-testid="metric-card">
       <div className="text-xl font-bold">{value}</div>
-      <div className="text-[10px] text-[var(--color-text-muted)] uppercase">{label}</div>
+      <div className="text-[10px] text-muted uppercase">{label}</div>
     </div>
   );
 }

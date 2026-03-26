@@ -21,17 +21,17 @@ export function JsonResultView({ data }: JsonResultViewProps): React.JSX.Element
   }, [jsonString]);
 
   return (
-    <div className="rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-[var(--color-border)]">
+    <div className="rounded-xl border border-edge shadow-sm hover:shadow-md transition-shadow bg-surface-alt">
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-edge">
         <button
           onClick={() => setCollapsed((c) => !c)}
-          className="text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
+          className="text-[10px] text-muted hover:text-foreground transition-colors"
         >
           {collapsed ? "▸ Show JSON" : "▾ JSON"}
         </button>
         <button
           onClick={() => void handleCopy()}
-          className="text-[10px] px-2 py-0.5 rounded bg-[var(--color-bg-tertiary)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
+          className="text-[10px] px-2 py-0.5 rounded bg-surface-elevated text-muted hover:text-foreground transition-colors"
         >
           {copied ? "Copied!" : "Copy"}
         </button>

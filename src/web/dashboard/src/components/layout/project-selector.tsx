@@ -27,7 +27,7 @@ export const ProjectSelector = memo(function ProjectSelector() {
     // Single project or loading — show name only, no dropdown
     return (
       <span
-        className="text-sm text-[var(--color-text-muted)] truncate max-w-[200px]"
+        className="text-sm text-muted truncate max-w-[200px]"
         title={activeProject?.name}
       >
         {activeProject?.name ?? "No project"}
@@ -39,7 +39,7 @@ export const ProjectSelector = memo(function ProjectSelector() {
     <div ref={dropdownRef} className="relative" onKeyDown={handleKeyDown}>
       <button
         onClick={() => setOpen((prev) => !prev)}
-        className="flex items-center gap-1 px-2 py-1 text-sm border border-[var(--color-border)] rounded hover:bg-[var(--color-bg-tertiary)] transition-colors truncate max-w-[200px]"
+        className="flex items-center gap-1 px-2 py-1 text-sm border border-edge rounded hover:bg-surface-elevated transition-colors truncate max-w-[200px]"
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label="Select project"
@@ -54,7 +54,7 @@ export const ProjectSelector = memo(function ProjectSelector() {
         <ul
           role="listbox"
           aria-label="Projects"
-          className="absolute top-full left-0 mt-1 w-56 bg-[var(--color-bg-secondary)] border border-[var(--color-border)] rounded shadow-lg z-50 max-h-60 overflow-y-auto"
+          className="absolute top-full left-0 mt-1 w-56 bg-surface-alt border border-edge rounded shadow-lg z-50 max-h-60 overflow-y-auto"
         >
           {projects.map((project) => (
             <li key={project.id} role="option" aria-selected={project.id === activeProject?.id}>
@@ -63,10 +63,10 @@ export const ProjectSelector = memo(function ProjectSelector() {
                   void switchProject(project.id);
                   setOpen(false);
                 }}
-                className={`w-full text-left px-3 py-2 text-sm hover:bg-[var(--color-bg-tertiary)] transition-colors ${
+                className={`w-full text-left px-3 py-2 text-sm hover:bg-surface-elevated transition-colors ${
                   project.id === activeProject?.id
-                    ? "text-[var(--color-accent)] font-medium"
-                    : "text-[var(--color-text)]"
+                    ? "text-accent font-medium"
+                    : "text-foreground"
                 }`}
               >
                 {project.name}

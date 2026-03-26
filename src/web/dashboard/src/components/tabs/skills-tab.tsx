@@ -11,9 +11,9 @@ const TOKEN_BUDGET = 4000;
 
 function MetricCard({ value, label }: { value: string | number; label: string }): React.JSX.Element {
   return (
-    <div className="p-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-center" data-testid="metric-card">
+    <div className="p-3 rounded-xl border border-edge shadow-sm hover:shadow-md transition-shadow bg-surface-alt text-center" data-testid="metric-card">
       <div className="text-xl font-bold">{value}</div>
-      <div className="text-[10px] text-[var(--color-text-muted)] uppercase">{label}</div>
+      <div className="text-[10px] text-muted uppercase">{label}</div>
     </div>
   );
 }
@@ -29,8 +29,8 @@ function PhaseBadge({ phase }: { phase: string }): React.JSX.Element {
 
 function SourceBadge({ source }: { source: "built-in" | "filesystem" | "custom" }): React.JSX.Element {
   const colors = {
-    "built-in": "bg-[var(--color-accent)]/10 text-[var(--color-accent)]",
-    "filesystem": "bg-[var(--color-text-muted)]/10 text-[var(--color-text-muted)]",
+    "built-in": "bg-accent/10 text-accent",
+    "filesystem": "bg-muted/10 text-muted",
     "custom": "bg-purple-500/10 text-purple-500",
   };
   return (
@@ -47,7 +47,7 @@ function SkillCard({ skill, onToggle, onClick }: {
 }): React.JSX.Element {
   return (
     <div
-      className={`p-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)] cursor-pointer hover:border-[var(--color-accent)]/50 transition-all ${
+      className={`p-3 rounded-xl border border-edge shadow-sm hover:shadow-md transition-shadow bg-surface-alt cursor-pointer hover:border-accent/50 transition-all ${
         !skill.enabled ? "opacity-50" : ""
       }`}
       onClick={() => onClick(skill)}
@@ -60,15 +60,15 @@ function SkillCard({ skill, onToggle, onClick }: {
             checked={skill.enabled}
             onChange={(e) => { e.stopPropagation(); onToggle(skill.name, e.target.checked); }}
             onClick={(e) => e.stopPropagation()}
-            className="w-3.5 h-3.5 accent-[var(--color-accent)]"
+            className="w-3.5 h-3.5 accent-accent"
           />
           <SourceBadge source={skill.source} />
-          <span className="text-[10px] text-[var(--color-text-muted)]">
+          <span className="text-[10px] text-muted">
             {skill.estimatedTokens.toLocaleString()} tok
           </span>
         </div>
       </div>
-      <p className="text-xs text-[var(--color-text-muted)] line-clamp-2">{skill.description}</p>
+      <p className="text-xs text-muted line-clamp-2">{skill.description}</p>
     </div>
   );
 }
@@ -84,20 +84,20 @@ function PhaseSection({ phase, skills, onToggle, onSkillClick }: {
   const enabledCount = skills.filter((s) => s.enabled).length;
 
   return (
-    <div className="rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)] overflow-hidden">
+    <div className="rounded-xl border border-edge shadow-sm hover:shadow-md transition-shadow bg-surface-alt overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium hover:bg-[var(--color-bg-tertiary)] transition-colors"
+        className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium hover:bg-surface-elevated transition-colors"
       >
         <span className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full" style={{ background: color }} />
           {phase}
-          <span className="px-1.5 py-0.5 rounded-full bg-[var(--color-border)] text-[10px]">
+          <span className="px-1.5 py-0.5 rounded-full bg-edge text-[10px]">
             {enabledCount}/{skills.length}
           </span>
         </span>
-        <span className="text-[var(--color-text-muted)]">{open ? "\u25B2" : "\u25BC"}</span>
+        <span className="text-muted">{open ? "\u25B2" : "\u25BC"}</span>
       </button>
       {open && (
         <div className="px-3 pb-3 space-y-2">
@@ -112,12 +112,12 @@ function PhaseSection({ phase, skills, onToggle, onSkillClick }: {
 
 function RecommendationCard({ rec }: { rec: Recommendation }): React.JSX.Element {
   return (
-    <div className="p-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-accent)]/30">
+    <div className="p-3 rounded-lg bg-surface-alt border border-accent/30">
       <div className="flex items-center gap-2 mb-1">
         <span className="text-sm font-medium">{rec.skill}</span>
         <PhaseBadge phase={rec.phase} />
       </div>
-      <p className="text-xs text-[var(--color-text-muted)]">{rec.reason}</p>
+      <p className="text-xs text-muted">{rec.reason}</p>
     </div>
   );
 }
@@ -129,14 +129,14 @@ function TokenBudgetBar({ totalTokens, activeTokens }: { totalTokens: number; ac
   const activeColor = activeRatio > 0.8 ? "#ef4444" : activeRatio > 0.5 ? "#f59e0b" : "#10b981";
 
   return (
-    <div data-testid="token-budget-bar" className="p-4 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
+    <div data-testid="token-budget-bar" className="p-4 rounded-xl border border-edge shadow-sm hover:shadow-md transition-shadow bg-surface-alt">
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase">Token Budget</h3>
-        <span className="text-xs text-[var(--color-text-muted)]">
+        <h3 className="text-xs font-semibold text-muted uppercase">Token Budget</h3>
+        <span className="text-xs text-muted">
           {activeTokens.toLocaleString()} active / {totalTokens.toLocaleString()} total ({activePct}%)
         </span>
       </div>
-      <div className="w-full h-2 rounded-full bg-[var(--color-border)] relative">
+      <div className="w-full h-2 rounded-full bg-edge relative">
         <div
           className="h-full rounded-full absolute top-0 left-0 opacity-30"
           style={{ width: `${Math.round(totalRatio * 100)}%`, background: "#6b7280" }}
@@ -185,7 +185,7 @@ export function SkillsTab(): React.JSX.Element {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-full text-[var(--color-danger)]">
+      <div className="flex items-center justify-center h-full text-danger">
         Failed to load skills: {error}
       </div>
     );
@@ -193,7 +193,7 @@ export function SkillsTab(): React.JSX.Element {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full text-[var(--color-text-muted)]">
+      <div className="flex items-center justify-center h-full text-muted">
         Loading skills...
       </div>
     );
@@ -223,13 +223,13 @@ export function SkillsTab(): React.JSX.Element {
         <div className="flex items-center gap-2">
           <button
             onClick={() => { setEditSkill(null); setCreateModalOpen(true); }}
-            className="text-xs px-3 py-1.5 rounded-lg border border-[var(--color-accent)] text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 transition-colors"
+            className="text-xs px-3 py-1.5 rounded-lg border border-accent text-accent hover:bg-accent/10 transition-colors"
           >
             + Custom Skill
           </button>
           <button
             onClick={() => void refresh()}
-            className="text-xs px-3 py-1.5 rounded-lg bg-[var(--color-accent)] text-white hover:opacity-90 transition-opacity"
+            className="text-xs px-3 py-1.5 rounded-lg bg-accent text-white hover:opacity-90 transition-opacity"
           >
             Refresh
           </button>
@@ -251,7 +251,7 @@ export function SkillsTab(): React.JSX.Element {
       {/* Recommendations */}
       {recommendations.length > 0 && (
         <div data-testid="recommendations-section" className="space-y-2">
-          <h3 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase">
+          <h3 className="text-xs font-semibold text-muted uppercase">
             Recommendations ({recommendations.length})
           </h3>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
@@ -264,7 +264,7 @@ export function SkillsTab(): React.JSX.Element {
 
       {/* Skills by phase */}
       <div data-testid="skills-by-phase" className="space-y-3">
-        <h3 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase">
+        <h3 className="text-xs font-semibold text-muted uppercase">
           Skills by Lifecycle Phase
         </h3>
         {[...skillsByPhase.entries()].map(([phase, phaseSkills]) => (

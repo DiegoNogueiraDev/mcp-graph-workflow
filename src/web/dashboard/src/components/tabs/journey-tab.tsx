@@ -60,12 +60,12 @@ const JourneyScreenNode = memo(function JourneyScreenNode({ data }: NodeProps & 
     <>
       <Handle type="target" position={Position.Top} className="!w-2 !h-2" />
       <div
-        className="bg-[var(--color-bg)] border-2 rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer overflow-hidden"
+        className="bg-surface border-2 rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer overflow-hidden"
         style={{ borderColor: typeColor, width: NODE_WIDTH }}
         onClick={() => onSelect(screen)}
       >
         {/* Screenshot preview */}
-        <div className="relative w-full bg-[var(--color-bg-tertiary)]" style={{ height: 140 }}>
+        <div className="relative w-full bg-surface-elevated" style={{ height: 140 }}>
           {screenshotUrl ? (
             <img
               src={screenshotUrl}
@@ -74,7 +74,7 @@ const JourneyScreenNode = memo(function JourneyScreenNode({ data }: NodeProps & 
               loading="lazy"
             />
           ) : (
-            <div className="flex items-center justify-center h-full text-[var(--color-text-muted)] text-xs">
+            <div className="flex items-center justify-center h-full text-muted text-xs">
               No screenshot
             </div>
           )}
@@ -89,18 +89,18 @@ const JourneyScreenNode = memo(function JourneyScreenNode({ data }: NodeProps & 
         <div className="p-2">
           <div className="text-sm font-semibold leading-tight line-clamp-1">{screen.title}</div>
           {screen.url && (
-            <div className="text-[10px] text-[var(--color-text-muted)] truncate mt-0.5">
+            <div className="text-[10px] text-muted truncate mt-0.5">
               {screen.url}
             </div>
           )}
           <div className="flex items-center gap-2 mt-1">
             {screen.fields && screen.fields.length > 0 && (
-              <span className="text-[9px] px-1 py-0.5 rounded bg-[var(--color-bg-tertiary)] text-[var(--color-text-muted)]">
+              <span className="text-[9px] px-1 py-0.5 rounded bg-surface-elevated text-muted">
                 {screen.fields.length} fields
               </span>
             )}
             {screen.ctas && screen.ctas.length > 0 && (
-              <span className="text-[9px] px-1 py-0.5 rounded bg-[var(--color-bg-tertiary)] text-[var(--color-text-muted)]">
+              <span className="text-[9px] px-1 py-0.5 rounded bg-surface-elevated text-muted">
                 {screen.ctas.length} CTAs
               </span>
             )}
@@ -231,7 +231,7 @@ function ScreenDetailPanel({
   const typeColor = SCREEN_TYPE_COLORS[screen.screenType] ?? "#757575";
 
   return (
-    <div className="w-80 h-full border-l border-[var(--color-border)] bg-[var(--color-bg)] overflow-y-auto p-4 flex flex-col gap-3">
+    <div className="w-80 h-full border-l border-edge bg-surface overflow-y-auto p-4 flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <span
           className="text-xs font-bold uppercase px-2 py-0.5 rounded text-white"
@@ -239,7 +239,7 @@ function ScreenDetailPanel({
         >
           {screen.screenType}
         </span>
-        <button onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text)]">
+        <button onClick={onClose} className="text-muted hover:text-foreground">
           X
         </button>
       </div>
@@ -247,15 +247,15 @@ function ScreenDetailPanel({
       <h3 className="text-lg font-semibold">{screen.title}</h3>
 
       {screen.url && (
-        <div className="text-xs text-[var(--color-text-muted)] break-all">{screen.url}</div>
+        <div className="text-xs text-muted break-all">{screen.url}</div>
       )}
 
       {screen.description && (
-        <p className="text-sm text-[var(--color-text-muted)]">{screen.description}</p>
+        <p className="text-sm text-muted">{screen.description}</p>
       )}
 
       {screen.screenshot && (
-        <div className="rounded-lg overflow-hidden border border-[var(--color-border)]">
+        <div className="rounded-lg overflow-hidden border border-edge">
           <img
             src={`/api/v1/journey/screenshots/_/${screen.screenshot}`}
             alt={screen.title}
@@ -266,16 +266,16 @@ function ScreenDetailPanel({
 
       {screen.fields && screen.fields.length > 0 && (
         <div>
-          <h4 className="text-xs font-semibold uppercase text-[var(--color-text-muted)] mb-1.5">
+          <h4 className="text-xs font-semibold uppercase text-muted mb-1.5">
             Form Fields ({screen.fields.length})
           </h4>
           <div className="space-y-1.5">
             {screen.fields.map((field: JourneyField) => (
               <div
                 key={field.name}
-                className="flex items-center gap-2 text-sm bg-[var(--color-bg-secondary)] rounded px-2 py-1"
+                className="flex items-center gap-2 text-sm bg-surface-alt rounded px-2 py-1"
               >
-                <span className="font-mono text-xs text-[var(--color-accent)]">{field.type}</span>
+                <span className="font-mono text-xs text-accent">{field.type}</span>
                 <span>{field.label ?? field.name}</span>
                 {field.required && (
                   <span className="text-[9px] text-red-400 font-bold">*</span>
@@ -288,14 +288,14 @@ function ScreenDetailPanel({
 
       {screen.ctas && screen.ctas.length > 0 && (
         <div>
-          <h4 className="text-xs font-semibold uppercase text-[var(--color-text-muted)] mb-1.5">
+          <h4 className="text-xs font-semibold uppercase text-muted mb-1.5">
             CTAs ({screen.ctas.length})
           </h4>
           <div className="flex flex-wrap gap-1">
             {screen.ctas.map((cta) => (
               <span
                 key={cta}
-                className="text-xs px-2 py-0.5 rounded-full bg-[var(--color-accent)] text-white"
+                className="text-xs px-2 py-0.5 rounded-full bg-accent text-white"
               >
                 {cta}
               </span>
@@ -306,10 +306,10 @@ function ScreenDetailPanel({
 
       {screen.metadata && Object.keys(screen.metadata).length > 0 && (
         <div>
-          <h4 className="text-xs font-semibold uppercase text-[var(--color-text-muted)] mb-1.5">
+          <h4 className="text-xs font-semibold uppercase text-muted mb-1.5">
             Metadata
           </h4>
-          <pre className="text-[10px] bg-[var(--color-bg-secondary)] rounded p-2 overflow-x-auto">
+          <pre className="text-[10px] bg-surface-alt rounded p-2 overflow-x-auto">
             {JSON.stringify(screen.metadata, null, 2)}
           </pre>
         </div>
@@ -335,7 +335,7 @@ function MapSelector({
 }): React.JSX.Element {
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full text-[var(--color-text-muted)]">
+      <div className="flex items-center justify-center h-full text-muted">
         Loading journey maps...
       </div>
     );
@@ -343,7 +343,7 @@ function MapSelector({
 
   if (maps.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-4 text-[var(--color-text-muted)]">
+      <div className="flex flex-col items-center justify-center h-full gap-4 text-muted">
         <div className="text-5xl">&#128506;</div>
         <p className="text-sm font-medium">No journey maps yet</p>
         <p className="text-xs text-center max-w-xs">
@@ -351,7 +351,7 @@ function MapSelector({
         </p>
         <button
           onClick={onImport}
-          className="px-4 py-2 rounded-lg bg-[var(--color-accent)] text-white text-sm hover:opacity-90 transition-opacity"
+          className="px-4 py-2 rounded-lg bg-accent text-white text-sm hover:opacity-90 transition-opacity"
         >
           Import Journey Map
         </button>
@@ -360,12 +360,12 @@ function MapSelector({
   }
 
   return (
-    <div className="flex items-center gap-2 p-2 border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
-      <label className="text-xs font-medium text-[var(--color-text-muted)]">Journey:</label>
+    <div className="flex items-center gap-2 p-2 border-b border-edge bg-surface-alt">
+      <label className="text-xs font-medium text-muted">Journey:</label>
       <select
         value={selectedId ?? ""}
         onChange={(e) => onSelect(e.target.value)}
-        className="text-sm bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 flex-1"
+        className="text-sm bg-surface border border-edge rounded px-2 py-1 flex-1"
       >
         {maps.map((m) => (
           <option key={m.id} value={m.id}>
@@ -375,7 +375,7 @@ function MapSelector({
       </select>
       <button
         onClick={onImport}
-        className="text-xs px-2 py-1 rounded bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-border)] text-[var(--color-text-muted)]"
+        className="text-xs px-2 py-1 rounded bg-surface-elevated hover:bg-edge text-muted"
       >
         + Import
       </button>
@@ -397,14 +397,14 @@ function VariantSelector({
   if (variants.length === 0) return null;
 
   return (
-    <div className="flex items-center gap-2 p-2 border-b border-[var(--color-border)]">
-      <label className="text-xs font-medium text-[var(--color-text-muted)]">Variant:</label>
+    <div className="flex items-center gap-2 p-2 border-b border-edge">
+      <label className="text-xs font-medium text-muted">Variant:</label>
       <button
         onClick={() => onSelect(null)}
         className={`text-xs px-2 py-1 rounded ${
           activeVariant === null
-            ? "bg-[var(--color-accent)] text-white"
-            : "bg-[var(--color-bg-tertiary)] text-[var(--color-text-muted)]"
+            ? "bg-accent text-white"
+            : "bg-surface-elevated text-muted"
         }`}
       >
         All
@@ -415,8 +415,8 @@ function VariantSelector({
           onClick={() => onSelect(v.id)}
           className={`text-xs px-2 py-1 rounded ${
             activeVariant === v.id
-              ? "bg-[var(--color-accent)] text-white"
-              : "bg-[var(--color-bg-tertiary)] text-[var(--color-text-muted)]"
+              ? "bg-accent text-white"
+              : "bg-surface-elevated text-muted"
           }`}
           title={v.description}
         >
@@ -470,7 +470,7 @@ function ImportJourneyModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-[var(--color-bg)] rounded-lg shadow-xl w-full max-w-lg p-6 max-h-[80vh] overflow-y-auto">
+      <div className="bg-surface rounded-lg shadow-xl w-full max-w-lg p-6 max-h-[80vh] overflow-y-auto">
         <h2 className="text-lg font-semibold mb-4">Import Journey Map</h2>
 
         <div className="mb-3">
@@ -489,26 +489,26 @@ function ImportJourneyModal({
             value={json}
             onChange={(e) => setJson(e.target.value)}
             rows={10}
-            className="w-full text-xs font-mono bg-[var(--color-bg-secondary)] border border-[var(--color-border)] rounded p-2"
+            className="w-full text-xs font-mono bg-surface-alt border border-edge rounded p-2"
             placeholder='{"journey": {"name": "..."}, "screens": [...], "edges": [...]}'
           />
         </div>
 
         {error && (
-          <div className="text-sm text-[var(--color-danger)] mb-3">{error}</div>
+          <div className="text-sm text-danger mb-3">{error}</div>
         )}
 
         <div className="flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="px-3 py-1.5 text-sm rounded-lg border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)]"
+            className="px-3 py-1.5 text-sm rounded-lg border border-edge hover:bg-surface-alt"
           >
             Cancel
           </button>
           <button
             onClick={handleImport}
             disabled={!json.trim() || loading}
-            className="px-3 py-1.5 text-sm rounded-lg bg-[var(--color-accent)] text-white hover:opacity-90 disabled:opacity-50"
+            className="px-3 py-1.5 text-sm rounded-lg bg-accent text-white hover:opacity-90 disabled:opacity-50"
           >
             {loading ? "Importing..." : "Import"}
           </button>

@@ -48,7 +48,7 @@ export const WorkflowEdge = memo(function WorkflowEdge({
       />
       <EdgeLabelRenderer>
         <div
-          className="text-[9px] text-[var(--color-text-muted)] bg-[var(--color-bg)] px-1 rounded pointer-events-none absolute"
+          className="text-[9px] text-muted bg-surface px-1 rounded pointer-events-none absolute"
           style={{
             transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
           }}

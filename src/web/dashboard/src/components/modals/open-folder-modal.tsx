@@ -96,14 +96,14 @@ export function OpenFolderModal({ open, onClose, onFolderChanged }: OpenFolderMo
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-[var(--color-bg)] rounded-lg shadow-xl w-full max-w-lg p-6 max-h-[80vh] flex flex-col">
+      <div className="bg-surface rounded-lg shadow-xl w-full max-w-lg p-6 max-h-[80vh] flex flex-col">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Open Folder</h2>
-          <button onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text)] text-xl">&times;</button>
+          <button onClick={onClose} className="text-muted hover:text-foreground text-xl">&times;</button>
         </div>
 
         {/* Current path */}
-        <div className="text-xs text-[var(--color-text-muted)] mb-3">
+        <div className="text-xs text-muted mb-3">
           Current: <span className="font-mono">{currentPath || "..."}</span>
         </div>
 
@@ -117,20 +117,20 @@ export function OpenFolderModal({ open, onClose, onFolderChanged }: OpenFolderMo
               onChange={(e) => setFolderPath(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") void handleSubmit(); }}
               placeholder="/path/to/project"
-              className="flex-1 px-3 py-2 text-sm bg-[var(--color-bg-secondary)] border border-[var(--color-border)] rounded font-mono focus:outline-none focus:border-[var(--color-accent)]"
+              className="flex-1 px-3 py-2 text-sm bg-surface-alt border border-edge rounded font-mono focus:outline-none focus:border-accent"
               autoFocus
             />
             <button
               onClick={() => void handleSubmit()}
               disabled={!folderPath.trim() || submitting}
-              className="px-4 py-2 text-sm bg-[var(--color-accent)] text-white rounded hover:bg-[var(--color-accent-light)] disabled:opacity-50"
+              className="px-4 py-2 text-sm bg-accent text-white rounded hover:bg-accent-light disabled:opacity-50"
             >
               {submitting ? "..." : "Open"}
             </button>
           </div>
           <button
             onClick={handleBrowseOpen}
-            className="mt-1 text-xs text-[var(--color-accent)] hover:underline"
+            className="mt-1 text-xs text-accent hover:underline"
           >
             Browse directories...
           </button>
@@ -149,17 +149,17 @@ export function OpenFolderModal({ open, onClose, onFolderChanged }: OpenFolderMo
 
         {/* Directory browser */}
         {showBrowser && (
-          <div className="mb-3 border border-[var(--color-border)] rounded overflow-hidden">
+          <div className="mb-3 border border-edge rounded overflow-hidden">
             {/* Breadcrumb */}
-            <div className="flex items-center gap-1 px-3 py-2 bg-[var(--color-bg-secondary)] border-b border-[var(--color-border)] text-xs font-mono overflow-x-auto whitespace-nowrap">
+            <div className="flex items-center gap-1 px-3 py-2 bg-surface-alt border-b border-edge text-xs font-mono overflow-x-auto whitespace-nowrap">
               {browsePath.split("/").filter(Boolean).map((segment, i, arr) => {
                 const segPath = "/" + arr.slice(0, i + 1).join("/");
                 return (
                   <span key={segPath} className="flex items-center gap-1">
-                    {i > 0 && <span className="text-[var(--color-text-muted)]">/</span>}
+                    {i > 0 && <span className="text-muted">/</span>}
                     <button
                       onClick={() => void browseTo(segPath)}
-                      className="hover:text-[var(--color-accent)] hover:underline"
+                      className="hover:text-accent hover:underline"
                     >
                       {segment}
                     </button>
@@ -170,7 +170,7 @@ export function OpenFolderModal({ open, onClose, onFolderChanged }: OpenFolderMo
 
             {/* Loading */}
             {browseLoading && (
-              <div className="px-3 py-4 text-sm text-[var(--color-text-muted)] text-center">Loading...</div>
+              <div className="px-3 py-4 text-sm text-muted text-center">Loading...</div>
             )}
 
             {/* Error */}
@@ -186,30 +186,30 @@ export function OpenFolderModal({ open, onClose, onFolderChanged }: OpenFolderMo
                   <li>
                     <button
                       onClick={() => void browseTo(browseParent)}
-                      className="w-full text-left px-3 py-1.5 text-sm hover:bg-[var(--color-bg-tertiary)] flex items-center gap-2"
+                      className="w-full text-left px-3 py-1.5 text-sm hover:bg-surface-elevated flex items-center gap-2"
                     >
-                      <span className="text-[var(--color-text-muted)]">..</span>
-                      <span className="text-xs text-[var(--color-text-muted)]">(parent)</span>
+                      <span className="text-muted">..</span>
+                      <span className="text-xs text-muted">(parent)</span>
                     </button>
                   </li>
                 )}
 
                 {browseEntries.length === 0 && (
-                  <li className="px-3 py-2 text-sm text-[var(--color-text-muted)]">No subdirectories</li>
+                  <li className="px-3 py-2 text-sm text-muted">No subdirectories</li>
                 )}
 
                 {browseEntries.map((entry) => (
                   <li key={entry.path} className="flex items-center">
                     <button
                       onClick={() => void browseTo(entry.path)}
-                      className="flex-1 text-left px-3 py-1.5 text-sm hover:bg-[var(--color-bg-tertiary)] flex items-center gap-2 min-w-0"
+                      className="flex-1 text-left px-3 py-1.5 text-sm hover:bg-surface-elevated flex items-center gap-2 min-w-0"
                     >
                       <span className="shrink-0">{entry.hasGraph ? "📂" : "📁"}</span>
-                      <span className={`truncate ${entry.hasGraph ? "font-medium text-[var(--color-accent)]" : ""}`}>
+                      <span className={`truncate ${entry.hasGraph ? "font-medium text-accent" : ""}`}>
                         {entry.name}
                       </span>
                       {entry.hasGraph && (
-                        <span className="shrink-0 text-xs bg-[var(--color-accent)]/20 text-[var(--color-accent)] px-1.5 py-0.5 rounded">
+                        <span className="shrink-0 text-xs bg-accent/20 text-accent px-1.5 py-0.5 rounded">
                           graph
                         </span>
                       )}
@@ -218,7 +218,7 @@ export function OpenFolderModal({ open, onClose, onFolderChanged }: OpenFolderMo
                       <button
                         onClick={() => void handleSubmit(entry.path)}
                         disabled={submitting || entry.path === currentPath}
-                        className="shrink-0 mr-2 px-2 py-1 text-xs bg-[var(--color-accent)] text-white rounded hover:bg-[var(--color-accent-light)] disabled:opacity-50"
+                        className="shrink-0 mr-2 px-2 py-1 text-xs bg-accent text-white rounded hover:bg-accent-light disabled:opacity-50"
                       >
                         {entry.path === currentPath ? "current" : "Open"}
                       </button>
@@ -234,7 +234,7 @@ export function OpenFolderModal({ open, onClose, onFolderChanged }: OpenFolderMo
         <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
           {recentFolders.length > 0 && (
             <div className="flex-1 min-h-0 flex flex-col">
-              <h3 className="text-sm font-medium mb-2 text-[var(--color-text-muted)] shrink-0">Recent folders</h3>
+              <h3 className="text-sm font-medium mb-2 text-muted shrink-0">Recent folders</h3>
               <ul className="space-y-1 overflow-y-auto min-h-0">
                 {recentFolders.map((folder) => (
                   <li key={folder}>
@@ -243,14 +243,14 @@ export function OpenFolderModal({ open, onClose, onFolderChanged }: OpenFolderMo
                       disabled={submitting || folder === currentPath}
                       className={`w-full text-left px-3 py-1.5 text-sm font-mono rounded transition-colors ${
                         folder === currentPath
-                          ? "bg-[var(--color-accent)]/10 text-[var(--color-accent)] cursor-default"
-                          : "hover:bg-[var(--color-bg-tertiary)] text-[var(--color-text)]"
+                          ? "bg-accent/10 text-accent cursor-default"
+                          : "hover:bg-surface-elevated text-foreground"
                       }`}
                       title={folder}
                     >
                       <span className="truncate block">{folder}</span>
                       {folder === currentPath && (
-                        <span className="text-xs text-[var(--color-accent)]"> (current)</span>
+                        <span className="text-xs text-accent"> (current)</span>
                       )}
                     </button>
                   </li>
@@ -264,7 +264,7 @@ export function OpenFolderModal({ open, onClose, onFolderChanged }: OpenFolderMo
         <div className="flex justify-end mt-4 shrink-0">
           <button
             onClick={onClose}
-            className="px-3 py-1.5 text-sm border border-[var(--color-border)] rounded hover:bg-[var(--color-bg-tertiary)]"
+            className="px-3 py-1.5 text-sm border border-edge rounded hover:bg-surface-elevated"
           >
             Cancel
           </button>

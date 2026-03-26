@@ -79,10 +79,10 @@ export function CaptureModal({ open, onClose, onImported }: CaptureModalProps): 
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-[var(--color-bg)] rounded-lg shadow-xl w-full max-w-lg p-6 max-h-[80vh] overflow-y-auto">
+      <div className="bg-surface rounded-lg shadow-xl w-full max-w-lg p-6 max-h-[80vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Capture Web Page</h2>
-          <button onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text)] text-xl">&times;</button>
+          <button onClick={onClose} className="text-muted hover:text-foreground text-xl">&times;</button>
         </div>
 
         <div className="space-y-3 mb-4">
@@ -93,7 +93,7 @@ export function CaptureModal({ open, onClose, onImported }: CaptureModalProps): 
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://example.com/prd"
-              className="w-full px-2 py-1.5 text-sm border border-[var(--color-border)] rounded bg-[var(--color-bg)]"
+              className="w-full px-2 py-1.5 text-sm border border-edge rounded bg-surface"
               onKeyDown={(e) => { if (e.key === "Enter") void handleCapture(); }}
             />
           </div>
@@ -104,7 +104,7 @@ export function CaptureModal({ open, onClose, onImported }: CaptureModalProps): 
               value={selector}
               onChange={(e) => setSelector(e.target.value)}
               placeholder="main, article, .content"
-              className="w-full px-2 py-1.5 text-sm border border-[var(--color-border)] rounded bg-[var(--color-bg)]"
+              className="w-full px-2 py-1.5 text-sm border border-edge rounded bg-surface"
             />
           </div>
           <div>
@@ -114,7 +114,7 @@ export function CaptureModal({ open, onClose, onImported }: CaptureModalProps): 
               value={waitSelector}
               onChange={(e) => setWaitSelector(e.target.value)}
               placeholder=".loaded, #content"
-              className="w-full px-2 py-1.5 text-sm border border-[var(--color-border)] rounded bg-[var(--color-bg)]"
+              className="w-full px-2 py-1.5 text-sm border border-edge rounded bg-surface"
             />
           </div>
         </div>
@@ -130,27 +130,27 @@ export function CaptureModal({ open, onClose, onImported }: CaptureModalProps): 
         )}
 
         {result && (
-          <div className="mb-4 p-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
+          <div className="mb-4 p-3 rounded-xl border border-edge shadow-sm hover:shadow-md transition-shadow bg-surface-alt">
             <h3 className="text-sm font-medium mb-2">Extracted Content</h3>
-            <div className="text-xs text-[var(--color-text-muted)] space-y-0.5 mb-2">
+            <div className="text-xs text-muted space-y-0.5 mb-2">
               <p><strong>Title:</strong> {result.title || "—"}</p>
               <p><strong>Words:</strong> {result.wordCount}</p>
               <p><strong>Captured:</strong> {new Date(result.capturedAt).toLocaleString()}</p>
             </div>
-            <pre className="text-xs whitespace-pre-wrap max-h-40 overflow-y-auto p-2 bg-[var(--color-bg-tertiary)] rounded">
+            <pre className="text-xs whitespace-pre-wrap max-h-40 overflow-y-auto p-2 bg-surface-elevated rounded">
               {result.text.substring(0, 5000)}
               {result.text.length > 5000 && "\n\n... (truncated)"}
             </pre>
             <div className="flex gap-2 mt-2">
               <button
                 onClick={handleImportCaptured}
-                className="px-3 py-1 text-xs bg-[var(--color-accent)] text-white rounded hover:bg-[var(--color-accent-light)]"
+                className="px-3 py-1 text-xs bg-accent text-white rounded hover:bg-accent-light"
               >
                 Import as PRD
               </button>
               <button
                 onClick={handleCopy}
-                className="px-3 py-1 text-xs border border-[var(--color-border)] rounded hover:bg-[var(--color-bg-tertiary)]"
+                className="px-3 py-1 text-xs border border-edge rounded hover:bg-surface-elevated"
               >
                 Copy Text
               </button>
@@ -162,7 +162,7 @@ export function CaptureModal({ open, onClose, onImported }: CaptureModalProps): 
           <button
             onClick={handleCapture}
             disabled={submitting}
-            className="px-3 py-1.5 text-sm bg-[var(--color-accent)] text-white rounded hover:bg-[var(--color-accent-light)] disabled:opacity-50"
+            className="px-3 py-1.5 text-sm bg-accent text-white rounded hover:bg-accent-light disabled:opacity-50"
           >
             {submitting ? "Capturing..." : "Capture"}
           </button>

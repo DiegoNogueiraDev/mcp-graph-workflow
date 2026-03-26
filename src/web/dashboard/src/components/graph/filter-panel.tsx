@@ -30,9 +30,9 @@ export const FilterPanel = memo(function FilterPanel({
   onCollapseAll,
 }: FilterPanelProps) {
   return (
-    <div className="flex flex-wrap items-center gap-3 px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-xs">
+    <div className="flex flex-wrap items-center gap-3 px-4 py-2 border-b border-edge bg-surface-alt text-xs">
       <div className="flex items-center gap-1.5">
-        <span className="font-medium text-[var(--color-text-muted)]">Status:</span>
+        <span className="font-medium text-muted">Status:</span>
         {ALL_STATUSES.map((s) => (
           <label key={s} className="flex items-center gap-1 cursor-pointer">
             <input
@@ -50,10 +50,10 @@ export const FilterPanel = memo(function FilterPanel({
         ))}
       </div>
 
-      <div className="w-px h-4 bg-[var(--color-border)]" />
+      <div className="w-px h-4 bg-edge" />
 
       <div className="flex items-center gap-1.5">
-        <span className="font-medium text-[var(--color-text-muted)]">Type:</span>
+        <span className="font-medium text-muted">Type:</span>
         {ALL_TYPES.map((t) => (
           <label key={t} className="flex items-center gap-1 cursor-pointer">
             <input
@@ -71,47 +71,47 @@ export const FilterPanel = memo(function FilterPanel({
         ))}
       </div>
 
-      <div className="w-px h-4 bg-[var(--color-border)]" />
+      <div className="w-px h-4 bg-edge" />
 
       <div className="flex items-center gap-1.5">
-        <span className="font-medium text-[var(--color-text-muted)]">Layout:</span>
+        <span className="font-medium text-muted">Layout:</span>
         <select
           value={direction}
           onChange={(e) => onDirectionChange(e.target.value as "TB" | "LR")}
-          className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-1 py-0.5 text-xs"
+          className="bg-surface border border-edge rounded px-1 py-0.5 text-xs"
         >
           <option value="TB">Top → Down</option>
           <option value="LR">Left → Right</option>
         </select>
       </div>
 
-      <div className="w-px h-4 bg-[var(--color-border)]" />
+      <div className="w-px h-4 bg-edge" />
 
       <div className="flex items-center gap-1.5">
         <button
           onClick={onExpandAll}
-          className="px-2 py-0.5 rounded border border-[var(--color-border)] hover:bg-[var(--color-bg-tertiary)] transition-colors"
+          className="px-2 py-0.5 rounded border border-edge hover:bg-surface-elevated transition-colors"
           title={totalNodeCount > 100 ? `Warning: ${totalNodeCount} nodes — may be slow` : "Expand all nodes"}
         >
           Expand All
         </button>
         <button
           onClick={onCollapseAll}
-          className="px-2 py-0.5 rounded border border-[var(--color-border)] hover:bg-[var(--color-bg-tertiary)] transition-colors"
+          className="px-2 py-0.5 rounded border border-edge hover:bg-surface-elevated transition-colors"
         >
           Collapse All
         </button>
       </div>
 
-      <div className="w-px h-4 bg-[var(--color-border)]" />
+      <div className="w-px h-4 bg-edge" />
 
-      <span className="text-[var(--color-text-muted)]">
+      <span className="text-muted">
         Showing {visibleNodeCount} of {totalNodeCount}
       </span>
 
       <button
         onClick={onClear}
-        className="text-[var(--color-text-muted)] hover:text-[var(--color-text)] underline"
+        className="text-muted hover:text-foreground underline"
       >
         Clear
       </button>

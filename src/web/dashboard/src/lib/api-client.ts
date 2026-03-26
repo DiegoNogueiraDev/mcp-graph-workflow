@@ -232,8 +232,16 @@ export const apiClient = {
     return body as { ok: boolean; fileName: string; format: string; chunksIndexed: number; textLength: number };
   },
   siebelImportSif: (content: string, fileName?: string, mapToGraph?: boolean) =>
-    request<{ metadata: unknown; objectCount: number; dependencyCount: number; nodesCreated?: number; edgesCreated?: number; documentsIndexed?: number }>(
+    request<{ metadata: unknown; objectCount: number; dependencyCount: number; objects: Array<{ name: string; type: string; project?: string }>; dependencies: Array<{ from: { name: string; type: string }; to: { name: string; type: string }; relationType: string }>; nodesCreated?: number; edgesCreated?: number; documentsIndexed?: number }>(
       "/siebel/import",
       { method: "POST", body: JSON.stringify({ content, fileName, mapToGraph }) },
     ),
+  siebelGetGraph: (params?: { limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.limit) qs.set("limit", String(params.limit));
+    const query = qs.toString();
+    return request<{ objects: Array<{ name: string; type: string; project?: string; properties: Array<{ name: string; value: string }>; children: unknown[] }>; dependencies: Array<{ from: { name: string; type: string }; to: { name: string; type: string }; relationType: string }>; metadata: { fileName: string; repositoryName: string; projectName?: string; objectCount: number; objectTypes: string[]; extractedAt: string } | null }>(
+      `/siebel/graph${query ? "?" + query : ""}`,
+    );
+  },
 };

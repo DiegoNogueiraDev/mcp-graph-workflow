@@ -64,45 +64,45 @@ export function CreateSkillModal({ open, onClose, onSubmit, editSkill }: CreateS
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-[var(--color-bg)] rounded-lg shadow-xl w-full max-w-lg p-6 max-h-[85vh] overflow-y-auto">
+      <div className="bg-surface rounded-lg shadow-xl w-full max-w-lg p-6 max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">{editSkill ? "Edit Skill" : "Create Custom Skill"}</h2>
-          <button onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text)] text-xl">&times;</button>
+          <button onClick={onClose} className="text-muted hover:text-foreground text-xl">&times;</button>
         </div>
 
         <div className="space-y-4">
           {/* Name */}
           <div>
-            <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1">Name</label>
+            <label className="block text-xs font-medium text-muted mb-1">Name</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="my-workflow"
               disabled={!!editSkill}
-              className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)] disabled:opacity-50"
+              className="w-full px-3 py-2 text-sm rounded-xl border border-edge shadow-sm hover:shadow-md transition-shadow bg-surface-alt disabled:opacity-50"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1">Description</label>
+            <label className="block text-xs font-medium text-muted mb-1">Description</label>
             <input
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="What does this skill do?"
-              className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)]"
+              className="w-full px-3 py-2 text-sm rounded-xl border border-edge shadow-sm hover:shadow-md transition-shadow bg-surface-alt"
             />
           </div>
 
           {/* Category */}
           <div>
-            <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1">Category</label>
+            <label className="block text-xs font-medium text-muted mb-1">Category</label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)]"
+              className="w-full px-3 py-2 text-sm rounded-xl border border-edge shadow-sm hover:shadow-md transition-shadow bg-surface-alt"
             >
               {CATEGORIES.map((c) => (
                 <option key={c} value={c}>{c}</option>
@@ -112,7 +112,7 @@ export function CreateSkillModal({ open, onClose, onSubmit, editSkill }: CreateS
 
           {/* Phases */}
           <div>
-            <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1">Phases</label>
+            <label className="block text-xs font-medium text-muted mb-1">Phases</label>
             <div className="flex flex-wrap gap-2">
               {LIFECYCLE_PHASES.map((phase) => (
                 <button
@@ -121,8 +121,8 @@ export function CreateSkillModal({ open, onClose, onSubmit, editSkill }: CreateS
                   onClick={() => togglePhase(phase)}
                   className={`px-2 py-1 text-[10px] font-medium rounded-full border transition-colors ${
                     phases.includes(phase)
-                      ? "bg-[var(--color-accent)]/10 border-[var(--color-accent)] text-[var(--color-accent)]"
-                      : "border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-text)]"
+                      ? "bg-accent/10 border-accent text-accent"
+                      : "border-edge text-muted hover:border-foreground"
                   }`}
                 >
                   {phase}
@@ -133,13 +133,13 @@ export function CreateSkillModal({ open, onClose, onSubmit, editSkill }: CreateS
 
           {/* Instructions */}
           <div>
-            <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1">Instructions</label>
+            <label className="block text-xs font-medium text-muted mb-1">Instructions</label>
             <textarea
               value={instructions}
               onChange={(e) => setInstructions(e.target.value)}
               rows={6}
               placeholder="Instructions for the AI agent when this skill is active..."
-              className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)] resize-y"
+              className="w-full px-3 py-2 text-sm rounded-xl border border-edge shadow-sm hover:shadow-md transition-shadow bg-surface-alt resize-y"
             />
           </div>
 
@@ -150,14 +150,14 @@ export function CreateSkillModal({ open, onClose, onSubmit, editSkill }: CreateS
           <div className="flex justify-end gap-2">
             <button
               onClick={onClose}
-              className="px-3 py-1.5 text-sm border border-[var(--color-border)] rounded hover:bg-[var(--color-bg-tertiary)]"
+              className="px-3 py-1.5 text-sm border border-edge rounded hover:bg-surface-elevated"
             >
               Cancel
             </button>
             <button
               onClick={handleSubmit}
               disabled={submitting}
-              className="px-3 py-1.5 text-sm bg-[var(--color-accent)] text-white rounded hover:opacity-90 disabled:opacity-50"
+              className="px-3 py-1.5 text-sm bg-accent text-white rounded hover:opacity-90 disabled:opacity-50"
             >
               {submitting ? "Saving..." : editSkill ? "Update" : "Create"}
             </button>

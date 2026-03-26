@@ -84,3 +84,36 @@ export const CODE_RELATION_LABELS: Record<string, string> = {
   extends: "Extends",
   implements: "Implements",
 };
+
+// ── Siebel ─────────────────────────────────
+
+export const SIEBEL_TYPE_COLORS: Record<string, string> = {
+  screen: "#8b5cf6",
+  view: "#3b82f6",
+  applet: "#06b6d4",
+  business_object: "#7c3aed",
+  business_component: "#10b981",
+  business_service: "#f59e0b",
+  workflow: "#ef4444",
+  table: "#78909c",
+  integration_object: "#ec4899",
+  web_template: "#6b7280",
+  pick_list: "#a78bfa",
+  field: "#94a3b8",
+  link: "#64748b",
+  column: "#94a3b8",
+  control: "#94a3b8",
+  list_column: "#94a3b8",
+  menu_item: "#94a3b8",
+  project: "#d97706",
+};
+
+export const SIEBEL_RELATION_STYLES: Record<string, { color: string; dashed: boolean; label: string }> = {
+  uses: { color: "#2196f3", dashed: false, label: "uses" },
+  references: { color: "#6c757d", dashed: true, label: "references" },
+  contains: { color: "#7c3aed", dashed: false, label: "contains" },
+  extends: { color: "#10b981", dashed: true, label: "extends" },
+  based_on: { color: "#f59e0b", dashed: false, label: "based on" },
+  linked_to: { color: "#ef4444", dashed: true, label: "linked to" },
+  parent_of: { color: "#8b5cf6", dashed: false, label: "parent of" },
+};

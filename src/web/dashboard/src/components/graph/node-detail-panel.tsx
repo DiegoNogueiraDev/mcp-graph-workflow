@@ -39,12 +39,12 @@ export const NodeDetailPanel = memo(function NodeDetailPanel({
   const hasRelationships = edgeSummary.outgoing.length > 0 || edgeSummary.incoming.length > 0;
 
   return (
-    <div className="w-80 border-l border-[var(--color-border)] bg-[var(--color-bg-secondary)] overflow-y-auto p-4">
+    <div className="w-80 border-l border-edge bg-surface-alt overflow-y-auto p-4">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-bold">Node Details</h3>
         <button
           onClick={onClose}
-          className="text-[var(--color-text-muted)] hover:text-[var(--color-text)] text-lg leading-none"
+          className="text-muted hover:text-foreground text-lg leading-none"
         >
           &times;
         </button>
@@ -54,7 +54,7 @@ export const NodeDetailPanel = memo(function NodeDetailPanel({
 
       <div className="space-y-2 text-sm">
         <Row label="ID">
-          <code className="text-xs bg-[var(--color-bg-tertiary)] px-1 rounded break-all">{node.id}</code>
+          <code className="text-xs bg-surface-elevated px-1 rounded break-all">{node.id}</code>
         </Row>
         <Row label="Type">
           <span className="px-2 py-0.5 rounded text-xs font-medium" style={{ background: `${typeColor}20`, color: typeColor }}>
@@ -72,8 +72,8 @@ export const NodeDetailPanel = memo(function NodeDetailPanel({
         {node.sprint && <Row label="Sprint">{node.sprint}</Row>}
 
         {node.description && (
-          <div className="pt-2 border-t border-[var(--color-border)]">
-            <div className="text-xs font-medium text-[var(--color-text-muted)] mb-1">Description</div>
+          <div className="pt-2 border-t border-edge">
+            <div className="text-xs font-medium text-muted mb-1">Description</div>
             <p className="text-xs whitespace-pre-wrap">{node.description}</p>
           </div>
         )}
@@ -82,8 +82,8 @@ export const NodeDetailPanel = memo(function NodeDetailPanel({
           const childIds = childrenMap.get(node.id) ?? [];
           if (childIds.length === 0) return null;
           return (
-            <div className="pt-2 border-t border-[var(--color-border)]">
-              <div className="text-xs font-medium text-[var(--color-text-muted)] mb-1">
+            <div className="pt-2 border-t border-edge">
+              <div className="text-xs font-medium text-muted mb-1">
                 Children ({childIds.length})
               </div>
               <div className="space-y-1">
@@ -96,7 +96,7 @@ export const NodeDetailPanel = memo(function NodeDetailPanel({
                     <button
                       key={childId}
                       onClick={() => onNodeNavigate?.(childId)}
-                      className="w-full text-left flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-[var(--color-bg-tertiary)] transition-colors text-xs"
+                      className="w-full text-left flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-surface-elevated transition-colors text-xs"
                     >
                       <span className="w-2 h-2 rounded-full shrink-0" style={{ background: childStatusColor }} />
                       <span
@@ -115,8 +115,8 @@ export const NodeDetailPanel = memo(function NodeDetailPanel({
         })()}
 
         {hasRelationships && (
-          <div className="pt-2 border-t border-[var(--color-border)]">
-            <div className="text-xs font-medium text-[var(--color-text-muted)] mb-1">
+          <div className="pt-2 border-t border-edge">
+            <div className="text-xs font-medium text-muted mb-1">
               Relationships ({edgeSummary.outgoing.length + edgeSummary.incoming.length})
             </div>
             <div className="space-y-1">
@@ -155,8 +155,8 @@ export const NodeDetailPanel = memo(function NodeDetailPanel({
         )}
 
         {node.acceptanceCriteria && node.acceptanceCriteria.length > 0 && (
-          <div className="pt-2 border-t border-[var(--color-border)]">
-            <div className="text-xs font-medium text-[var(--color-text-muted)] mb-1">
+          <div className="pt-2 border-t border-edge">
+            <div className="text-xs font-medium text-muted mb-1">
               Acceptance Criteria ({node.acceptanceCriteria.length})
             </div>
             <ul className="text-xs space-y-1 list-disc pl-4">
@@ -168,11 +168,11 @@ export const NodeDetailPanel = memo(function NodeDetailPanel({
         )}
 
         {node.tags && node.tags.length > 0 && (
-          <div className="pt-2 border-t border-[var(--color-border)]">
-            <div className="text-xs font-medium text-[var(--color-text-muted)] mb-1">Tags</div>
+          <div className="pt-2 border-t border-edge">
+            <div className="text-xs font-medium text-muted mb-1">Tags</div>
             <div className="flex flex-wrap gap-1">
               {node.tags.map((tag) => (
-                <span key={tag} className="text-[10px] bg-[var(--color-bg-tertiary)] px-1.5 py-0.5 rounded">
+                <span key={tag} className="text-[10px] bg-surface-elevated px-1.5 py-0.5 rounded">
                   {tag}
                 </span>
               ))}
@@ -181,8 +181,8 @@ export const NodeDetailPanel = memo(function NodeDetailPanel({
         )}
 
         {node.sourceRef && (
-          <div className="pt-2 border-t border-[var(--color-border)]">
-            <div className="text-xs font-medium text-[var(--color-text-muted)] mb-1">Source</div>
+          <div className="pt-2 border-t border-edge">
+            <div className="text-xs font-medium text-muted mb-1">Source</div>
             <div className="text-xs">
               {node.sourceRef.file}
               {node.sourceRef.startLine != null && ` (L${node.sourceRef.startLine}–${node.sourceRef.endLine ?? "?"})`}
@@ -190,7 +190,7 @@ export const NodeDetailPanel = memo(function NodeDetailPanel({
           </div>
         )}
 
-        <div className="pt-2 border-t border-[var(--color-border)] text-[10px] text-[var(--color-text-muted)]">
+        <div className="pt-2 border-t border-edge text-[10px] text-muted">
           <div>Created: {new Date(node.createdAt).toLocaleString()}</div>
           <div>Updated: {new Date(node.updatedAt).toLocaleString()}</div>
         </div>
@@ -202,7 +202,7 @@ export const NodeDetailPanel = memo(function NodeDetailPanel({
 function Row({ label, children }: { label: string; children: React.ReactNode }): React.JSX.Element {
   return (
     <div className="flex items-start justify-between gap-2">
-      <span className="text-xs text-[var(--color-text-muted)] shrink-0">{label}</span>
+      <span className="text-xs text-muted shrink-0">{label}</span>
       <div className="text-right">{children}</div>
     </div>
   );
@@ -227,10 +227,10 @@ function EdgeItem({
   return (
     <button
       onClick={() => onNavigate?.(targetId)}
-      className="w-full text-left flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-[var(--color-bg-tertiary)] transition-colors text-xs"
+      className="w-full text-left flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-surface-elevated transition-colors text-xs"
     >
       <span style={{ color }}>{arrow}</span>
-      <span className="text-[10px] text-[var(--color-text-muted)]">{label}</span>
+      <span className="text-[10px] text-muted">{label}</span>
       <span className="truncate font-medium">{targetTitle}</span>
     </button>
   );

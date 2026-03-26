@@ -39,7 +39,7 @@ export function HealthGauge({ score, className }: HealthGaugeProps): React.JSX.E
       </ResponsiveContainer>
       <div className="text-center -mt-20">
         <span className="text-3xl font-bold" style={{ color }}>{score}</span>
-        <p className="text-[10px] text-[var(--color-text-muted)] uppercase mt-0.5">Health Score</p>
+        <p className="text-[10px] text-muted uppercase mt-0.5">Health Score</p>
       </div>
     </div>
   );

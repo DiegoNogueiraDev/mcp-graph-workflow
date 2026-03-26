@@ -12,7 +12,7 @@ export function InsightsTab(): React.JSX.Element {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-full text-[var(--color-danger)]">
+      <div className="flex items-center justify-center h-full text-danger">
         Failed to load: {error}
       </div>
     );
@@ -20,7 +20,7 @@ export function InsightsTab(): React.JSX.Element {
 
   if (loading || !data) {
     return (
-      <div className="flex items-center justify-center h-full text-[var(--color-text-muted)]">
+      <div className="flex items-center justify-center h-full text-muted">
         Loading insights...
       </div>
     );
@@ -40,7 +40,7 @@ export function InsightsTab(): React.JSX.Element {
         <button
           type="button"
           onClick={refresh}
-          className="text-xs px-3 py-1 rounded bg-[var(--color-bg-secondary)] border border-[var(--color-border)] hover:bg-[var(--color-bg-tertiary)] transition-colors"
+          className="text-xs px-3 py-1 rounded bg-surface-alt border border-edge hover:bg-surface-elevated transition-colors"
         >
           Refresh
         </button>
@@ -48,7 +48,7 @@ export function InsightsTab(): React.JSX.Element {
 
       {/* Hero: Health Gauge + KPI Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        <div className="lg:col-span-2 p-4 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)] flex items-center justify-center">
+        <div className="lg:col-span-2 p-4 rounded-xl border border-edge shadow-sm hover:shadow-md transition-shadow bg-surface-alt flex items-center justify-center">
           <HealthGauge score={healthScore} />
         </div>
         <div className="lg:col-span-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -90,17 +90,17 @@ export function InsightsTab(): React.JSX.Element {
 
 function KpiCard({ value, label, accent }: { value: string | number; label: string; accent?: string }): React.JSX.Element {
   return (
-    <div className="p-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-center">
+    <div className="p-3 rounded-xl border border-edge shadow-sm hover:shadow-md transition-shadow bg-surface-alt text-center">
       <div className="text-xl font-bold" style={accent ? { color: accent } : undefined}>{value}</div>
-      <div className="text-[10px] text-[var(--color-text-muted)] uppercase">{label}</div>
+      <div className="text-[10px] text-muted uppercase">{label}</div>
     </div>
   );
 }
 
 function ChartCard({ title, children }: { title: string; children: React.ReactNode }): React.JSX.Element {
   return (
-    <div className="p-4 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
-      <h3 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase mb-2">{title}</h3>
+    <div className="p-4 rounded-xl border border-edge shadow-sm hover:shadow-md transition-shadow bg-surface-alt">
+      <h3 className="text-xs font-semibold text-muted uppercase mb-2">{title}</h3>
       {children}
     </div>
   );

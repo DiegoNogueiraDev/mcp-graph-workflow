@@ -13,7 +13,7 @@ export function ContextTab(): React.JSX.Element {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-full text-[var(--color-danger)]">
+      <div className="flex items-center justify-center h-full text-danger">
         Failed to load context budget: {error}
       </div>
     );
@@ -21,7 +21,7 @@ export function ContextTab(): React.JSX.Element {
 
   if (loading || !budget) {
     return (
-      <div className="flex items-center justify-center h-full text-[var(--color-text-muted)]">
+      <div className="flex items-center justify-center h-full text-muted">
         Loading context budget...
       </div>
     );
@@ -41,7 +41,7 @@ export function ContextTab(): React.JSX.Element {
         <h2 className="text-lg font-semibold">Context Management</h2>
         <button
           onClick={() => refresh()}
-          className="text-xs px-3 py-1.5 rounded-lg bg-[var(--color-accent)] text-white hover:opacity-90 transition-opacity"
+          className="text-xs px-3 py-1.5 rounded-lg bg-accent text-white hover:opacity-90 transition-opacity"
         >
           Refresh
         </button>
@@ -49,21 +49,21 @@ export function ContextTab(): React.JSX.Element {
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="p-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-center">
+        <div className="p-3 rounded-xl border border-edge shadow-sm hover:shadow-md transition-shadow bg-surface-alt text-center">
           <div className="text-xl font-bold">{budget.activeTokens.toLocaleString()}</div>
-          <div className="text-[10px] text-[var(--color-text-muted)] uppercase">Active Tokens</div>
+          <div className="text-[10px] text-muted uppercase">Active Tokens</div>
         </div>
-        <div className="p-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-center">
+        <div className="p-3 rounded-xl border border-edge shadow-sm hover:shadow-md transition-shadow bg-surface-alt text-center">
           <div className="text-xl font-bold">{budget.totalTokens.toLocaleString()}</div>
-          <div className="text-[10px] text-[var(--color-text-muted)] uppercase">Total Tokens</div>
+          <div className="text-[10px] text-muted uppercase">Total Tokens</div>
         </div>
-        <div className="p-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-center">
+        <div className="p-3 rounded-xl border border-edge shadow-sm hover:shadow-md transition-shadow bg-surface-alt text-center">
           <div className="text-xl font-bold">{budget.activeCount}</div>
-          <div className="text-[10px] text-[var(--color-text-muted)] uppercase">Active Skills</div>
+          <div className="text-[10px] text-muted uppercase">Active Skills</div>
         </div>
-        <div className="p-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-center">
+        <div className="p-3 rounded-xl border border-edge shadow-sm hover:shadow-md transition-shadow bg-surface-alt text-center">
           <div className="text-xl font-bold">{budget.totalCount}</div>
-          <div className="text-[10px] text-[var(--color-text-muted)] uppercase">Total Skills</div>
+          <div className="text-[10px] text-muted uppercase">Total Skills</div>
         </div>
       </div>
 
@@ -78,7 +78,7 @@ export function ContextTab(): React.JSX.Element {
             <div className={`text-sm font-medium ${healthStyle.text}`}>
               Session Health: {budget.health.charAt(0).toUpperCase() + budget.health.slice(1)}
             </div>
-            <div className="text-xs text-[var(--color-text-muted)] mt-0.5">
+            <div className="text-xs text-muted mt-0.5">
               {budget.healthMessage}
             </div>
           </div>
@@ -86,7 +86,7 @@ export function ContextTab(): React.JSX.Element {
         {budget.recommendations.length > 0 && (
           <div className="mt-3 space-y-1">
             {budget.recommendations.map((rec, i) => (
-              <div key={i} className="text-xs text-[var(--color-text-muted)]">
+              <div key={i} className="text-xs text-muted">
                 {rec}
               </div>
             ))}
@@ -95,14 +95,14 @@ export function ContextTab(): React.JSX.Element {
       </div>
 
       {/* Budget bar */}
-      <div className="p-4 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
+      <div className="p-4 rounded-xl border border-edge shadow-sm hover:shadow-md transition-shadow bg-surface-alt">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase">Token Budget</h3>
-          <span className="text-xs text-[var(--color-text-muted)]">
+          <h3 className="text-xs font-semibold text-muted uppercase">Token Budget</h3>
+          <span className="text-xs text-muted">
             {budget.activeTokens.toLocaleString()} / 4,000 ({Math.round(budget.activeTokens / 40)}%)
           </span>
         </div>
-        <div className="w-full h-3 rounded-full bg-[var(--color-border)] relative">
+        <div className="w-full h-3 rounded-full bg-edge relative">
           <div
             className="h-full rounded-full absolute top-0 left-0 opacity-20"
             style={{ width: `${Math.min(Math.round(budget.totalTokens / 40), 100)}%`, background: "#6b7280" }}
@@ -119,7 +119,7 @@ export function ContextTab(): React.JSX.Element {
 
       {/* Breakdown */}
       <div className="space-y-2">
-        <h3 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase">
+        <h3 className="text-xs font-semibold text-muted uppercase">
           Token Breakdown by Skill
         </h3>
         <div className="space-y-1">
@@ -128,7 +128,7 @@ export function ContextTab(): React.JSX.Element {
             return (
               <div
                 key={item.name}
-                className={`flex items-center gap-3 p-2 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)] ${
+                className={`flex items-center gap-3 p-2 rounded-xl border border-edge shadow-sm hover:shadow-md transition-shadow bg-surface-alt ${
                   !item.enabled ? "opacity-40" : ""
                 }`}
               >
@@ -141,7 +141,7 @@ export function ContextTab(): React.JSX.Element {
                       {item.source}
                     </span>
                   </div>
-                  <div className="w-full h-1 rounded-full bg-[var(--color-border)] mt-1">
+                  <div className="w-full h-1 rounded-full bg-edge mt-1">
                     <div
                       className="h-full rounded-full"
                       style={{
@@ -151,13 +151,13 @@ export function ContextTab(): React.JSX.Element {
                     />
                   </div>
                 </div>
-                <span className="text-[10px] text-[var(--color-text-muted)] shrink-0 w-16 text-right">
+                <span className="text-[10px] text-muted shrink-0 w-16 text-right">
                   {item.tokens.toLocaleString()} tok
                 </span>
                 {item.enabled && (
                   <button
                     onClick={() => void handleQuickDisable(item.name)}
-                    className="text-[10px] px-1.5 py-0.5 rounded border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-red-500 hover:border-red-500/50 shrink-0"
+                    className="text-[10px] px-1.5 py-0.5 rounded border border-edge text-muted hover:text-red-500 hover:border-red-500/50 shrink-0"
                   >
                     Disable
                   </button>

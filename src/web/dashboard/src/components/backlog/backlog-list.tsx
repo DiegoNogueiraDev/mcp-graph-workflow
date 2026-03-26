@@ -38,7 +38,7 @@ export const BacklogList = memo(function BacklogList({ graph, onNodeClick }: Bac
 
   if (graph.nodes.filter((n) => n.type === "task" || n.type === "subtask").length === 0) {
     return (
-      <div className="p-4 text-center text-[var(--color-text-muted)]">
+      <div className="p-4 text-center text-muted">
         No tasks in backlog.
       </div>
     );
@@ -47,8 +47,8 @@ export const BacklogList = memo(function BacklogList({ graph, onNodeClick }: Bac
   return (
     <div className="p-2">
       {nextTask && (
-        <div className="mb-3 px-3 py-2 bg-[var(--color-accent)]10 border border-[var(--color-accent)] rounded-lg">
-          <span className="text-xs font-medium text-[var(--color-accent)]">Next:</span>{" "}
+        <div className="mb-3 px-3 py-2 bg-accent10 border border-accent rounded-lg">
+          <span className="text-xs font-medium text-accent">Next:</span>{" "}
           <span className="text-sm font-semibold">{nextTask.title}</span>
         </div>
       )}
@@ -63,9 +63,9 @@ export const BacklogList = memo(function BacklogList({ graph, onNodeClick }: Bac
           <div key={parentId} className="mb-3">
             <div className="flex items-center justify-between px-2 py-1">
               <h4 className="text-xs font-semibold truncate">{label}</h4>
-              <span className="text-[10px] text-[var(--color-text-muted)]">{doneCount}/{tasks.length}</span>
+              <span className="text-[10px] text-muted">{doneCount}/{tasks.length}</span>
             </div>
-            <div className="h-1 mx-2 mb-1 bg-[var(--color-bg-tertiary)] rounded-full overflow-hidden">
+            <div className="h-1 mx-2 mb-1 bg-surface-elevated rounded-full overflow-hidden">
               <div
                 className="h-full rounded-full"
                 style={{ width: `${pct}%`, background: STATUS_COLORS.done }}
@@ -82,8 +82,8 @@ export const BacklogList = memo(function BacklogList({ graph, onNodeClick }: Bac
                 <div
                   key={task.id}
                   onClick={() => onNodeClick(task)}
-                  className={`mx-1 mb-1 px-2 py-1.5 rounded cursor-pointer hover:bg-[var(--color-bg-tertiary)] transition-colors ${
-                    isNext ? "ring-1 ring-[var(--color-accent)]" : ""
+                  className={`mx-1 mb-1 px-2 py-1.5 rounded cursor-pointer hover:bg-surface-elevated transition-colors ${
+                    isNext ? "ring-1 ring-accent" : ""
                   }`}
                 >
                   <div className="flex items-center gap-1.5">
@@ -94,13 +94,13 @@ export const BacklogList = memo(function BacklogList({ graph, onNodeClick }: Bac
                       {task.status.replace("_", " ")}
                     </span>
                     <span className="text-xs truncate flex-1">{task.title}</span>
-                    <span className="text-[10px] text-[var(--color-text-muted)]">P{task.priority}</span>
+                    <span className="text-[10px] text-muted">P{task.priority}</span>
                     {task.xpSize && (
-                      <span className="text-[10px] text-[var(--color-text-muted)]">{task.xpSize}</span>
+                      <span className="text-[10px] text-muted">{task.xpSize}</span>
                     )}
                   </div>
                   {depNames.length > 0 && (
-                    <div className="text-[10px] text-[var(--color-text-muted)] mt-0.5 truncate pl-1">
+                    <div className="text-[10px] text-muted mt-0.5 truncate pl-1">
                       Depends on: {depNames.join(", ")}
                     </div>
                   )}

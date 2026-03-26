@@ -20,7 +20,7 @@ export const WorkflowNode = memo(function WorkflowNode({ data }: WorkflowNodePro
   return (
     <>
       <Handle type="target" position={Position.Top} className="!w-2 !h-2" />
-      <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer min-w-[200px]">
+      <div className="bg-surface border border-edge rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer min-w-[200px]">
         <div className="p-2.5">
           <div className="flex items-center justify-between mb-1">
             <span
@@ -39,7 +39,7 @@ export const WorkflowNode = memo(function WorkflowNode({ data }: WorkflowNodePro
           <div className="text-sm font-medium leading-tight line-clamp-2 mb-1">
             {data.label}
           </div>
-          <div className="flex items-center gap-2 text-[10px] text-[var(--color-text-muted)]">
+          <div className="flex items-center gap-2 text-[10px] text-muted">
             <span>P{data.priority}</span>
             {data.xpSize && <span>{data.xpSize}</span>}
             {data.sprint && <span>{data.sprint}</span>}
@@ -48,7 +48,7 @@ export const WorkflowNode = memo(function WorkflowNode({ data }: WorkflowNodePro
         {data.hasChildren && (
           <button
             onClick={handleExpandClick}
-            className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium border-t border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-bg-tertiary)] transition-colors rounded-b-lg"
+            className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium border-t border-edge text-muted hover:text-foreground hover:bg-surface-elevated transition-colors rounded-b-lg"
             title={data.isExpanded ? "Collapse children" : "Expand children"}
           >
             <span>{data.isExpanded ? "\u25BC" : "\u25B6"}</span>

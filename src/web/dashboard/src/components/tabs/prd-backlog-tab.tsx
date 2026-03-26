@@ -97,8 +97,8 @@ function PrdBacklogFlow({ graph }: PrdBacklogTabProps): React.JSX.Element {
     <div className="flex h-full">
       {/* Left: Workflow diagram */}
       <div className="flex-1 min-w-0 flex flex-col">
-        <div className="px-3 py-1.5 bg-[var(--color-bg-secondary)] border-b border-[var(--color-border)] flex items-center gap-2 text-xs relative z-10">
-          <span className="text-[var(--color-text-muted)]">
+        <div className="px-3 py-1.5 bg-surface-alt border-b border-edge flex items-center gap-2 text-xs relative z-10">
+          <span className="text-muted">
             Showing {nodes.length} of {graph.nodes.length} nodes — click ▶ to expand
           </span>
         </div>
@@ -122,23 +122,23 @@ function PrdBacklogFlow({ graph }: PrdBacklogTabProps): React.JSX.Element {
             <Controls showInteractive={false} />
           </ReactFlow>
         ) : (
-          <div className="flex items-center justify-center h-full text-[var(--color-text-muted)]">
+          <div className="flex items-center justify-center h-full text-muted">
             Import a PRD to see the workflow
           </div>
         )}
       </div>
 
       {/* Right: Backlog list */}
-      <div className="w-96 border-l border-[var(--color-border)] flex flex-col overflow-hidden">
+      <div className="w-96 border-l border-edge flex flex-col overflow-hidden">
         {/* Progress bar */}
-        <div className="px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
+        <div className="px-4 py-3 border-b border-edge bg-surface-alt">
           <div className="flex justify-between text-sm mb-1">
             <span>{stats.done}/{stats.total} done ({stats.pctDone}%)</span>
-            <span className="text-[var(--color-text-muted)]">
+            <span className="text-muted">
               {stats.inProgress} in progress, {stats.blocked} blocked
             </span>
           </div>
-          <div className="h-2 bg-[var(--color-bg-tertiary)] rounded-full overflow-hidden flex">
+          <div className="h-2 bg-surface-elevated rounded-full overflow-hidden flex">
             <div
               className="h-full transition-all"
               style={{ width: `${stats.pctDone}%`, background: STATUS_COLORS.done }}

@@ -51,6 +51,8 @@ export function createSiebelRouter(storeRef: StoreRef, getBasePath: () => string
         metadata: parseResult.metadata,
         objectCount: parseResult.objects.length,
         dependencyCount: parseResult.dependencies.length,
+        objects: parseResult.objects,
+        dependencies: parseResult.dependencies,
       };
 
       if (mapToGraph) {
@@ -65,11 +67,50 @@ export function createSiebelRouter(storeRef: StoreRef, getBasePath: () => string
         const knowledgeStore = new KnowledgeStore(storeRef.current.getDb());
         const indexResult = indexSifContent(knowledgeStore, parseResult);
         result.documentsIndexed = indexResult.documentsIndexed;
+
+        // Store raw SIF content for later retrieval via GET /graph
+        knowledgeStore.deleteBySource("siebel_sif_raw", `siebel_sif_raw:${fileName}`);
+        knowledgeStore.insert({
+          sourceType: "siebel_sif_raw",
+          sourceId: `siebel_sif_raw:${fileName}`,
+          title: `Raw SIF: ${fileName}`,
+          content: content,
+          metadata: { fileName, importedAt: new Date().toISOString() },
+        });
       } catch {
         // Non-fatal
       }
 
       res.status(201).json(result);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  /**
+   * GET /api/v1/siebel/graph — Return full Siebel graph (objects + dependencies) from stored raw SIF
+   */
+  router.get("/graph", (req, res, next) => {
+    try {
+      const knowledgeStore = new KnowledgeStore(storeRef.current.getDb());
+
+      // Find the latest stored raw SIF content
+      const rawDocs = knowledgeStore.list({ sourceType: "siebel_sif_raw", limit: 1 });
+
+      if (rawDocs.length === 0) {
+        res.json({ objects: [], dependencies: [], metadata: null });
+        return;
+      }
+
+      const rawDoc = rawDocs[0];
+      const fileName = (rawDoc.metadata?.fileName as string) ?? "unknown.sif";
+      const parseResult = parseSifContent(rawDoc.content, fileName);
+
+      res.json({
+        objects: parseResult.objects,
+        dependencies: parseResult.dependencies,
+        metadata: parseResult.metadata,
+      });
     } catch (err) {
       next(err);
     }

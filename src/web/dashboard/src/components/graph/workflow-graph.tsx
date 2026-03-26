@@ -219,7 +219,7 @@ export function WorkflowGraph({ graph }: WorkflowGraphProps): React.JSX.Element 
 
         <div className="flex-1 relative">
           {graph.nodes.length === 0 ? (
-            <div className="flex items-center justify-center h-full text-[var(--color-text-muted)]">
+            <div className="flex items-center justify-center h-full text-muted">
               <div className="text-center">
                 <p className="text-lg mb-2">No nodes in graph</p>
                 <p className="text-sm">Import a PRD to get started</p>

@@ -25,7 +25,7 @@ export function TabularResultView({ data, pageSize = 50 }: TabularResultViewProp
 
   if (data.length === 0) {
     return (
-      <div className="p-4 text-sm text-[var(--color-text-muted)]">
+      <div className="p-4 text-sm text-muted">
         No results
       </div>
     );
@@ -33,14 +33,14 @@ export function TabularResultView({ data, pageSize = 50 }: TabularResultViewProp
 
   return (
     <div>
-      <div className="text-xs text-[var(--color-text-muted)] mb-2">
+      <div className="text-xs text-muted mb-2">
         {data.length} rows
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-[var(--color-border)]">
+      <div className="overflow-x-auto rounded-lg border border-edge">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-left text-[var(--color-text-muted)]">
+            <tr className="border-b border-edge bg-surface-alt text-left text-muted">
               {headers.map((h) => (
                 <th key={h} className="py-1.5 px-2 font-medium whitespace-nowrap">
                   {h}
@@ -52,7 +52,7 @@ export function TabularResultView({ data, pageSize = 50 }: TabularResultViewProp
             {pageData.map((row, i) => (
               <tr
                 key={i}
-                className="border-b border-[var(--color-border)] hover:bg-[var(--color-bg-tertiary)] transition-colors"
+                className="border-b border-edge hover:bg-surface-elevated transition-colors"
               >
                 {headers.map((h) => (
                   <td key={h} className="py-1 px-2 max-w-[300px] truncate">
@@ -70,17 +70,17 @@ export function TabularResultView({ data, pageSize = 50 }: TabularResultViewProp
           <button
             onClick={() => setPage((p) => Math.max(0, p - 1))}
             disabled={page === 0}
-            className="px-2 py-0.5 rounded bg-[var(--color-bg-tertiary)] disabled:opacity-30"
+            className="px-2 py-0.5 rounded bg-surface-elevated disabled:opacity-30"
           >
             Prev
           </button>
-          <span className="text-[var(--color-text-muted)]">
+          <span className="text-muted">
             {page + 1} / {totalPages}
           </span>
           <button
             onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
             disabled={page >= totalPages - 1}
-            className="px-2 py-0.5 rounded bg-[var(--color-bg-tertiary)] disabled:opacity-30"
+            className="px-2 py-0.5 rounded bg-surface-elevated disabled:opacity-30"
           >
             Next
           </button>
