@@ -76,6 +76,12 @@ export function removeNodeFromKnowledge(db: Database.Database, nodeId: string): 
     const ks = new KnowledgeStore(db);
     const docs = ks.getBySourceId(nodeId);
     for (const doc of docs) {
+      // Clean up orphaned entity mentions before deleting the doc
+      try {
+        db.prepare("DELETE FROM kg_mentions WHERE doc_id = ?").run(doc.id);
+      } catch {
+        // kg_mentions table may not exist yet — safe to ignore
+      }
       ks.delete(doc.id);
     }
   } catch (err) {
@@ -95,21 +101,25 @@ export function indexAllNodes(db: Database.Database): { indexed: number } {
 
     let indexed = 0;
     for (const row of rows) {
-      const node: GraphNode = {
-        id: row.id as string,
-        type: row.type as NodeType,
-        title: row.title as string,
-        description: row.description as string | undefined,
-        status: row.status as NodeStatus,
-        priority: row.priority as 1 | 2 | 3 | 4 | 5,
-        tags: row.tags ? JSON.parse(row.tags as string) as string[] : undefined,
-        acceptanceCriteria: row.acceptance_criteria ? JSON.parse(row.acceptance_criteria as string) as string[] : undefined,
-        parentId: row.parent_id as string | undefined,
-        createdAt: row.created_at as string,
-        updatedAt: row.updated_at as string,
-      };
-      indexNodeAsKnowledge(db, node);
-      indexed++;
+      try {
+        const node: GraphNode = {
+          id: row.id as string,
+          type: row.type as NodeType,
+          title: row.title as string,
+          description: row.description as string | undefined,
+          status: row.status as NodeStatus,
+          priority: row.priority as 1 | 2 | 3 | 4 | 5,
+          tags: row.tags ? JSON.parse(row.tags as string) as string[] : undefined,
+          acceptanceCriteria: row.acceptance_criteria ? JSON.parse(row.acceptance_criteria as string) as string[] : undefined,
+          parentId: row.parent_id as string | undefined,
+          createdAt: row.created_at as string,
+          updatedAt: row.updated_at as string,
+        };
+        indexNodeAsKnowledge(db, node);
+        indexed++;
+      } catch (rowErr) {
+        logger.warn("node-indexer:row-parse-failed", { rowId: row.id, error: String(rowErr) });
+      }
     }
 
     logger.info("node-indexer:all-indexed", { indexed });

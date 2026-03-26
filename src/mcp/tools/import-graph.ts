@@ -60,11 +60,21 @@ export function registerImportGraph(server: McpServer, store: SqliteStore): void
       try {
         const result = mergeGraph(store, parsed, { dryRun: dry_run });
 
-        // Index merged nodes into Knowledge Store + KG (skip on dry_run)
+        // Index only newly inserted nodes into Knowledge Store + KG (skip on dry_run)
         if (!dry_run && result.nodesInserted > 0) {
           try {
+            // Build set of pre-existing node IDs to skip re-indexing
+            const skippedIds = new Set(
+              parsed.nodes
+                .filter((n) => result.nodesSkipped > 0)
+                .slice(0, result.nodesSkipped)
+                .map((n) => n.id),
+            );
             for (const node of parsed.nodes) {
-              indexNodeAsKnowledge(store.getDb(), node);
+              // Only index nodes that were actually inserted
+              if (!skippedIds.has(node.id)) {
+                indexNodeAsKnowledge(store.getDb(), node);
+              }
             }
             indexEntitiesForSource(store.getDb(), "graph_node");
           } catch {
