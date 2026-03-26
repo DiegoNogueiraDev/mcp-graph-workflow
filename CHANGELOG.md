@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.9.1](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.9.0...mcp-graph-v5.9.1) (2026-03-26)
+
+
+### Bug Fixes
+
+* improve entity mention cleanup on deletion and enhance edge case handling for corrupted rows ([2ab984d](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/2ab984d7725b8c487fe5ac964fc2fcae044a8fa6))
+* multi-project node indexing and knowledge cleanup ordering ([5a08945](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/5a08945692fbb19065c28c20f52dd2948ade2071))
+* optimize node indexing by capturing existing IDs before merge ([31ec23d](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/31ec23d208d46631f3cd631b4215064e15ea36e7))
+
 ## [5.9.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.8.0...mcp-graph-v5.9.0) (2026-03-25)
 
 
