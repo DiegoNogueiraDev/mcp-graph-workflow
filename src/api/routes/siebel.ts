@@ -19,6 +19,11 @@ import { listTemplates } from "../../core/siebel/sif-templates.js";
 import { readFileContent, isSupportedFormat } from "../../core/parser/file-reader.js";
 import { chunkText } from "../../core/rag/chunk-text.js";
 import { STORE_DIR } from "../../core/utils/constants.js";
+import { generateSiebelErd } from "../../core/siebel/object-erd.js";
+import { getSiebelBestPractices, getBestPracticesByCategory } from "../../core/siebel/best-practices.js";
+import { enrichSifContext } from "../../core/siebel/context-enrichment.js";
+import { reviewSiebelCode } from "../../core/siebel/code-review.js";
+import { checkSiebelReady } from "../../core/siebel/definition-of-ready.js";
 import { logger } from "../../core/utils/logger.js";
 import multer from "multer";
 import path from "node:path";
@@ -377,6 +382,151 @@ export function createSiebelRouter(storeRef: StoreRef, getBasePath: () => string
         // Cleanup failure is non-fatal
       }
     }
+  });
+
+  /**
+   * GET /api/v1/siebel/erd — Generate ER diagram from repository objects
+   * Query: project? (filter by project)
+   */
+  router.get("/erd", (req, res, next) => {
+    try {
+      const { project } = req.query as Record<string, string>;
+      const knowledgeStore = new KnowledgeStore(storeRef.current.getDb());
+      const rawDocs = knowledgeStore.list({ sourceType: "siebel_sif_raw", limit: 100 });
+
+      const allObjects = rawDocs.flatMap((doc) => {
+        try { return parseSifContent(doc.content, doc.title).objects; } catch { return []; }
+      });
+
+      const erd = generateSiebelErd(allObjects, project || undefined);
+      res.json(erd);
+    } catch (err) { next(err); }
+  });
+
+  /**
+   * GET /api/v1/siebel/best-practices — List best practice rules
+   * Query: category? (filter by category)
+   */
+  router.get("/best-practices", (req, res) => {
+    const { category } = req.query as Record<string, string>;
+    if (category) {
+      const byCategory = getBestPracticesByCategory();
+      res.json({ rules: byCategory[category] ?? [], category });
+    } else {
+      res.json({ rules: getSiebelBestPractices(), total: getSiebelBestPractices().length });
+    }
+  });
+
+  /**
+   * POST /api/v1/siebel/review — Run code review on SIF content
+   * Body: { content: string, prefix?: string }
+   */
+  router.post("/review", (req, res, next) => {
+    try {
+      const { content, prefix = "CX_" } = req.body;
+      if (!content) { res.status(400).json({ error: "content is required" }); return; }
+
+      const parseResult = parseSifContent(content, "review.sif");
+      const review = reviewSiebelCode(parseResult.objects, { prefix });
+      res.json(review);
+    } catch (err) { next(err); }
+  });
+
+  /**
+   * POST /api/v1/siebel/ready-check — Run definition of ready checks
+   * Body: { content: string, prefix?: string, currentUser?: string }
+   */
+  router.post("/ready-check", (req, res, next) => {
+    try {
+      const { content, prefix = "CX_", currentUser } = req.body;
+      if (!content) { res.status(400).json({ error: "content is required" }); return; }
+
+      const parseResult = parseSifContent(content, "ready-check.sif");
+      const knowledgeStore = new KnowledgeStore(storeRef.current.getDb());
+      const repoDocs = knowledgeStore.list({ sourceType: "siebel_sif_raw", limit: 50 });
+      const repoObjects = repoDocs.flatMap((d) => {
+        try { return parseSifContent(d.content, d.title).objects; } catch { return []; }
+      });
+
+      const result = checkSiebelReady({
+        targetObjects: parseResult.objects,
+        repository: repoObjects,
+        prefix,
+        currentUser,
+      });
+      res.json(result);
+    } catch (err) { next(err); }
+  });
+
+  /**
+   * GET /api/v1/siebel/metrics — Repository metrics and statistics
+   */
+  router.get("/metrics", (req, res, next) => {
+    try {
+      const knowledgeStore = new KnowledgeStore(storeRef.current.getDb());
+      const rawDocs = knowledgeStore.list({ sourceType: "siebel_sif_raw", limit: 100 });
+
+      const allObjects = rawDocs.flatMap((doc) => {
+        try { return parseSifContent(doc.content, doc.title).objects; } catch { return []; }
+      });
+
+      // Type distribution
+      const typeCounts: Record<string, number> = {};
+      for (const obj of allObjects) {
+        typeCounts[obj.type] = (typeCounts[obj.type] ?? 0) + 1;
+      }
+
+      // Project distribution
+      const projectCounts: Record<string, number> = {};
+      for (const obj of allObjects) {
+        const proj = obj.project ?? "unknown";
+        projectCounts[proj] = (projectCounts[proj] ?? 0) + 1;
+      }
+
+      // Script coverage
+      const scriptableTypes = allObjects.filter((o) => ["applet", "business_component", "business_service"].includes(o.type));
+      const withScripts = scriptableTypes.filter((o) => o.children.some((c) => c.type === "escript"));
+
+      // Locked objects
+      const locked = allObjects.filter((o) =>
+        o.properties.some((p) => p.name === "OBJECT_LOCKED" && p.value === "Y"),
+      );
+
+      res.json({
+        totalObjects: allObjects.length,
+        totalSifs: rawDocs.length,
+        typeDistribution: typeCounts,
+        projectDistribution: projectCounts,
+        scriptCoverage: {
+          scriptableObjects: scriptableTypes.length,
+          withScripts: withScripts.length,
+          percentage: scriptableTypes.length > 0 ? Math.round((withScripts.length / scriptableTypes.length) * 100) : 0,
+        },
+        lockedObjects: locked.map((o) => ({
+          name: o.name,
+          type: o.type,
+          lockedBy: o.properties.find((p) => p.name === "LOCKED_BY")?.value ?? "unknown",
+        })),
+      });
+    } catch (err) { next(err); }
+  });
+
+  /**
+   * POST /api/v1/siebel/enrich — Enrich SIF context (summary, deps, usage)
+   * Body: { content: string }
+   */
+  router.post("/enrich", (req, res, next) => {
+    try {
+      const { content } = req.body;
+      if (!content) { res.status(400).json({ error: "content is required" }); return; }
+
+      const parseResult = parseSifContent(content, "enrich.sif");
+      const enrichment = enrichSifContext({
+        objects: parseResult.objects,
+        dependencies: parseResult.dependencies,
+      });
+      res.json(enrichment);
+    } catch (err) { next(err); }
   });
 
   return router;
