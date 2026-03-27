@@ -3,6 +3,7 @@ import { z } from "zod/v4";
 export const KnowledgeSourceTypeSchema = z.enum([
   "upload", "serena", "memory", "code_context", "docs", "web_capture", "prd", "design", "sprint_plan", "phase_summary", "skill",
   "journey", "siebel_sif", "siebel_sif_raw", "siebel_composer", "siebel_generated", "siebel_docs", "swagger",
+  "siebel_wsdl", "siebel_escript",
   "ai_decision", "validation_result", "test_outcome", "synthesis",
   "benchmark", "graph_node",
 ]);

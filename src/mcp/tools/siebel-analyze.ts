@@ -12,24 +12,27 @@ import {
   detectCircularDeps,
 } from "../../core/siebel/dependency-analyzer.js";
 import { parseSifContent } from "../../core/siebel/sif-parser.js";
+import { diffSifObjects, formatDiffMarkdown } from "../../core/siebel/sif-diff.js";
 import { SiebelObjectTypeSchema } from "../../schemas/siebel.schema.js";
 import { KnowledgeStore } from "../../core/store/knowledge-store.js";
 import { logger } from "../../core/utils/logger.js";
-import { mcpText, mcpError } from "../response-helpers.js";
+import { mcpText, mcpError, normalizeNewlines } from "../response-helpers.js";
 
 export function registerSiebelAnalyze(server: McpServer, store: SqliteStore): void {
   server.tool(
     "siebel_analyze",
-    "Analyze Siebel object dependencies. Modes: impact (blast radius of changing an object), dependencies (find chain between two objects), circular (detect cycles), summary (overview of all Siebel objects in knowledge store).",
+    "Analyze Siebel objects. Modes: impact, dependencies, circular, summary, diff (structural comparison of two SIFs).",
     {
-      action: z.enum(["impact", "dependencies", "circular", "summary"]).describe("Analysis mode"),
+      action: z.enum(["impact", "dependencies", "circular", "summary", "diff"]).describe("Analysis mode"),
       objectName: z.string().optional().describe("Siebel object name (for impact analysis)"),
       objectType: SiebelObjectTypeSchema.optional().describe("Siebel object type"),
       targetName: z.string().optional().describe("Target object for dependency chain"),
       targetType: SiebelObjectTypeSchema.optional().describe("Target object type"),
-      sifContent: z.string().optional().describe("Raw SIF content to analyze (if not using stored data)"),
+      sifContent: z.string().optional().describe("Raw SIF content (base for diff, or input for other modes)"),
+      targetSifContent: z.string().optional().describe("Target SIF content (for diff mode)"),
+      outputFormat: z.enum(["json", "markdown"]).optional().default("json").describe("Output format for diff"),
     },
-    async ({ action, objectName, objectType, targetName, targetType, sifContent }) => {
+    async ({ action, objectName, objectType, targetName, targetType, sifContent, targetSifContent, outputFormat }) => {
       logger.info("tool:siebel_analyze", { action, objectName, objectType });
 
       try {
@@ -50,7 +53,7 @@ export function registerSiebelAnalyze(server: McpServer, store: SqliteStore): vo
 
           // Extract dependencies from stored metadata
           // For now, require sifContent for detailed analysis
-          if (action !== "summary") {
+          if (action !== "summary" && action !== "diff") {
             return mcpError("Detailed analysis requires sifContent parameter. Use siebel_import_sif to import a SIF first, then pass the content here.");
           }
 
@@ -119,6 +122,24 @@ export function registerSiebelAnalyze(server: McpServer, store: SqliteStore): vo
                 ]),
               ),
             });
+          }
+
+          case "diff": {
+            if (!sifContent || !targetSifContent) {
+              return mcpError("sifContent and targetSifContent are required for diff mode");
+            }
+            const baseNorm = normalizeNewlines(sifContent) ?? sifContent;
+            const targetNorm = normalizeNewlines(targetSifContent) ?? targetSifContent;
+            const baseResult = parseSifContent(baseNorm, "base.sif");
+            const targetResult = parseSifContent(targetNorm, "target.sif");
+            const diffResult = diffSifObjects(baseResult.objects, targetResult.objects);
+
+            if (outputFormat === "markdown") {
+              const markdown = formatDiffMarkdown(diffResult);
+              return mcpText({ ok: true, action: "diff", format: "markdown", content: markdown });
+            }
+
+            return mcpText({ ok: true, action: "diff", format: "json", ...diffResult });
           }
 
           default:

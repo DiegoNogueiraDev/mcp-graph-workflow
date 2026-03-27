@@ -8,6 +8,9 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import { parseSifFile, parseSifContent } from "../../core/siebel/sif-parser.js";
 import { detectCircularDeps } from "../../core/siebel/dependency-analyzer.js";
+import { validateNamingConventions, DEFAULT_RULE_SETS } from "../../core/siebel/naming-convention-validator.js";
+import type { NamingRuleSet } from "../../core/siebel/naming-convention-validator.js";
+import { validateSecurity, validatePerformance, validateMigrationReadiness } from "../../core/siebel/siebel-validators.js";
 import { logger } from "../../core/utils/logger.js";
 import { mcpText, mcpError, normalizeNewlines } from "../response-helpers.js";
 import type { SiebelObject, SiebelSifParseResult } from "../../schemas/siebel.schema.js";
@@ -15,16 +18,18 @@ import type { SiebelObject, SiebelSifParseResult } from "../../schemas/siebel.sc
 export function registerSiebelValidate(server: McpServer, _store: SqliteStore): void {
   server.tool(
     "siebel_validate",
-    "Validate a Siebel .SIF file for integrity, missing dependencies, circular references, and best practices.",
+    "Validate a Siebel .SIF file. Modes: full, naming, security, performance, migration_ready.",
     {
       filePath: z.string().optional().describe("Path to the .sif file"),
       content: z.string().optional().describe("Raw SIF XML content"),
       fileName: z.string().optional().default("validate.sif").describe("File name for content mode"),
-      checkDeps: z.boolean().optional().default(true).describe("Check for missing dependencies"),
-      checkCircular: z.boolean().optional().default(true).describe("Check for circular dependencies"),
+      mode: z.enum(["full", "naming", "security", "performance", "migration_ready"]).optional().default("full").describe("Validation mode"),
+      ruleSetName: z.string().optional().describe("Naming rule set: standard, multi_prefix, or custom name (mode=naming only)"),
+      checkDeps: z.boolean().optional().default(true).describe("Check for missing dependencies (mode=full)"),
+      checkCircular: z.boolean().optional().default(true).describe("Check for circular dependencies (mode=full)"),
     },
-    async ({ filePath, content, fileName, checkDeps, checkCircular }) => {
-      logger.info("tool:siebel_validate", { filePath, fileName });
+    async ({ filePath, content, fileName, mode, ruleSetName, checkDeps, checkCircular }) => {
+      logger.info("tool:siebel_validate", { filePath, fileName, mode });
 
       try {
         let parseResult: SiebelSifParseResult;
@@ -37,6 +42,65 @@ export function registerSiebelValidate(server: McpServer, _store: SqliteStore): 
           return mcpError("Either filePath or content is required");
         }
 
+        // --- Naming Convention Mode ---
+        if (mode === "naming") {
+          const ruleSet = resolveNamingRuleSet(ruleSetName);
+          if (!ruleSet) {
+            return mcpError(`Unknown naming rule set: "${ruleSetName}". Available: ${Object.keys(DEFAULT_RULE_SETS).join(", ")}`);
+          }
+          const allObjects = flattenObjects(parseResult.objects);
+          const namingResult = validateNamingConventions(allObjects, ruleSet);
+          return mcpText({
+            ok: true,
+            mode: "naming",
+            ...namingResult,
+            fileName: parseResult.metadata.fileName,
+            objectCount: allObjects.length,
+          });
+        }
+
+        // --- Security Validation Mode ---
+        if (mode === "security") {
+          const allObjects = flattenObjects(parseResult.objects);
+          const securityResult = validateSecurity(allObjects);
+          return mcpText({
+            ok: true,
+            mode: "security",
+            ...securityResult,
+            fileName: parseResult.metadata.fileName,
+            objectCount: allObjects.length,
+          });
+        }
+
+        // --- Performance Validation Mode ---
+        if (mode === "performance") {
+          const allObjects = flattenObjects(parseResult.objects);
+          const perfResult = validatePerformance(allObjects);
+          return mcpText({
+            ok: true,
+            mode: "performance",
+            ...perfResult,
+            fileName: parseResult.metadata.fileName,
+            objectCount: allObjects.length,
+          });
+        }
+
+        // --- Migration Readiness Mode ---
+        if (mode === "migration_ready") {
+          const migrationResult = validateMigrationReadiness(
+            parseResult.objects,
+            parseResult.dependencies,
+          );
+          return mcpText({
+            ok: true,
+            mode: "migration_ready",
+            ...migrationResult,
+            fileName: parseResult.metadata.fileName,
+            objectCount: parseResult.objects.length,
+          });
+        }
+
+        // --- Full Validation Mode ---
         const errors: string[] = [];
         const warnings: string[] = [];
         const info: string[] = [];
@@ -98,6 +162,7 @@ export function registerSiebelValidate(server: McpServer, _store: SqliteStore): 
 
         return mcpText({
           ok: true,
+          mode: "full",
           status,
           fileName: parseResult.metadata.fileName,
           objectCount: parseResult.objects.length,
@@ -111,6 +176,22 @@ export function registerSiebelValidate(server: McpServer, _store: SqliteStore): 
       }
     },
   );
+}
+
+function resolveNamingRuleSet(name?: string): NamingRuleSet | undefined {
+  if (!name) return DEFAULT_RULE_SETS["standard"];
+  return DEFAULT_RULE_SETS[name];
+}
+
+function flattenObjects(objects: readonly SiebelObject[]): SiebelObject[] {
+  const result: SiebelObject[] = [];
+  for (const obj of objects) {
+    result.push(obj);
+    if (obj.children.length > 0) {
+      result.push(...flattenObjects(obj.children));
+    }
+  }
+  return result;
 }
 
 function validateBestPractices(objects: SiebelObject[], warnings: string[]): void {

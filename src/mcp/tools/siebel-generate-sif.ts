@@ -9,17 +9,23 @@ import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import { KnowledgeStore } from "../../core/store/knowledge-store.js";
 import { prepareSifGeneration, finalizeSifGeneration } from "../../core/siebel/sif-generator.js";
 import { listTemplates } from "../../core/siebel/sif-templates.js";
+import { scaffoldSiebelObjects } from "../../core/siebel/scaffold-generator.js";
+import { cloneAndAdapt } from "../../core/siebel/clone-adapt.js";
+import { generateEScript } from "../../core/siebel/escript-generator.js";
+import { formatDiffMarkdown } from "../../core/siebel/sif-diff.js";
 import { SiebelObjectTypeSchema } from "../../schemas/siebel.schema.js";
+import type { SiebelObject } from "../../schemas/siebel.schema.js";
+import { parseSifContent } from "../../core/siebel/sif-parser.js";
 import { logger } from "../../core/utils/logger.js";
 import { mcpText, mcpError, normalizeNewlines } from "../response-helpers.js";
 
 export function registerSiebelGenerateSif(server: McpServer, store: SqliteStore): void {
   server.tool(
     "siebel_generate_sif",
-    "Generate Siebel SIF files using RAG context. Two-phase: action=prepare returns context+prompt for the LLM; action=finalize validates the LLM-generated XML and indexes it.",
+    "Generate Siebel SIF files. Actions: prepare (RAG context+prompt), finalize (validate XML), templates (list), scaffold (auto-generate objects from description).",
     {
-      action: z.enum(["prepare", "finalize", "templates"]).describe(
-        "Phase: prepare (get context+prompt), finalize (validate XML), templates (list available templates)",
+      action: z.enum(["prepare", "finalize", "templates", "scaffold", "clone_adapt", "generate_script"]).describe(
+        "Actions: prepare, finalize, templates, scaffold, clone_adapt, generate_script",
       ),
       // prepare params
       description: z.string().optional().describe("What to generate (for prepare)"),
@@ -28,8 +34,22 @@ export function registerSiebelGenerateSif(server: McpServer, store: SqliteStore)
       properties: z.record(z.string(), z.string()).optional().describe("Default properties for generated objects"),
       // finalize params
       generatedXml: z.string().optional().describe("LLM-generated SIF XML content (for finalize)"),
+      // scaffold params
+      prefix: z.string().optional().describe("Naming prefix for scaffold (e.g., 'CX_')"),
+      includeScriptBoilerplate: z.boolean().optional().default(false).describe("Include eScript boilerplate (scaffold)"),
+      // clone_adapt params
+      sourceSifContent: z.string().optional().describe("SIF XML of the source object to clone (clone_adapt)"),
+      sourceObjectName: z.string().optional().describe("Name of the object to clone from the SIF (clone_adapt)"),
+      newName: z.string().optional().describe("New name for the cloned object (clone_adapt)"),
+      renames: z.record(z.string(), z.string()).optional().describe("Map of old→new names for reference replacement (clone_adapt)"),
+      addFields: z.array(z.string()).optional().describe("Field names to add to the clone (clone_adapt)"),
+      removeFields: z.array(z.string()).optional().describe("Field names to remove from the clone (clone_adapt)"),
+      // generate_script params
+      parentObjectName: z.string().optional().describe("Parent object name, e.g. 'CX Order Applet' (generate_script)"),
+      parentObjectType: z.enum(["applet", "business_component", "business_service"]).optional().describe("Parent object type (generate_script)"),
+      eventName: z.string().optional().describe("Event handler name, e.g. 'PreInvokeMethod' (generate_script)"),
     },
-    async ({ action, description, objectTypes, basedOnProject, properties, generatedXml }) => {
+    async ({ action, description, objectTypes, basedOnProject, properties, generatedXml, prefix, includeScriptBoilerplate, sourceSifContent, sourceObjectName, newName, renames, addFields, removeFields, parentObjectName, parentObjectType, eventName }) => {
       logger.info("tool:siebel_generate_sif", { action });
 
       try {
@@ -102,6 +122,100 @@ export function registerSiebelGenerateSif(server: McpServer, store: SqliteStore)
           });
         }
 
+        if (action === "scaffold") {
+          if (!description) {
+            return mcpError("description is required for scaffold action");
+          }
+
+          // Load reference objects from knowledge store for template learning
+          const referenceObjects = loadReferenceObjects(knowledgeStore);
+
+          const scaffoldResult = scaffoldSiebelObjects({
+            description,
+            prefix: prefix ?? "CX_",
+            projectName: basedOnProject ?? "Generated Project",
+            referenceObjects,
+            includeScriptBoilerplate,
+          });
+
+          return mcpText({
+            ok: true,
+            action: "scaffold",
+            sifContent: scaffoldResult.sifXml,
+            objectCount: scaffoldResult.objects.length,
+            objects: scaffoldResult.objects.map((o) => ({ name: o.name, type: o.type })),
+            validationScore: scaffoldResult.validationScore,
+            scriptBoilerplate: scaffoldResult.scriptBoilerplate,
+          });
+        }
+
+        if (action === "clone_adapt") {
+          if (!sourceSifContent || !sourceObjectName || !newName) {
+            return mcpError("sourceSifContent, sourceObjectName, and newName are required for clone_adapt action");
+          }
+
+          const normalized = normalizeNewlines(sourceSifContent) ?? sourceSifContent;
+          const parseResult = parseSifContent(normalized, "clone-source.sif");
+          const sourceObj = parseResult.objects.find((o) => o.name === sourceObjectName);
+
+          if (!sourceObj) {
+            return mcpError(`Object "${sourceObjectName}" not found in SIF content. Available: ${parseResult.objects.map((o) => o.name).join(", ")}`);
+          }
+
+          // Build add/remove children
+          const addChildren = addFields?.map((name) => ({
+            name,
+            type: "control" as const,
+            properties: [{ name: "FIELD", value: name }],
+            children: [] as SiebelObject[],
+          }));
+          const removeChildren = removeFields;
+
+          const result = cloneAndAdapt({
+            source: sourceObj,
+            newName,
+            renames: renames ?? {},
+            addChildren,
+            removeChildren,
+          });
+
+          const diffMarkdown = formatDiffMarkdown(result.diff);
+
+          return mcpText({
+            ok: true,
+            action: "clone_adapt",
+            clonedObject: { name: result.cloned.name, type: result.cloned.type },
+            childCount: result.cloned.children.length,
+            renamesApplied: result.renamesApplied,
+            diff: result.diff.summary,
+            diffMarkdown,
+          });
+        }
+
+        if (action === "generate_script") {
+          if (!parentObjectName || !parentObjectType || !eventName || !description) {
+            return mcpError("parentObjectName, parentObjectType, eventName, and description are required for generate_script action");
+          }
+
+          const scriptResult = generateEScript({
+            parentObjectName,
+            parentObjectType,
+            eventName,
+            behaviorDescription: description,
+            referenceScripts: [],
+          });
+
+          return mcpText({
+            ok: true,
+            action: "generate_script",
+            functionName: scriptResult.functionName,
+            eventName: scriptResult.eventName,
+            script: scriptResult.script,
+            sifXmlBlock: scriptResult.sifXmlBlock,
+            referencedEntities: scriptResult.referencedEntities,
+          });
+        }
+
         return mcpError(`Unknown action: ${action}`);
       } catch (err) {
         logger.error("tool:siebel_generate_sif failed", {
@@ -111,4 +225,35 @@ export function registerSiebelGenerateSif(server: McpServer, store: SqliteStore)
       }
     },
   );
+}
+
+/**
+ * Load reference Siebel objects from knowledge store for template learning.
+ * Returns parsed SiebelObjects from indexed SIF content.
+ */
+function loadReferenceObjects(knowledgeStore: KnowledgeStore): SiebelObject[] {
+  try {
+    const docs = knowledgeStore.search("siebel object", 50);
+    const sifDocs = docs.filter((d) => d.sourceType === "siebel_sif" || d.sourceType === "siebel_sif_raw");
+
+    const objects: SiebelObject[] = [];
+    for (const doc of sifDocs) {
+      try {
+        const parseResult = parseSifContent(doc.content, doc.title);
+        objects.push(...parseResult.objects);
+      } catch {
+        // Individual doc parse failure — skip silently
+      }
+    }
+
+    logger.debug("scaffold:loadReferenceObjects", {
+      docsFound: String(sifDocs.length),
+      objectsLoaded: String(objects.length),
+    });
+
+    return objects;
+  } catch {
+    // Empty knowledge store or search failure
+    return [];
+  }
 }
