@@ -13,6 +13,7 @@ import { scaffoldSiebelObjects } from "../../core/siebel/scaffold-generator.js";
 import { cloneAndAdapt } from "../../core/siebel/clone-adapt.js";
 import { generateEScript } from "../../core/siebel/escript-generator.js";
 import { formatDiffMarkdown } from "../../core/siebel/sif-diff.js";
+import { autoWireDependencies } from "../../core/siebel/auto-wiring.js";
 import { SiebelObjectTypeSchema } from "../../schemas/siebel.schema.js";
 import type { SiebelObject } from "../../schemas/siebel.schema.js";
 import { parseSifContent } from "../../core/siebel/sif-parser.js";
@@ -24,8 +25,8 @@ export function registerSiebelGenerateSif(server: McpServer, store: SqliteStore)
     "siebel_generate_sif",
     "Generate Siebel SIF files. Actions: prepare (RAG context+prompt), finalize (validate XML), templates (list), scaffold (auto-generate objects from description).",
     {
-      action: z.enum(["prepare", "finalize", "templates", "scaffold", "clone_adapt", "generate_script"]).describe(
-        "Actions: prepare, finalize, templates, scaffold, clone_adapt, generate_script",
+      action: z.enum(["prepare", "finalize", "templates", "scaffold", "clone_adapt", "generate_script", "auto_wire"]).describe(
+        "Actions: prepare, finalize, templates, scaffold, clone_adapt, generate_script, auto_wire",
       ),
       // prepare params
       description: z.string().optional().describe("What to generate (for prepare)"),
@@ -213,6 +214,42 @@ export function registerSiebelGenerateSif(server: McpServer, store: SqliteStore)
             script: scriptResult.script,
             sifXmlBlock: scriptResult.sifXmlBlock,
             referencedEntities: scriptResult.referencedEntities,
+          });
+        }
+
+        if (action === "auto_wire") {
+          if (!sourceSifContent) {
+            return mcpError("sourceSifContent is required for auto_wire action (SIF XML with new objects)");
+          }
+
+          const normalized = normalizeNewlines(sourceSifContent) ?? sourceSifContent;
+          const parseResult = parseSifContent(normalized, "auto-wire-source.sif");
+
+          // Load repository objects from knowledge store
+          const ks = new KnowledgeStore(store.getDb());
+          const repositoryObjects = loadReferenceObjects(ks);
+
+          const wireResult = autoWireDependencies({
+            newObjects: parseResult.objects,
+            repository: repositoryObjects,
+          });
+
+          return mcpText({
+            ok: true,
+            action: "auto_wire",
+            wiredEdges: wireResult.wiredEdges.length,
+            missingDependencies: wireResult.missingDependencies.length,
+            edges: wireResult.wiredEdges.map((e) => ({
+              from: `${e.from.type}:${e.from.name}`,
+              to: `${e.to.type}:${e.to.name}`,
+              relation: e.relationType,
+            })),
+            missing: wireResult.missingDependencies.map((d) => ({
+              from: `${d.from.type}:${d.from.name}`,
+              to: `${d.to.type}:${d.to.name}`,
+              suggestion: d.suggestion,
+            })),
+            report: wireResult.report,
           });
         }
 

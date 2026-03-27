@@ -11,6 +11,7 @@ import { detectCircularDeps } from "../../core/siebel/dependency-analyzer.js";
 import { validateNamingConventions, DEFAULT_RULE_SETS } from "../../core/siebel/naming-convention-validator.js";
 import type { NamingRuleSet } from "../../core/siebel/naming-convention-validator.js";
 import { validateSecurity, validatePerformance, validateMigrationReadiness } from "../../core/siebel/siebel-validators.js";
+import { reviewSiebelCode } from "../../core/siebel/code-review.js";
 import { logger } from "../../core/utils/logger.js";
 import { mcpText, mcpError, normalizeNewlines } from "../response-helpers.js";
 import type { SiebelObject, SiebelSifParseResult } from "../../schemas/siebel.schema.js";
@@ -23,12 +24,13 @@ export function registerSiebelValidate(server: McpServer, _store: SqliteStore): 
       filePath: z.string().optional().describe("Path to the .sif file"),
       content: z.string().optional().describe("Raw SIF XML content"),
       fileName: z.string().optional().default("validate.sif").describe("File name for content mode"),
-      mode: z.enum(["full", "naming", "security", "performance", "migration_ready"]).optional().default("full").describe("Validation mode"),
+      mode: z.enum(["full", "naming", "security", "performance", "migration_ready", "code_review"]).optional().default("full").describe("Validation mode"),
+      prefix: z.string().optional().describe("Naming prefix for code_review mode (e.g., 'CX_')"),
       ruleSetName: z.string().optional().describe("Naming rule set: standard, multi_prefix, or custom name (mode=naming only)"),
       checkDeps: z.boolean().optional().default(true).describe("Check for missing dependencies (mode=full)"),
       checkCircular: z.boolean().optional().default(true).describe("Check for circular dependencies (mode=full)"),
     },
-    async ({ filePath, content, fileName, mode, ruleSetName, checkDeps, checkCircular }) => {
+    async ({ filePath, content, fileName, mode, ruleSetName, checkDeps, checkCircular, prefix }) => {
       logger.info("tool:siebel_validate", { filePath, fileName, mode });
 
       try {
@@ -97,6 +99,22 @@ export function registerSiebelValidate(server: McpServer, _store: SqliteStore): 
             ...migrationResult,
             fileName: parseResult.metadata.fileName,
             objectCount: parseResult.objects.length,
+          });
+        }
+
+        if (mode === "code_review") {
+          const reviewResult = reviewSiebelCode(parseResult.objects, {
+            prefix: prefix ?? "CX_",
+          });
+          return mcpText({
+            ok: true,
+            mode: "code_review",
+            score: reviewResult.score,
+            breakdown: reviewResult.breakdown,
+            issueCount: reviewResult.issues.length,
+            issues: reviewResult.issues,
+            objectCount: reviewResult.objectCount,
+            fileName: parseResult.metadata.fileName,
           });
         }
 
