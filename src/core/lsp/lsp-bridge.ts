@@ -7,7 +7,7 @@
  * a language server is unavailable.
  */
 
-import { statSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import type {
@@ -111,6 +111,8 @@ const SYMBOL_KIND_MAP: Record<number, string> = {
 // ---------------------------------------------------------------------------
 
 export class LspBridge {
+  private readonly openedUris = new Set<string>();
+
   constructor(
     private readonly manager: LspServerManager,
     private readonly cache: LspCache | null,
@@ -191,14 +193,15 @@ export class LspBridge {
     newName: string,
   ): Promise<LspWorkspaceEdit | null> {
     // Rename is NEVER cached — it is a write operation.
-    const client = await this.manager.getClientForFile(
-      path.resolve(this.basePath, file),
-    );
+    const absPath = path.resolve(this.basePath, file);
+    const client = await this.manager.getClientForFile(absPath);
 
     if (!client) {
       logger.warn("lsp-bridge:rename no server available", { file });
       return null;
     }
+
+    await this.ensureDocumentOpen(client, file, absPath);
 
     try {
       const raw = await client.sendRequest<RawLspWorkspaceEdit>(
@@ -380,11 +383,14 @@ export class LspBridge {
       return null;
     }
 
-    // 3. Send LSP request
+    // 3. Ensure document is open (LSP servers require didOpen before queries)
+    await this.ensureDocumentOpen(client, file, absPath);
+
+    // 4. Send LSP request
     try {
       const result = await client.sendRequest<T>(lspMethod, params);
 
-      // 4. Cache result
+      // 5. Cache result
       if (this.cache && mtime && result != null) {
         const languageId = this.inferLanguageId(file);
         this.cache.set("default", cacheKey, operation, languageId, file, result, mtime);
@@ -399,6 +405,46 @@ export class LspBridge {
         error: err instanceof Error ? err.message : String(err),
       });
       return null;
+    }
+  }
+
+  // -----------------------------------------------------------------------
+  // Private helpers — document lifecycle
+  // -----------------------------------------------------------------------
+
+  /**
+   * Ensure the document is open on the LSP server (textDocument/didOpen).
+   * Most servers require this before they can respond to queries.
+   * Only sends once per URI (tracked via openedUris Set).
+   */
+  private async ensureDocumentOpen(
+    client: { sendNotification: (method: string, params: unknown) => void },
+    file: string,
+    absPath: string,
+  ): Promise<void> {
+    const uri = this.toFileUri(file);
+    if (this.openedUris.has(uri)) return;
+
+    try {
+      const content = readFileSync(absPath, "utf-8");
+      const languageId = this.inferLanguageId(file);
+
+      client.sendNotification("textDocument/didOpen", {
+        textDocument: {
+          uri,
+          languageId,
+          version: 1,
+          text: content,
+        },
+      });
+
+      this.openedUris.add(uri);
+      logger.debug("lsp-bridge:document-opened", { file, languageId });
+    } catch (err) {
+      logger.warn("lsp-bridge:didOpen-failed", {
+        file,
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 
@@ -433,18 +479,19 @@ export class LspBridge {
   private inferLanguageId(file: string): string {
     const ext = path.extname(file).replace(/^\./, "");
     const extMap: Record<string, string> = {
-      ts: "typescript", tsx: "typescript", js: "typescript", jsx: "typescript",
+      ts: "typescript", tsx: "typescript", js: "javascript", jsx: "javascript",
+      mts: "typescript", cts: "typescript",
       py: "python", pyi: "python",
       rs: "rust",
       go: "go",
       java: "java",
+      kt: "kotlin", kts: "kotlin",
+      swift: "swift",
       rb: "ruby",
+      php: "php",
       cs: "csharp",
-      cpp: "cpp", cc: "cpp", cxx: "cpp", c: "cpp", h: "cpp", hpp: "cpp",
+      cpp: "cpp", cc: "cpp", cxx: "cpp", c: "c", h: "c", hpp: "cpp",
       lua: "lua",
-      zig: "zig",
-      ex: "elixir", exs: "elixir",
-      css: "css", scss: "css", less: "css",
     };
     return extMap[ext] ?? ext;
   }
