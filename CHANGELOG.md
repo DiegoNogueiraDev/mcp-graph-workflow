@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.14.1](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.14.0...mcp-graph-v5.14.1) (2026-03-27)
+
+
+### Bug Fixes
+
+* **lsp:** multi-language support — Kotlin/Swift, C# detection, didOpen lifecycle ([da3103e](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/da3103ea3c93ee5e5446a8f1c6f9f3aad656f2b8))
+* **lsp:** multi-language support bugs — Kotlin/Swift mapping, C# detection, didOpen lifecycle ([c87d69c](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/c87d69cc4d0b91cbb560bd593e0068024aed971c))
+
 ## [5.14.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.13.0...mcp-graph-v5.14.0) (2026-03-27)
 
 
