@@ -5,6 +5,14 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { apiClient } from "@/lib/api-client";
+import { MetricsSection } from "@/components/siebel/metrics-section";
+import { ReviewSection } from "@/components/siebel/review-section";
+import { BestPracticesSection } from "@/components/siebel/best-practices-section";
+import { ReadyCheckSection } from "@/components/siebel/ready-check-section";
+import { ErdSection } from "@/components/siebel/erd-section";
+import { EnvironmentsSection } from "@/components/siebel/environments-section";
+
+type SiebelSubTab = "repository" | "analysis" | "erd" | "environments";
 
 // ── Types ────────────────────────────────────────────
 
@@ -47,7 +55,15 @@ interface GenerationResult {
 
 // ── Main component ──────────────────────────────────
 
+const SUB_TABS: Array<{ id: SiebelSubTab; label: string }> = [
+  { id: "repository", label: "Repository" },
+  { id: "analysis", label: "Analysis" },
+  { id: "erd", label: "ERD" },
+  { id: "environments", label: "Environments" },
+];
+
 export function SiebelTab(): React.JSX.Element {
+  const [subTab, setSubTab] = useState<SiebelSubTab>("repository");
   const [objects, setObjects] = useState<SiebelObject[]>([]);
   const [templates, setTemplates] = useState<SifTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -205,6 +221,63 @@ export function SiebelTab(): React.JSX.Element {
   return (
     <div className="h-full overflow-auto">
       <div className="p-4 space-y-6 max-w-6xl mx-auto">
+
+        {/* ── Sub-tab navigation ── */}
+        <div className="flex gap-1 border-b border-edge pb-1">
+          {SUB_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              className={`px-3 py-1.5 text-xs rounded-t transition-colors ${
+                subTab === tab.id
+                  ? "bg-blue-600 text-white"
+                  : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
+              }`}
+              onClick={() => setSubTab(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* ── Analysis Sub-tab ── */}
+        {subTab === "analysis" && (
+          <div className="space-y-6">
+            <section className="rounded-lg border border-edge bg-surface-alt p-4">
+              <h3 className="text-sm font-semibold mb-4">Metrics</h3>
+              <MetricsSection />
+            </section>
+            <section className="rounded-lg border border-edge bg-surface-alt p-4">
+              <h3 className="text-sm font-semibold mb-4">Code Review</h3>
+              <ReviewSection />
+            </section>
+            <section className="rounded-lg border border-edge bg-surface-alt p-4">
+              <h3 className="text-sm font-semibold mb-4">Ready Check</h3>
+              <ReadyCheckSection />
+            </section>
+            <section className="rounded-lg border border-edge bg-surface-alt p-4">
+              <h3 className="text-sm font-semibold mb-4">Best Practices ({"\u2139"}60 rules)</h3>
+              <BestPracticesSection />
+            </section>
+          </div>
+        )}
+
+        {/* ── ERD Sub-tab ── */}
+        {subTab === "erd" && (
+          <section className="rounded-lg border border-edge bg-surface-alt p-4">
+            <h3 className="text-sm font-semibold mb-4">Entity Relationship Diagram</h3>
+            <ErdSection />
+          </section>
+        )}
+
+        {/* ── Environments Sub-tab ── */}
+        {subTab === "environments" && (
+          <section className="rounded-lg border border-edge bg-surface-alt p-4">
+            <EnvironmentsSection />
+          </section>
+        )}
+
+        {/* ── Repository Sub-tab (original content) ── */}
+        {subTab === "repository" && <>
 
         {/* ── Panel 1: Upload & Context ── */}
         <section className="rounded-lg border border-edge bg-surface-alt">
@@ -455,6 +528,8 @@ export function SiebelTab(): React.JSX.Element {
             )}
           </div>
         </section>
+
+        </>}
       </div>
     </div>
   );

@@ -244,4 +244,63 @@ export const apiClient = {
       `/siebel/graph${query ? "?" + query : ""}`,
     );
   },
+
+  // Siebel — Analysis & Quality
+  siebelGetMetrics: () =>
+    request<{ totalObjects: number; totalSifs: number; typeDistribution: Record<string, number>; projectDistribution: Record<string, number>; scriptCoverage: { scriptableObjects: number; withScripts: number; percentage: number }; lockedObjects: Array<{ name: string; type: string; lockedBy: string }> }>(
+      "/siebel/metrics",
+    ),
+  siebelRunReview: (content: string, prefix?: string) =>
+    request<{ issues: Array<{ category: string; severity: string; objectName: string; detail: string; suggestion: string }>; score: number; breakdown: Record<string, number>; objectCount: number }>(
+      "/siebel/review",
+      { method: "POST", body: JSON.stringify({ content, prefix }) },
+    ),
+  siebelGetBestPractices: (category?: string) => {
+    const query = category ? `?category=${encodeURIComponent(category)}` : "";
+    return request<{ rules: Array<{ id: string; category: string; title: string; description: string; severity: string; correct: string; incorrect: string }>; total?: number; category?: string }>(
+      `/siebel/best-practices${query}`,
+    );
+  },
+  siebelRunReadyCheck: (content: string, prefix?: string, currentUser?: string) =>
+    request<{ ready: boolean; checks: Array<{ name: string; passed: boolean; detail: string }> }>(
+      "/siebel/ready-check",
+      { method: "POST", body: JSON.stringify({ content, prefix, currentUser }) },
+    ),
+  siebelGetErd: (project?: string) => {
+    const query = project ? `?project=${encodeURIComponent(project)}` : "";
+    return request<{ tables: Array<{ name: string; bcName: string; columns: Array<{ name: string; fieldName: string }> }>; relationships: Array<{ fromTable: string; toTable: string; fromField: string; toField: string; label: string }>; mermaid: string }>(
+      `/siebel/erd${query}`,
+    );
+  },
+  siebelEnrich: (content: string) =>
+    request<{ summary: string; objectTypes: string[]; dependsOn: Array<{ name: string; type: string }>; usedBy: Array<{ name: string; type: string }>; objectCount: number }>(
+      "/siebel/enrich",
+      { method: "POST", body: JSON.stringify({ content }) },
+    ),
+  siebelAnalyzeImpact: (content: string, objectName: string, objectType: string) =>
+    request<{ targetObject: { name: string; type: string }; directDependents: Array<{ name: string; type: string }>; transitiveDependents: Array<{ name: string; type: string }>; totalAffected: number; riskLevel: string }>(
+      "/siebel/analyze/impact",
+      { method: "POST", body: JSON.stringify({ content, objectName, objectType }) },
+    ),
+  siebelAnalyzeCircular: (content: string) =>
+    request<{ cyclesFound: number; cycles: Array<{ cycle: Array<{ name: string; type: string }> }> }>(
+      "/siebel/analyze/circular",
+      { method: "POST", body: JSON.stringify({ content }) },
+    ),
+
+  // Siebel — Environment Management
+  siebelGetEnvironments: () =>
+    request<{ environments: Array<{ name: string; url: string; version: string; type: string; composerUrl?: string; restApiUrl?: string }>; count: number }>(
+      "/siebel/environments",
+    ),
+  siebelAddEnvironment: (env: { name: string; url: string; version: string; type: string; composerUrl?: string; restApiUrl?: string }) =>
+    request<{ environments: Array<{ name: string; url: string; version: string; type: string }> }>(
+      "/siebel/environments",
+      { method: "POST", body: JSON.stringify(env) },
+    ),
+  siebelDeleteEnvironment: (name: string) =>
+    request<{ environments: Array<{ name: string; url: string; version: string; type: string }> }>(
+      `/siebel/environments/${encodeURIComponent(name)}`,
+      { method: "DELETE" },
+    ),
 };
