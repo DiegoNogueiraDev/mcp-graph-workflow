@@ -61,6 +61,7 @@ export const SiebelDependencyRelationSchema = z.enum([
   "based_on",
   "linked_to",
   "parent_of",
+  "runtime_depends_on",
 ]);
 
 /**
