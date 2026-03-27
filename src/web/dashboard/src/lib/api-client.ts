@@ -303,4 +303,34 @@ export const apiClient = {
       `/siebel/environments/${encodeURIComponent(name)}`,
       { method: "DELETE" },
     ),
+
+  // LSP — Language Server Protocol
+  getLspLanguages: () =>
+    request<{ ok: boolean; detected: Array<{ languageId: string; fileCount: number; confidence: number; detectedVia: string; configFile?: string; serverCommand?: string }>; supportedLanguages: string[]; estimatedTokens?: number }>("/code-graph/lsp/languages"),
+  getLspStatus: () =>
+    request<{ ok: boolean; bridgeInitialized: boolean; servers: Record<string, string> }>("/code-graph/lsp/status"),
+  lspDefinition: (file: string, line: number, character: number) =>
+    request<{ ok: boolean; definitions: Array<{ file: string; startLine: number; startCharacter: number; endLine: number; endCharacter: number; hint?: string }> }>("/code-graph/lsp/definition", {
+      method: "POST", body: JSON.stringify({ file, line, character }),
+    }),
+  lspReferences: (file: string, line: number, character: number) =>
+    request<{ ok: boolean; totalReferences: number; references: Array<{ file: string; startLine: number; startCharacter: number; endLine: number; endCharacter: number }>; byFile: Record<string, number> }>("/code-graph/lsp/references", {
+      method: "POST", body: JSON.stringify({ file, line, character }),
+    }),
+  lspHover: (file: string, line: number, character: number) =>
+    request<{ ok: boolean; hover: { signature: string | null; documentation?: string; language?: string } | null }>("/code-graph/lsp/hover", {
+      method: "POST", body: JSON.stringify({ file, line, character }),
+    }),
+  lspRename: (file: string, line: number, character: number, newName: string) =>
+    request<{ ok: boolean; edit: unknown }>("/code-graph/lsp/rename", {
+      method: "POST", body: JSON.stringify({ file, line, character, newName }),
+    }),
+  lspCallHierarchy: (file: string, line: number, character: number, direction: "incoming" | "outgoing") =>
+    request<{ ok: boolean; direction: string; items: unknown[] }>("/code-graph/lsp/call-hierarchy", {
+      method: "POST", body: JSON.stringify({ file, line, character, direction }),
+    }),
+  lspDiagnostics: (file: string) =>
+    request<{ ok: boolean; file: string; diagnostics: Array<{ file: string; startLine: number; startCharacter: number; endLine: number; endCharacter: number; severity: number; message: string; code?: string; source?: string }> }>(`/code-graph/lsp/diagnostics?file=${encodeURIComponent(file)}`),
+  lspSymbols: (file: string) =>
+    request<{ ok: boolean; file: string; symbols: Array<{ name: string; kind: string; file: string; startLine: number; endLine: number; children?: unknown[] }> }>(`/code-graph/lsp/symbols?file=${encodeURIComponent(file)}`),
 };

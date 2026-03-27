@@ -6,6 +6,7 @@ import {
   ClipboardList,
   Route,
   Network,
+  Code,
   Database,
   Brain,
   BarChart3,
@@ -33,7 +34,8 @@ export type TabId =
   | "context"
   | "benchmark"
   | "logs"
-  | "siebel";
+  | "siebel"
+  | "lsp";
 
 interface NavItem {
   id: TabId;
@@ -48,6 +50,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: "journey", label: "Journey", icon: Route, beta: true },
   { id: "gitnexus", label: "Code Graph", icon: Network },
   { id: "siebel", label: "Siebel", icon: Database, beta: true },
+  { id: "lsp", label: "LSP", icon: Code, beta: true },
   { id: "memories", label: "Memories", icon: Brain },
   { id: "insights", label: "Insights", icon: BarChart3 },
   { id: "skills", label: "Skills", icon: Zap },

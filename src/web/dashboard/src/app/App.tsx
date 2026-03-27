@@ -23,6 +23,7 @@ const ContextTab = lazy(() => import("@/components/tabs/context-tab").then((m) =
 const BenchmarkTab = lazy(() => import("@/components/tabs/benchmark-tab").then((m) => ({ default: m.BenchmarkTab })));
 const LogsTab = lazy(() => import("@/components/tabs/logs-tab").then((m) => ({ default: m.LogsTab })));
 const SiebelTab = lazy(() => import("@/components/siebel/siebel-tab").then((m) => ({ default: m.SiebelTab })));
+const LspTab = lazy(() => import("@/components/tabs/lsp-tab").then((m) => ({ default: m.LspTab })));
 
 const TAB_LABELS: Record<TabId, string> = {
   graph: "Graph",
@@ -30,6 +31,7 @@ const TAB_LABELS: Record<TabId, string> = {
   journey: "Journey",
   gitnexus: "Code Graph",
   siebel: "Siebel",
+  lsp: "LSP",
   memories: "Memories",
   insights: "Insights",
   skills: "Skills",
@@ -178,6 +180,7 @@ function AppContent(): React.JSX.Element {
                   {activeTab === "benchmark" && <BenchmarkTab />}
                   {activeTab === "logs" && <LogsTab />}
                   {activeTab === "siebel" && <SiebelTab />}
+                  {activeTab === "lsp" && <LspTab />}
                 </Suspense>
               </ErrorBoundary>
             )}
