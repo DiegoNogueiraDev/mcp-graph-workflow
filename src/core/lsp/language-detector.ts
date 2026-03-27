@@ -33,7 +33,15 @@ const CONFIG_FILE_MAP: Record<string, string> = {
   'Package.swift': 'swift',
   'CMakeLists.txt': 'cpp',
   'compile_commands.json': 'cpp',
+  'Makefile': 'cpp',
   '.luarc.json': 'lua',
+};
+
+/** File extensions that indicate a language (for config detection by extension) */
+const CONFIG_EXT_MAP: Record<string, string> = {
+  '.csproj': 'csharp',
+  '.sln': 'csharp',
+  '.fsproj': 'csharp',
 };
 
 // ---------------------------------------------------------------------------
@@ -135,9 +143,21 @@ function detectConfigFiles(
   for (const entry of entries) {
     if (!entry.isFile()) continue;
     const name = String(entry.name);
+
+    // Check exact filename match (e.g., tsconfig.json, Cargo.toml)
     const configLang = CONFIG_FILE_MAP[name];
     if (configLang && !configDetections.has(configLang)) {
       configDetections.set(configLang, name);
+      continue;
+    }
+
+    // Check extension match (e.g., .csproj, .sln)
+    const ext = path.extname(name);
+    if (ext) {
+      const extLang = CONFIG_EXT_MAP[ext];
+      if (extLang && !configDetections.has(extLang)) {
+        configDetections.set(extLang, name);
+      }
     }
   }
 }
