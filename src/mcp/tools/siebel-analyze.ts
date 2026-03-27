@@ -14,6 +14,9 @@ import {
 import { parseSifContent } from "../../core/siebel/sif-parser.js";
 import { diffSifObjects, formatDiffMarkdown } from "../../core/siebel/sif-diff.js";
 import { refactorEscript } from "../../core/siebel/escript-refactor.js";
+import { troubleshootSiebel } from "../../core/siebel/troubleshoot.js";
+import { generateIntegrationTests } from "../../core/siebel/integration-test-gen.js";
+import { parseWsdlContent } from "../../core/siebel/wsdl-parser.js";
 import { SiebelObjectTypeSchema } from "../../schemas/siebel.schema.js";
 import { KnowledgeStore } from "../../core/store/knowledge-store.js";
 import { logger } from "../../core/utils/logger.js";
@@ -24,7 +27,9 @@ export function registerSiebelAnalyze(server: McpServer, store: SqliteStore): vo
     "siebel_analyze",
     "Analyze Siebel objects. Modes: impact, dependencies, circular, summary, diff (structural comparison of two SIFs).",
     {
-      action: z.enum(["impact", "dependencies", "circular", "summary", "diff", "refactor_script"]).describe("Analysis mode"),
+      action: z.enum(["impact", "dependencies", "circular", "summary", "diff", "refactor_script", "troubleshoot", "generate_integration_tests"]).describe("Analysis mode"),
+      wsdlContent: z.string().optional().describe("WSDL XML content (for generate_integration_tests mode)"),
+      errorMessage: z.string().optional().describe("Error message or problem description (for troubleshoot mode)"),
       objectName: z.string().optional().describe("Siebel object name (for impact analysis)"),
       objectType: SiebelObjectTypeSchema.optional().describe("Siebel object type"),
       targetName: z.string().optional().describe("Target object for dependency chain"),
@@ -34,7 +39,7 @@ export function registerSiebelAnalyze(server: McpServer, store: SqliteStore): vo
       outputFormat: z.enum(["json", "markdown"]).optional().default("json").describe("Output format for diff"),
       scriptContent: z.string().optional().describe("eScript source code (for refactor_script mode)"),
     },
-    async ({ action, objectName, objectType, targetName, targetType, sifContent, targetSifContent, outputFormat, scriptContent }) => {
+    async ({ action, objectName, objectType, targetName, targetType, sifContent, targetSifContent, outputFormat, scriptContent, errorMessage, wsdlContent }) => {
       logger.info("tool:siebel_analyze", { action, objectName, objectType });
 
       try {
@@ -142,6 +147,52 @@ export function registerSiebelAnalyze(server: McpServer, store: SqliteStore): vo
             }
 
             return mcpText({ ok: true, action: "diff", format: "json", ...diffResult });
+          }
+
+          case "generate_integration_tests": {
+            if (!wsdlContent) {
+              return mcpError("wsdlContent is required for generate_integration_tests mode");
+            }
+            const wsdlResult = parseWsdlContent(normalizeNewlines(wsdlContent) ?? wsdlContent, "input.wsdl");
+            const testSuite = generateIntegrationTests(wsdlResult);
+            return mcpText({
+              ok: true,
+              action: "generate_integration_tests",
+              serviceName: testSuite.serviceName,
+              endpointUrl: testSuite.endpointUrl,
+              totalOperations: testSuite.totalOperations,
+              testCases: testSuite.testCases.map((tc) => ({
+                operation: tc.operationName,
+                direction: tc.direction,
+                soapAction: tc.soapAction,
+                requestPayload: tc.requestPayload,
+                httpScript: tc.httpScript,
+                expectedFields: tc.expectedResponseFields,
+              })),
+            });
+          }
+
+          case "troubleshoot": {
+            if (!errorMessage) {
+              return mcpError("errorMessage is required for troubleshoot mode");
+            }
+            const objects = sifContent
+              ? parseSifContent(normalizeNewlines(sifContent) ?? sifContent, "troubleshoot.sif").objects
+              : [];
+            const deps = sifContent
+              ? parseSifContent(normalizeNewlines(sifContent) ?? sifContent, "troubleshoot.sif").dependencies
+              : [];
+
+            const tsResult = troubleshootSiebel({ errorMessage, objects, dependencies: deps });
+            return mcpText({
+              ok: true,
+              action: "troubleshoot",
+              relatedObjects: tsResult.relatedObjects,
+              relatedScripts: tsResult.relatedScripts.length,
+              dependencyChain: tsResult.dependencyChain.length,
+              configIssues: tsResult.configIssues,
+              causes: tsResult.causes,
+            });
           }
 
           case "refactor_script": {

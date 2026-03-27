@@ -14,6 +14,8 @@ import { cloneAndAdapt } from "../../core/siebel/clone-adapt.js";
 import { generateEScript } from "../../core/siebel/escript-generator.js";
 import { formatDiffMarkdown } from "../../core/siebel/sif-diff.js";
 import { autoWireDependencies } from "../../core/siebel/auto-wiring.js";
+import { generateSifFromWsdl } from "../../core/siebel/wsdl-to-sif.js";
+import { parseWsdlContent } from "../../core/siebel/wsdl-parser.js";
 import { SiebelObjectTypeSchema } from "../../schemas/siebel.schema.js";
 import type { SiebelObject } from "../../schemas/siebel.schema.js";
 import { parseSifContent } from "../../core/siebel/sif-parser.js";
@@ -25,9 +27,11 @@ export function registerSiebelGenerateSif(server: McpServer, store: SqliteStore)
     "siebel_generate_sif",
     "Generate Siebel SIF files. Actions: prepare (RAG context+prompt), finalize (validate XML), templates (list), scaffold (auto-generate objects from description).",
     {
-      action: z.enum(["prepare", "finalize", "templates", "scaffold", "clone_adapt", "generate_script", "auto_wire"]).describe(
-        "Actions: prepare, finalize, templates, scaffold, clone_adapt, generate_script, auto_wire",
+      action: z.enum(["prepare", "finalize", "templates", "scaffold", "clone_adapt", "generate_script", "auto_wire", "wsdl_to_sif"]).describe(
+        "Actions: prepare, finalize, templates, scaffold, clone_adapt, generate_script, auto_wire, wsdl_to_sif",
       ),
+      wsdlContent: z.string().optional().describe("WSDL XML content (for wsdl_to_sif action)"),
+      existingBcName: z.string().optional().describe("Existing BC name to skip BC generation (wsdl_to_sif)"),
       // prepare params
       description: z.string().optional().describe("What to generate (for prepare)"),
       objectTypes: z.array(SiebelObjectTypeSchema).optional().describe("Siebel object types to generate"),
@@ -50,7 +54,7 @@ export function registerSiebelGenerateSif(server: McpServer, store: SqliteStore)
       parentObjectType: z.enum(["applet", "business_component", "business_service"]).optional().describe("Parent object type (generate_script)"),
       eventName: z.string().optional().describe("Event handler name, e.g. 'PreInvokeMethod' (generate_script)"),
     },
-    async ({ action, description, objectTypes, basedOnProject, properties, generatedXml, prefix, includeScriptBoilerplate, sourceSifContent, sourceObjectName, newName, renames, addFields, removeFields, parentObjectName, parentObjectType, eventName }) => {
+    async ({ action, description, objectTypes, basedOnProject, properties, generatedXml, prefix, includeScriptBoilerplate, sourceSifContent, sourceObjectName, newName, renames, addFields, removeFields, parentObjectName, parentObjectType, eventName, wsdlContent, existingBcName }) => {
       logger.info("tool:siebel_generate_sif", { action });
 
       try {
@@ -214,6 +218,29 @@ export function registerSiebelGenerateSif(server: McpServer, store: SqliteStore)
             script: scriptResult.script,
             sifXmlBlock: scriptResult.sifXmlBlock,
             referencedEntities: scriptResult.referencedEntities,
+          });
+        }
+
+        if (action === "wsdl_to_sif") {
+          if (!wsdlContent) {
+            return mcpError("wsdlContent is required for wsdl_to_sif action");
+          }
+          const normalized = normalizeNewlines(wsdlContent) ?? wsdlContent;
+          const wsdlResult = parseWsdlContent(normalized, "wsdl-input.wsdl");
+          const sifResult = generateSifFromWsdl(wsdlResult, {
+            prefix: prefix ?? "CX",
+            projectName: basedOnProject,
+            existingBcName,
+          });
+
+          return mcpText({
+            ok: true,
+            action: "wsdl_to_sif",
+            objectCount: sifResult.objects.length,
+            operationCount: sifResult.operationCount,
+            objects: sifResult.objects.map((o) => ({ name: o.name, type: o.type, fields: o.children.length })),
+            validationScore: sifResult.validationScore,
+            sifContent: sifResult.sifXml,
           });
         }
 
