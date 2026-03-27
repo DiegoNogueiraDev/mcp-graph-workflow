@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.13.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.12.0...mcp-graph-v5.13.0) (2026-03-27)
+
+
+### Features
+
+* **siebel:** Sprint 8 Dashboard — expose all 19 API endpoints in UI ([0f1170a](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/0f1170ab57e3c71a0d75a2be152c66bb08ba7687))
+
 ## [5.12.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.11.0...mcp-graph-v5.12.0) (2026-03-27)
 
 
