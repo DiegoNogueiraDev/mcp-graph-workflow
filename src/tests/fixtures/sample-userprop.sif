@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<REPOSITORY NAME="Siebel Repository" UPDATED="2024-01-15 10:30:00">
+  <PROJECT NAME="Custom Account" UPDATED="2024-01-15 10:30:00">
+    <APPLET NAME="Account List Applet" CHANGED="2024-01-10" BUS_COMP="Account" CLASS="CSSFrameList">
+      <CONTROL NAME="Name" FIELD="Name" HTML_TYPE="Text" CAPTION="Name" />
+      <APPLET_USER_PROP NAME="CanInvokeMethod: DeleteRecord" VALUE="N" />
+      <APPLET_USER_PROP NAME="CanInvokeMethod: NewRecord" VALUE="Y" />
+      <APPLET_USER_PROP NAME="Named Search: SavedSearches" VALUE="All Accounts" />
+    </APPLET>
+    <BUSINESS_COMPONENT NAME="Account" TABLE="S_ORG_EXT" CLASS="CSSBCBase" CHANGED="2024-01-09">
+      <FIELD NAME="Name" COLUMN="NAME" TYPE="DTYPE_TEXT" REQUIRED="Y" />
+      <BUSINESS_COMPONENT_USER_PROP NAME="DataCleansing" VALUE="Y" />
+      <BUSINESS_COMPONENT_USER_PROP NAME="DeDuplication" VALUE="Y" />
+      <BUSINESS_COMPONENT_USER_PROP NAME="On Field Update Set 1" VALUE="Name,Account Status" />
+      <BUSINESS_COMPONENT_USER_PROP NAME="On Field Update Invoke 1" VALUE="SetDefaultValues" />
+    </BUSINESS_COMPONENT>
+  </PROJECT>
+</REPOSITORY>

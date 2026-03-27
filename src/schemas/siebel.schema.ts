@@ -24,6 +24,9 @@ export const SiebelObjectTypeSchema = z.enum([
   "list_column",
   "menu_item",
   "project",
+  "user_property",
+  "web_template_item",
+  "application",
 ]);
 
 /**

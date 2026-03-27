@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<REPOSITORY NAME="Siebel Repository" UPDATED="2024-01-15 10:30:00">
+  <PROJECT NAME="Custom Sales" UPDATED="2024-01-15 10:30:00">
+    <APPLICATION NAME="Sales Application" CHANGED="2024-01-10" CLASS="CSSApplication">
+      <SCREEN_MENU NAME="Accounts Screen" SCREEN="Accounts Screen" SEQUENCE="1" />
+      <SCREEN_MENU NAME="Contacts Screen" SCREEN="Contacts Screen" SEQUENCE="2" />
+      <SCREEN_MENU NAME="Orders Screen" SCREEN="Orders Screen" SEQUENCE="3" />
+      <APPLICATION_USER_PROP NAME="DefaultScreen" VALUE="Accounts Screen" />
+    </APPLICATION>
+    <SCREEN NAME="Accounts Screen" CHANGED="2024-01-08" />
+    <SCREEN NAME="Contacts Screen" CHANGED="2024-01-08" />
+  </PROJECT>
+</REPOSITORY>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<REPOSITORY NAME="Siebel Repository" UPDATED="2024-01-15 10:30:00">
+  <PROJECT NAME="Custom Account" UPDATED="2024-01-15 10:30:00">
+    <APPLET NAME="Custom Account Admin Form Applet" CHANGED="2024-01-10" BUS_COMP="Account" CLASS="CSSFrameBase">
+      <CONTROL NAME="Name" FIELD="Name" HTML_TYPE="Text" CAPTION="Name" />
+      <APPLET_SERVER_SCRIPT NAME="WebApplet_PreInvokeMethod" PROGRAM_LANGUAGE="JS" METHOD="WebApplet_PreInvokeMethod">function WebApplet_PreInvokeMethod(MethodName) {
+  try {
+    if (MethodName == "DeleteRecord") {
+      TheApplication().RaiseErrorText("Delete not allowed");
+      return CancelOperation;
+    }
+    return ContinueOperation;
+  } catch (e) {
+    TheApplication().RaiseErrorText(e.toString());
+  } finally {
+    // cleanup
+  }
+}</APPLET_SERVER_SCRIPT>
+      <APPLET_SERVER_SCRIPT NAME="WebApplet_ShowControl" PROGRAM_LANGUAGE="JS" METHOD="WebApplet_ShowControl">function WebApplet_ShowControl(controlName, property, mode, &amp;propValue) {
+  return ContinueOperation;
+}</APPLET_SERVER_SCRIPT>
+    </APPLET>
+    <BUSINESS_COMPONENT NAME="Account" TABLE="S_ORG_EXT" CLASS="CSSBCBase" CHANGED="2024-01-09">
+      <FIELD NAME="Name" COLUMN="NAME" TYPE="DTYPE_TEXT" REQUIRED="Y" />
+      <BUSCOMP_SERVER_SCRIPT NAME="BusComp_PreWriteRecord" PROGRAM_LANGUAGE="JS" METHOD="BusComp_PreWriteRecord">function BusComp_PreWriteRecord() {
+  var name = this.GetFieldValue("Name");
+  if (name == "") {
+    TheApplication().RaiseErrorText("Name is required");
+  }
+}</BUSCOMP_SERVER_SCRIPT>
+      <BUSCOMP_SERVER_SCRIPT NAME="BusComp_SetFieldValue" PROGRAM_LANGUAGE="JS" METHOD="BusComp_SetFieldValue">function BusComp_SetFieldValue(fieldName, fieldValue) {
+  if (fieldName == "Tax ID") {
+    var svc = TheApplication().GetService("Validation BS");
+    var psIn = TheApplication().NewPropertySet();
+    psIn.SetProperty("Value", fieldValue);
+    svc.InvokeMethod("ValidateField", psIn);
+    psIn = null;
+    svc = null;
+  }
+}</BUSCOMP_SERVER_SCRIPT>
+    </BUSINESS_COMPONENT>
+    <APPLET NAME="Empty Script Applet" CHANGED="2024-01-10" BUS_COMP="Account" CLASS="CSSFrameBase">
+      <APPLET_SERVER_SCRIPT NAME="WebApplet_PreInvokeMethod" PROGRAM_LANGUAGE="JS" METHOD="WebApplet_PreInvokeMethod"></APPLET_SERVER_SCRIPT>
+    </APPLET>
+  </PROJECT>
+</REPOSITORY>

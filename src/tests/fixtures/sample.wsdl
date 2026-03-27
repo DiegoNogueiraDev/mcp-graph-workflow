@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions name="AccountService"
+  targetNamespace="http://example.com/siebel/account"
+  xmlns="http://schemas.xmlsoap.org/wsdl/"
+  xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+  xmlns:tns="http://example.com/siebel/account"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+
+  <types>
+    <xsd:schema targetNamespace="http://example.com/siebel/account">
+      <xsd:complexType name="AccountRequest">
+        <xsd:sequence>
+          <xsd:element name="AccountId" type="xsd:string" />
+          <xsd:element name="Name" type="xsd:string" />
+          <xsd:element name="Status" type="xsd:string" minOccurs="0" />
+          <xsd:element name="Address" type="tns:AddressType" minOccurs="0" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="AccountResponse">
+        <xsd:sequence>
+          <xsd:element name="ResultCode" type="xsd:string" />
+          <xsd:element name="ErrorMessage" type="xsd:string" minOccurs="0" />
+          <xsd:element name="AccountId" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="AddressType">
+        <xsd:sequence>
+          <xsd:element name="Street" type="xsd:string" />
+          <xsd:element name="City" type="xsd:string" />
+          <xsd:element name="ZipCode" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="AssetListRequest">
+        <xsd:sequence>
+          <xsd:element name="CustomerId" type="xsd:string" />
+          <xsd:element name="AssetType" type="xsd:string" minOccurs="0" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="AssetListResponse">
+        <xsd:sequence>
+          <xsd:element name="Assets" type="tns:AssetItem" maxOccurs="unbounded" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="AssetItem">
+        <xsd:sequence>
+          <xsd:element name="AssetId" type="xsd:string" />
+          <xsd:element name="ProductName" type="xsd:string" />
+          <xsd:element name="Status" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+    </xsd:schema>
+  </types>
+
+  <message name="UpsertAccountInput">
+    <part name="parameters" type="tns:AccountRequest" />
+  </message>
+  <message name="UpsertAccountOutput">
+    <part name="parameters" type="tns:AccountResponse" />
+  </message>
+  <message name="GetAssetsInput">
+    <part name="parameters" type="tns:AssetListRequest" />
+  </message>
+  <message name="GetAssetsOutput">
+    <part name="parameters" type="tns:AssetListResponse" />
+  </message>
+
+  <portType name="AccountPortType">
+    <operation name="UpsertAccount">
+      <input message="tns:UpsertAccountInput" />
+      <output message="tns:UpsertAccountOutput" />
+    </operation>
+    <operation name="GetCustomerAssets">
+      <input message="tns:GetAssetsInput" />
+      <output message="tns:GetAssetsOutput" />
+    </operation>
+  </portType>
+
+  <binding name="AccountBinding" type="tns:AccountPortType">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http" />
+    <operation name="UpsertAccount">
+      <soap:operation soapAction="UpsertAccount" />
+      <input><soap:body use="literal" /></input>
+      <output><soap:body use="literal" /></output>
+    </operation>
+    <operation name="GetCustomerAssets">
+      <soap:operation soapAction="GetCustomerAssets" />
+      <input><soap:body use="literal" /></input>
+      <output><soap:body use="literal" /></output>
+    </operation>
+  </binding>
+
+  <service name="AccountWebService">
+    <port name="AccountPort" binding="tns:AccountBinding">
+      <soap:address location="http://siebel.example.com:8080/eai_enu/start.swe?SWEExtSource=WebService&amp;SWEExtCmd=Execute" />
+    </port>
+  </service>
+</definitions>

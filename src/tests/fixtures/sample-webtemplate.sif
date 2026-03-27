@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<REPOSITORY NAME="Siebel Repository" UPDATED="2024-01-15 10:30:00">
+  <PROJECT NAME="Custom Account" UPDATED="2024-01-15 10:30:00">
+    <APPLET NAME="Account Form Applet" CHANGED="2024-01-10" BUS_COMP="Account" CLASS="CSSFrameBase">
+      <APPLET_WEB_TEMPLATE NAME="Base" WEB_TEMPLATE="Form Applet Base" />
+      <APPLET_WEB_TEMPLATE NAME="Edit" WEB_TEMPLATE="Form Applet Edit" />
+      <APPLET_WEB_TEMPLATE_ITEM NAME="Name" APPLET_WEB_TEMPLATE="Base" CONTROL="Name" ROW="1" COLUMN="1" />
+      <APPLET_WEB_TEMPLATE_ITEM NAME="Status" APPLET_WEB_TEMPLATE="Base" CONTROL="Status" ROW="1" COLUMN="2" />
+    </APPLET>
+    <VIEW NAME="Account Detail View" BUS_OBJECT="Account" CHANGED="2024-01-12">
+      <VIEW_WEB_TEMPLATE NAME="Base" WEB_TEMPLATE="View Detail Base" />
+    </VIEW>
+    <WEB_TEMPLATE NAME="Form Applet Base" CHANGED="2024-01-07" TYPE="Applet" />
+    <WEB_TEMPLATE NAME="Form Applet Edit" CHANGED="2024-01-07" TYPE="Applet" />
+    <WEB_TEMPLATE NAME="View Detail Base" CHANGED="2024-01-07" TYPE="View" />
+  </PROJECT>
+</REPOSITORY>

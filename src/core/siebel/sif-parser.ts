@@ -34,6 +34,7 @@ const TAG_TO_TYPE: Record<string, SiebelObjectType> = {
   WEB_TEMPLATE: "web_template",
   PICK_LIST: "pick_list",
   TABLE: "table",
+  APPLICATION: "application",
 };
 
 /**
@@ -54,7 +55,24 @@ const CHILD_TAG_TO_TYPE: Record<string, SiebelObjectType> = {
   BUSINESS_SERVICE_METHOD: "business_service",
   WORKFLOW_STEP: "workflow",
   INTEGRATION_COMPONENT: "business_component",
+  APPLET_USER_PROP: "user_property",
+  BUSINESS_COMPONENT_USER_PROP: "user_property",
+  APPLICATION_USER_PROP: "user_property",
+  APPLET_WEB_TEMPLATE_ITEM: "web_template_item",
+  VIEW_WEB_TEMPLATE_ITEM: "web_template_item",
+  SCREEN_MENU: "screen",
 };
+
+/**
+ * Script element tag names that contain eScript source code.
+ */
+const SCRIPT_TAGS = new Set([
+  "APPLET_SERVER_SCRIPT",
+  "BUSCOMP_SERVER_SCRIPT",
+  "APPLICATION_SERVER_SCRIPT",
+  "APPLET_BROWSER_SCRIPT",
+  "BUSCOMP_BROWSER_SCRIPT",
+]);
 
 /** Reserved XML attribute names that are not properties. */
 const RESERVED_ATTRS = new Set(["NAME", "INACTIVE"]);
@@ -72,6 +90,8 @@ export function parseSifContent(content: string, fileName: string): SiebelSifPar
     attributeNamePrefix: "@_",
     allowBooleanAttributes: true,
     parseAttributeValue: false,
+    textNodeName: "#text",
+    trimValues: false,
     isArray: () => {
       // Force array for repeating elements
       return true;
@@ -229,7 +249,45 @@ function extractChildren(elem: Record<string, unknown>, parentName: string): Sie
     }
   }
 
+  // Extract eScript blocks (server/browser scripts)
+  for (const scriptTag of SCRIPT_TAGS) {
+    const elements = getArray(elem, scriptTag);
+    for (const child of elements) {
+      const childObj = child as Record<string, unknown>;
+      const name = getAttr(childObj, "NAME");
+      if (!name) continue;
+
+      const properties = extractProperties(childObj);
+
+      // Extract source code from text content (#text key from fast-xml-parser)
+      const sourceCode = extractTextContent(childObj);
+      properties.push({ name: "SOURCE_CODE", value: sourceCode });
+
+      const lineCount = sourceCode ? sourceCode.split("\n").length : 0;
+      properties.push({ name: "LINE_COUNT", value: String(lineCount) });
+
+      children.push({
+        name,
+        type: "escript" as SiebelObjectType,
+        properties,
+        children: [],
+        parentName,
+      });
+    }
+  }
+
   return children;
+}
+
+/**
+ * Extract text content from an XML element (script source code).
+ * fast-xml-parser stores text content in the #text key.
+ */
+function extractTextContent(elem: Record<string, unknown>): string {
+  const text = elem["#text"];
+  if (text == null) return "";
+  if (Array.isArray(text)) return text.map(String).join("");
+  return String(text);
 }
 
 /**
@@ -254,6 +312,23 @@ function inferDependencies(objects: SiebelObject[]): SiebelDependency[] {
           relationType: "references",
           inferred: true,
         });
+      }
+    }
+
+    // Applet/View → Web Template (via WEB_TEMPLATE attribute in children)
+    if (obj.type === "applet" || obj.type === "view") {
+      for (const child of obj.children) {
+        if (child.type === "web_template") {
+          const wtName = findProperty(child, "WEB_TEMPLATE");
+          if (wtName && objectIndex.has(`web_template:${wtName}`)) {
+            deps.push({
+              from: { name: obj.name, type: obj.type },
+              to: { name: wtName, type: "web_template" },
+              relationType: "references",
+              inferred: true,
+            });
+          }
+        }
       }
     }
 
@@ -355,6 +430,23 @@ function inferDependencies(objects: SiebelObject[]): SiebelDependency[] {
           relationType: "references",
           inferred: true,
         });
+      }
+    }
+
+    // Application → Screen (via SCREEN_MENU children)
+    if (obj.type === "application") {
+      for (const child of obj.children) {
+        if (child.type === "screen") {
+          const screenName = findProperty(child, "SCREEN") ?? child.name;
+          if (objectIndex.has(`screen:${screenName}`)) {
+            deps.push({
+              from: { name: obj.name, type: "application" },
+              to: { name: screenName, type: "screen" },
+              relationType: "contains",
+              inferred: true,
+            });
+          }
+        }
       }
     }
 
