@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.11.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.10.0...mcp-graph-v5.11.0) (2026-03-27)
+
+
+### Features
+
+* **siebel:** Sprint 1 Foundation — expand SIF parser + 6 new core modules ([89573c5](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/89573c5a3389c5be95abc6212b78c8d7a5bd8860))
+* **siebel:** Sprint 2 Intelligence — eScript indexing, WSDL knowledge, health check ([96009c2](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/96009c2aecd45438a53bc59d4a7dda8ef4a2460d))
+* **siebel:** Sprint 3 Analysis + Knowledge — 7 new analysis modules ([205248b](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/205248b65cef507aefaaf74302fe2604cc8d9288))
+* **siebel:** Sprint 4 Generation & Validation — 7 new modules for scaffolding, cloning, diff, validation ([09acbb3](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/09acbb3744ac45e777231e8cfeb28496850a29d1))
+* **siebel:** Sprint 5 Automation & Quality — 4 new modules for auto-wiring, refactoring, code review, migration ([3537993](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/3537993c5388581542015e63477b546a85d203ea))
+* **siebel:** Sprint 6 Completion — field suggestion, troubleshooting, integration tests, WSDL→SIF ([e0d7bbc](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/e0d7bbcea51d3e67a7c3cb80a85cf37f45f50ddc))
+* **siebel:** Sprint 7 Final — skills, knowledge, dashboard, lifecycle gates ([08c2721](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/08c272129e0a787f9a058bfa96e4105c5162db79))
+
 ## [5.10.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.9.1...mcp-graph-v5.10.0) (2026-03-26)
 
 
