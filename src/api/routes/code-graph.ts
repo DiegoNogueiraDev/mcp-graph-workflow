@@ -13,6 +13,13 @@ import { detectProcesses } from "../../core/code/process-detector.js";
 import { isTypeScriptAvailable } from "../../core/code/ts-analyzer.js";
 import type { StoreRef } from "../../core/store/store-manager.js";
 import { logger } from "../../core/utils/logger.js";
+import { LspBridge } from "../../core/lsp/lsp-bridge.js";
+import { LspServerManager } from "../../core/lsp/lsp-server-manager.js";
+import { LspCache } from "../../core/lsp/lsp-cache.js";
+import { LspDiagnosticsCollector } from "../../core/lsp/lsp-diagnostics.js";
+import { ServerRegistry } from "../../core/lsp/server-registry.js";
+import { detectProjectLanguages } from "../../core/lsp/language-detector.js";
+import { estimateTokens } from "../../core/context/token-estimator.js";
 
 const SymbolBodySchema = z.object({ symbol: z.string().min(1) });
 const SearchBodySchema = z.object({
@@ -24,6 +31,20 @@ const ImpactBodySchema = z.object({
   symbol: z.string().min(1),
   direction: z.enum(["upstream", "downstream"]).optional(),
   maxDepth: z.number().int().min(1).max(5).optional(),
+});
+
+const LspPositionSchema = z.object({
+  file: z.string().min(1),
+  line: z.number().int().min(1),
+  character: z.number().int().min(0),
+});
+
+const LspRenameSchema = LspPositionSchema.extend({
+  newName: z.string().min(1),
+});
+
+const LspCallHierarchySchema = LspPositionSchema.extend({
+  direction: z.enum(["incoming", "outgoing"]),
 });
 
 export interface CodeGraphRouterOptions {
@@ -180,6 +201,140 @@ export function createCodeGraphRouter(options: CodeGraphRouterOptions): Router {
     } catch (err) {
       next(err);
     }
+  });
+
+  // ── LSP Routes ─────────────────────────────────────────
+
+  let lspBridge: LspBridge | null = null;
+  let lspManager: LspServerManager | null = null;
+
+  function getOrCreateLspBridge(): LspBridge {
+    if (lspBridge) return lspBridge;
+
+    const basePath = getBasePath();
+    const registry = new ServerRegistry();
+    const rootUri = `file://${basePath}`;
+
+    lspManager = new LspServerManager(registry, rootUri);
+    const db = storeRef.current.getDb();
+    const cache = new LspCache(db);
+    const diagnostics = new LspDiagnosticsCollector();
+
+    lspBridge = new LspBridge(lspManager, cache, diagnostics, basePath);
+    return lspBridge;
+  }
+
+  // POST /code/lsp/definition
+  router.post("/lsp/definition", async (req, res, next) => {
+    try {
+      const { file, line, character } = LspPositionSchema.parse(req.body);
+      const bridge = getOrCreateLspBridge();
+      const result = await bridge.goToDefinition(file, line, character);
+      res.json({
+        ok: true,
+        definitions: result.map(d => ({
+          ...d,
+          hint: `Read lines ${d.startLine}-${d.endLine} of ${d.file}`,
+        })),
+        estimatedTokens: estimateTokens(JSON.stringify(result)),
+      });
+    } catch (err) { next(err); }
+  });
+
+  // POST /code/lsp/references
+  router.post("/lsp/references", async (req, res, next) => {
+    try {
+      const { file, line, character } = LspPositionSchema.parse(req.body);
+      const bridge = getOrCreateLspBridge();
+      const result = await bridge.findReferences(file, line, character);
+      const byFile: Record<string, number> = {};
+      for (const ref of result) byFile[ref.file] = (byFile[ref.file] ?? 0) + 1;
+      res.json({ ok: true, totalReferences: result.length, references: result, byFile });
+    } catch (err) { next(err); }
+  });
+
+  // POST /code/lsp/hover
+  router.post("/lsp/hover", async (req, res, next) => {
+    try {
+      const { file, line, character } = LspPositionSchema.parse(req.body);
+      const bridge = getOrCreateLspBridge();
+      const result = await bridge.hover(file, line, character);
+      res.json({ ok: true, hover: result });
+    } catch (err) { next(err); }
+  });
+
+  // POST /code/lsp/rename
+  router.post("/lsp/rename", async (req, res, next) => {
+    try {
+      const { file, line, character, newName } = LspRenameSchema.parse(req.body);
+      const bridge = getOrCreateLspBridge();
+      const result = await bridge.rename(file, line, character, newName);
+      res.json({ ok: true, edit: result });
+    } catch (err) { next(err); }
+  });
+
+  // POST /code/lsp/call-hierarchy
+  router.post("/lsp/call-hierarchy", async (req, res, next) => {
+    try {
+      const { file, line, character, direction } = LspCallHierarchySchema.parse(req.body);
+      const bridge = getOrCreateLspBridge();
+      const result = direction === "incoming"
+        ? await bridge.callHierarchyIncoming(file, line, character)
+        : await bridge.callHierarchyOutgoing(file, line, character);
+      res.json({ ok: true, direction, items: result });
+    } catch (err) { next(err); }
+  });
+
+  // GET /code/lsp/diagnostics?file=...
+  router.get("/lsp/diagnostics", async (req, res, next) => {
+    try {
+      const file = z.string().min(1).parse(req.query.file);
+      const bridge = getOrCreateLspBridge();
+      const result = await bridge.getDiagnostics(file);
+      res.json({ ok: true, file, diagnostics: result });
+    } catch (err) { next(err); }
+  });
+
+  // GET /code/lsp/symbols?file=...
+  router.get("/lsp/symbols", async (req, res, next) => {
+    try {
+      const file = z.string().min(1).parse(req.query.file);
+      const bridge = getOrCreateLspBridge();
+      const result = await bridge.getDocumentSymbols(file);
+      res.json({ ok: true, file, symbols: result });
+    } catch (err) { next(err); }
+  });
+
+  // GET /code/lsp/languages
+  router.get("/lsp/languages", (_req, res, next) => {
+    try {
+      const basePath = getBasePath();
+      const registry = new ServerRegistry();
+      const detected = detectProjectLanguages(basePath, registry);
+      res.json({
+        ok: true,
+        detected: detected.map(d => ({
+          ...d,
+          serverCommand: registry.getConfigForLanguage(d.languageId)?.command,
+        })),
+        supportedLanguages: registry.getAllConfigs().map(c => c.languageId),
+      });
+    } catch (err) { next(err); }
+  });
+
+  // GET /code/lsp/status
+  router.get("/lsp/status", (_req, res) => {
+    const statuses: Record<string, string> = {};
+    if (lspManager) {
+      for (const [lang, state] of lspManager.getStatus()) {
+        statuses[lang] = state.status;
+      }
+    }
+    res.json({
+      ok: true,
+      bridgeInitialized: lspBridge !== null,
+      servers: statuses,
+    });
   });
 
   return router;

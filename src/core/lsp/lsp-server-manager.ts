@@ -1,0 +1,395 @@
+/**
+ * LspServerManager — Manages multiple language server instances (one per language).
+ *
+ * Handles lazy startup, keep-alive timers, auto-restart on crash,
+ * and extension-based routing via ServerRegistry.
+ */
+
+import { exec } from "node:child_process";
+import { promisify } from "node:util";
+import { LspClient } from "./lsp-client.js";
+import { ServerRegistry } from "./server-registry.js";
+import type { LspServerConfig, LspServerState } from "./lsp-types.js";
+import { logger } from "../utils/logger.js";
+
+const execAsync = promisify(exec);
+
+const DEFAULT_KEEPALIVE_MS = 5 * 60 * 1000; // 5 minutes
+const MAX_RESTART_ATTEMPTS = 3;
+const REQUEST_TIMEOUT_MS = 30_000;
+
+interface ManagedServer {
+  client: LspClient;
+  config: LspServerConfig;
+  state: LspServerState;
+  restartCount: number;
+  keepAliveTimer: ReturnType<typeof setTimeout> | null;
+  lastActivity: number;
+  intentionalStop: boolean;
+}
+
+export class LspServerManager {
+  private servers = new Map<string, ManagedServer>();
+
+  constructor(
+    private readonly registry: ServerRegistry,
+    private readonly rootUri: string,
+    private readonly keepAliveMs: number = DEFAULT_KEEPALIVE_MS,
+  ) {}
+
+  /**
+   * Get a running LSP client for a language. Starts the server lazily if needed.
+   * Returns null if the server binary is not available.
+   */
+  async ensureServer(languageId: string): Promise<LspClient | null> {
+    // 1. Check if already running
+    const existing = this.servers.get(languageId);
+    if (existing && existing.state.status === "ready") {
+      this.resetKeepAlive(languageId);
+      return existing.client;
+    }
+
+    // 2. Get config from registry
+    const config = this.registry.getConfigForLanguage(languageId);
+    if (!config) {
+      logger.debug("LspServerManager: no config for language", { languageId });
+      return null;
+    }
+
+    // 3. Check if installed
+    const installed = await this.isServerInstalled(languageId);
+    if (!installed) {
+      logger.warn("LspServerManager: server binary not found", {
+        languageId,
+        command: config.command,
+      });
+      return null;
+    }
+
+    // 4. Start server
+    try {
+      const client = await this.startServer(config);
+
+      const managed: ManagedServer = {
+        client,
+        config,
+        state: {
+          languageId,
+          status: "ready",
+          pid: client.pid,
+        },
+        restartCount: 0,
+        keepAliveTimer: null,
+        lastActivity: Date.now(),
+        intentionalStop: false,
+      };
+
+      this.servers.set(languageId, managed);
+
+      // 5. Set up exit handler for auto-restart
+      client.on("exit", (code: number | null) => {
+        void this.handleServerExit(languageId, code);
+      });
+
+      // 6. Set up keepAlive timer
+      this.resetKeepAlive(languageId);
+
+      logger.info("LspServerManager: server started", {
+        languageId,
+        pid: String(client.pid ?? "unknown"),
+      });
+
+      return client;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      logger.error("LspServerManager: failed to start server", {
+        languageId,
+        error: errorMsg,
+      });
+
+      // Store error state
+      this.servers.set(languageId, {
+        client: new LspClient(config.command, config.args, REQUEST_TIMEOUT_MS),
+        config,
+        state: {
+          languageId,
+          status: "error",
+          error: errorMsg,
+        },
+        restartCount: 0,
+        keepAliveTimer: null,
+        lastActivity: Date.now(),
+        intentionalStop: false,
+      });
+
+      return null;
+    }
+  }
+
+  /**
+   * Get a client for a file path (routes by extension via registry).
+   * Returns null if no server configured for the file's language.
+   */
+  async getClientForFile(filePath: string): Promise<LspClient | null> {
+    const languageId = this.registry.getLanguageForFile(filePath);
+    if (!languageId) {
+      logger.debug("LspServerManager: no language mapping for file", { filePath });
+      return null;
+    }
+    return this.ensureServer(languageId);
+  }
+
+  /**
+   * Check if a language server binary is installed.
+   * Uses probeCommand from config if available, otherwise `which` (or `where` on Windows).
+   */
+  async isServerInstalled(languageId: string): Promise<boolean> {
+    const config = this.registry.getConfigForLanguage(languageId);
+    if (!config) {
+      return false;
+    }
+
+    const probeCmd = config.probeCommand
+      ? config.probeCommand
+      : process.platform === "win32"
+        ? `where ${config.command}`
+        : `which ${config.command}`;
+
+    try {
+      await execAsync(probeCmd);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Get status of all known language servers.
+   */
+  getStatus(): Map<string, LspServerState> {
+    const result = new Map<string, LspServerState>();
+
+    // Include running/errored servers
+    for (const [langId, managed] of this.servers) {
+      result.set(langId, { ...managed.state });
+    }
+
+    // Include known-but-not-started servers from registry
+    for (const config of this.registry.getAllConfigs()) {
+      if (!result.has(config.languageId)) {
+        result.set(config.languageId, {
+          languageId: config.languageId,
+          status: "stopped",
+        });
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Shutdown all running servers gracefully.
+   */
+  async shutdownAll(): Promise<void> {
+    const stopPromises: Promise<void>[] = [];
+
+    for (const [languageId, managed] of this.servers) {
+      if (managed.keepAliveTimer) {
+        clearTimeout(managed.keepAliveTimer);
+        managed.keepAliveTimer = null;
+      }
+
+      managed.intentionalStop = true;
+
+      if (managed.state.status === "ready") {
+        logger.info("LspServerManager: stopping server", { languageId });
+        stopPromises.push(managed.client.stop());
+      }
+    }
+
+    await Promise.allSettled(stopPromises);
+    this.servers.clear();
+  }
+
+  /**
+   * Stop a single language server.
+   */
+  async stopServer(languageId: string): Promise<void> {
+    const managed = this.servers.get(languageId);
+    if (!managed) {
+      return;
+    }
+
+    if (managed.keepAliveTimer) {
+      clearTimeout(managed.keepAliveTimer);
+      managed.keepAliveTimer = null;
+    }
+
+    managed.intentionalStop = true;
+
+    if (managed.state.status === "ready") {
+      await managed.client.stop();
+    }
+
+    managed.state = {
+      languageId,
+      status: "stopped",
+    };
+
+    this.servers.delete(languageId);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Private methods
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Reset the keep-alive timer for a language (call on each request).
+   */
+  private resetKeepAlive(languageId: string): void {
+    const managed = this.servers.get(languageId);
+    if (!managed) {
+      return;
+    }
+
+    if (managed.keepAliveTimer) {
+      clearTimeout(managed.keepAliveTimer);
+    }
+
+    managed.lastActivity = Date.now();
+    managed.keepAliveTimer = setTimeout(() => {
+      logger.info("LspServerManager: keep-alive timeout, stopping server", {
+        languageId,
+      });
+      void this.stopServer(languageId);
+    }, this.keepAliveMs);
+  }
+
+  /**
+   * Handle server crash: auto-restart up to MAX_RESTART_ATTEMPTS.
+   */
+  private async handleServerExit(languageId: string, code: number | null): Promise<void> {
+    const managed = this.servers.get(languageId);
+    if (!managed) {
+      return;
+    }
+
+    // If intentional stop, don't restart
+    if (managed.intentionalStop) {
+      managed.state = {
+        languageId,
+        status: "stopped",
+      };
+      return;
+    }
+
+    managed.state = {
+      languageId,
+      status: "error",
+      error: `Process exited with code ${code}`,
+    };
+
+    if (managed.restartCount >= MAX_RESTART_ATTEMPTS) {
+      logger.error("LspServerManager: max restart attempts reached", {
+        languageId,
+        restartCount: String(managed.restartCount),
+      });
+      return;
+    }
+
+    managed.restartCount++;
+    const delay = 1000 * Math.pow(2, managed.restartCount - 1);
+
+    logger.warn("LspServerManager: server crashed, restarting", {
+      languageId,
+      restartCount: String(managed.restartCount),
+      delayMs: String(delay),
+      exitCode: String(code ?? "null"),
+    });
+
+    await new Promise<void>((resolve) => setTimeout(resolve, delay));
+
+    // Re-check state after delay — may have been intentionally stopped
+    const current = this.servers.get(languageId);
+    if (!current || current.intentionalStop) {
+      return;
+    }
+
+    try {
+      const client = await this.startServer(managed.config);
+
+      current.client = client;
+      current.state = {
+        languageId,
+        status: "ready",
+        pid: client.pid,
+      };
+
+      client.on("exit", (exitCode: number | null) => {
+        void this.handleServerExit(languageId, exitCode);
+      });
+
+      this.resetKeepAlive(languageId);
+
+      logger.info("LspServerManager: server restarted successfully", {
+        languageId,
+        attempt: String(managed.restartCount),
+      });
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      logger.error("LspServerManager: restart failed", {
+        languageId,
+        error: errorMsg,
+      });
+      current.state = {
+        languageId,
+        status: "error",
+        error: errorMsg,
+      };
+    }
+  }
+
+  /**
+   * Start a language server: spawn process, send initialize, wait for response.
+   */
+  private async startServer(config: LspServerConfig): Promise<LspClient> {
+    const client = new LspClient(config.command, config.args, REQUEST_TIMEOUT_MS);
+    await client.start();
+
+    // Send initialize request
+    const initParams: Record<string, unknown> = {
+      processId: process.pid,
+      rootUri: this.rootUri,
+      capabilities: {
+        textDocument: {
+          definition: {},
+          references: {},
+          hover: { contentFormat: ["markdown", "plaintext"] },
+          rename: { prepareSupport: true },
+          callHierarchy: {},
+          typeHierarchy: {},
+          publishDiagnostics: { relatedInformation: true },
+          documentSymbol: { hierarchicalDocumentSymbolSupport: true },
+        },
+      },
+    };
+
+    if (config.initializationOptions) {
+      initParams.initializationOptions = config.initializationOptions;
+    }
+
+    await client.sendRequest("initialize", initParams);
+
+    // Send initialized notification
+    client.sendNotification("initialized", {});
+
+    // Send workspace configuration if settings exist
+    if (config.settings) {
+      client.sendNotification("workspace/didChangeConfiguration", {
+        settings: config.settings,
+      });
+    }
+
+    return client;
+  }
+}

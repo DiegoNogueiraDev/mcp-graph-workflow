@@ -39,6 +39,8 @@ import { registerKnowledgeStats } from "./knowledge-stats.js";
 // Consolidated tools
 import { registerNode } from "./node.js";
 import { registerValidate } from "./validate.js";
+// LSP Code Intelligence
+import { registerCodeIntelligence } from "./code-intelligence.js";
 // Deprecated tools (backward compat — will be removed in v7.0)
 import { registerAddNode } from "./add-node.js";
 import { registerUpdateNode } from "./update-node.js";
@@ -92,6 +94,9 @@ export function registerAllTools(server: McpServer, store: SqliteStore): void {
   // Consolidated tools
   registerNode(server, store);
   registerValidate(server, store);
+
+  // LSP Code Intelligence
+  registerCodeIntelligence(server, store);
 
   // Deprecated tools (backward compat — will be removed in v7.0)
   registerAddNode(server, store);

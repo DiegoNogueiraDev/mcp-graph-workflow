@@ -155,3 +155,70 @@ export function getFullGraph(
 
   return { symbols, relations: enrichedRelations };
 }
+
+// ── Semantic Enrichment (AST + LSP) ──────────────────
+
+/**
+ * Get LSP-enriched symbol context.
+ * Returns AST-based context augmented with LSP references when bridge is available.
+ */
+export async function getSymbolContextSemantic(
+  store: CodeStore,
+  name: string,
+  projectId: string,
+  lspBridge?: { findReferences: (file: string, line: number, character: number) => Promise<Array<{ file: string; startLine: number; startCharacter: number; endLine: number; endCharacter: number }>> } | null,
+): Promise<CodeGraphData & { lspEnriched: boolean }> {
+  // 1. Get AST-based context (always available, fast)
+  const astContext = getSymbolContext(store, name, projectId);
+
+  if (!lspBridge) {
+    return { ...astContext, lspEnriched: false };
+  }
+
+  // 2. Try to enrich with LSP references
+  try {
+    const targets = store.findSymbolsByName(name, projectId);
+    if (targets.length === 0) {
+      return { ...astContext, lspEnriched: false };
+    }
+
+    const target = targets[0];
+    const refs = await lspBridge.findReferences(target.file, target.startLine, 0);
+
+    if (refs.length === 0) {
+      return { ...astContext, lspEnriched: false };
+    }
+
+    // Merge LSP references as additional symbols if not already in AST context
+    const existingFiles = new Set(astContext.symbols.map(s => s.file));
+    const newSymbols: CodeSymbol[] = [];
+
+    for (const ref of refs) {
+      if (existingFiles.has(ref.file)) continue;
+
+      // Try to find a symbol at this reference location
+      const sym = store.findSymbolAtLine(ref.file, ref.startLine, projectId);
+      if (sym && !astContext.symbols.some(s => s.id === sym.id)) {
+        newSymbols.push(sym);
+      }
+    }
+
+    logger.debug("graph-traversal:semantic-enrich", {
+      symbol: name,
+      lspRefs: refs.length,
+      newSymbols: newSymbols.length,
+    });
+
+    return {
+      symbols: [...astContext.symbols, ...newSymbols],
+      relations: astContext.relations,
+      lspEnriched: true,
+    };
+  } catch (err) {
+    logger.warn("graph-traversal:lsp-enrichment-failed", {
+      symbol: name,
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return { ...astContext, lspEnriched: false };
+  }
+}

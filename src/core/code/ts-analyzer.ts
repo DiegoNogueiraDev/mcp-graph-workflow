@@ -11,7 +11,7 @@ import type ts from "typescript";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { logger } from "../utils/logger.js";
-import type { AnalyzedFile, CodeRelation, CodeSymbol } from "./code-types.js";
+import type { AnalyzedFile, CodeAnalyzer, CodeRelation, CodeSymbol } from "./code-types.js";
 
 type PartialSymbol = Omit<CodeSymbol, "id" | "projectId" | "indexedAt">;
 type PartialRelation = Omit<CodeRelation, "id" | "projectId" | "indexedAt">;
@@ -462,4 +462,15 @@ function extractSignature(
 
   const returnType = node.type ? `: ${node.type.getText(sourceFile)}` : "";
   return `(${params})${returnType}`;
+}
+
+// ── TsAnalyzer class — wraps existing functions as CodeAnalyzer ──
+
+export class TsAnalyzer implements CodeAnalyzer {
+  readonly languages = ["typescript", "javascript"];
+  readonly extensions = [".ts", ".tsx", ".js", ".jsx", ".mts", ".cts"];
+
+  async analyzeFile(filePath: string, basePath: string): Promise<AnalyzedFile> {
+    return analyzeFile(filePath, basePath);
+  }
 }

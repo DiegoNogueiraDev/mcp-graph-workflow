@@ -498,6 +498,27 @@ const migrations: Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_kg_mentions_doc ON kg_mentions(doc_id);
     `,
   },
+  {
+    version: 13,
+    description: "LSP cache — language server result caching with mtime invalidation",
+    sql: `
+      CREATE TABLE IF NOT EXISTS lsp_cache (
+        id              INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id      TEXT NOT NULL,
+        cache_key       TEXT NOT NULL,
+        operation       TEXT NOT NULL,
+        language_id     TEXT NOT NULL,
+        file_path       TEXT NOT NULL,
+        result_json     TEXT NOT NULL,
+        file_mtime      TEXT NOT NULL,
+        created_at      TEXT NOT NULL,
+        UNIQUE(project_id, cache_key)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_lsp_cache_file ON lsp_cache(project_id, file_path);
+      CREATE INDEX IF NOT EXISTS idx_lsp_cache_lang ON lsp_cache(project_id, language_id);
+    `,
+  },
 ];
 
 export function runMigrations(db: Database.Database): void {
