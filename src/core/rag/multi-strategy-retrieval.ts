@@ -15,7 +15,7 @@ import type Database from "better-sqlite3";
 import { KnowledgeStore } from "../store/knowledge-store.js";
 import { findCrossSourceContext } from "./knowledge-linker.js";
 import { EntityStore } from "./entity-store.js";
-import { decomposeQuery } from "./query-understanding.js";
+import { decomposeQuery, understandQuery } from "./query-understanding.js";
 import { logger } from "../utils/logger.js";
 
 export interface RankedResult {
@@ -33,6 +33,7 @@ interface SearchOptions {
   limit?: number;
   minQuality?: number;
   phase?: string;
+  lspBridge?: { findReferences: (file: string, line: number, character: number) => Promise<Array<{ file: string; startLine: number }>> } | null;
 }
 
 const RRF_K = 60;
@@ -150,14 +151,38 @@ export function multiStrategySearch(
     logger.debug("Entity graph strategy skipped — KG not available");
   }
 
-  if (ftsResults.length === 0 && graphResults.length === 0 && entityGraphResults.length === 0) {
+  // Strategy 5: LSP Symbol Resolution — precise code lookups (weight 0.5)
+  const lspResults: Array<{ id: string; score: number }> = [];
+  if (options?.lspBridge) {
+    try {
+      const understanding = understandQuery(query);
+      const codeEntities = understanding.entities.filter(e =>
+        /^[A-Z]/.test(e) || /^[a-z]+[A-Z]/.test(e) // PascalCase or camelCase
+      );
+
+      if (codeEntities.length > 0) {
+        const codeDocs = knowledgeStore.search(codeEntities[0], 5)
+          .filter(d => d.sourceType === "code_context" || d.sourceType === "lsp_result");
+        for (const doc of codeDocs) {
+          lspResults.push({ id: doc.id, score: 0.9 });
+        }
+      }
+    } catch {
+      logger.debug("Multi-strategy LSP resolution returned no results");
+    }
+  }
+
+  if (ftsResults.length === 0 && graphResults.length === 0 && entityGraphResults.length === 0 && lspResults.length === 0) {
     return [];
   }
 
-  // Merge via RRF — add entity graph results as 4th list
+  // Merge via RRF — add entity graph results as 4th list, LSP as 5th
   const rankedLists = [ftsResults, graphResults, recencyResults];
   if (entityGraphResults.length > 0) {
     rankedLists.push(entityGraphResults);
+  }
+  if (lspResults.length > 0) {
+    rankedLists.push(lspResults);
   }
   const merged = reciprocalRankFusion(rankedLists);
 
@@ -179,6 +204,11 @@ export function multiStrategySearch(
     const strategies = strategyMap.get(eg.id) ?? [];
     strategies.push("entity_graph");
     strategyMap.set(eg.id, strategies);
+  }
+  for (const lr of lspResults) {
+    const strategies = strategyMap.get(lr.id) ?? [];
+    strategies.push("lsp");
+    strategyMap.set(lr.id, strategies);
   }
 
   for (const item of merged.slice(0, limit)) {
@@ -227,6 +257,7 @@ export function multiStrategySearch(
     ftsCount: ftsResults.length,
     graphCount: graphResults.length,
     entityGraphCount: entityGraphResults.length,
+    lspCount: lspResults.length,
     resultCount: results.length,
   });
 

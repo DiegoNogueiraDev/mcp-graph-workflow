@@ -166,6 +166,8 @@ export interface DetectedProcess {
 export interface CodeAnalyzer {
   /** Languages supported by this analyzer (e.g., ["typescript", "javascript"]) */
   readonly languages: string[];
+  /** File extensions handled by this analyzer (e.g., [".ts", ".tsx", ".js"]) */
+  readonly extensions: string[];
   /** Analyze a single file and return symbols + relations */
   analyzeFile(filePath: string, basePath: string): Promise<AnalyzedFile>;
 }
@@ -177,6 +179,12 @@ export interface IndexResult {
   symbolCount: number;
   relationCount: number;
   typescriptAvailable: boolean;
+  languageStatus?: Record<string, {
+    available: boolean;
+    serverName?: string;
+    fileCount: number;
+    symbolCount: number;
+  }>;
 }
 
 // ── Helpers ───────────────────────────────────────────

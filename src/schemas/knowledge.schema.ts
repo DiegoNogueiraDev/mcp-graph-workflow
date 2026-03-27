@@ -5,7 +5,7 @@ export const KnowledgeSourceTypeSchema = z.enum([
   "journey", "siebel_sif", "siebel_sif_raw", "siebel_composer", "siebel_generated", "siebel_docs", "swagger",
   "siebel_wsdl", "siebel_escript",
   "ai_decision", "validation_result", "test_outcome", "synthesis",
-  "benchmark", "graph_node",
+  "benchmark", "graph_node", "lsp_result",
 ]);
 
 export const KnowledgeDocumentSchema = z.object({

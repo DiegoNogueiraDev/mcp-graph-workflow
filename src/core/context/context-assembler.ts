@@ -47,6 +47,8 @@ export interface AssemblerOptions {
   maxKnowledgeChunks?: number;
   /** Current lifecycle phase for phase-aware knowledge boosting */
   phase?: LifecyclePhase;
+  /** Pre-assembled LSP symbol context string to include as a section */
+  lspContext?: string;
 }
 
 /**
@@ -127,6 +129,22 @@ export function assembleContext(
   }
 
   breakdown.knowledge = tokensUsed - knowledgeTokensBefore;
+
+  // Section 3: LSP symbol context (if available)
+  const lspTokensBefore = tokensUsed;
+  if (options?.lspContext) {
+    const lspTokens = estimateTokens(options.lspContext);
+    if (tokensUsed + lspTokens <= tokenBudget || sections.length === 0) {
+      sections.push({
+        name: "lsp_symbols",
+        source: "lsp",
+        content: options.lspContext,
+        tokens: lspTokens,
+      });
+      tokensUsed += lspTokens;
+    }
+  }
+  breakdown.lsp = tokensUsed - lspTokensBefore;
 
   logger.debug("context:breakdown", {
     graphTokens: breakdown.graph,
