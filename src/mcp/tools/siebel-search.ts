@@ -29,7 +29,7 @@ export function registerSiebelSearch(server: McpServer, store: SqliteStore): voi
 
         // Filter to Siebel sources
         let siebelResults = allResults.filter(
-          (d) => d.sourceType === "siebel_sif" || d.sourceType === "siebel_composer",
+          (d) => d.sourceType === "siebel_sif" || d.sourceType === "siebel_composer" || d.sourceType === "siebel_escript",
         );
 
         // Optional type filter

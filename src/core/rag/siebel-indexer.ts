@@ -51,12 +51,78 @@ export function indexSifContent(
 
   const docs = knowledgeStore.insertChunks(chunks);
 
+  // Index eScript children separately with siebel_escript source type
+  const escriptChunks = buildEscriptChunks(objects, metadata.fileName);
+  let escriptCount = 0;
+  if (escriptChunks.length > 0) {
+    const escriptSourceId = `siebel_escript:${metadata.fileName}`;
+    knowledgeStore.deleteBySource("siebel_escript", escriptSourceId);
+    const escriptDocs = knowledgeStore.insertChunks(escriptChunks);
+    escriptCount = escriptDocs.length;
+  }
+
+  const totalIndexed = docs.length + escriptCount;
+
   logger.info("Siebel SIF content indexed", {
     sourceFile: metadata.fileName,
     documents: String(docs.length),
+    escripts: String(escriptCount),
   });
 
-  return { documentsIndexed: docs.length, sourceFile: metadata.fileName };
+  return { documentsIndexed: totalIndexed, sourceFile: metadata.fileName };
+}
+
+/**
+ * Build eScript knowledge chunks from parsed objects.
+ */
+function buildEscriptChunks(
+  objects: SiebelObject[],
+  fileName: string,
+): { sourceType: "siebel_escript"; sourceId: string; title: string; content: string; chunkIndex: number; metadata: Record<string, unknown> }[] {
+  const sourceId = `siebel_escript:${fileName}`;
+  const chunks: { sourceType: "siebel_escript"; sourceId: string; title: string; content: string; chunkIndex: number; metadata: Record<string, unknown> }[] = [];
+  let chunkIdx = 0;
+
+  for (const obj of objects) {
+    const escriptChildren = obj.children.filter((c) => c.type === "escript");
+    for (const script of escriptChildren) {
+      const sourceCode = script.properties.find((p) => p.name === "SOURCE_CODE")?.value ?? "";
+      const methodName = script.properties.find((p) => p.name === "METHOD")?.value ?? script.name;
+      const language = script.properties.find((p) => p.name === "PROGRAM_LANGUAGE")?.value ?? "JS";
+      const lineCount = script.properties.find((p) => p.name === "LINE_COUNT")?.value ?? "0";
+
+      const contentParts = [
+        `# eScript: ${script.name}`,
+        `Parent: ${obj.type} "${obj.name}"`,
+        `Method: ${methodName}`,
+        `Language: ${language}`,
+        `Lines: ${lineCount}`,
+        "",
+        "```javascript",
+        sourceCode,
+        "```",
+      ];
+
+      chunks.push({
+        sourceType: "siebel_escript",
+        sourceId,
+        title: `eScript: ${script.name} (${obj.name})`,
+        content: contentParts.join("\n"),
+        chunkIndex: chunkIdx++,
+        metadata: {
+          parentObject: obj.name,
+          parentType: obj.type,
+          methodName,
+          programLanguage: language,
+          lineCount: Number(lineCount),
+          fileName,
+          indexedAt: new Date().toISOString(),
+        },
+      });
+    }
+  }
+
+  return chunks;
 }
 
 /**
