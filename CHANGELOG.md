@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.12.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.11.0...mcp-graph-v5.12.0) (2026-03-27)
+
+
+### Features
+
+* **lsp:** Multi-language LSP integration ([42ad8ad](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/42ad8ada67eda547303b8b2adb21d52d8203835e))
+* **lsp:** Multi-language LSP integration — code intelligence via Language Server Protocol ([bfa5f35](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/bfa5f358d488eecdf04f4e1790952363517f9954))
+
 ## [5.11.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.10.0...mcp-graph-v5.11.0) (2026-03-27)
 
 
