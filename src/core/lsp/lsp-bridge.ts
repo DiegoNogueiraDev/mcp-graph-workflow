@@ -19,6 +19,7 @@ import type {
   LspServerState,
   LspTextEdit,
   LspWorkspaceEdit,
+  LspCodeAction,
 } from "./lsp-types.js";
 import type { LspServerManager } from "./lsp-server-manager.js";
 import type { LspCache } from "./lsp-cache.js";
@@ -111,7 +112,7 @@ const SYMBOL_KIND_MAP: Record<number, string> = {
 // ---------------------------------------------------------------------------
 
 export class LspBridge {
-  private readonly openedUris = new Set<string>();
+  private readonly documentVersions = new Map<string, number>();
 
   constructor(
     private readonly manager: LspServerManager,
@@ -360,6 +361,197 @@ export class LspBridge {
   }
 
   // -----------------------------------------------------------------------
+  // Edit operations — formatting, code actions, document sync
+  // -----------------------------------------------------------------------
+
+  async formatDocument(
+    file: string,
+    options?: { tabSize?: number; insertSpaces?: boolean },
+  ): Promise<LspTextEdit[]> {
+    const absPath = path.resolve(this.basePath, file);
+    const client = await this.manager.getClientForFile(absPath);
+
+    if (!client) {
+      logger.warn("lsp-bridge:formatDocument no server available", { file });
+      return [];
+    }
+
+    await this.ensureDocumentOpen(client, file, absPath);
+
+    try {
+      const raw = await client.sendRequest<Array<{
+        range: { start: { line: number; character: number }; end: { line: number; character: number } };
+        newText: string;
+      }>>("textDocument/formatting", {
+        textDocument: { uri: this.toFileUri(file) },
+        options: {
+          tabSize: options?.tabSize ?? 2,
+          insertSpaces: options?.insertSpaces ?? true,
+        },
+      });
+
+      if (!raw) return [];
+
+      return raw.map((edit) => ({
+        file,
+        startLine: edit.range.start.line + 1,
+        startCharacter: edit.range.start.character,
+        endLine: edit.range.end.line + 1,
+        endCharacter: edit.range.end.character,
+        newText: edit.newText,
+      }));
+    } catch (err) {
+      logger.error("lsp-bridge:formatDocument failed", {
+        file,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      return [];
+    }
+  }
+
+  async formatRange(
+    file: string,
+    startLine: number,
+    startCharacter: number,
+    endLine: number,
+    endCharacter: number,
+    options?: { tabSize?: number; insertSpaces?: boolean },
+  ): Promise<LspTextEdit[]> {
+    const absPath = path.resolve(this.basePath, file);
+    const client = await this.manager.getClientForFile(absPath);
+
+    if (!client) {
+      logger.warn("lsp-bridge:formatRange no server available", { file });
+      return [];
+    }
+
+    await this.ensureDocumentOpen(client, file, absPath);
+
+    try {
+      const raw = await client.sendRequest<Array<{
+        range: { start: { line: number; character: number }; end: { line: number; character: number } };
+        newText: string;
+      }>>("textDocument/rangeFormatting", {
+        textDocument: { uri: this.toFileUri(file) },
+        range: {
+          start: { line: startLine - 1, character: startCharacter },
+          end: { line: endLine - 1, character: endCharacter },
+        },
+        options: {
+          tabSize: options?.tabSize ?? 2,
+          insertSpaces: options?.insertSpaces ?? true,
+        },
+      });
+
+      if (!raw) return [];
+
+      return raw.map((edit) => ({
+        file,
+        startLine: edit.range.start.line + 1,
+        startCharacter: edit.range.start.character,
+        endLine: edit.range.end.line + 1,
+        endCharacter: edit.range.end.character,
+        newText: edit.newText,
+      }));
+    } catch (err) {
+      logger.error("lsp-bridge:formatRange failed", {
+        file,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      return [];
+    }
+  }
+
+  async getCodeActions(
+    file: string,
+    startLine: number,
+    startCharacter: number,
+    endLine: number,
+    endCharacter: number,
+    kinds?: string[],
+  ): Promise<LspCodeAction[]> {
+    const absPath = path.resolve(this.basePath, file);
+    const client = await this.manager.getClientForFile(absPath);
+
+    if (!client) {
+      logger.warn("lsp-bridge:getCodeActions no server available", { file });
+      return [];
+    }
+
+    await this.ensureDocumentOpen(client, file, absPath);
+
+    try {
+      const raw = await client.sendRequest<Array<{
+        title: string;
+        kind?: string;
+        isPreferred?: boolean;
+        edit?: RawLspWorkspaceEdit;
+        diagnostics?: Array<{
+          range: { start: { line: number; character: number }; end: { line: number; character: number } };
+          severity: number;
+          message: string;
+          code?: string;
+          source?: string;
+        }>;
+      }>>("textDocument/codeAction", {
+        textDocument: { uri: this.toFileUri(file) },
+        range: {
+          start: { line: startLine - 1, character: startCharacter },
+          end: { line: endLine - 1, character: endCharacter },
+        },
+        context: {
+          diagnostics: [],
+          ...(kinds ? { only: kinds } : {}),
+        },
+      });
+
+      if (!raw) return [];
+
+      let actions: LspCodeAction[] = raw.map((action) => ({
+        title: action.title,
+        kind: action.kind,
+        isPreferred: action.isPreferred,
+        edit: action.edit ? this.normalizeWorkspaceEdit(action.edit) : undefined,
+      }));
+
+      // Client-side filter by kinds (some servers ignore the `only` parameter)
+      if (kinds && kinds.length > 0) {
+        actions = actions.filter((a) => a.kind && kinds.some((k) => a.kind!.startsWith(k)));
+      }
+
+      return actions;
+    } catch (err) {
+      logger.error("lsp-bridge:getCodeActions failed", {
+        file,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      return [];
+    }
+  }
+
+  async notifyDocumentChanged(file: string, content: string): Promise<void> {
+    const absPath = path.resolve(this.basePath, file);
+    const client = await this.manager.getClientForFile(absPath);
+
+    if (!client) return;
+
+    // Ensure document was opened first (LSP protocol requires didOpen before didChange)
+    await this.ensureDocumentOpen(client, file, absPath);
+
+    const uri = this.toFileUri(file);
+    const currentVersion = this.documentVersions.get(uri) ?? 1;
+    const newVersion = currentVersion + 1;
+    this.documentVersions.set(uri, newVersion);
+
+    client.sendNotification("textDocument/didChange", {
+      textDocument: { uri, version: newVersion },
+      contentChanges: [{ text: content }],
+    });
+
+    logger.debug("lsp-bridge:document-changed", { file, version: newVersion });
+  }
+
+  // -----------------------------------------------------------------------
   // Private helpers — cache-aware execution
   // -----------------------------------------------------------------------
 
@@ -431,7 +623,7 @@ export class LspBridge {
     absPath: string,
   ): Promise<void> {
     const uri = this.toFileUri(file);
-    if (this.openedUris.has(uri)) return;
+    if (this.documentVersions.has(uri)) return;
 
     try {
       const content = readFileSync(absPath, "utf-8");
@@ -446,7 +638,7 @@ export class LspBridge {
         },
       });
 
-      this.openedUris.add(uri);
+      this.documentVersions.set(uri, 1);
       logger.debug("lsp-bridge:document-opened", { file, languageId });
     } catch (err) {
       logger.warn("lsp-bridge:didOpen-failed", {

@@ -192,3 +192,31 @@ export const DetectedLanguageSchema = z.object({
 });
 
 export type DetectedLanguage = z.infer<typeof DetectedLanguageSchema>;
+
+// ---------------------------------------------------------------------------
+// 13. LspCodeActionSchema — A code action returned by the server
+// ---------------------------------------------------------------------------
+
+export const LspCodeActionSchema = z.object({
+  title: z.string(),
+  kind: z.string().optional(),
+  isPreferred: z.boolean().optional(),
+  edit: LspWorkspaceEditSchema.optional(),
+  diagnostics: z.array(LspDiagnosticSchema).optional(),
+});
+
+export type LspCodeAction = z.infer<typeof LspCodeActionSchema>;
+
+// ---------------------------------------------------------------------------
+// 14. EditApplyResultSchema — Result of applying edits to disk
+// ---------------------------------------------------------------------------
+
+export const EditApplyResultSchema = z.object({
+  applied: z.boolean(),
+  filesModified: z.array(z.string()),
+  totalEdits: z.number().int(),
+  errors: z.array(z.string()),
+  backups: z.map(z.string(), z.string()).optional(),
+});
+
+export type EditApplyResult = z.infer<typeof EditApplyResultSchema>;

@@ -391,6 +391,24 @@ export class LspServerManager {
           typeHierarchy: {},
           publishDiagnostics: { relatedInformation: true },
           documentSymbol: { hierarchicalDocumentSymbolSupport: true },
+          formatting: { dynamicRegistration: false },
+          rangeFormatting: { dynamicRegistration: false },
+          codeAction: {
+            codeActionLiteralSupport: {
+              codeActionKind: {
+                valueSet: [
+                  "quickfix",
+                  "refactor",
+                  "refactor.extract",
+                  "refactor.inline",
+                  "refactor.rewrite",
+                  "source",
+                  "source.organizeImports",
+                  "source.fixAll",
+                ],
+              },
+            },
+          },
         },
       },
     };
