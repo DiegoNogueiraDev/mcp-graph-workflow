@@ -119,7 +119,10 @@ export class LspClient extends EventEmitter {
       });
       this._ready = false;
       this.rejectAll(err);
-      this.emit("error", err);
+      // Only emit if there are listeners — prevents unhandled error crashes
+      if (this.listenerCount("error") > 0) {
+        this.emit("error", err);
+      }
     });
 
     child.on("exit", (code: number | null, signal: string | null) => {
