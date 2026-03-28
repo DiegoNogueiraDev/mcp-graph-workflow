@@ -6,7 +6,11 @@ type SSEEvent =
   | "node:deleted"
   | "edge:created"
   | "edge:deleted"
-  | "import:completed";
+  | "import:completed"
+  | "translation:job_created"
+  | "translation:analyzed"
+  | "translation:finalized"
+  | "translation:error";
 
 export function useSSE(onEvent: (event: SSEEvent, data: unknown) => void): void {
   const callbackRef = useRef(onEvent);
@@ -27,6 +31,8 @@ export function useSSE(onEvent: (event: SSEEvent, data: unknown) => void): void 
     const events: SSEEvent[] = [
       "node:created", "node:updated", "node:deleted",
       "edge:created", "edge:deleted", "import:completed",
+      "translation:job_created", "translation:analyzed",
+      "translation:finalized", "translation:error",
     ];
 
     for (const evt of events) {

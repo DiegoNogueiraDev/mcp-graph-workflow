@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Languages, ArrowLeftRight, Clock, BarChart3 } from "lucide-react";
 import { useTranslation } from "@/hooks/use-translation";
 import { useTranslationHistory } from "@/hooks/use-translation-history";
+import { useSSE } from "@/hooks/use-sse";
 import { TranslationForm } from "@/components/languages/translation-form";
 import { AnalysisResults } from "@/components/languages/analysis-results";
 import { FinalizeResults } from "@/components/languages/finalize-results";
@@ -25,6 +26,13 @@ export function LanguagesTab(): React.JSX.Element {
   const [targetLanguage, setTargetLanguage] = useState("python");
   const [scope, setScope] = useState<TranslationScope>("snippet");
   const [generatedCode, setGeneratedCode] = useState("");
+
+  // SSE: auto-refresh history on translation events
+  useSSE(useCallback((event: string) => {
+    if (event.startsWith("translation:")) {
+      void historyActions.refresh();
+    }
+  }, [historyActions]));
 
   const handleAnalyze = (): void => {
     void translationActions.analyze(sourceCode, targetLanguage, scope);

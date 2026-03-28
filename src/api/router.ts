@@ -76,7 +76,7 @@ export function createApiRouter(storeOrOptions: SqliteStore | ApiRouterOptions):
   router.use("/siebel", createSiebelRouter(storeRef, getBasePath));
   router.use("/logs", createLogsRouter());
   router.use("/journey", createJourneyRouter(storeRef, getBasePath));
-  router.use("/translation", createTranslationRouter(storeRef));
+  router.use("/translation", createTranslationRouter(storeRef, eventBus ?? undefined));
 
   if (storeManager) {
     router.use("/folder", createFolderRouter(storeManager));

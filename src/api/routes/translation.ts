@@ -5,6 +5,7 @@
 import { Router } from "express";
 import { z } from "zod/v4";
 import type { StoreRef } from "../../core/store/store-manager.js";
+import type { GraphEventBus } from "../../core/events/event-bus.js";
 import { TranslationStore } from "../../core/translation/translation-store.js";
 import { TranslationOrchestrator } from "../../core/translation/translation-orchestrator.js";
 import { ConstructRegistry } from "../../core/translation/ucr/construct-registry.js";
@@ -28,7 +29,7 @@ const FinalizeSchema = z.object({
   generatedCode: z.string(),
 });
 
-export function createTranslationRouter(storeRef: StoreRef): Router {
+export function createTranslationRouter(storeRef: StoreRef, eventBus?: GraphEventBus): Router {
   const router = Router();
 
   let _cachedDb: unknown = null;
@@ -90,9 +91,11 @@ export function createTranslationRouter(storeRef: StoreRef): Router {
         scope,
       });
 
+      eventBus?.emit({ type: "translation:job_created", timestamp: new Date().toISOString(), payload: { jobId: result.jobId, targetLanguage, scope } });
       res.status(201).json(result);
     } catch (err) {
       logger.error("Translation job creation failed", { error: err });
+      eventBus?.emit({ type: "translation:error", timestamp: new Date().toISOString(), payload: { error: String(err) } });
       res.status(500).json({ error: "Job creation failed" });
     }
   });
@@ -134,9 +137,11 @@ export function createTranslationRouter(storeRef: StoreRef): Router {
       }
 
       const result = getOrchestrator().finalizeTranslation(req.params.id, parsed.data.generatedCode);
+      eventBus?.emit({ type: "translation:finalized", timestamp: new Date().toISOString(), payload: { jobId: req.params.id, confidence: result.evidence?.confidenceScore } });
       res.json(result);
     } catch (err) {
       logger.error("Translation finalize failed", { error: err });
+      eventBus?.emit({ type: "translation:error", timestamp: new Date().toISOString(), payload: { jobId: req.params.id, error: String(err) } });
       res.status(500).json({ error: "Finalize failed" });
     }
   });
