@@ -7,11 +7,13 @@ import {
   detectWarnings,
   checkToolGate,
   checkStatusGate,
+  checkPrerequisiteGate,
   type LifecyclePhase,
   type LifecycleWarning,
   type McpAgentSuggestion,
   type StrictnessMode,
 } from "../core/planner/lifecycle-phase.js";
+import { ToolCallLog } from "../core/store/tool-call-log.js";
 import { KnowledgeStore } from "../core/store/knowledge-store.js";
 import { ToolTokenStore } from "../core/store/tool-token-store.js";
 import { estimateTokens } from "../core/context/token-estimator.js";
@@ -178,6 +180,27 @@ function extractStatusArgs(toolName: string, args: unknown[]): { nodeId?: string
 }
 
 /**
+ * Extract nodeId from any MCP tool call args.
+ * Checks common field names: nodeId, id.
+ */
+function extractNodeId(args: unknown[]): string | undefined {
+  const toolArgs = args[0] as Record<string, unknown> | undefined;
+  if (!toolArgs) return undefined;
+  return (toolArgs.nodeId ?? toolArgs.id) as string | undefined;
+}
+
+/**
+ * Extract relevant args for prerequisite matching (e.g., analyze mode, validate action).
+ */
+function extractRelevantArgs(toolName: string, toolArgs: Record<string, unknown>): string | undefined {
+  if (toolName === "analyze" && toolArgs.mode) return JSON.stringify({ mode: toolArgs.mode });
+  if (toolName === "validate" && toolArgs.action) return JSON.stringify({ action: toolArgs.action });
+  if (toolName === "update_status" && toolArgs.status) return JSON.stringify({ status: toolArgs.status });
+  if (toolName === "set_phase" && toolArgs.phase) return JSON.stringify({ phase: toolArgs.phase });
+  return undefined;
+}
+
+/**
  * Wrap all registered MCP tool handlers to enforce lifecycle gates and append lifecycle context.
  * Pre-execution: checks tool gates and status gates (blocks in strict mode).
  * Post-execution: appends _lifecycle block to responses.
@@ -217,6 +240,27 @@ export function wrapToolsWithLifecycle(server: McpServer, store: SqliteStore, ev
           gateWarnings.push(...statusResult.warnings);
         }
 
+        // Check tool prerequisite gate
+        const prereqModeValue = store.getProjectSetting("tool_prerequisites_mode");
+        const prereqEnabled = prereqModeValue !== "off";
+        const prereqMode: StrictnessMode = prereqModeValue === "strict" ? "strict" : "advisory";
+
+        if (prereqEnabled) {
+          const toolArgs = (args[0] as Record<string, unknown>) ?? {};
+          const nodeId = extractNodeId(args);
+          const project = store.getProject();
+
+          if (project) {
+            const toolCallLog = new ToolCallLog(store.getDb());
+            const prereqWarnings = checkPrerequisiteGate(
+              phase, name, toolArgs, nodeId,
+              (nId, tool, tArgs) => toolCallLog.hasBeenCalled(project.id, nId, tool, tArgs),
+              prereqMode,
+            );
+            gateWarnings.push(...prereqWarnings);
+          }
+        }
+
         // If any warning has severity "error" → block execution
         const hasErrors = gateWarnings.some((w) => w.severity === "error");
         if (hasErrors) {
@@ -245,6 +289,22 @@ export function wrapToolsWithLifecycle(server: McpServer, store: SqliteStore, ev
         }
       } catch {
         logger.debug("lifecycle-wrapper: token tracking skipped", { tool: name });
+      }
+
+      // ── Record successful tool call for prerequisite tracking ──
+      if (!result?.isError) {
+        try {
+          const project = store.getProject();
+          if (project) {
+            const toolCallLog = new ToolCallLog(store.getDb());
+            const toolArgs = (args[0] as Record<string, unknown>) ?? {};
+            const nodeId = extractNodeId(args);
+            const relevantArgs = extractRelevantArgs(name, toolArgs);
+            toolCallLog.record(project.id, nodeId ?? null, name, relevantArgs ?? undefined);
+          }
+        } catch {
+          logger.debug("lifecycle-wrapper: tool call recording skipped", { tool: name });
+        }
       }
 
       // ── Error detection for self-healing ──

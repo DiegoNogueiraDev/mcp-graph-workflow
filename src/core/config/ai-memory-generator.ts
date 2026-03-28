@@ -11,7 +11,7 @@ const MANDATORY_EXECUTION_RULE = `### ⚠️ Regra de Execução OBRIGATÓRIA
 **O mcp-graph é a fonte de verdade ABSOLUTA. Nenhuma implementação acontece fora do grafo.**
 
 1. **Node deve existir** — antes de escrever QUALQUER código, o node correspondente DEVE existir no grafo
-2. **Fluxo obrigatório** — \`next → context → [implementar com TDD] → update_status → next\` — SEM EXCEÇÕES
+2. **Fluxo obrigatório** — \`next → context → rag_context → [implementar com TDD] → analyze(implement_done) → update_status → next\` — SEM EXCEÇÕES
 3. **Epic = estrutura primeiro** — criar Epic + tasks filhas + edges ANTES de implementar
 4. **Status tracking** — \`update_status → in_progress\` ANTES de codar, \`→ done\` APÓS completar
 5. **Validação** — usar \`validate\` (action: \`ac\`) após cada task para checar critérios de aceitação
@@ -49,7 +49,7 @@ const TOOL_TABLE_FULL = `#### Projeto & Grafo
 | \`import_prd\` | Importar PRD \u2192 segmentar \u2192 classificar \u2192 extrair \u2192 inferir deps \u2192 criar grafo + indexar knowledge |
 | \`plan_sprint\` | Gerar relat\u00F3rio de planejamento de sprint (capacity, velocity, recomenda\u00E7\u00F5es) |
 | \`analyze\` | 24 modos de an\u00E1lise por fase do lifecycle (ver modos abaixo) |
-| \`set_phase\` | For\u00E7ar/resetar fase do lifecycle (strict/advisory, gate checks) |
+| \`set_phase\` | For\u00E7ar/resetar fase do lifecycle (strict/advisory, gate checks) + Code Intelligence mode (strict/advisory/off) + Tool Prerequisites mode (strict/advisory/off) |
 
 #### Contexto & RAG
 
@@ -220,7 +220,7 @@ ${ANALYZE_MODES_SECTION}
 ### Fluxo de trabalho OBRIGAT\u00D3RIO
 
 \`\`\`
-next \u2192 context \u2192 [implementar com TDD] \u2192 update_status \u2192 next
+next \u2192 context \u2192 rag_context \u2192 [implementar com TDD] \u2192 analyze(implement_done) \u2192 update_status \u2192 next
 \`\`\`
 
 ${LIFECYCLE_SUMMARY}

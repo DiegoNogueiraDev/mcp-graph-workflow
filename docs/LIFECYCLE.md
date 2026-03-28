@@ -621,6 +621,39 @@ Além das sugestões, o Code Intelligence pode ser **automaticamente enforced** 
 
 Ativar: `set_phase { codeIntelligence: "strict" }` (ou `"advisory"` / `"off"`).
 
+## Tool Prerequisites Enforcement
+
+O sistema de pré-requisitos obrigatórios garante que tools essenciais (como `rag_context`, `context`, `analyze`) sejam efetivamente utilizadas antes de ações críticas. Enforced via `lifecycle-wrapper.ts` — rastreia chamadas de tools por node e bloqueia (strict) ou avisa (advisory) se pré-requisitos não foram cumpridos.
+
+### Modos
+
+Ativar: `set_phase { prerequisites: "strict" }` (ou `"advisory"` / `"off"`).
+
+| Mode | Behavior |
+|------|----------|
+| `strict` | **Bloqueia** tools se pré-requisitos obrigatórios não foram chamados |
+| `advisory` | **Avisa** mas não bloqueia (default) |
+| `off` | Desabilita enforcement |
+
+### Regras por Fase
+
+| Fase | Trigger | Pré-requisitos | Scope |
+|------|---------|---------------|-------|
+| DESIGN | `set_phase(PLAN)` | `analyze(design_ready)` | project |
+| PLAN | `set_phase(IMPLEMENT)` | `sync_stack_docs` + `plan_sprint` | project |
+| IMPLEMENT | `update_status(in_progress)` | `next` | project |
+| IMPLEMENT | `update_status(done)` | `context` + `rag_context` + `analyze(implement_done)` | node |
+| VALIDATE | `update_status(done)` | `validate` + `analyze(validate_ready)` | mixed |
+| REVIEW | `set_phase(HANDOFF)` | `analyze(review_ready)` + `export` | project |
+| HANDOFF | `set_phase(LISTENING)` | `analyze(handoff_ready)` + `snapshot` + `write_memory` | project |
+
+### Full Enforcement
+
+Para enforcement máximo, combinar todos os 3 layers:
+```
+set_phase { mode: "strict", codeIntelligence: "strict", prerequisites: "strict" }
+```
+
 ## Sugestões de MCPs Externos por Fase (Lifecycle Wrapper)
 
 O lifecycle wrapper (`_lifecycle` block) agora sugere automaticamente sistemas contextuais via `suggestedMcpAgents`. Cada fase do ciclo indica quais agents/sistemas usar e com quais tools:

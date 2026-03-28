@@ -143,6 +143,23 @@ Code Intelligence can be automatically enforced during MCP tool execution. When 
 - `advisory` — warns but allows execution
 - `off` — disabled (default)
 
+### Tool Prerequisites Enforcement
+
+**File:** `src/mcp/lifecycle-wrapper.ts` (pre-execution gate) + `src/core/store/tool-call-log.ts` (tracking)
+
+Tracks MCP tool calls per node and enforces mandatory prerequisites before critical actions (e.g., `update_status(done)` requires `context` + `rag_context` + `analyze(implement_done)` to have been called first).
+
+**Modes:** `set_phase({ prerequisites: "strict" | "advisory" | "off" })`
+- `strict` — blocks tools if mandatory prerequisites not called
+- `advisory` — warns but allows execution (default)
+- `off` — disabled
+
+**Scope types:**
+- `node` — tool must be called for the specific nodeId (e.g., `context` for "task-1")
+- `project` — tool must be called once globally (e.g., `next`, `plan_sprint`)
+
+**Full enforcement:** `set_phase({ mode: "strict", codeIntelligence: "strict", prerequisites: "strict" })`
+
 ### Enriched Context
 
 **File:** `src/core/integrations/enriched-context.ts`

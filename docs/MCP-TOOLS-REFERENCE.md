@@ -404,6 +404,51 @@ Manage and query website journey maps — screen flows, form fields, CTAs, A/B v
 
 ---
 
+## Lifecycle & Enforcement
+
+### `set_phase`
+
+Override lifecycle phase detection, switch enforcement modes, or reset to auto-detection.
+
+| Param | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `phase` | string | Yes | — | Lifecycle phase (`ANALYZE`, `DESIGN`, `PLAN`, `IMPLEMENT`, `VALIDATE`, `REVIEW`, `HANDOFF`, `LISTENING`, `auto`) |
+| `force` | boolean | No | `false` | Force phase transition even if gate conditions are not met |
+| `mode` | `"strict"` \| `"advisory"` | No | — | Lifecycle enforcement mode |
+| `codeIntelligence` | `"strict"` \| `"advisory"` \| `"off"` | No | — | Code Intelligence enforcement mode |
+| `prerequisites` | `"strict"` \| `"advisory"` \| `"off"` | No | — | Tool Prerequisites enforcement mode |
+
+**Enforcement modes:**
+
+| Mode | Lifecycle | Code Intelligence | Prerequisites |
+|------|-----------|-------------------|---------------|
+| `strict` | Blocks tools outside phase | Blocks mutating tools if index empty | Blocks tools if mandatory prerequisites not called |
+| `advisory` | Warns only | Warns only | Warns only (default) |
+| `off` | — | No checks | No checks |
+
+**Full enforcement:**
+```json
+set_phase({ phase: "IMPLEMENT", mode: "strict", codeIntelligence: "strict", prerequisites: "strict" })
+```
+
+### Tool Prerequisites Rules
+
+When `prerequisites` is `"strict"` or `"advisory"`, the system tracks tool calls per node and enforces mandatory prerequisites before allowing certain actions.
+
+| Phase | Trigger | Required Prerequisites | Scope |
+|-------|---------|----------------------|-------|
+| DESIGN | `set_phase(PLAN)` | `analyze(design_ready)` | project |
+| PLAN | `set_phase(IMPLEMENT)` | `sync_stack_docs` + `plan_sprint` | project |
+| IMPLEMENT | `update_status(in_progress)` | `next` | project |
+| IMPLEMENT | `update_status(done)` | `context` + `rag_context` + `analyze(implement_done)` | node |
+| VALIDATE | `update_status(done)` | `validate` + `analyze(validate_ready)` | mixed |
+| REVIEW | `set_phase(HANDOFF)` | `analyze(review_ready)` + `export` | project |
+| HANDOFF | `set_phase(LISTENING)` | `analyze(handoff_ready)` + `snapshot` + `write_memory` | project |
+
+**Scope:** `node` = must be called for the specific nodeId. `project` = called once for the project. `mixed` = some node-scoped, some project-scoped.
+
+---
+
 ## Deprecated Tools
 
 > **These tools still work but are deprecated since v5.5.0 and will be removed in v7.0.** Migrate to the consolidated tools shown below.

@@ -258,6 +258,45 @@ Configure via `set_phase({codeIntelligence: "strict" | "advisory" | "off"})`:
 
 Key: `code_intelligence_mode` in project settings. Set via `set_phase` tool or `store.setProjectSetting()`.
 
+## Tool Prerequisites Enforcement
+
+Mandatory tool prerequisites are enforced during MCP tool execution via `src/mcp/lifecycle-wrapper.ts`. Before allowing certain actions (e.g., `update_status(done)`), the system verifies that required tools were called first (e.g., `context`, `rag_context`, `analyze`).
+
+### Modes
+
+Configure via `set_phase({prerequisites: "strict" | "advisory" | "off"})`:
+
+| Mode | Behavior |
+|------|----------|
+| `strict` | **Blocks** tools if mandatory prerequisites not called. |
+| `advisory` | **Warns** but allows execution (default). |
+| `off` | No prerequisite checks. |
+
+### Prerequisite Rules by Phase
+
+| Phase | Trigger | Required Prerequisites | Scope |
+|-------|---------|----------------------|-------|
+| DESIGN | `set_phase(PLAN)` | `analyze(design_ready)` | project |
+| PLAN | `set_phase(IMPLEMENT)` | `sync_stack_docs` + `plan_sprint` | project |
+| IMPLEMENT | `update_status(in_progress)` | `next` | project |
+| IMPLEMENT | `update_status(done)` | `context` + `rag_context` + `analyze(implement_done)` | node |
+| VALIDATE | `update_status(done)` | `validate` + `analyze(validate_ready)` | mixed |
+| REVIEW | `set_phase(HANDOFF)` | `analyze(review_ready)` + `export` | project |
+| HANDOFF | `set_phase(LISTENING)` | `analyze(handoff_ready)` + `snapshot` + `write_memory` | project |
+
+**Scope**: `node` = must be called for the specific nodeId. `project` = called once for the project.
+
+### Setting (persisted per project)
+
+Key: `tool_prerequisites_mode` in project settings. Set via `set_phase` tool or `store.setProjectSetting()`.
+
+### Full Enforcement
+
+For maximum enforcement, combine all three layers:
+```
+set_phase({ mode: "strict", codeIntelligence: "strict", prerequisites: "strict" })
+```
+
 ## mcp-graph Execution Rule
 
 **MANDATORY — applies to every task the AI performs, no exceptions.**
@@ -369,7 +408,7 @@ Dados armazenados em `workflow-graph/graph.db` (local, gitignored).
 | `import_prd` | Importar PRD → segmentar → classificar → extrair → inferir deps → criar grafo + indexar knowledge |
 | `plan_sprint` | Gerar relatório de planejamento de sprint (capacity, velocity, recomendações) |
 | `analyze` | 24 modos de análise por fase do lifecycle (ver modos abaixo) |
-| `set_phase` | Forçar/resetar fase do lifecycle (strict/advisory, gate checks) + Code Intelligence mode (strict/advisory/off) |
+| `set_phase` | Forçar/resetar fase do lifecycle (strict/advisory, gate checks) + Code Intelligence mode (strict/advisory/off) + Tool Prerequisites mode (strict/advisory/off) |
 
 #### Contexto & RAG
 
@@ -446,8 +485,10 @@ Dados armazenados em `workflow-graph/graph.db` (local, gitignored).
 ### Fluxo de trabalho OBRIGATÓRIO
 
 ```
-next → context → [implementar com TDD] → update_status → next
+next → context → rag_context → [implementar com TDD] → analyze(implement_done) → update_status → next
 ```
+
+> Com `prerequisites: "strict"`, os passos `context`, `rag_context` e `analyze(implement_done)` são **obrigatórios** antes de `update_status(done)`.
 
 ### Lifecycle (8 fases)
 

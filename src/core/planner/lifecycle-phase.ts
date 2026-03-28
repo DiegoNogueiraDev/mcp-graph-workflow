@@ -461,6 +461,146 @@ export function checkStatusGate(
   return { warnings };
 }
 
+// ── Tool Prerequisite Enforcement ────────────────
+
+export type PrerequisiteScope = "node" | "project";
+
+export interface PrerequisiteRequiredTool {
+  tool: string;
+  args?: string;
+  scope: PrerequisiteScope;
+}
+
+export interface PrerequisiteRule {
+  triggerTool: string;
+  triggerCondition?: (args: Record<string, unknown>) => boolean;
+  requiredTools: PrerequisiteRequiredTool[];
+  description: string;
+}
+
+export const PHASE_PREREQUISITES: Record<LifecyclePhase, PrerequisiteRule[]> = {
+  ANALYZE: [],
+  DESIGN: [
+    {
+      triggerTool: "set_phase",
+      triggerCondition: (args) => args.phase === "PLAN",
+      requiredTools: [
+        { tool: "analyze", args: "design_ready", scope: "project" },
+      ],
+      description: "Antes de DESIGN→PLAN: chamar `analyze(design_ready)`",
+    },
+  ],
+  PLAN: [
+    {
+      triggerTool: "set_phase",
+      triggerCondition: (args) => args.phase === "IMPLEMENT",
+      requiredTools: [
+        { tool: "sync_stack_docs", scope: "project" },
+        { tool: "plan_sprint", scope: "project" },
+      ],
+      description: "Antes de PLAN→IMPLEMENT: chamar `sync_stack_docs` + `plan_sprint`",
+    },
+  ],
+  IMPLEMENT: [
+    {
+      triggerTool: "update_status",
+      triggerCondition: (args) => args.status === "in_progress",
+      requiredTools: [
+        { tool: "next", scope: "project" },
+      ],
+      description: "Antes de in_progress: chamar `next` para carregar contexto da task",
+    },
+    {
+      triggerTool: "update_status",
+      triggerCondition: (args) => args.status === "done",
+      requiredTools: [
+        { tool: "context", scope: "node" },
+        { tool: "rag_context", scope: "node" },
+        { tool: "analyze", args: "implement_done", scope: "node" },
+      ],
+      description: "Antes de done: chamar `context` + `rag_context` + `analyze(implement_done)`",
+    },
+  ],
+  VALIDATE: [
+    {
+      triggerTool: "update_status",
+      triggerCondition: (args) => args.status === "done",
+      requiredTools: [
+        { tool: "validate", scope: "node" },
+        { tool: "analyze", args: "validate_ready", scope: "project" },
+      ],
+      description: "Antes de done em VALIDATE: chamar `validate(ac)` + `analyze(validate_ready)`",
+    },
+  ],
+  REVIEW: [
+    {
+      triggerTool: "set_phase",
+      triggerCondition: (args) => args.phase === "HANDOFF",
+      requiredTools: [
+        { tool: "analyze", args: "review_ready", scope: "project" },
+        { tool: "export", scope: "project" },
+      ],
+      description: "Antes de REVIEW→HANDOFF: chamar `analyze(review_ready)` + `export`",
+    },
+  ],
+  HANDOFF: [
+    {
+      triggerTool: "set_phase",
+      triggerCondition: (args) => args.phase === "LISTENING",
+      requiredTools: [
+        { tool: "analyze", args: "handoff_ready", scope: "project" },
+        { tool: "snapshot", scope: "project" },
+        { tool: "write_memory", scope: "project" },
+      ],
+      description: "Antes de HANDOFF→LISTENING: chamar `analyze(handoff_ready)` + `snapshot` + `write_memory`",
+    },
+  ],
+  LISTENING: [],
+};
+
+/**
+ * Check if mandatory prerequisite tools have been called before allowing the current tool.
+ * Returns warnings with severity based on strictness mode.
+ */
+export function checkPrerequisiteGate(
+  phase: LifecyclePhase,
+  toolName: string,
+  toolArgs: Record<string, unknown>,
+  nodeId: string | undefined,
+  hasBeenCalled: (nodeId: string | null, tool: string, args?: string) => boolean,
+  mode: StrictnessMode,
+): LifecycleWarning[] {
+  const rules = PHASE_PREREQUISITES[phase];
+  if (!rules || rules.length === 0) return [];
+
+  const warnings: LifecycleWarning[] = [];
+  const severity = mode === "strict" ? "error" : "warning";
+
+  for (const rule of rules) {
+    if (rule.triggerTool !== toolName) continue;
+    if (rule.triggerCondition && !rule.triggerCondition(toolArgs)) continue;
+
+    for (const req of rule.requiredTools) {
+      const lookupNodeId = req.scope === "node" ? (nodeId ?? null) : null;
+      const called = hasBeenCalled(lookupNodeId, req.tool, req.args);
+
+      if (!called) {
+        const scopeHint = req.scope === "node" && nodeId
+          ? ` para node "${nodeId}"`
+          : "";
+        const argsHint = req.args ? `(${req.args})` : "";
+        warnings.push({
+          code: "prerequisite_missing",
+          message: `Pré-requisito não atendido: chamar \`${req.tool}${argsHint}\`${scopeHint} antes de \`${toolName}\`. ${rule.description}`,
+          severity,
+        });
+      }
+    }
+  }
+
+  return warnings;
+}
+
 /**
  * Detect anti-pattern behaviors based on current phase, graph state, and tool being called.
  * In advisory mode: returns warnings (never blocks execution).

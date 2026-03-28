@@ -26,9 +26,12 @@ export function registerSetPhase(server: McpServer, store: SqliteStore): void {
       codeIntelligence: z.enum(["strict", "advisory", "off"]).optional().describe(
         "Code Intelligence enforcement: 'strict' blocks mutating tools if index empty, 'advisory' warns, 'off' disables",
       ),
+      prerequisites: z.enum(["strict", "advisory", "off"]).optional().describe(
+        "Tool prerequisites enforcement: 'strict' blocks tools if mandatory prerequisites not called, 'advisory' warns, 'off' disables",
+      ),
     },
-    async ({ phase, force, mode, codeIntelligence }) => {
-      logger.debug("tool:set_phase", { phase, force, mode, codeIntelligence });
+    async ({ phase, force, mode, codeIntelligence, prerequisites }) => {
+      logger.debug("tool:set_phase", { phase, force, mode, codeIntelligence, prerequisites });
 
       // Persist strictness mode if provided
       if (mode) {
@@ -42,6 +45,12 @@ export function registerSetPhase(server: McpServer, store: SqliteStore): void {
         logger.info("tool:set_phase:code_intelligence_changed", { codeIntelligence });
       }
 
+      // Persist Tool Prerequisites mode if provided
+      if (prerequisites) {
+        store.setProjectSetting("tool_prerequisites_mode", prerequisites);
+        logger.info("tool:set_phase:prerequisites_changed", { prerequisites });
+      }
+
       if (phase === "auto") {
         store.setProjectSetting("lifecycle_phase_override", "");
         const doc = store.toGraphDocument();
@@ -50,13 +59,15 @@ export function registerSetPhase(server: McpServer, store: SqliteStore): void {
         const currentMode = mode ?? (store.getProjectSetting("lifecycle_strictness_mode") as StrictnessMode | null) ?? "strict";
 
         const currentCodeIntel = codeIntelligence ?? store.getProjectSetting("code_intelligence_mode") ?? "off";
-        logger.info("tool:set_phase:ok", { action: "auto", detectedPhase, mode: currentMode, codeIntelligence: currentCodeIntel });
+        const currentPrereqs = prerequisites ?? store.getProjectSetting("tool_prerequisites_mode") ?? "advisory";
+        logger.info("tool:set_phase:ok", { action: "auto", detectedPhase, mode: currentMode, codeIntelligence: currentCodeIntel, prerequisites: currentPrereqs });
         return mcpText({
           ok: true,
           action: "reset_to_auto",
           detectedPhase,
           mode: currentMode,
           codeIntelligence: currentCodeIntel,
+          prerequisites: currentPrereqs,
           reminder: guidance.reminder,
         });
       }
@@ -103,13 +114,15 @@ export function registerSetPhase(server: McpServer, store: SqliteStore): void {
       const guidance = getPhaseGuidance(phase);
 
       const currentCodeIntel = codeIntelligence ?? store.getProjectSetting("code_intelligence_mode") ?? "off";
-      logger.info("tool:set_phase:ok", { action: "override", phase, mode: currentMode, codeIntelligence: currentCodeIntel, phaseSummaryIndexed });
+      const currentPrereqs = prerequisites ?? store.getProjectSetting("tool_prerequisites_mode") ?? "advisory";
+      logger.info("tool:set_phase:ok", { action: "override", phase, mode: currentMode, codeIntelligence: currentCodeIntel, prerequisites: currentPrereqs, phaseSummaryIndexed });
       return mcpText({
         ok: true,
         action: "override",
         phase,
         mode: currentMode,
         codeIntelligence: currentCodeIntel,
+        prerequisites: currentPrereqs,
         reminder: guidance.reminder,
         phaseSummaryIndexed,
       });

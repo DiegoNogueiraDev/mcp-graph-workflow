@@ -20,19 +20,40 @@ ANALYZE → DESIGN → PLAN → IMPLEMENT → VALIDATE → REVIEW → HANDOFF �
 
 **Auto-detection:** mcp-graph infers the current phase from graph state (node types, statuses, completion %). Every MCP tool response includes a `_lifecycle` block with the detected phase and suggested actions.
 
-**Manual override:**
+**Manual override (full enforcement):**
 ```
-set_phase { phase: "IMPLEMENT", mode: "strict", codeIntelligence: "strict" }
+set_phase { phase: "IMPLEMENT", mode: "strict", codeIntelligence: "strict", prerequisites: "strict" }
 ```
 
-Modes:
+**Lifecycle modes:**
 - **strict** — blocks tools that don't belong to the current phase
 - **advisory** — suggests the correct phase but allows all tools
 
-Code Intelligence enforcement (optional):
+**Code Intelligence enforcement (optional):**
 - **strict** — blocks mutating tools if code index is empty, appends impact analysis to responses
 - **advisory** — warns on empty/stale index, appends enrichment
 - **off** — no Code Intelligence enrichment (default)
+
+**Tool Prerequisites enforcement (optional):**
+- **strict** — blocks actions if mandatory prerequisite tools were not called first
+- **advisory** — warns but allows execution (default)
+- **off** — no prerequisite checks
+
+#### Tool Prerequisites Quick Reference
+
+When `prerequisites: "strict"`, the system tracks tool calls per node and blocks actions if mandatory tools were not called:
+
+| Phase | Trigger | Required Prerequisites | Scope |
+|-------|---------|----------------------|-------|
+| DESIGN | `set_phase(PLAN)` | `analyze(design_ready)` | project |
+| PLAN | `set_phase(IMPLEMENT)` | `sync_stack_docs` + `plan_sprint` | project |
+| IMPLEMENT | `update_status(in_progress)` | `next` | project |
+| IMPLEMENT | `update_status(done)` | `context` + `rag_context` + `analyze(implement_done)` | per-node |
+| VALIDATE | `update_status(done)` | `validate` + `analyze(validate_ready)` | mixed |
+| REVIEW | `set_phase(HANDOFF)` | `analyze(review_ready)` + `export` | project |
+| HANDOFF | `set_phase(LISTENING)` | `analyze(handoff_ready)` + `snapshot` + `write_memory` | project |
+
+**Scope:** `per-node` means the tool must be called for the specific nodeId. `project` means called once globally.
 
 ### 1.2 Phase Details
 

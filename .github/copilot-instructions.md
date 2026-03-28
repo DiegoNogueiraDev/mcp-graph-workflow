@@ -9,7 +9,7 @@ Dados armazenados em `workflow-graph/graph.db` (local, gitignored).
 **O mcp-graph é a fonte de verdade ABSOLUTA. Nenhuma implementação acontece fora do grafo.**
 
 1. **Node deve existir** — antes de escrever QUALQUER código, o node correspondente DEVE existir no grafo
-2. **Fluxo obrigatório** — `next → context → [implementar com TDD] → update_status → next` — SEM EXCEÇÕES
+2. **Fluxo obrigatório** — `next → context → rag_context → [implementar com TDD] → analyze(implement_done) → update_status → next` — SEM EXCEÇÕES
 3. **Epic = estrutura primeiro** — criar Epic + tasks filhas + edges ANTES de implementar
 4. **Status tracking** — `update_status → in_progress` ANTES de codar, `→ done` APÓS completar
 5. **Validação** — usar `validate` (action: `ac`) após cada task para checar critérios de aceitação
@@ -49,7 +49,7 @@ Dados armazenados em `workflow-graph/graph.db` (local, gitignored).
 | `import_prd` | Importar PRD → segmentar → classificar → extrair → inferir deps → criar grafo + indexar knowledge |
 | `plan_sprint` | Gerar relatório de planejamento de sprint (capacity, velocity, recomendações) |
 | `analyze` | 24 modos de análise por fase do lifecycle (ver modos abaixo) |
-| `set_phase` | Forçar/resetar fase do lifecycle (strict/advisory, gate checks) |
+| `set_phase` | Forçar/resetar fase do lifecycle (strict/advisory, gate checks) + Code Intelligence mode (strict/advisory/off) + Tool Prerequisites mode (strict/advisory/off) |
 
 #### Contexto & RAG
 
@@ -126,7 +126,7 @@ Dados armazenados em `workflow-graph/graph.db` (local, gitignored).
 ### Fluxo de trabalho OBRIGATÓRIO
 
 ```
-next → context → [implementar com TDD] → update_status → next
+next → context → rag_context → [implementar com TDD] → analyze(implement_done) → update_status → next
 ```
 
 ### Lifecycle (8 fases)

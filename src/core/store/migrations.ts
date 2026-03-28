@@ -629,6 +629,22 @@ const migrations: Migration[] = [
       );
     `,
   },
+  {
+    version: 16,
+    description: "Tool call log for prerequisite enforcement",
+    sql: `
+      CREATE TABLE IF NOT EXISTS tool_call_log (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id TEXT NOT NULL,
+        node_id    TEXT,
+        tool_name  TEXT NOT NULL,
+        tool_args  TEXT,
+        called_at  TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_tool_call_log_lookup
+        ON tool_call_log (project_id, node_id, tool_name);
+    `,
+  },
 ];
 
 export function runMigrations(db: Database.Database): void {
