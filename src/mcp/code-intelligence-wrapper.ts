@@ -363,6 +363,10 @@ export function wrapToolsWithCodeIntelligence(server: McpServer, store: SqliteSt
       }
 
       // ── Pre-execution gate check (strict mode) ──
+      // Bug #001/NEW-2: auto-downgrade strict→advisory when index is empty.
+      // This prevents deadlock in projects without source code where the code
+      // symbol index will never have content.
+      let effectiveMode = mode;
       try {
         const project = store.getProject();
         if (project) {
@@ -370,12 +374,8 @@ export function wrapToolsWithCodeIntelligence(server: McpServer, store: SqliteSt
           const indexStatus = detectStaleIndex(codeStore, project.id);
 
           if (mode === "strict" && !indexStatus.available && !READ_ONLY_TOOLS.has(name)) {
-            logger.warn("code-intelligence-wrapper: tool blocked — empty index", { tool: name });
-            return buildBlockedResponseCodeIntel(name, [{
-              code: "index_empty",
-              message: "Code Intelligence index is empty. Cannot execute mutating tool in strict mode.",
-              severity: "error",
-            }]);
+            logger.warn("code-intelligence-wrapper: strict mode auto-downgraded to advisory — empty index", { tool: name });
+            effectiveMode = "advisory";
           }
         }
       } catch {
@@ -396,7 +396,9 @@ export function wrapToolsWithCodeIntelligence(server: McpServer, store: SqliteSt
             phaseOverride: phaseOverrideValue ? phaseOverrideValue as LifecyclePhase : null,
           });
 
-          const block = buildCodeIntelBlock(codeStore, project.id, phase, mode, name, args);
+          // Bug #002: for set_phase, re-read the mode from DB after handler has updated it
+          const enrichmentMode = name === "set_phase" ? loadMode() : effectiveMode;
+          const block = buildCodeIntelBlock(codeStore, project.id, phase, enrichmentMode, name, args);
 
           if (result && Array.isArray(result.content)) {
             result.content.push({

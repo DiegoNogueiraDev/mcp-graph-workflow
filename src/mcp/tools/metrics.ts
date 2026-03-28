@@ -2,7 +2,7 @@ import { z } from "zod/v4";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import { calculateVelocity } from "../../core/planner/velocity.js";
-import { detectCurrentPhase } from "../../core/planner/lifecycle-phase.js";
+import { detectCurrentPhase, type LifecyclePhase } from "../../core/planner/lifecycle-phase.js";
 import { KnowledgeStore } from "../../core/store/knowledge-store.js";
 import { buildTaskContext } from "../../core/context/compact-context.js";
 import { logger } from "../../core/utils/logger.js";
@@ -80,8 +80,12 @@ export function registerMetrics(server: McpServer, store: SqliteStore): void {
       }
 
       // Bug #067: add sprint count, phase, knowledge count
+      // Bug #038: read phase override from project_settings (same pattern as lifecycle-wrapper)
       const doc = store.toGraphDocument();
-      const currentPhase = detectCurrentPhase(doc);
+      const phaseOverrideValue = store.getProjectSetting("lifecycle_phase_override");
+      const currentPhase = detectCurrentPhase(doc, {
+        phaseOverride: phaseOverrideValue ? phaseOverrideValue as LifecyclePhase : null,
+      });
       const velocity = calculateVelocity(doc);
       let knowledgeDocCount = 0;
       try {

@@ -98,7 +98,7 @@ describe("E2E CRITICAL — Deadlock: bootstrap tools in strict mode (#001, #005,
     expect(parsed.error).not.toBe("code_intelligence_gate_blocked");
   });
 
-  it("#001: mutating tool SHOULD be blocked in strict + empty index", async () => {
+  it("#001: mutating tool auto-downgrades to advisory in strict + empty index", async () => {
     registerNode(server, store);
     wrapToolsWithCodeIntelligence(server, store);
 
@@ -109,8 +109,8 @@ describe("E2E CRITICAL — Deadlock: bootstrap tools in strict mode (#001, #005,
     });
     const parsed = parse(result);
 
-    // node(add) is mutating — SHOULD be blocked
-    expect(parsed.error).toBe("code_intelligence_gate_blocked");
+    // Bug #001/NEW-2 fix: strict + empty index auto-downgrades to advisory (no deadlock)
+    expect(parsed.error).not.toBe("code_intelligence_gate_blocked");
   });
 });
 

@@ -345,7 +345,7 @@ describe("wrapToolsWithCodeIntelligence", () => {
     expect(parsed._code_intelligence.mode).toBe("advisory");
   });
 
-  it("should block mutating tool in strict mode when index is empty", async () => {
+  it("should auto-downgrade strict to advisory for mutating tool when index is empty", async () => {
     const store = createInMemoryStore();
     store.setProjectSetting("code_intelligence_mode", "strict");
 
@@ -356,9 +356,10 @@ describe("wrapToolsWithCodeIntelligence", () => {
     const tools = (server as { _registeredTools: Record<string, { handler: (...args: unknown[]) => Promise<unknown> }> })._registeredTools;
     const result = await tools.update_status.handler({}) as { content: Array<{ type: string; text: string }>; isError?: boolean };
 
-    expect(result.isError).toBe(true);
-    const parsed = JSON.parse(result.content[0].text);
-    expect(parsed.error).toBe("code_intelligence_gate_blocked");
+    // Bug #001/NEW-2: strict mode auto-downgrades to advisory instead of blocking
+    expect(result.isError).toBeUndefined();
+    // Should still have _code_intelligence enrichment with advisory mode warning
+    expect(result.content.length).toBeGreaterThan(1);
   });
 
   it("should NOT block read-only tools in strict mode with empty index", async () => {

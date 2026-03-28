@@ -82,7 +82,7 @@ describe("Bug #001/#002 — cache invalidation after set_phase", () => {
     expect(result.isError).toBeUndefined();
   });
 
-  it("should block after set_phase changes to strict with empty index", async () => {
+  it("should auto-downgrade to advisory after set_phase changes to strict with empty index", async () => {
     const store = createStore();
     store.setProjectSetting("code_intelligence_mode", "off");
 
@@ -111,9 +111,9 @@ describe("Bug #001/#002 — cache invalidation after set_phase", () => {
     // Switch to strict
     await tools.set_phase.handler({});
 
-    // Now mutating tool should be blocked (empty index + strict)
+    // Bug #001/NEW-2: strict + empty index auto-downgrades to advisory (no deadlock)
     const resultAfter = await tools.update_status.handler({}) as { isError?: boolean };
-    expect(resultAfter.isError).toBe(true);
+    expect(resultAfter.isError).toBeUndefined();
   });
 });
 

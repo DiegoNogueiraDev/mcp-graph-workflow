@@ -7,7 +7,8 @@ import type { InterfaceReport, InterfaceCheckResult } from "../../schemas/design
 import { nodeHasAc } from "../utils/ac-helpers.js";
 import { logger } from "../utils/logger.js";
 
-const INTERFACE_NODE_TYPES = new Set(["epic", "requirement", "decision"]);
+// Bug #071: include constraint and risk nodes in interface analysis
+const INTERFACE_NODE_TYPES = new Set(["epic", "requirement", "decision", "constraint", "risk"]);
 
 export function checkInterfaces(doc: GraphDocument): InterfaceReport {
   const { nodes, edges } = doc;
