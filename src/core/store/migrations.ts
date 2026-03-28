@@ -588,4 +588,8 @@ export function runMigrations(db: Database.Database): void {
 export function configureDb(db: Database.Database): void {
   db.pragma("journal_mode = WAL");
   db.pragma("foreign_keys = ON");
+  db.pragma("synchronous = NORMAL");
+  db.pragma("cache_size = -8000");
+  db.pragma("busy_timeout = 5000");
+  db.pragma("temp_store = MEMORY");
 }

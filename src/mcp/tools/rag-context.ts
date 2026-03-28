@@ -9,18 +9,23 @@ import { understandQuery } from "../../core/rag/query-understanding.js";
 import { postRetrievalPipeline } from "../../core/rag/post-retrieval.js";
 import { buildCitedContext } from "../../core/rag/citation-mapper.js";
 import { QueryCache } from "../../core/rag/query-cache.js";
+import { ResponseCache } from "../../core/rag/response-cache.js";
 import { RagTracer } from "../../core/rag/rag-trace.js";
 import { detectCurrentPhase, type LifecyclePhase } from "../../core/planner/lifecycle-phase.js";
 import { DEFAULT_TOKEN_BUDGET } from "../../core/utils/constants.js";
 import { logger } from "../../core/utils/logger.js";
 import { mcpText } from "../response-helpers.js";
 
-/** Module-level query cache — shared across all rag_context calls. */
+/** Module-level query cache — shared across all rag_context calls (multi-strategy path). */
 const ragCache = new QueryCache({ ttlMs: 5 * 60 * 1000, maxSize: 100 });
 
-/** Invalidate the RAG query cache (e.g., after reindex_knowledge). */
+/** Module-level response cache — shared across detail and default paths. */
+const contextCache = new ResponseCache({ ttlMs: 5 * 60 * 1000, maxSize: 50 });
+
+/** Invalidate all RAG caches (e.g., after reindex_knowledge or node mutations). */
 export function invalidateRagCache(): void {
   ragCache.invalidateAll();
+  contextCache.invalidateAll();
   logger.debug("rag_context:cache_invalidated");
 }
 
@@ -64,6 +69,14 @@ export function registerRagContext(server: McpServer, store: SqliteStore): void 
       }
 
       if (detail) {
+        // Check context cache for detail path
+        const detailCacheKey = `detail:${detail}:${query.trim().toLowerCase()}:${budget}`;
+        const cachedDetail = contextCache.get(detailCacheKey);
+        if (cachedDetail) {
+          logger.debug("rag_context:detail_cache_hit", { query, tier: detail });
+          return mcpText(cachedDetail);
+        }
+
         // Use tiered context assembler with phase awareness
         const ctx = assembleContext(store, query, {
           tokenBudget: budget,
@@ -71,6 +84,7 @@ export function registerRagContext(server: McpServer, store: SqliteStore): void 
           phase: currentPhase,
         });
 
+        contextCache.set(detailCacheKey, ctx);
         logger.info("tool:rag_context:ok", { query, tier: detail, phase: currentPhase, strategy });
         return mcpText(ctx);
       }
@@ -228,8 +242,16 @@ export function registerRagContext(server: McpServer, store: SqliteStore): void 
       }
 
       // Default: use existing RAG context builder with phase awareness
+      const defaultCacheKey = `default:${query.trim().toLowerCase()}:${budget}`;
+      const cachedDefault = contextCache.get(defaultCacheKey);
+      if (cachedDefault) {
+        logger.debug("rag_context:default_cache_hit", { query });
+        return mcpText(cachedDefault);
+      }
+
       const ctx = ragBuildContext(store, query, budget, currentPhase);
 
+      contextCache.set(defaultCacheKey, ctx);
       logger.info("tool:rag_context:ok", { query, tier: "standard", phase: currentPhase });
       return mcpText(ctx);
     },

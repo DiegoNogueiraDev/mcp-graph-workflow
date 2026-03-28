@@ -1,6 +1,6 @@
 import type { SqliteStore } from "../store/sqlite-store.js";
-import type { GraphDocument, GraphNode, GraphEdge } from "../graph/graph-types.js";
-import { getNodeAcTexts } from "../utils/ac-helpers.js";
+import type { GraphNode, GraphEdge } from "../graph/graph-types.js";
+import { getNodeAcFromStore } from "../utils/ac-helpers.js";
 import { estimateTokens } from "./token-estimator.js";
 import { logger } from "../utils/logger.js";
 
@@ -297,20 +297,18 @@ export function buildTaskContext(
     }
   }
 
-  // Acceptance criteria (inline + child AC nodes)
-  const allNodes = store.getAllNodes();
-  const allEdges = store.getAllEdges();
-  const miniDoc = { nodes: allNodes, edges: allEdges } as unknown as GraphDocument;
-  const acceptanceCriteria = getNodeAcTexts(miniDoc, node.id);
+  // Acceptance criteria (inline + child AC nodes) — targeted queries, no full graph scan
+  const acceptanceCriteria = getNodeAcFromStore(store, node.id);
 
   // Source reference
   const sourceRef: SourceRefInfo | null = node.sourceRef
     ? { ...node.sourceRef }
     : null;
 
-  // Metrics: estimate original size from full PRD-related content
+  // Metrics: estimate original size from local data already loaded (node + children + deps)
+  const localNodes = [node, ...childNodes];
   const originalChars =
-    allNodes.reduce(
+    localNodes.reduce(
       (sum, n) =>
         sum +
         n.title.length +
@@ -318,7 +316,7 @@ export function buildTaskContext(
         (n.acceptanceCriteria?.join("").length ?? 0),
       0,
     ) +
-    allEdges.reduce((sum, e) => sum + (e.reason?.length ?? 0), 0);
+    [...incomingEdges, ...outgoingEdges].reduce((sum, e) => sum + (e.reason?.length ?? 0), 0);
 
   const contextPayload: TaskContext = {
     task: toTaskSummary(node),

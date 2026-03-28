@@ -4,6 +4,7 @@
  */
 
 import type { GraphDocument } from "../graph/graph-types.js";
+import type { SqliteStore } from "../store/sqlite-store.js";
 
 /**
  * Get all AC texts for a node — prefers inline AC, falls back to child AC node titles.
@@ -18,6 +19,22 @@ export function getNodeAcTexts(doc: GraphDocument, nodeId: string): string[] {
   // Fallback: AC child nodes by parentId
   return doc.nodes
     .filter((n) => n.type === "acceptance_criteria" && n.parentId === nodeId)
+    .map((n) => n.title);
+}
+
+/**
+ * Get all AC texts for a node using store queries (no full graph scan).
+ * Prefers inline AC, falls back to child AC node titles.
+ */
+export function getNodeAcFromStore(store: SqliteStore, nodeId: string): string[] {
+  const node = store.getNodeById(nodeId);
+  if (!node) return [];
+
+  const inline = node.acceptanceCriteria ?? [];
+  if (inline.length > 0) return inline;
+
+  return store.getChildNodes(nodeId)
+    .filter((n) => n.type === "acceptance_criteria")
     .map((n) => n.title);
 }
 

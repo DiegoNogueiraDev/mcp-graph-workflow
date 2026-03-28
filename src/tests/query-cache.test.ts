@@ -83,6 +83,32 @@ describe("query-cache", () => {
     expect(cache.get("third")).toBeDefined();
   });
 
+  it("should evict least-recently-accessed entry (true LRU)", () => {
+    vi.useFakeTimers();
+    try {
+      cache = new QueryCache({ ttlMs: 60000, maxSize: 2 });
+
+      // t=0: insert "first" and "second"
+      cache.set("first", [makeResult("a")]);
+      vi.advanceTimersByTime(10);
+      cache.set("second", [makeResult("b")]);
+
+      // t=20: access "first" — making it more recently accessed than "second"
+      vi.advanceTimersByTime(10);
+      cache.get("first");
+
+      // t=30: insert "third" — should evict "second" (least recently accessed), NOT "first"
+      vi.advanceTimersByTime(10);
+      cache.set("third", [makeResult("c")]);
+
+      expect(cache.get("first")).toBeDefined(); // recently accessed — should survive
+      expect(cache.get("second")).toBeUndefined(); // least recently accessed — evicted
+      expect(cache.get("third")).toBeDefined();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("should invalidate all entries", () => {
     cache.set("a", [makeResult("1")]);
     cache.set("b", [makeResult("2")]);

@@ -124,8 +124,8 @@ export class QueryCache {
     let oldestTime = Infinity;
 
     for (const [key, entry] of this.entries) {
-      if (entry.createdAt < oldestTime) {
-        oldestTime = entry.createdAt;
+      if (entry.lastAccessedAt < oldestTime) {
+        oldestTime = entry.lastAccessedAt;
         oldestKey = key;
       }
     }
