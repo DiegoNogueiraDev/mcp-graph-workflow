@@ -35,7 +35,9 @@ function createMockCache() {
   };
 }
 
+import { resolve as pathResolve } from "node:path";
 const BASE_PATH = "/workspace/project";
+const RESOLVED_BASE = pathResolve(BASE_PATH).replaceAll("\\", "/");
 
 function _makeBridge(
   overrides: {
@@ -108,7 +110,7 @@ describe("LspBridge", () => {
   it("should route goToDefinition to the correct server via manager", async () => {
     const rawResponse = [
       {
-        uri: `file://${BASE_PATH}/src/utils.ts`,
+        uri: `file://${RESOLVED_BASE}/src/utils.ts`,
         range: { start: { line: 9, character: 0 }, end: { line: 9, character: 10 } },
       },
     ];
@@ -121,7 +123,7 @@ describe("LspBridge", () => {
 
     expect(manager.getClientForFile).toHaveBeenCalled();
     expect(client.sendRequest).toHaveBeenCalledWith("textDocument/definition", expect.objectContaining({
-      textDocument: { uri: `file://${BASE_PATH}/src/main.ts` },
+      textDocument: { uri: `file://${RESOLVED_BASE}/src/main.ts` },
       position: { line: 4, character: 10 },
     }));
     expect(result).toHaveLength(1);
@@ -145,7 +147,7 @@ describe("LspBridge", () => {
     // Cache stores raw LSP format (same as what the server returns)
     const cachedRaw = [
       {
-        uri: `file://${BASE_PATH}/src/cached.ts`,
+        uri: `file://${RESOLVED_BASE}/src/cached.ts`,
         range: { start: { line: 0, character: 0 }, end: { line: 0, character: 5 } },
       },
     ];
@@ -167,7 +169,7 @@ describe("LspBridge", () => {
   it("should call LSP and cache result on cache miss", async () => {
     const rawResponse = [
       {
-        uri: `file://${BASE_PATH}/src/target.ts`,
+        uri: `file://${RESOLVED_BASE}/src/target.ts`,
         range: { start: { line: 0, character: 0 }, end: { line: 0, character: 5 } },
       },
     ];
@@ -188,11 +190,11 @@ describe("LspBridge", () => {
   it("should normalize file URIs to relative paths in findReferences", async () => {
     const rawResponse = [
       {
-        uri: `file://${BASE_PATH}/src/a.ts`,
+        uri: `file://${RESOLVED_BASE}/src/a.ts`,
         range: { start: { line: 4, character: 2 }, end: { line: 4, character: 8 } },
       },
       {
-        uri: `file://${BASE_PATH}/src/b.ts`,
+        uri: `file://${RESOLVED_BASE}/src/b.ts`,
         range: { start: { line: 10, character: 0 }, end: { line: 10, character: 6 } },
       },
     ];
@@ -226,7 +228,7 @@ describe("LspBridge", () => {
   it("should not use cache for rename operations", async () => {
     const rawEdit = {
       changes: {
-        [`file://${BASE_PATH}/src/a.ts`]: [
+        [`file://${RESOLVED_BASE}/src/a.ts`]: [
           {
             range: { start: { line: 0, character: 5 }, end: { line: 0, character: 10 } },
             newText: "newName",
@@ -290,7 +292,7 @@ describe("LspBridge", () => {
   it("should work correctly when cache is null", async () => {
     const rawResponse = [
       {
-        uri: `file://${BASE_PATH}/src/target.ts`,
+        uri: `file://${RESOLVED_BASE}/src/target.ts`,
         range: { start: { line: 0, character: 0 }, end: { line: 0, character: 5 } },
       },
     ];
@@ -334,8 +336,8 @@ describe("LspBridge", () => {
 
   // ---- 13. callHierarchyIncoming sends didOpen before request ----
   it("should send didOpen before callHierarchyIncoming request", async () => {
-    const prepareResult = [{ name: "myFunc", kind: 12, uri: `file://${BASE_PATH}/src/a.ts`, range: { start: { line: 0, character: 0 }, end: { line: 0, character: 10 } }, selectionRange: { start: { line: 0, character: 0 }, end: { line: 0, character: 6 } } }];
-    const incomingResult = [{ from: { name: "caller", kind: 12, uri: `file://${BASE_PATH}/src/b.ts`, range: { start: { line: 5, character: 0 }, end: { line: 5, character: 10 } }, selectionRange: { start: { line: 5, character: 0 }, end: { line: 5, character: 6 } } }, fromRanges: [] }];
+    const prepareResult = [{ name: "myFunc", kind: 12, uri: `file://${RESOLVED_BASE}/src/a.ts`, range: { start: { line: 0, character: 0 }, end: { line: 0, character: 10 } }, selectionRange: { start: { line: 0, character: 0 }, end: { line: 0, character: 6 } } }];
+    const incomingResult = [{ from: { name: "caller", kind: 12, uri: `file://${RESOLVED_BASE}/src/b.ts`, range: { start: { line: 5, character: 0 }, end: { line: 5, character: 10 } }, selectionRange: { start: { line: 5, character: 0 }, end: { line: 5, character: 6 } } }, fromRanges: [] }];
 
     const client = createMockClient({
       "textDocument/prepareCallHierarchy": prepareResult,
@@ -352,7 +354,7 @@ describe("LspBridge", () => {
       "textDocument/didOpen",
       expect.objectContaining({
         textDocument: expect.objectContaining({
-          uri: `file://${BASE_PATH}/src/a.ts`,
+          uri: `file://${RESOLVED_BASE}/src/a.ts`,
         }),
       }),
     );
@@ -365,8 +367,8 @@ describe("LspBridge", () => {
 
   // ---- 14. callHierarchyOutgoing sends didOpen before request ----
   it("should send didOpen before callHierarchyOutgoing request", async () => {
-    const prepareResult = [{ name: "myFunc", kind: 12, uri: `file://${BASE_PATH}/src/a.ts`, range: { start: { line: 0, character: 0 }, end: { line: 0, character: 10 } }, selectionRange: { start: { line: 0, character: 0 }, end: { line: 0, character: 6 } } }];
-    const outgoingResult = [{ to: { name: "callee", kind: 12, uri: `file://${BASE_PATH}/src/c.ts`, range: { start: { line: 10, character: 0 }, end: { line: 10, character: 10 } }, selectionRange: { start: { line: 10, character: 0 }, end: { line: 10, character: 6 } } }, fromRanges: [] }];
+    const prepareResult = [{ name: "myFunc", kind: 12, uri: `file://${RESOLVED_BASE}/src/a.ts`, range: { start: { line: 0, character: 0 }, end: { line: 0, character: 10 } }, selectionRange: { start: { line: 0, character: 0 }, end: { line: 0, character: 6 } } }];
+    const outgoingResult = [{ to: { name: "callee", kind: 12, uri: `file://${RESOLVED_BASE}/src/c.ts`, range: { start: { line: 10, character: 0 }, end: { line: 10, character: 10 } }, selectionRange: { start: { line: 10, character: 0 }, end: { line: 10, character: 6 } } }, fromRanges: [] }];
 
     const client = createMockClient({
       "textDocument/prepareCallHierarchy": prepareResult,
@@ -383,7 +385,7 @@ describe("LspBridge", () => {
       "textDocument/didOpen",
       expect.objectContaining({
         textDocument: expect.objectContaining({
-          uri: `file://${BASE_PATH}/src/a.ts`,
+          uri: `file://${RESOLVED_BASE}/src/a.ts`,
         }),
       }),
     );
@@ -396,7 +398,7 @@ describe("LspBridge", () => {
 
   // ---- 15. ensureDocumentOpen is idempotent ----
   it("should only send didOpen once for the same file", async () => {
-    const rawResponse = [{ uri: `file://${BASE_PATH}/src/utils.ts`, range: { start: { line: 0, character: 0 }, end: { line: 0, character: 5 } } }];
+    const rawResponse = [{ uri: `file://${RESOLVED_BASE}/src/utils.ts`, range: { start: { line: 0, character: 0 }, end: { line: 0, character: 5 } } }];
     const client = createMockClient({ "textDocument/definition": rawResponse });
     manager = createMockManager(client);
     cache = createMockCache();

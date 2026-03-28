@@ -668,7 +668,7 @@ export class LspBridge {
   }
 
   private toFileUri(file: string): string {
-    return "file://" + path.resolve(this.basePath, file);
+    return "file://" + path.resolve(this.basePath, file).replaceAll("\\", "/");
   }
 
   private fromFileUri(uri: string): string {
