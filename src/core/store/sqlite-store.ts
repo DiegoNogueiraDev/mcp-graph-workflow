@@ -632,7 +632,10 @@ export class SqliteStore {
     const pid = this.ensureProject();
     logger.debug("tx:delete-node", { id });
 
-    return this.db.transaction(() => {
+    // Bug #050: collect events inside transaction, emit AFTER commit
+    const deletedNodeIds: string[] = [];
+
+    const deleted = this.db.transaction(() => {
       // Recursively collect all descendant node IDs
       const toDelete: string[] = [];
       const collectDescendants = (nodeId: string): void => {
@@ -655,19 +658,26 @@ export class SqliteStore {
           .run(pid, nodeId, nodeId);
       }
 
-      let deleted = false;
+      let anyDeleted = false;
       for (const nodeId of toDelete) {
         const result = this.db
           .prepare("DELETE FROM nodes WHERE id = ? AND project_id = ?")
           .run(nodeId, pid);
         if (result.changes > 0) {
-          deleted = true;
-          this._eventBus?.emitTyped("node:deleted", { nodeId });
+          anyDeleted = true;
+          deletedNodeIds.push(nodeId);
         }
       }
 
-      return deleted;
+      return anyDeleted;
     })();
+
+    // Emit events after transaction committed successfully
+    for (const nodeId of deletedNodeIds) {
+      this._eventBus?.emitTyped("node:deleted", { nodeId });
+    }
+
+    return deleted;
   }
 
   deleteEdge(id: string): boolean {
@@ -753,7 +763,7 @@ export class SqliteStore {
     const pid = this.ensureProject();
     logger.debug("tx:clear-imported", { sourceFile });
 
-    return this.db.transaction(() => {
+    const cleared = this.db.transaction(() => {
       // Find node IDs from this source file
       const nodeIds = this.db
         .prepare(
@@ -785,10 +795,12 @@ export class SqliteStore {
         )
         .run(pid, sourceFile);
 
-      const result = { nodesDeleted: nodesResult.changes, edgesDeleted };
-      this._eventBus?.emitTyped("bulk:updated", { count: result.nodesDeleted + result.edgesDeleted, operation: "clearImportedNodes" });
-      return result;
+      return { nodesDeleted: nodesResult.changes, edgesDeleted };
     })();
+
+    // Bug #050: emit after transaction committed
+    this._eventBus?.emitTyped("bulk:updated", { count: cleared.nodesDeleted + cleared.edgesDeleted, operation: "clearImportedNodes" });
+    return cleared;
   }
 
   // ── Bulk ─────────────────────────────────────────

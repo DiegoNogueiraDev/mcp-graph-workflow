@@ -85,7 +85,8 @@ export function registerSetPhase(server: McpServer, store: SqliteStore): void {
 
         if (!gateResult.allowed && currentMode === "strict" && !force) {
           logger.warn("tool:set_phase:gate_blocked", { from: currentPhase, to: phase, unmetConditions: gateResult.unmetConditions });
-          return mcpError(`phase_gate_blocked: from ${currentPhase} to ${phase}. ${gateResult.reason}. Unmet: ${JSON.stringify(gateResult.unmetConditions)}. Hint: Use force:true para bypass, ou complete as condições listadas`);
+          // Bug #086: English in MCP tool responses
+          return mcpError(`phase_gate_blocked: from ${currentPhase} to ${phase}. ${gateResult.reason}. Unmet: ${JSON.stringify(gateResult.unmetConditions)}. Hint: Use force:true to bypass, or complete the listed conditions`);
         }
 
         if (!gateResult.allowed && force) {

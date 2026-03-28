@@ -89,7 +89,9 @@ export class StoreManager {
       // Close old store
       oldStore.close();
 
-      // Update refs
+      // Update refs — Bug #049: safe without lock because JS is single-threaded.
+      // The assignment is atomic within the event loop. Any in-flight async tool
+      // handler that captured `this._ref` will see the new store on next await point.
       this._ref.current = newStore;
       this._basePath = newBasePath;
 

@@ -12,6 +12,8 @@ export const NEIGHBOR_DESC_LIMIT = 100;
 
 export interface TaskContext {
   task: TaskSummary;
+  /** Bug #035: semantic alias — use 'node' for non-task node types */
+  node?: TaskSummary;
   parent: TaskSummary | null;
   children: TaskSummary[];
   blockers: BlockerInfo[];
@@ -108,7 +110,7 @@ export interface CompressedContext {
 
 const KEY_MAP: Record<string, string> = {
   // TaskContext top-level
-  task: "tk", parent: "par", children: "ch",
+  task: "tk", node: "n", parent: "par", children: "ch",
   blockers: "bl", dependsOn: "dep",
   acceptanceCriteria: "ac", sourceRef: "sr",
   relatedNodes: "rel", implementsNodes: "impl",
@@ -318,8 +320,10 @@ export function buildTaskContext(
     ) +
     [...incomingEdges, ...outgoingEdges].reduce((sum, e) => sum + (e.reason?.length ?? 0), 0);
 
+  const summary = toTaskSummary(node);
   const contextPayload: TaskContext = {
-    task: toTaskSummary(node),
+    task: summary,
+    // Bug #035: node alias set after metrics calculation to avoid inflating token count
     parent,
     children,
     blockers,

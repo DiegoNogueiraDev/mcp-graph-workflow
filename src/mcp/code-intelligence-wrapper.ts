@@ -326,20 +326,32 @@ export function wrapToolsWithCodeIntelligence(server: McpServer, store: SqliteSt
     return;
   }
 
+  // Bug #014/#019: cache mode to ensure consistency across parallel tool calls.
+  // Invalidated only when set_phase is called (which changes the mode).
+  let cachedMode: CodeIntelligenceMode | null = null;
+
+  function loadMode(): CodeIntelligenceMode {
+    try {
+      const modeValue = store.getProjectSetting("code_intelligence_mode");
+      if (modeValue === "strict" || modeValue === "advisory" || modeValue === "off") {
+        return modeValue;
+      }
+    } catch {
+      // No project loaded
+    }
+    return "off";
+  }
+
   for (const [name, tool] of Object.entries(registeredTools)) {
     const originalHandler = tool.handler;
 
     tool.handler = async (...args: unknown[]): Promise<unknown> => {
-      // ── Load mode ──
-      let mode: CodeIntelligenceMode = "off";
-      try {
-        const modeValue = store.getProjectSetting("code_intelligence_mode");
-        if (modeValue === "strict" || modeValue === "advisory" || modeValue === "off") {
-          mode = modeValue;
-        }
-      } catch {
-        // No project loaded — skip enrichment
+      // ── Load mode (cached for consistency across parallel calls) ──
+      // Invalidate cache when set_phase changes the mode
+      if (cachedMode === null || name === "set_phase") {
+        cachedMode = loadMode();
       }
+      const mode = cachedMode;
 
       if (mode === "off") {
         return originalHandler(...args);

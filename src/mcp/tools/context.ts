@@ -21,6 +21,8 @@ export function registerContext(server: McpServer, store: SqliteStore): void {
         return mcpError(err);
       }
 
+      // Bug #035: add 'node' alias for semantic clarity (backward-compatible)
+      ctx.node = ctx.task;
       logger.info("tool:context:ok", { id });
       return mcpText(ctx);
     },
