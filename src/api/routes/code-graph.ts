@@ -331,8 +331,9 @@ export function createCodeGraphRouter(options: CodeGraphRouterOptions): Router {
     } catch (err) { next(err); }
   });
 
-  // GET /code/lsp/status
+  // GET /code/lsp/status — also triggers lazy bridge initialization (warm-up)
   router.get("/lsp/status", (_req, res) => {
+    getOrCreateLspBridge();
     const statuses: Record<string, string> = {};
     if (lspManager) {
       for (const [lang, state] of lspManager.getStatus()) {

@@ -96,6 +96,15 @@ export interface LspHoverResult {
   language?: string;
 }
 
+export interface LspRenameEdit {
+  file: string;
+  startLine: number;
+  startCharacter: number;
+  endLine: number;
+  endCharacter: number;
+  newText: string;
+}
+
 export function useLsp(): {
   languages: LspLanguagesResponse | null;
   status: LspStatusResponse | null;
@@ -107,12 +116,14 @@ export function useLsp(): {
   hover: LspHoverResult | null;
   diagnostics: LspDiagnostic[];
   symbols: LspDocumentSymbol[];
+  renameResult: LspRenameEdit[] | null;
   refresh: () => Promise<void>;
   goToDefinition: (file: string, line: number, character: number) => Promise<void>;
   findReferences: (file: string, line: number, character: number) => Promise<void>;
   getHover: (file: string, line: number, character: number) => Promise<void>;
   getDiagnostics: (file: string) => Promise<void>;
   getSymbols: (file: string) => Promise<void>;
+  rename: (file: string, line: number, character: number, newName: string) => Promise<void>;
 } {
   const [languages, setLanguages] = useState<LspLanguagesResponse | null>(null);
   const [status, setStatus] = useState<LspStatusResponse | null>(null);
@@ -125,6 +136,7 @@ export function useLsp(): {
   const [hover, setHover] = useState<LspHoverResult | null>(null);
   const [diagnostics, setDiagnostics] = useState<LspDiagnostic[]>([]);
   const [symbols, setSymbols] = useState<LspDocumentSymbol[]>([]);
+  const [renameResult, setRenameResult] = useState<LspRenameEdit[] | null>(null);
   const [operationLoading, setOperationLoading] = useState(false);
 
   // Client-side cache (persists across re-renders, shared within component lifecycle)
@@ -160,6 +172,14 @@ export function useLsp(): {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  // Auto-refresh server status every 10s (detects server startup/shutdown)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      void fetchStatus();
+    }, 10_000);
+    return () => clearInterval(interval);
+  }, [fetchStatus]);
 
   const goToDefinition = useCallback(async (file: string, line: number, character: number) => {
     const cacheKey = `def:${file}:${line}:${character}`;
@@ -252,9 +272,34 @@ export function useLsp(): {
     }
   }, [cache]);
 
+  const rename = useCallback(async (file: string, line: number, character: number, newName: string) => {
+    setOperationLoading(true);
+    setRenameResult(null);
+    try {
+      const data = await apiClient.lspRename(file, line, character, newName);
+      const edit = data.edit as { changes?: Array<{ file: string; range: { start: { line: number; character: number }; end: { line: number; character: number } }; newText: string }> } | null;
+      if (edit?.changes) {
+        setRenameResult(edit.changes.map((c) => ({
+          file: c.file,
+          startLine: (c.range?.start?.line ?? 0) + 1,
+          startCharacter: c.range?.start?.character ?? 0,
+          endLine: (c.range?.end?.line ?? 0) + 1,
+          endCharacter: c.range?.end?.character ?? 0,
+          newText: c.newText,
+        })));
+      } else {
+        setRenameResult([]);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Rename failed");
+    } finally {
+      setOperationLoading(false);
+    }
+  }, []);
+
   return {
     languages, status, loading, error, operationLoading,
-    definitions, references, hover, diagnostics, symbols,
-    refresh, goToDefinition, findReferences, getHover, getDiagnostics, getSymbols,
+    definitions, references, hover, diagnostics, symbols, renameResult,
+    refresh, goToDefinition, findReferences, getHover, getDiagnostics, getSymbols, rename,
   };
 }

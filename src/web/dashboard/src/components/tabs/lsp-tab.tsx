@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useLsp } from "@/hooks/use-lsp";
-import type { LspDetectedLanguage, LspDiagnostic, LspDocumentSymbol, LspLocation, LspHoverResult } from "@/hooks/use-lsp";
+import type { LspDetectedLanguage, LspDiagnostic, LspDocumentSymbol, LspLocation, LspHoverResult, LspRenameEdit } from "@/hooks/use-lsp";
 import {
   RefreshCw,
   Search,
@@ -16,6 +16,7 @@ import {
   AlertCircle,
   Info,
   Lightbulb,
+  Pencil,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -338,22 +339,48 @@ function StatusSection({ languages, status }: {
 // ---------------------------------------------------------------------------
 // Explorer sub-tab
 // ---------------------------------------------------------------------------
-function ExplorerSection({ goToDefinition, findReferences, getHover, operationLoading, definitions, references, hover }: {
+function RenameResultView({ edits }: { edits: LspRenameEdit[] }): React.JSX.Element {
+  return (
+    <div className="p-4 rounded-xl border border-edge bg-surface-alt space-y-2">
+      <h4 className="text-xs font-semibold text-muted uppercase tracking-wider">Rename Edits ({edits.length})</h4>
+      {edits.length === 0 ? (
+        <p className="text-sm text-muted">No edits produced — the symbol may not support rename</p>
+      ) : (
+        <ul className="space-y-1">
+          {edits.map((edit, i) => (
+            <li key={`${edit.file}-${edit.startLine}-${i}`} className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-lg hover:bg-surface-elevated transition-colors">
+              <Pencil className="w-3 h-3 text-warning flex-shrink-0" />
+              <span className="font-mono text-foreground truncate" title={edit.file}>{edit.file}</span>
+              <span className="text-muted flex-shrink-0">:{edit.startLine}:{edit.startCharacter}</span>
+              <span className="text-accent ml-auto text-[10px] truncate">{edit.newText}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function ExplorerSection({ goToDefinition, findReferences, getHover, rename, operationLoading, definitions, references, hover, renameResult }: {
   goToDefinition: (file: string, line: number, character: number) => Promise<void>;
   findReferences: (file: string, line: number, character: number) => Promise<void>;
   getHover: (file: string, line: number, character: number) => Promise<void>;
+  rename: (file: string, line: number, character: number, newName: string) => Promise<void>;
   operationLoading: boolean;
   definitions: LspLocation[];
   references: { total: number; refs: LspLocation[]; byFile: Record<string, number> } | null;
   hover: LspHoverResult | null;
+  renameResult: LspRenameEdit[] | null;
 }): React.JSX.Element {
   const [file, setFile] = useState("");
   const [line, setLine] = useState("");
   const [col, setCol] = useState("");
+  const [newName, setNewName] = useState("");
 
   const parsedLine = parseInt(line, 10) || 0;
   const parsedCol = parseInt(col, 10) || 0;
   const isValid = file.trim().length > 0 && parsedLine > 0;
+  const isRenameValid = isValid && newName.trim().length > 0;
 
   const handleDefinition = useCallback(() => {
     if (isValid) void goToDefinition(file.trim(), parsedLine, parsedCol);
@@ -367,7 +394,11 @@ function ExplorerSection({ goToDefinition, findReferences, getHover, operationLo
     if (isValid) void getHover(file.trim(), parsedLine, parsedCol);
   }, [file, parsedLine, parsedCol, isValid, getHover]);
 
-  const hasResults = hover !== null || definitions.length > 0 || references !== null;
+  const handleRename = useCallback(() => {
+    if (isRenameValid) void rename(file.trim(), parsedLine, parsedCol, newName.trim());
+  }, [file, parsedLine, parsedCol, newName, isRenameValid, rename]);
+
+  const hasResults = hover !== null || definitions.length > 0 || references !== null || renameResult !== null;
 
   return (
     <div className="p-4 space-y-4">
@@ -426,6 +457,23 @@ function ExplorerSection({ goToDefinition, findReferences, getHover, operationLo
           <Info className="w-3.5 h-3.5" />
           Hover
         </button>
+        <div className="flex items-center gap-1.5">
+          <input
+            placeholder="New name"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            className="w-32 px-2 py-1.5 text-xs border border-edge rounded-lg bg-surface font-mono focus:outline-none focus:ring-1 focus:ring-warning"
+          />
+          <button
+            type="button"
+            onClick={handleRename}
+            disabled={!isRenameValid || operationLoading}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-warning text-warning hover:bg-warning/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+            Rename
+          </button>
+        </div>
       </div>
 
       {/* Loading indicator */}
@@ -442,6 +490,7 @@ function ExplorerSection({ goToDefinition, findReferences, getHover, operationLo
           {hover && <HoverResultView hover={hover} />}
           {definitions.length > 0 && <LocationList title="Definitions" locations={definitions} />}
           {references && <ReferencesResult references={references} />}
+          {renameResult && <RenameResultView edits={renameResult} />}
         </div>
       )}
 
@@ -450,7 +499,7 @@ function ExplorerSection({ goToDefinition, findReferences, getHover, operationLo
         <div className="flex flex-col items-center justify-center py-16 text-muted">
           <Search className="w-10 h-10 mb-3 opacity-40" />
           <p className="text-sm">Enter a file path and position to explore symbols</p>
-          <p className="text-xs mt-1">Use Definition, References, or Hover to inspect code</p>
+          <p className="text-xs mt-1">Use Definition, References, Hover, or Rename to inspect code</p>
         </div>
       )}
     </div>
@@ -619,12 +668,14 @@ export function LspTab(): React.JSX.Element {
     hover,
     diagnostics,
     symbols,
+    renameResult,
     refresh,
     goToDefinition,
     findReferences,
     getHover,
     getDiagnostics,
     getSymbols,
+    rename,
   } = useLsp();
 
   const [activeSubTab, setActiveSubTab] = useState<SubTab>("status");
@@ -703,10 +754,12 @@ export function LspTab(): React.JSX.Element {
             goToDefinition={goToDefinition}
             findReferences={findReferences}
             getHover={getHover}
+            rename={rename}
             operationLoading={operationLoading}
             definitions={definitions}
             references={references}
             hover={hover}
+            renameResult={renameResult}
           />
         )}
         {activeSubTab === "diagnostics" && (

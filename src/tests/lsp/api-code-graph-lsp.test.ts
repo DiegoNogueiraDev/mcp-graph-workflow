@@ -45,13 +45,14 @@ describe("API /api/v1/code-graph/lsp", () => {
   // ── GET /code-graph/lsp/status ────────────────────
 
   describe("GET /api/v1/code-graph/lsp/status", () => {
-    it("should return bridge state when not initialized", async () => {
+    it("should return bridge state (auto-initialized via warm-up)", async () => {
       const res = await request(ctx.app).get("/api/v1/code-graph/lsp/status");
 
       expect(res.status).toBe(200);
       expect(res.body.ok).toBe(true);
-      expect(res.body.bridgeInitialized).toBe(false);
-      expect(res.body.servers).toEqual({});
+      // Bridge is now auto-initialized on status request (warm-up)
+      expect(res.body.bridgeInitialized).toBe(true);
+      expect(typeof res.body.servers).toBe("object");
     });
   });
 
