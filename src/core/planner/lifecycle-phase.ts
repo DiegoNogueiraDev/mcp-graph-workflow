@@ -1,4 +1,5 @@
 import type { GraphDocument } from "../graph/graph-types.js";
+import { BOOTSTRAP_TOOLS } from "../utils/constants.js";
 import { nodeHasAc } from "../utils/ac-helpers.js";
 import { parseAc } from "../analyzer/ac-parser.js";
 import { checkDesignReadiness } from "../designer/definition-of-ready.js";
@@ -345,10 +346,11 @@ const PHASE_RECOMMENDED_TOOLS: Record<LifecyclePhase, Set<string>> = {
   LISTENING: new Set(["import_prd", "node", "analyze", "manage_skill", "list_skills", "validate_task"]),
 };
 
-const ALWAYS_ALLOWED_TOOLS = new Set([
-  "init", "set_phase", "list", "show", "search", "metrics", "export", "snapshot",
+/** Tools exempt from phase gating — includes bootstrap tools + read-only operations. */
+const PHASE_EXEMPT_TOOLS = new Set([
+  ...BOOTSTRAP_TOOLS,
+  "list", "show", "search", "metrics", "export", "snapshot",
   "context", "rag_context", "next", "analyze",
-  "sync_stack_docs", "reindex_knowledge",
   "read_memory", "list_memories", "list_skills",
 ]);
 
@@ -362,7 +364,7 @@ export function checkToolGate(
   toolName: string,
   mode: StrictnessMode = "strict",
 ): LifecycleWarning[] {
-  if (ALWAYS_ALLOWED_TOOLS.has(toolName)) {
+  if (PHASE_EXEMPT_TOOLS.has(toolName)) {
     return [];
   }
 

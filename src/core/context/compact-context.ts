@@ -340,9 +340,11 @@ export function buildTaskContext(
 
   const compactJson = JSON.stringify(contextPayload);
   const compactChars = compactJson.length;
+  // Bug #034: clamp to 0 — originalChars counts raw text only while compactChars
+  // includes JSON structure overhead, so expansion is expected for small nodes
   const reductionPercent =
     originalChars > 0
-      ? Math.round(((originalChars - compactChars) / originalChars) * 100)
+      ? Math.max(0, Math.round(((originalChars - compactChars) / originalChars) * 100))
       : 0;
 
   contextPayload.metrics = {

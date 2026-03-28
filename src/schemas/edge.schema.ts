@@ -10,7 +10,7 @@ export const GraphEdgeSchema = z.object({
   from: z.string(),
   to: z.string(),
   relationType: RelationTypeSchema,
-  weight: z.number().optional(),
+  weight: z.number().min(0).max(1).optional(),
   reason: z.string().optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
   createdAt: z.string(),

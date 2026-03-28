@@ -14,6 +14,7 @@ import { KnowledgeStore } from "../../core/store/knowledge-store.js";
 import { chunkText } from "../../core/rag/chunk-text.js";
 import { indexEntitiesForSource, indexEntitiesForDocs } from "../../core/rag/entity-index-hook.js";
 import { logger } from "../../core/utils/logger.js";
+import { assertPathInsideProject } from "../../core/utils/fs.js";
 import { mcpText, mcpError, normalizeNewlines } from "../response-helpers.js";
 import { readFile } from "node:fs/promises";
 
@@ -32,6 +33,9 @@ export function registerSiebelImportDocs(server: McpServer, store: SqliteStore):
       logger.info("tool:siebel_import_docs", { filePath, fileName, docType });
 
       try {
+        // Security: validate file path is inside project directory
+        if (filePath) assertPathInsideProject(filePath);
+
         const knowledgeStore = new KnowledgeStore(store.getDb());
         let documentsIndexed = 0;
 

@@ -52,7 +52,7 @@ export function registerRagContext(server: McpServer, store: SqliteStore): void 
         .describe("Search strategy: 'fts' (traditional BM25), 'multi' (multi-strategy with query understanding, post-retrieval, citations). Default: fts"),
     },
     async ({ query, tokenBudget, detail, strategy }) => {
-      logger.debug("tool:rag_context", { query, tier: detail });
+      logger.debug("tool:rag_context", { query, detail });
       const budget = tokenBudget ?? DEFAULT_TOKEN_BUDGET;
 
       // Detect current lifecycle phase for phase-aware knowledge boosting
@@ -73,7 +73,7 @@ export function registerRagContext(server: McpServer, store: SqliteStore): void 
         const detailCacheKey = `detail:${detail}:${query.trim().toLowerCase()}:${budget}`;
         const cachedDetail = contextCache.get(detailCacheKey);
         if (cachedDetail) {
-          logger.debug("rag_context:detail_cache_hit", { query, tier: detail });
+          logger.debug("rag_context:detail_cache_hit", { query, detail });
           return mcpText(cachedDetail);
         }
 
@@ -85,7 +85,7 @@ export function registerRagContext(server: McpServer, store: SqliteStore): void 
         });
 
         contextCache.set(detailCacheKey, ctx);
-        logger.info("tool:rag_context:ok", { query, tier: detail, phase: currentPhase, strategy });
+        logger.info("tool:rag_context:ok", { query, detail, phase: currentPhase, strategy });
         return mcpText(ctx);
       }
 

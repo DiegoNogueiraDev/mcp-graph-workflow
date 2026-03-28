@@ -1,10 +1,10 @@
 import { z } from "zod/v4";
-import { readFileSync } from "node:fs";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import { mergeGraph } from "../../core/importer/import-graph.js";
 import type { GraphDocument } from "../../core/graph/graph-types.js";
 import { logger } from "../../core/utils/logger.js";
+import { safeReadFileSync } from "../../core/utils/fs.js";
 import { mcpText, mcpError } from "../response-helpers.js";
 import { indexEntitiesForSource } from "../../core/rag/entity-index-hook.js";
 import { indexNodeAsKnowledge } from "../../core/rag/node-indexer.js";
@@ -40,7 +40,7 @@ export function registerImportGraph(server: McpServer, store: SqliteStore): void
         jsonString = graph;
       } else if (filePath) {
         try {
-          jsonString = readFileSync(filePath, "utf-8");
+          jsonString = safeReadFileSync(filePath, new Set([".json"]));
         } catch (err) {
           return mcpError(`Failed to read file: ${filePath} — ${err instanceof Error ? err.message : String(err)}`);
         }

@@ -29,6 +29,20 @@ export const GLOBAL_MEMORIES_DIR = path.join(GLOBAL_DB_DIR, "memories");
 /** Global config file (~/.mcp-graph/config.json) */
 export const GLOBAL_CONFIG_FILE = path.join(GLOBAL_DB_DIR, "config.json");
 
+// ── Bootstrap tools ──
+
+/**
+ * Tools that must ALWAYS bypass strict gates (code-intelligence, lifecycle).
+ * These are bootstrap/configuration tools that should never be blocked.
+ * Single source of truth — imported by tool-classification.ts and lifecycle-phase.ts.
+ */
+export const BOOTSTRAP_TOOLS = new Set([
+  "init",
+  "set_phase",
+  "reindex_knowledge",
+  "sync_stack_docs",
+]);
+
 // ── Node defaults ──
 
 /** Default status for newly created nodes */

@@ -13,6 +13,7 @@ import { indexSifContent } from "../../core/rag/siebel-indexer.js";
 import { indexEntitiesForSource } from "../../core/rag/entity-index-hook.js";
 import { batchImportSifs } from "../../core/siebel/sif-batch-importer.js";
 import { logger } from "../../core/utils/logger.js";
+import { assertPathInsideProject } from "../../core/utils/fs.js";
 import { mcpText, mcpError, normalizeNewlines } from "../response-helpers.js";
 
 function importSingleSif(
@@ -68,6 +69,10 @@ export function registerSiebelImportSif(server: McpServer, store: SqliteStore): 
       logger.info("tool:siebel_import_sif", { filePath, fileName, directory, concurrency, mapToGraph });
 
       try {
+        // Security: validate paths are inside project directory
+        if (filePath) assertPathInsideProject(filePath);
+        if (directory) assertPathInsideProject(directory);
+
         // Batch import mode
         if (directory) {
           const batchResult = await batchImportSifs(directory, { concurrency });

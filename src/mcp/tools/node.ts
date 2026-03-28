@@ -117,6 +117,23 @@ export function registerNode(server: McpServer, store: SqliteStore): void {
         if (parentId !== undefined) fields.parentId = parentId;
         if (acceptanceCriteria !== undefined) fields.acceptanceCriteria = acceptanceCriteria;
 
+        // Bug #036: reject self-parenting in update action
+        if (parentId !== undefined && parentId !== null && parentId === id) {
+          return mcpError("A node cannot be its own parent");
+        }
+
+        // Circularity check: walk up from parentId to ensure id is not an ancestor
+        if (parentId !== undefined && parentId !== null) {
+          let ancestor = store.getNodeById(parentId);
+          while (ancestor?.parentId) {
+            if (ancestor.parentId === id) {
+              return mcpError("Circular reference detected: target parent is a descendant of this node");
+            }
+            ancestor = store.getNodeById(ancestor.parentId);
+            if (!ancestor) break;
+          }
+        }
+
         // If parentId is changing, manage edges atomically (Bug #047)
         if (parentId !== undefined) {
           const db = store.getDb();
