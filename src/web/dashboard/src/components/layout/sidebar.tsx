@@ -20,6 +20,7 @@ import {
   PanelLeft,
   Menu,
   X,
+  Languages,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -35,7 +36,8 @@ export type TabId =
   | "benchmark"
   | "logs"
   | "siebel"
-  | "lsp";
+  | "lsp"
+  | "languages";
 
 interface NavItem {
   id: TabId;
@@ -56,6 +58,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: "skills", label: "Skills", icon: Zap },
   { id: "context", label: "Context", icon: Target },
   { id: "benchmark", label: "Benchmark", icon: Timer },
+  { id: "languages", label: "Languages", icon: Languages, beta: true },
   { id: "logs", label: "Logs", icon: ScrollText },
 ];
 

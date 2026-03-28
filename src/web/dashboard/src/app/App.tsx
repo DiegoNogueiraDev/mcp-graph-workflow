@@ -24,6 +24,7 @@ const BenchmarkTab = lazy(() => import("@/components/tabs/benchmark-tab").then((
 const LogsTab = lazy(() => import("@/components/tabs/logs-tab").then((m) => ({ default: m.LogsTab })));
 const SiebelTab = lazy(() => import("@/components/siebel/siebel-tab").then((m) => ({ default: m.SiebelTab })));
 const LspTab = lazy(() => import("@/components/tabs/lsp-tab").then((m) => ({ default: m.LspTab })));
+const LanguagesTab = lazy(() => import("@/components/tabs/languages-tab").then((m) => ({ default: m.LanguagesTab })));
 
 const TAB_LABELS: Record<TabId, string> = {
   graph: "Graph",
@@ -37,6 +38,7 @@ const TAB_LABELS: Record<TabId, string> = {
   skills: "Skills",
   context: "Context",
   benchmark: "Benchmark",
+  languages: "Languages",
   logs: "Logs",
 };
 
@@ -181,6 +183,7 @@ function AppContent(): React.JSX.Element {
                   {activeTab === "logs" && <LogsTab />}
                   {activeTab === "siebel" && <SiebelTab />}
                   {activeTab === "lsp" && <LspTab />}
+                  {activeTab === "languages" && <LanguagesTab />}
                 </Suspense>
               </ErrorBoundary>
             )}
