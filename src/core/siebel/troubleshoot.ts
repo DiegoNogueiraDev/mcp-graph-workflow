@@ -110,7 +110,7 @@ function buildDependencyChain(
   }
 
   while (queue.length > 0) {
-    const current = queue.shift()!;
+    const current = queue.shift() as SiebelObjectRef;
     const currentKey = `${current.type}:${current.name}`;
 
     // Find objects that depend on current (reverse deps)

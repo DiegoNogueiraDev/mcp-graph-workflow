@@ -108,7 +108,7 @@ export class KnowledgeStore {
     );
 
     logger.info("Knowledge doc inserted", { id, sourceType: doc.sourceType, title: doc.title });
-    return this.getById(id)!;
+    return this.getById(id) as KnowledgeDocument;
   }
 
   /**

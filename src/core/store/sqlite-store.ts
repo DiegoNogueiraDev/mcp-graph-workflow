@@ -292,12 +292,12 @@ export class SqliteStore {
   initProject(name?: string): GraphProject {
     // If no name provided and project already active, return current
     if (this.projectId && !name) {
-      return this.getProject()!;
+      return this.getProject() as GraphProject;
     }
 
     // If name provided, check if same as current project
     if (this.projectId && name) {
-      const current = this.getProject()!;
+      const current = this.getProject() as GraphProject;
       if (current.name === name) {
         return current;
       }

@@ -516,7 +516,7 @@ export class LspBridge {
 
       // Client-side filter by kinds (some servers ignore the `only` parameter)
       if (kinds && kinds.length > 0) {
-        actions = actions.filter((a) => a.kind && kinds.some((k) => a.kind!.startsWith(k)));
+        actions = actions.filter((a) => a.kind && kinds.some((k) => (a.kind as string).startsWith(k)));
       }
 
       return actions;

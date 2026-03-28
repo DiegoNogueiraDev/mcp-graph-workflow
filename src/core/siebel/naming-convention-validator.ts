@@ -90,7 +90,7 @@ function isPascalCase(name: string): boolean {
 }
 
 function isSnakeCase(name: string): boolean {
-  return /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/.test(name);
+  return /^[a-z][a-z0-9_]*$/.test(name) && !name.includes("__") && !name.endsWith("_");
 }
 
 function isCamelCase(name: string): boolean {
@@ -98,7 +98,7 @@ function isCamelCase(name: string): boolean {
 }
 
 function isUpperSnake(name: string): boolean {
-  return /^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$/.test(name);
+  return /^[A-Z][A-Z0-9_]*$/.test(name) && !name.includes("__") && !name.endsWith("_");
 }
 
 function checkCase(name: string, pattern: CaseRule["pattern"]): boolean {

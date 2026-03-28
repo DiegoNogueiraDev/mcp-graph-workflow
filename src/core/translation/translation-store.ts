@@ -88,7 +88,7 @@ export class TranslationStore {
       now,
     );
 
-    return this.getJob(id)!;
+    return this.getJob(id) as TranslationJob;
   }
 
   getJob(id: string): TranslationJob | null {

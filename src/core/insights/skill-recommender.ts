@@ -71,6 +71,7 @@ function parseSkillFrontmatter(content: string, dirName: string, filePath: strin
 }
 
 function extractField(yaml: string, field: string): string | null {
+  // eslint-disable-next-line security/detect-non-literal-regexp -- field is always a hardcoded string literal from callers
   const match = yaml.match(new RegExp(`^${field}:\\s*(.+)$`, "m"));
   return match ? match[1].trim().replace(/^["']|["']$/g, "") : null;
 }

@@ -6,7 +6,7 @@
 
 import { ConstructRegistry } from "./ucr/construct-registry.js";
 import { TranslationStore } from "./translation-store.js";
-import type { TranslationAnalysis, TranslationScope } from "./translation-types.js";
+import type { TranslationAnalysis, TranslationJob, TranslationScope } from "./translation-types.js";
 import type { TranslationScore, AmbiguityReport } from "./ucr/construct-types.js";
 import { detectLanguageFromCode } from "./language-detect.js";
 import { TsParserAdapter } from "./parsers/ts-parser-adapter.js";
@@ -185,7 +185,7 @@ export class TranslationOrchestrator {
         status: "failed",
         errorMessage: "Generated code is empty",
       });
-      const failedJob = this.store.getJob(jobId)!;
+      const failedJob = this.store.getJob(jobId) as TranslationJob;
       return {
         job: { id: failedJob.id, status: failedJob.status },
         evidence: emptyEvidence(),
@@ -211,7 +211,8 @@ export class TranslationOrchestrator {
       evidence: evidence as unknown as Record<string, unknown>,
     });
 
-    const finalJob = this.store.getJob(jobId)!;
+    const finalJob = this.store.getJob(jobId);
+    if (!finalJob) throw new Error(`Job not found after finalization: ${jobId}`);
     return {
       job: {
         id: finalJob.id,

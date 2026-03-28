@@ -18,7 +18,7 @@ const TESTABLE_VERBS = [
 
 const MEASURABLE_PATTERNS = [
   /\d+\s*(ms|s|seg|min|%|px|kb|mb)/i,
-  /\b(menor|maior|less|more|under|over|within|antes|depois)\s+(?:que\s+)?\d+/i,
+  /\b(menor|maior|less|more|under|over|within|antes|depois)\s+(?:que\s)?\d+/i,
   /\b(exatamente|exactly|igual|equals?)\s+/i,
   /\b(status\s+\d{3}|código?\s+\d{3})/i,
   /\b(vazio|empty|null|undefined|true|false)\b/i,

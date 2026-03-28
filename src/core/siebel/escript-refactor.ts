@@ -87,6 +87,7 @@ function detectUnusedVariables(code: string): RefactorIssue[] {
     const varName = match[1];
     // Count occurrences after declaration (excluding the declaration itself)
     const afterDecl = code.substring(match.index + match[0].length);
+    // eslint-disable-next-line security/detect-non-literal-regexp -- varName is escaped via escapeRegex()
     const usagePattern = new RegExp(`\\b${escapeRegex(varName)}\\b`, "g");
     const usages = afterDecl.match(usagePattern);
 
@@ -196,6 +197,7 @@ function detectMissingCleanup(code: string): { issues: RefactorIssue[]; vars: st
 
   const uncleaned: string[] = [];
   for (const varName of siebelVars) {
+    // eslint-disable-next-line security/detect-non-literal-regexp -- varName is escaped via escapeRegex()
     const hasCleanup = new RegExp(`\\b${escapeRegex(varName)}\\s*=\\s*null`, "g").test(finallyBody);
     if (!hasCleanup) {
       uncleaned.push(varName);

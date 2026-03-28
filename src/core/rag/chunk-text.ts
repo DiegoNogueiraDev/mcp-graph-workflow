@@ -278,6 +278,7 @@ function splitByMarkdownHeaders(text: string): string[] {
  * Split by code boundaries (function/class/export declarations).
  */
 function splitByCodeBoundaries(text: string): string[] {
+  // eslint-disable-next-line security/detect-unsafe-regex -- lookahead with optional keyword prefix; no nested quantifiers on overlapping chars
   const sections = text.split(/(?=\n(?:export\s+)?(?:function|class|interface|type|const|enum)\s)/);
   return sections.filter((s) => s.trim());
 }

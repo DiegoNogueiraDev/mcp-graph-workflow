@@ -163,7 +163,7 @@ function computePriorityRank(
   }
 
   for (const edge of relevantEdges) {
-    adj.get(edge.from)!.push(edge.to);
+    (adj.get(edge.from) as string[]).push(edge.to);
     inDegree.set(edge.to, (inDegree.get(edge.to) ?? 0) + 1);
   }
 

@@ -70,7 +70,9 @@ const PROFILES: LanguageProfile[] = [
   {
     id: "java",
     unique: [
+      // eslint-disable-next-line security/detect-unsafe-regex -- bounded optional keyword; no overlapping quantifiers
       /\bpublic\s+(static\s+)?void\s+main\b/, /\bSystem\.out\.print/,
+      // eslint-disable-next-line security/detect-unsafe-regex -- bounded optional keyword; no overlapping quantifiers
       /\bpublic\s+class\s+\w+/, /\bprivate\s+(static\s+)?\w+\s+\w+/,
       /\bnew\s+ArrayList</, /\bextends\s+\w+\s*\{/,
     ],

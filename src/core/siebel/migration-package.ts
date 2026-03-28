@@ -98,7 +98,7 @@ function resolveTransitiveDependents(
     if (!reverseDeps.has(toKey)) {
       reverseDeps.set(toKey, []);
     }
-    reverseDeps.get(toKey)!.push(dep.from);
+    (reverseDeps.get(toKey) as SiebelObjectRef[]).push(dep.from);
   }
 
   const visited = new Set<string>(modifiedRefs);
@@ -106,7 +106,7 @@ function resolveTransitiveDependents(
   const queue = [...modifiedRefs];
 
   while (queue.length > 0) {
-    const currentKey = queue.shift()!;
+    const currentKey = queue.shift() as string;
     const dependents = reverseDeps.get(currentKey) ?? [];
 
     for (const dep of dependents) {
@@ -174,7 +174,7 @@ function detectCircularDeps(
     const toKey = refKey(dep.to);
     if (packageRefs.has(fromKey) && packageRefs.has(toKey)) {
       if (!adj.has(fromKey)) adj.set(fromKey, []);
-      adj.get(fromKey)!.push(toKey);
+      (adj.get(fromKey) as string[]).push(toKey);
     }
   }
 
@@ -234,7 +234,7 @@ function generateDeployScripts(
     const byType = new Map<string, SiebelObjectRef[]>();
     for (const ref of deployOrder) {
       if (!byType.has(ref.type)) byType.set(ref.type, []);
-      byType.get(ref.type)!.push(ref);
+      (byType.get(ref.type) as SiebelObjectRef[]).push(ref);
     }
 
     for (const [type, refs] of byType) {

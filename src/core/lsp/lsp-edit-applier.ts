@@ -166,7 +166,7 @@ export class LspEditApplier {
 
     // Phase 2: Apply edits to each file
     for (const [filePath, edits] of grouped) {
-      const content = fileContents.get(filePath)!;
+      const content = fileContents.get(filePath) as string;
       const sortedEdits = sortEditsReverse(edits);
 
       try {

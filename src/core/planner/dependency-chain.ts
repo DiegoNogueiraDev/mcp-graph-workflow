@@ -17,7 +17,7 @@ export function findTransitiveBlockers(doc: GraphDocument, nodeId: string): Grap
   const nodeMap = new Map(doc.nodes.map((n) => [n.id, n]));
 
   while (queue.length > 0) {
-    const current = queue.shift()!;
+    const current = queue.shift() as string;
 
     for (const edge of doc.edges) {
       let blockerId: string | null = null;
@@ -140,7 +140,7 @@ export function findCriticalPath(doc: GraphDocument): GraphNode[] {
   }
 
   while (queue.length > 0) {
-    const current = queue.shift()!;
+    const current = queue.shift() as string;
     const currentDist = dist.get(current) ?? 0;
 
     for (const neighbor of forward.get(current) ?? []) {

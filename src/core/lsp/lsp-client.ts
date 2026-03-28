@@ -201,7 +201,7 @@ export class LspClient extends EventEmitter {
       });
 
       const encoded = this.encode(request);
-      this.process!.stdin!.write(encoded);
+      (this.process as ChildProcess).stdin?.write(encoded);
     });
   }
 

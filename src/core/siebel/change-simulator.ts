@@ -149,7 +149,7 @@ function findDependents(
 
   // BFS for transitive dependents
   while (queue.length > 0) {
-    const current = queue.shift()!;
+    const current = queue.shift() as DepRef;
     const currentKey = `${current.ref.type}:${current.ref.name}`;
 
     for (const dep of dependencies) {
