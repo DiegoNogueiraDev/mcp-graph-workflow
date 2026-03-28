@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.15.1](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.15.0...mcp-graph-v5.15.1) (2026-03-28)
+
+
+### Bug Fixes
+
+* **lsp:** add didOpen to callHierarchy methods, fix empty results ([772555d](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/772555dd8185cc5b762234302dfa905415cd7651))
+
 ## [5.15.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.14.1...mcp-graph-v5.15.0) (2026-03-28)
 
 
