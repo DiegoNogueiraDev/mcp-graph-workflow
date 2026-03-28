@@ -519,6 +519,39 @@ const migrations: Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_lsp_cache_lang ON lsp_cache(project_id, language_id);
     `,
   },
+  {
+    version: 14,
+    description: "Recreate code_symbols_fts with signature column (replaces kind)",
+    sql: `
+      -- Drop old FTS table and triggers (schema mismatch: had 'kind', needs 'signature')
+      DROP TRIGGER IF EXISTS code_fts_insert;
+      DROP TRIGGER IF EXISTS code_fts_delete;
+      DROP TRIGGER IF EXISTS code_fts_update;
+      DROP TABLE IF EXISTS code_symbols_fts;
+
+      CREATE VIRTUAL TABLE code_symbols_fts USING fts5(
+        name, file, signature,
+        content='code_symbols', content_rowid='rowid'
+      );
+
+      CREATE TRIGGER code_fts_insert AFTER INSERT ON code_symbols BEGIN
+        INSERT INTO code_symbols_fts(rowid, name, file, signature)
+          VALUES (NEW.rowid, NEW.name, NEW.file, COALESCE(NEW.signature, ''));
+      END;
+
+      CREATE TRIGGER code_fts_delete AFTER DELETE ON code_symbols BEGIN
+        INSERT INTO code_symbols_fts(code_symbols_fts, rowid, name, file, signature)
+          VALUES ('delete', OLD.rowid, OLD.name, OLD.file, COALESCE(OLD.signature, ''));
+      END;
+
+      CREATE TRIGGER code_fts_update AFTER UPDATE ON code_symbols BEGIN
+        INSERT INTO code_symbols_fts(code_symbols_fts, rowid, name, file, signature)
+          VALUES ('delete', OLD.rowid, OLD.name, OLD.file, COALESCE(OLD.signature, ''));
+        INSERT INTO code_symbols_fts(rowid, name, file, signature)
+          VALUES (NEW.rowid, NEW.name, NEW.file, COALESCE(NEW.signature, ''));
+      END;
+    `,
+  },
 ];
 
 export function runMigrations(db: Database.Database): void {

@@ -137,23 +137,42 @@ export function getFullGraph(
   store: CodeStore,
   projectId: string,
   symbolLimit: number = 5000,
-): { symbols: CodeSymbol[]; relations: Array<CodeRelation & { from: string; to: string }> } {
-  const symbols = store.getAllSymbols(projectId, symbolLimit);
+  symbolOffset: number = 0,
+): {
+  symbols: CodeSymbol[];
+  relations: Array<CodeRelation & { from: string; to: string }>;
+  total: { symbols: number; relations: number };
+} {
+  const symbols = store.getAllSymbols(projectId, symbolLimit, symbolOffset);
   const relations = store.getAllRelations(projectId);
 
   // Build id→name map so the dashboard can reference nodes by name
+  const symbolIds = new Set<string>();
   const idToName = new Map<string, string>();
   for (const sym of symbols) {
     idToName.set(sym.id, sym.name);
+    symbolIds.add(sym.id);
   }
 
-  const enrichedRelations = relations.map((rel) => ({
+  // Filter relations to only include those connecting visible symbols
+  const visibleRelations = relations.filter(
+    (rel) => symbolIds.has(rel.fromSymbol) || symbolIds.has(rel.toSymbol),
+  );
+
+  const enrichedRelations = visibleRelations.map((rel) => ({
     ...rel,
     from: idToName.get(rel.fromSymbol) ?? rel.fromSymbol,
     to: idToName.get(rel.toSymbol) ?? rel.toSymbol,
   }));
 
-  return { symbols, relations: enrichedRelations };
+  return {
+    symbols,
+    relations: enrichedRelations,
+    total: {
+      symbols: store.countSymbols(projectId),
+      relations: store.countRelations(projectId),
+    },
+  };
 }
 
 // ── Semantic Enrichment (AST + LSP) ──────────────────

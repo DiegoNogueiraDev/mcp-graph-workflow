@@ -6,6 +6,8 @@
  */
 
 import { exec } from "node:child_process";
+import { existsSync } from "node:fs";
+import path from "node:path";
 import { promisify } from "node:util";
 import { LspClient } from "./lsp-client.js";
 import { ServerRegistry } from "./server-registry.js";
@@ -141,7 +143,10 @@ export class LspServerManager {
 
   /**
    * Check if a language server binary is installed.
-   * Uses probeCommand from config if available, otherwise `which` (or `where` on Windows).
+   * Resolution order:
+   *   1. probeCommand from config (if provided)
+   *   2. Local node_modules/.bin (bundled dependency)
+   *   3. System PATH via `which` / `where`
    */
   async isServerInstalled(languageId: string): Promise<boolean> {
     const config = this.registry.getConfigForLanguage(languageId);
@@ -149,14 +154,29 @@ export class LspServerManager {
       return false;
     }
 
-    const probeCmd = config.probeCommand
-      ? config.probeCommand
-      : process.platform === "win32"
-        ? `where ${config.command}`
-        : `which ${config.command}`;
+    // 1. Custom probe command
+    if (config.probeCommand) {
+      try {
+        await execAsync(config.probeCommand);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    // 2. Check local node_modules/.bin (bundled via optionalDependencies)
+    const localBin = resolveLocalBin(config.command);
+    if (localBin) {
+      return true;
+    }
+
+    // 3. System PATH via which/where
+    const whichCmd = process.platform === "win32"
+      ? `where ${config.command}`
+      : `which ${config.command}`;
 
     try {
-      await execAsync(probeCmd);
+      await execAsync(whichCmd);
       return true;
     } catch {
       return false;
@@ -353,7 +373,8 @@ export class LspServerManager {
    * Start a language server: spawn process, send initialize, wait for response.
    */
   private async startServer(config: LspServerConfig): Promise<LspClient> {
-    const client = new LspClient(config.command, config.args, REQUEST_TIMEOUT_MS);
+    const resolvedCommand = resolveLocalBin(config.command) ?? config.command;
+    const client = new LspClient(resolvedCommand, config.args, REQUEST_TIMEOUT_MS);
     await client.start();
 
     // Send initialize request
@@ -392,4 +413,27 @@ export class LspServerManager {
 
     return client;
   }
+}
+
+// ── Helpers ──────────────────────────────────────────
+
+/**
+ * Resolve a command binary from local node_modules/.bin.
+ * Walks up from __dirname to find the nearest node_modules/.bin/<command>.
+ * Returns the absolute path if found, null otherwise.
+ */
+function resolveLocalBin(command: string): string | null {
+  const ext = process.platform === "win32" ? ".cmd" : "";
+  // Start from this file's directory and walk upward
+  let dir = path.dirname(new URL(import.meta.url).pathname);
+  for (let i = 0; i < 10; i++) {
+    const candidate = path.join(dir, "node_modules", ".bin", `${command}${ext}`);
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return null;
 }

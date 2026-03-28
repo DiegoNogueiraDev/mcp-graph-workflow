@@ -84,6 +84,12 @@ vi.mock("node:child_process", () => ({
   spawn: vi.fn(),
 }));
 
+// Mock node:fs to control resolveLocalBin behavior
+const mockExistsSync = vi.fn<(p: string | URL) => boolean>().mockReturnValue(false);
+vi.mock("node:fs", () => ({
+  existsSync: (...args: [string | URL]) => mockExistsSync(...args),
+}));
+
 // Import after mocking
 const { LspServerManager } = await import("../../core/lsp/lsp-server-manager.js");
 

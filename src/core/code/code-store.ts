@@ -182,11 +182,25 @@ export class CodeStore {
     return row ? rowToSymbol(row) : null;
   }
 
-  getAllSymbols(projectId: string, limit: number = 5000): CodeSymbol[] {
+  getAllSymbols(projectId: string, limit: number = 5000, offset: number = 0): CodeSymbol[] {
     const rows = this.db
-      .prepare("SELECT * FROM code_symbols WHERE project_id = ? LIMIT ?")
-      .all(projectId, limit) as SymbolRow[];
+      .prepare("SELECT * FROM code_symbols WHERE project_id = ? LIMIT ? OFFSET ?")
+      .all(projectId, limit, offset) as SymbolRow[];
     return rows.map(rowToSymbol);
+  }
+
+  countSymbols(projectId: string): number {
+    const row = this.db
+      .prepare("SELECT COUNT(*) as count FROM code_symbols WHERE project_id = ?")
+      .get(projectId) as { count: number } | undefined;
+    return row?.count ?? 0;
+  }
+
+  countRelations(projectId: string): number {
+    const row = this.db
+      .prepare("SELECT COUNT(*) as count FROM code_relations WHERE project_id = ?")
+      .get(projectId) as { count: number } | undefined;
+    return row?.count ?? 0;
   }
 
   deleteSymbolsByFile(file: string, projectId: string): number {

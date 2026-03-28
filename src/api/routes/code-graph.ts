@@ -180,9 +180,10 @@ export function createCodeGraphRouter(options: CodeGraphRouterOptions): Router {
   router.get("/full", (req, res, next) => {
     try {
       const limit = parseInt(String(req.query.limit ?? "500"), 10);
+      const offset = parseInt(String(req.query.offset ?? "0"), 10);
       const codeStore = getCodeStore();
       const projectId = getProjectId();
-      const graph = getFullGraph(codeStore, projectId, limit);
+      const graph = getFullGraph(codeStore, projectId, limit, offset);
 
       res.json(graph);
     } catch (err) {
@@ -221,6 +222,14 @@ export function createCodeGraphRouter(options: CodeGraphRouterOptions): Router {
     const diagnostics = new LspDiagnosticsCollector();
 
     lspBridge = new LspBridge(lspManager, cache, diagnostics, basePath);
+
+    // Auto-prune stale cache entries (> 7 days) on bridge initialization
+    try {
+      cache.prune();
+    } catch {
+      // Non-critical — ignore prune errors
+    }
+
     return lspBridge;
   }
 

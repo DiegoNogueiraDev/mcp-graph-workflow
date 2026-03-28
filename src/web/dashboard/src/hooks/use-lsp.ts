@@ -1,5 +1,42 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { apiClient } from "@/lib/api-client";
+
+// ── In-memory cache with TTL ──────────────────────────
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+function createLspCache(): {
+  get: <T>(key: string) => T | undefined;
+  set: <T>(key: string, data: T) => void;
+} {
+  const store = new Map<string, CacheEntry<unknown>>();
+
+  return {
+    get<T>(key: string): T | undefined {
+      const entry = store.get(key);
+      if (!entry) return undefined;
+      if (Date.now() - entry.timestamp > CACHE_TTL_MS) {
+        store.delete(key);
+        return undefined;
+      }
+      return entry.data as T;
+    },
+    set<T>(key: string, data: T): void {
+      store.set(key, { data, timestamp: Date.now() });
+      // Evict old entries when cache grows too large
+      if (store.size > 200) {
+        const now = Date.now();
+        for (const [k, v] of store) {
+          if (now - v.timestamp > CACHE_TTL_MS) store.delete(k);
+        }
+      }
+    },
+  };
+}
 
 // Types inline (avoid import cycle)
 export interface LspDetectedLanguage {
@@ -90,6 +127,10 @@ export function useLsp(): {
   const [symbols, setSymbols] = useState<LspDocumentSymbol[]>([]);
   const [operationLoading, setOperationLoading] = useState(false);
 
+  // Client-side cache (persists across re-renders, shared within component lifecycle)
+  const cacheRef = useRef(createLspCache());
+  const cache = cacheRef.current;
+
   const fetchLanguages = useCallback(async () => {
     try {
       const data = await apiClient.getLspLanguages();
@@ -121,64 +162,95 @@ export function useLsp(): {
   }, [refresh]);
 
   const goToDefinition = useCallback(async (file: string, line: number, character: number) => {
+    const cacheKey = `def:${file}:${line}:${character}`;
+    const cached = cache.get<LspLocation[]>(cacheKey);
+    if (cached) { setDefinitions(cached); return; }
+
     setOperationLoading(true);
     try {
       const data = await apiClient.lspDefinition(file, line, character);
-      setDefinitions(data.definitions ?? []);
+      const result = data.definitions ?? [];
+      cache.set(cacheKey, result);
+      setDefinitions(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Definition lookup failed");
     } finally {
       setOperationLoading(false);
     }
-  }, []);
+  }, [cache]);
 
   const findReferences = useCallback(async (file: string, line: number, character: number) => {
+    type RefsResult = { total: number; refs: LspLocation[]; byFile: Record<string, number> };
+    const cacheKey = `refs:${file}:${line}:${character}`;
+    const cached = cache.get<RefsResult>(cacheKey);
+    if (cached) { setReferences(cached); return; }
+
     setOperationLoading(true);
     try {
       const data = await apiClient.lspReferences(file, line, character);
-      setReferences({ total: data.totalReferences ?? 0, refs: data.references ?? [], byFile: data.byFile ?? {} });
+      const result: RefsResult = { total: data.totalReferences ?? 0, refs: data.references ?? [], byFile: data.byFile ?? {} };
+      cache.set(cacheKey, result);
+      setReferences(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : "References lookup failed");
     } finally {
       setOperationLoading(false);
     }
-  }, []);
+  }, [cache]);
 
   const getHover = useCallback(async (file: string, line: number, character: number) => {
+    const cacheKey = `hover:${file}:${line}:${character}`;
+    const cached = cache.get<LspHoverResult | null>(cacheKey);
+    if (cached !== undefined) { setHover(cached); return; }
+
     setOperationLoading(true);
     try {
       const data = await apiClient.lspHover(file, line, character);
-      setHover(data.hover ?? null);
+      const result = data.hover ?? null;
+      cache.set(cacheKey, result);
+      setHover(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Hover lookup failed");
     } finally {
       setOperationLoading(false);
     }
-  }, []);
+  }, [cache]);
 
   const getDiagnostics = useCallback(async (file: string) => {
+    const cacheKey = `diag:${file}`;
+    const cached = cache.get<LspDiagnostic[]>(cacheKey);
+    if (cached) { setDiagnostics(cached); return; }
+
     setOperationLoading(true);
     try {
       const data = await apiClient.lspDiagnostics(file);
-      setDiagnostics(data.diagnostics ?? []);
+      const result = data.diagnostics ?? [];
+      cache.set(cacheKey, result);
+      setDiagnostics(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Diagnostics lookup failed");
     } finally {
       setOperationLoading(false);
     }
-  }, []);
+  }, [cache]);
 
   const getSymbols = useCallback(async (file: string) => {
+    const cacheKey = `sym:${file}`;
+    const cached = cache.get<LspDocumentSymbol[]>(cacheKey);
+    if (cached) { setSymbols(cached); return; }
+
     setOperationLoading(true);
     try {
       const data = await apiClient.lspSymbols(file);
-      setSymbols((data.symbols ?? []) as LspDocumentSymbol[]);
+      const result = (data.symbols ?? []) as LspDocumentSymbol[];
+      cache.set(cacheKey, result);
+      setSymbols(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Symbols lookup failed");
     } finally {
       setOperationLoading(false);
     }
-  }, []);
+  }, [cache]);
 
   return {
     languages, status, loading, error, operationLoading,
