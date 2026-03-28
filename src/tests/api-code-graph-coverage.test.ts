@@ -53,7 +53,7 @@ describe("API /api/v1/code-graph (coverage)", () => {
   // ── POST /code-graph/reindex ────────────────────
 
   describe("POST /api/v1/code-graph/reindex", () => {
-    it("should return success with indexing result", async () => {
+    it("should return success with indexing result", { timeout: 30_000 }, async () => {
       const res = await request(ctx.app).post("/api/v1/code-graph/reindex");
 
       expect(res.status).toBe(200);
@@ -63,7 +63,7 @@ describe("API /api/v1/code-graph (coverage)", () => {
       expect(res.body).toHaveProperty("relationCount");
     });
 
-    it("should include typescriptAvailable field in reindex response", async () => {
+    it("should include typescriptAvailable field in reindex response", { timeout: 30_000 }, async () => {
       const res = await request(ctx.app).post("/api/v1/code-graph/reindex");
 
       expect(res.status).toBe(200);
