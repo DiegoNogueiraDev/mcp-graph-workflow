@@ -57,6 +57,14 @@ export function detectLargeTasks(doc: GraphDocument): DecomposeResult[] {
       reasons.push(`${acCount} acceptance criteria > ${AC_THRESHOLD} threshold`);
     }
 
+    // Bug #031: empty epics always need decomposition regardless of size criteria
+    if (reasons.length === 0 && node.type === "epic") {
+      const hasChildrenForEpic = doc.nodes.some((n) => n.parentId === node.id);
+      if (!hasChildrenForEpic) {
+        reasons.push("epic without children — needs decomposition");
+      }
+    }
+
     if (reasons.length === 0) continue;
 
     // Check if already decomposed (has children)

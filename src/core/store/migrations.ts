@@ -645,6 +645,16 @@ const migrations: Migration[] = [
         ON tool_call_log (project_id, node_id, tool_name);
     `,
   },
+  {
+    version: 17,
+    description: "Cleanup duplicate project_settings rows (defensive fix for NEW-1)",
+    sql: `
+      DELETE FROM project_settings
+      WHERE rowid NOT IN (
+        SELECT MAX(rowid) FROM project_settings GROUP BY project_id, key
+      );
+    `,
+  },
 ];
 
 export function runMigrations(db: Database.Database): void {

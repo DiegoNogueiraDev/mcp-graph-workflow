@@ -81,5 +81,10 @@ export function buildTraceabilityMatrix(doc: GraphDocument): TraceabilityReport 
 
   logger.info("traceability-matrix", { requirements: requirements.length, coverageRate });
 
-  return { matrix, coverageRate, orphanRequirements, orphanDecisions };
+  // Bug #009: warn when no requirement nodes exist but graph has other nodes
+  const warning = requirements.length === 0 && doc.nodes.length > 0
+    ? "No requirement nodes found — traceability cannot be evaluated"
+    : undefined;
+
+  return { matrix, coverageRate, orphanRequirements, orphanDecisions, warning };
 }

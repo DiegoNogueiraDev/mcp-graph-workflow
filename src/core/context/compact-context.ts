@@ -12,8 +12,8 @@ export const NEIGHBOR_DESC_LIMIT = 100;
 
 export interface TaskContext {
   task: TaskSummary;
-  /** Bug #035: semantic alias — use 'node' for non-task node types */
-  node?: TaskSummary;
+  /** Bug #035: semantic alias — always mirrors 'task', present for all node types */
+  node: TaskSummary;
   parent: TaskSummary | null;
   children: TaskSummary[];
   blockers: BlockerInfo[];
@@ -321,9 +321,9 @@ export function buildTaskContext(
     [...incomingEdges, ...outgoingEdges].reduce((sum, e) => sum + (e.reason?.length ?? 0), 0);
 
   const summary = toTaskSummary(node);
-  const contextPayload: TaskContext = {
+  // Build payload without 'node' alias for accurate metrics calculation
+  const corePayload = {
     task: summary,
-    // Bug #035: node alias set after metrics calculation to avoid inflating token count
     parent,
     children,
     blockers,
@@ -338,23 +338,30 @@ export function buildTaskContext(
     metrics: { originalChars: 0, compactChars: 0, reductionPercent: 0, estimatedTokens: 0 },
   };
 
-  const compactJson = JSON.stringify(contextPayload);
+  const compactJson = JSON.stringify(corePayload);
   const compactChars = compactJson.length;
-  // Bug #034: clamp to 0 — originalChars counts raw text only while compactChars
-  // includes JSON structure overhead, so expansion is expected for small nodes
+  // Bug #034: negative values indicate expansion (JSON overhead > raw text).
+  // This is expected for small nodes where structure metadata exceeds original content.
   const reductionPercent =
     originalChars > 0
-      ? Math.max(0, Math.round(((originalChars - compactChars) / originalChars) * 100))
+      ? Math.round(((originalChars - compactChars) / originalChars) * 100)
       : 0;
 
-  contextPayload.metrics = {
+  const metrics = {
     originalChars,
     compactChars,
     reductionPercent,
     estimatedTokens: estimateTokens(compactJson),
   };
 
-  logger.info(`Context for ${nodeId}: ${contextPayload.metrics.estimatedTokens} tokens, ${contextPayload.metrics.reductionPercent}% reduction`);
+  // Bug #035: assemble final payload with 'node' alias (same reference as 'task')
+  const contextPayload: TaskContext = {
+    ...corePayload,
+    node: summary,
+    metrics,
+  };
+
+  logger.info(`Context for ${nodeId}: ${metrics.estimatedTokens} tokens, ${metrics.reductionPercent}% reduction`);
 
   return contextPayload;
 }

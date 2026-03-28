@@ -44,6 +44,8 @@ export const TraceabilityReportSchema = z.object({
   coverageRate: z.number().min(0).max(100),
   orphanRequirements: z.array(z.string()),
   orphanDecisions: z.array(z.string()),
+  /** Bug #009: warning when no requirement nodes exist */
+  warning: z.string().optional(),
 });
 
 export type TraceabilityCoverage = z.infer<typeof TraceabilityCoverageSchema>;

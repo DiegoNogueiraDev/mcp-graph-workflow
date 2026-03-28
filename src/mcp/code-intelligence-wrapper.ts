@@ -354,7 +354,12 @@ export function wrapToolsWithCodeIntelligence(server: McpServer, store: SqliteSt
       const mode = cachedMode;
 
       if (mode === "off") {
-        return originalHandler(...args);
+        const offResult = await originalHandler(...args);
+        // Bug #001/#002: invalidate cache even in "off" mode — set_phase may change it
+        if (name === "set_phase") {
+          cachedMode = null;
+        }
+        return offResult;
       }
 
       // ── Pre-execution gate check (strict mode) ──
@@ -402,6 +407,13 @@ export function wrapToolsWithCodeIntelligence(server: McpServer, store: SqliteSt
         }
       } catch {
         logger.debug("code-intelligence-wrapper: skipped enrichment for tool", { tool: name });
+      }
+
+      // Bug #001/#002: invalidate cache AFTER set_phase handler has written new value to DB.
+      // The cache was loaded BEFORE the handler ran, so it holds the old value.
+      // Nullifying forces a fresh read from DB on the next tool call.
+      if (name === "set_phase") {
+        cachedMode = null;
       }
 
       return result;

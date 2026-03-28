@@ -25,6 +25,18 @@ export function registerSearch(server: McpServer, store: SqliteStore): void {
     },
     async ({ query, limit, rerank }) => {
       logger.debug("tool:search", { query, limit });
+
+      // Bug #063: detect wildcard-only queries that produce empty FTS results
+      if (/^[*?]+$/.test(query.trim())) {
+        return mcpText({
+          query,
+          total: 0,
+          hasMore: false,
+          results: [],
+          hint: "Wildcard-only queries not supported by FTS. Use list() to see all nodes.",
+        });
+      }
+
       const results = searchNodes(store, query, { limit: limit ?? 20, rerank: rerank ?? false });
 
       const items = results.map((r) => ({

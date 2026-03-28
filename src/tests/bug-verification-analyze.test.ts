@@ -118,7 +118,7 @@ describe("Bug Verification — Analyze Gate Checks", () => {
   // ── #027: ac_coverage with 0 done tasks should be 0%, not 100% ──
 
   describe("ac_coverage vacuous truth (#027)", () => {
-    it("review_ready: 0 done tasks → 0% ac_coverage, not 100%", () => {
+    it("review_ready: 0 done tasks → vacuous pass", () => {
       // All tasks are in_progress, none done
       const t1 = makeNode({ title: "Task 1", status: "in_progress" });
       const t2 = makeNode({ title: "Task 2", status: "ready" });
@@ -128,7 +128,9 @@ describe("Bug Verification — Analyze Gate Checks", () => {
       const acCheck = result.checks.find((c) => c.name === "ac_coverage");
 
       expect(acCheck).toBeDefined();
-      expect(acCheck!.details).toContain("0%");
+      // Bug #027 fix: 0 done tasks = vacuous pass, not failure
+      expect(acCheck!.passed).toBe(true);
+      expect(acCheck!.details).toContain("vacuous");
     });
   });
 

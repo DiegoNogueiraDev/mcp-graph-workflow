@@ -56,13 +56,15 @@ export function checkReviewReadiness(doc: GraphDocument): ReviewReadinessReport 
   const doneWithAC = doneTasks.filter(
     (t) => nodeHasAc(doc, t.id),
   );
-  // Bug #027: 0 done tasks = 0% coverage, not vacuous 100%
+  // Bug #027: 0 done tasks = vacuous pass (nothing to evaluate)
   const acCoverage = doneTasks.length > 0 ? Math.round((doneWithAC.length / doneTasks.length) * 100) : 0;
-  const acCoveragePass = acCoverage >= 70;
+  const acCoveragePass = doneTasks.length === 0 || acCoverage >= 70;
   checks.push({
     name: "ac_coverage",
     passed: acCoveragePass,
-    details: `${acCoverage}% done tasks com AC (meta: 70%)`,
+    details: doneTasks.length === 0
+      ? "No done tasks to evaluate (vacuous pass)"
+      : `${acCoverage}% done tasks com AC (meta: 70%)`,
     severity: "required",
   });
 

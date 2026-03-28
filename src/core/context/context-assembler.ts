@@ -18,6 +18,8 @@ export interface AssembledContext {
   query: string;
   /** Tier used for node context */
   tier: ContextTier;
+  /** Bug #079: alias matching the tool param name 'detail' */
+  detail: ContextTier;
   /** Assembled sections with token accounting */
   sections: ContextSection[];
   /** Token usage breakdown */
@@ -172,6 +174,7 @@ export function assembleContext(
   return {
     query,
     tier,
+    detail: tier,
     sections,
     tokenUsage: {
       budget: tokenBudget,
