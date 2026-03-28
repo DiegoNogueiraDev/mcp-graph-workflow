@@ -303,6 +303,11 @@ export function registerCodeIntelligence(server: McpServer, store: SqliteStore):
 
           case "diagnostics": {
             if (!file) return mcpError("diagnostics mode requires: file");
+            // Bug #043: validate file exists before calling LSP
+            const fs = await import("node:fs");
+            if (!fs.existsSync(path.resolve(file))) {
+              return mcpError(`File not found: ${file}`);
+            }
             const diags = await lspBridge.getDiagnostics(file);
             const response = { ok: true, mode: "diagnostics" as const, file, diagnostics: diags };
             const text = JSON.stringify(response, null, 2);
@@ -311,6 +316,11 @@ export function registerCodeIntelligence(server: McpServer, store: SqliteStore):
 
           case "document_symbols": {
             if (!file) return mcpError("document_symbols mode requires: file");
+            // Bug #044: validate file exists before calling LSP
+            const fs2 = await import("node:fs");
+            if (!fs2.existsSync(path.resolve(file))) {
+              return mcpError(`File not found: ${file}`);
+            }
             const syms = await lspBridge.getDocumentSymbols(file);
             const response = { ok: true, mode: "document_symbols" as const, file, symbols: syms };
             const text = JSON.stringify(response, null, 2);
@@ -319,12 +329,8 @@ export function registerCodeIntelligence(server: McpServer, store: SqliteStore):
 
           case "workspace_symbols": {
             if (!query) return mcpError("workspace_symbols mode requires: query");
-            return mcpText({
-              ok: true,
-              mode: "workspace_symbols",
-              supported: false,
-              message: "Use 'search' tool for workspace symbol search",
-            });
+            // Bug #042: return error instead of misleading ok:true with supported:false
+            return mcpError("workspace_symbols is not implemented. Use the 'search' tool for symbol search instead.");
           }
 
           // -----------------------------------------------------------------

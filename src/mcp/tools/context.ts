@@ -10,7 +10,7 @@ export function registerContext(server: McpServer, store: SqliteStore): void {
   server.tool(
     "context",
     "Get a compact, AI-optimized context payload for a specific task (includes parent, children, blockers, dependencies, acceptance criteria, source references, and token reduction metrics)",
-    { id: z.string().describe("The node ID to build context for") },
+    { id: z.string().min(1).describe("The node ID to build context for") },
     async ({ id }) => {
       logger.debug("tool:context", { id });
       const ctx = buildTaskContext(store, id);

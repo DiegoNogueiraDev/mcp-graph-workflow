@@ -5,7 +5,6 @@
 import type { GraphDocument } from "../graph/graph-types.js";
 import type { ListenerReadinessReport, ListenerReadinessCheck } from "../../schemas/listener-schema.js";
 import { analyzeScope } from "../analyzer/scope-analyzer.js";
-import { findAllBlockedTasks } from "../utils/blocked-helpers.js";
 import { calculateVelocity } from "../planner/velocity.js";
 import { analyzeBacklogHealth } from "./backlog-health.js";
 import { scoreToGrade } from "../utils/grading.js";
@@ -62,15 +61,15 @@ export function checkListeningReadiness(
     severity: "required",
   });
 
-  // 4. no_blocked — zero blocked tasks (status-based + dependency-based for consistency)
-  const blockedTasks = findAllBlockedTasks(doc);
-  const noBlocked = blockedTasks.length === 0;
+  // 4. no_blocked — zero tasks with status=blocked (Bug #012)
+  const statusBlockedTasks = tasks.filter((t) => t.status === "blocked");
+  const noBlocked = statusBlockedTasks.length === 0;
   checks.push({
     name: "no_blocked",
     passed: noBlocked,
     details: noBlocked
       ? "Nenhuma task bloqueada"
-      : `${blockedTasks.length} task(s) bloqueada(s)`,
+      : `${statusBlockedTasks.length} task(s) bloqueada(s)`,
     severity: "required",
   });
 

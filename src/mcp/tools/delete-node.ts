@@ -13,7 +13,7 @@ export function registerDeleteNode(server: McpServer, store: SqliteStore): void 
   server.tool(
     "delete_node",
     "Delete a node and all its associated edges (DEPRECATED — use `node` with action:\"delete\")",
-    { id: z.string().describe("The node ID to delete") },
+    { id: z.string().min(1).describe("The node ID to delete") },
     async ({ id }) => {
       logger.warn("tool:delete_node:deprecated", { message: "Use 'node' tool with action:'delete' instead" });
       logger.debug("tool:delete_node", { id });

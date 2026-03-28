@@ -88,6 +88,7 @@ export const RiskEntrySchema = z.object({
   level: RiskLevelSchema,
   mitigationStatus: z.enum(["mitigated", "partial", "unmitigated"]),
   suggestedMitigation: z.string().optional(),
+  synthetic: z.boolean().optional(),
 });
 
 export const RiskMatrixSchema = z.object({

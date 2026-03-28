@@ -22,5 +22,12 @@ export function findAllBlockedTasks(doc: GraphDocument): BlockedTaskSummary[] {
   const statusBlocked = tasks
     .filter((n) => (n.status === "blocked" || n.blocked === true) && !bottleneckIds.has(n.id))
     .map((n) => ({ id: n.id, title: n.title }));
-  return [...bottlenecks.blockedTasks.map((b) => ({ id: b.id, title: b.title })), ...statusBlocked];
+  // Bug #092: final dedup by ID to prevent any duplicate entries
+  const merged = [...bottlenecks.blockedTasks.map((b) => ({ id: b.id, title: b.title })), ...statusBlocked];
+  const seen = new Set<string>();
+  return merged.filter((t) => {
+    if (seen.has(t.id)) return false;
+    seen.add(t.id);
+    return true;
+  });
 }

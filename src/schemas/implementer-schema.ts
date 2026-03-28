@@ -97,6 +97,7 @@ export const SprintProgressReportSchema = z.object({
   burndown: BurndownSchema,
   velocityTrend: VelocityTrendSchema,
   blockers: z.array(BlockerDetailSchema),
+  criticalPathTotal: z.number().min(0).optional(),
   criticalPathRemaining: z.number().min(0),
   estimatedCompletionDays: z.number().nullable(),
   summary: z.string(),

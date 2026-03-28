@@ -10,7 +10,9 @@ const TECH_DEBT_KEYWORDS = ["tech-debt", "refactor", "fix", "debt", "cleanup", "
 const STALE_THRESHOLD_DAYS = 30;
 
 export function analyzeBacklogHealth(doc: GraphDocument): BacklogHealthReport {
-  const tasks = doc.nodes.filter((n) => TASK_TYPES.has(n.type));
+  // Bug #072: include epics and requirements in backlog analysis, not just tasks
+  const BACKLOG_TYPES = new Set([...TASK_TYPES, "epic", "requirement"]);
+  const tasks = doc.nodes.filter((n) => BACKLOG_TYPES.has(n.type));
   const backlogTasks = tasks.filter((n) => n.status === "backlog");
   const readyTasks = tasks.filter((n) => n.status === "ready");
 

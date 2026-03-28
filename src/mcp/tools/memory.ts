@@ -24,8 +24,8 @@ export function registerMemory(server: McpServer, store: SqliteStore): void {
     "write_memory",
     "Write a project memory to workflow-graph/memories/{name}.md. Auto-indexes into the knowledge store for RAG search.",
     {
-      name: z.string().describe("Memory name (without .md extension). Supports nested paths like 'architecture/overview'."),
-      content: z.string().describe("Memory content (markdown)."),
+      name: z.string().min(1).regex(/^[a-zA-Z0-9_-][a-zA-Z0-9_/.-]*$/).describe("Memory name (without .md extension). Supports nested paths like 'architecture/overview'. Only alphanumeric, hyphens, underscores, and forward slashes allowed."),
+      content: z.string().min(1).describe("Memory content (markdown)."),
     },
     async ({ name, content }) => {
       logger.debug("tool:write_memory", { name });
@@ -53,7 +53,7 @@ export function registerMemory(server: McpServer, store: SqliteStore): void {
     "read_memory",
     "Read a project memory from workflow-graph/memories/{name}.md.",
     {
-      name: z.string().describe("Memory name (without .md extension)."),
+      name: z.string().min(1).describe("Memory name (without .md extension)."),
     },
     async ({ name }) => {
       logger.debug("tool:read_memory", { name });
@@ -91,7 +91,7 @@ export function registerMemory(server: McpServer, store: SqliteStore): void {
     "delete_memory",
     "Delete a project memory from workflow-graph/memories/{name}.md and remove from knowledge store.",
     {
-      name: z.string().describe("Memory name to delete (without .md extension)."),
+      name: z.string().min(1).describe("Memory name to delete (without .md extension)."),
     },
     async ({ name }) => {
       logger.debug("tool:delete_memory", { name });

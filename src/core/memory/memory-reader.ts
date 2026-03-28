@@ -25,6 +25,22 @@ function memoriesPath(basePath: string): string {
 }
 
 /**
+ * Validate that a memory name resolves to a path inside the memories directory.
+ * Prevents path traversal attacks (Bug #003).
+ */
+function safePath(basePath: string, name: string): string {
+  if (name.includes("\0")) {
+    throw new Error("Path traversal detected: name contains null bytes");
+  }
+  const memDir = path.resolve(memoriesPath(basePath));
+  const resolved = path.resolve(memDir, `${name}.md`);
+  if (!resolved.startsWith(memDir + path.sep) && resolved !== memDir) {
+    throw new Error("Path traversal detected: name escapes memories directory");
+  }
+  return resolved;
+}
+
+/**
  * Recursively collect all .md files under a directory, returning paths relative to root.
  */
 async function collectMdFiles(dir: string, root: string): Promise<string[]> {
@@ -63,7 +79,7 @@ export async function listMemories(basePath: string): Promise<string[]> {
  */
 export async function readMemory(basePath: string, name: string): Promise<ProjectMemory | null> {
   try {
-    const filePath = path.join(memoriesPath(basePath), `${name}.md`);
+    const filePath = safePath(basePath, name);
     const content = await readFile(filePath, "utf-8");
     return {
       name,
@@ -95,7 +111,7 @@ export async function readAllMemories(basePath: string): Promise<ProjectMemory[]
  * Write a memory file. Creates parent directories if needed.
  */
 export async function writeMemory(basePath: string, name: string, content: string): Promise<void> {
-  const filePath = path.join(memoriesPath(basePath), `${name}.md`);
+  const filePath = safePath(basePath, name);
   const dir = path.dirname(filePath);
 
   if (!existsSync(dir)) {
@@ -111,7 +127,7 @@ export async function writeMemory(basePath: string, name: string, content: strin
  */
 export async function deleteMemory(basePath: string, name: string): Promise<boolean> {
   try {
-    const filePath = path.join(memoriesPath(basePath), `${name}.md`);
+    const filePath = safePath(basePath, name);
     await unlink(filePath);
     logger.info("Memory deleted", { name });
     return true;

@@ -40,8 +40,8 @@ export function checkReviewReadiness(doc: GraphDocument): ReviewReadinessReport 
     severity: "required",
   });
 
-  // 2. no_blocked_tasks — zero blocked tasks
-  const blockedCount = bottlenecks.blockedTasks.length;
+  // 2. no_blocked_tasks — zero tasks with status=blocked (Bug #010)
+  const blockedCount = tasks.filter((t) => t.status === "blocked").length;
   const noBlocked = blockedCount === 0;
   checks.push({
     name: "no_blocked_tasks",
@@ -56,7 +56,8 @@ export function checkReviewReadiness(doc: GraphDocument): ReviewReadinessReport 
   const doneWithAC = doneTasks.filter(
     (t) => nodeHasAc(doc, t.id),
   );
-  const acCoverage = doneTasks.length > 0 ? Math.round((doneWithAC.length / doneTasks.length) * 100) : 100;
+  // Bug #027: 0 done tasks = 0% coverage, not vacuous 100%
+  const acCoverage = doneTasks.length > 0 ? Math.round((doneWithAC.length / doneTasks.length) * 100) : 0;
   const acCoveragePass = acCoverage >= 70;
   checks.push({
     name: "ac_coverage",

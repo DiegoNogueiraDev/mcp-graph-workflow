@@ -50,8 +50,9 @@ export function calculateSprintProgress(
     };
   });
 
-  // Critical path remaining
+  // Critical path remaining (Bug #073: include total for context)
   const criticalPath = findCriticalPath(doc);
+  const criticalPathTotal = criticalPath.length;
   const criticalPathRemaining = criticalPath.filter((n) => n.status !== "done").length;
 
   // ETA
@@ -77,6 +78,7 @@ export function calculateSprintProgress(
     burndown: { total, done, inProgress, blocked, backlog, ready, donePercent },
     velocityTrend: { currentSprintVelocity, averageVelocity, trend },
     blockers,
+    criticalPathTotal,
     criticalPathRemaining,
     estimatedCompletionDays,
     summary,

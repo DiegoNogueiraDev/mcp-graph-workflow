@@ -70,6 +70,8 @@ export function assessRisks(doc: GraphDocument): RiskMatrix {
       level,
       mitigationStatus,
       suggestedMitigation,
+      // Bug #028: indicate scores are keyword-inferred, not user-provided
+      synthetic: true,
     });
   }
 

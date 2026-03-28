@@ -19,7 +19,8 @@ export function checkStatusFlow(doc: GraphDocument): StatusFlowReport {
         nodeId: task.id,
         title: task.title,
         currentStatus: task.status,
-        details: `Task "${task.title}" marcada como done sem transição de status (createdAt === updatedAt)`,
+        // Bug #095: note that this is a heuristic — timestamps may be imprecise
+        details: `Task "${task.title}" marcada como done sem transição de status (createdAt === updatedAt). Nota: heurística baseada em timestamps — pode ser imprecisa.`,
       });
     }
   }

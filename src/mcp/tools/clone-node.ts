@@ -80,7 +80,7 @@ export function registerCloneNode(server: McpServer, store: SqliteStore): void {
     "clone_node",
     "Clone a node (optionally with all children)",
     {
-      id: z.string().describe("The node ID to clone"),
+      id: z.string().min(1).describe("The node ID to clone"),
       deep: z.boolean().optional().describe("Clone children recursively (default: false)"),
       newParentId: z.string().optional().describe("Parent ID for the cloned node"),
     },
@@ -90,6 +90,11 @@ export function registerCloneNode(server: McpServer, store: SqliteStore): void {
       if (!source) {
         const err = new NodeNotFoundError(id);
         return mcpError(err);
+      }
+
+      // Bug #036: reject self-parenting
+      if (newParentId === id) {
+        return mcpError("Cannot clone a node as its own parent");
       }
 
       if (newParentId) {

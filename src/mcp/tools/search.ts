@@ -10,7 +10,7 @@ export function registerSearch(server: McpServer, store: SqliteStore): void {
     "search",
     "Full-text search across graph nodes using BM25 ranking. Searches title, description and tags.",
     {
-      query: z.string().describe("Search query text"),
+      query: z.string().min(1).describe("Search query text"),
       limit: z
         .number()
         .int()
@@ -34,11 +34,15 @@ export function registerSearch(server: McpServer, store: SqliteStore): void {
         status: r.node.status,
         priority: r.node.priority,
         score: Math.round(r.score * 1000) / 1000,
-        snippet: r.node.description?.slice(0, 200) ?? null,
+        // Bug #064: fallback to title when description is null
+        snippet: r.node.description?.slice(0, 200) ?? r.node.title,
       }));
 
-      logger.info("tool:search:ok", { query, total: items.length });
-      return mcpText({ query, total: items.length, results: items });
+      // Bug #024: indicate when results may be truncated by limit
+      const effectiveLimit = limit ?? 20;
+      const hasMore = items.length >= effectiveLimit;
+      logger.info("tool:search:ok", { query, total: items.length, hasMore });
+      return mcpText({ query, total: items.length, hasMore, results: items });
     },
   );
 }

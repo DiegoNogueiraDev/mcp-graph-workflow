@@ -31,7 +31,32 @@ export function registerExport(server: McpServer, store: SqliteStore): void {
           });
           const nodeIds = new Set(filteredNodes.map((n) => n.id));
           const filteredEdges = doc.edges.filter((e) => nodeIds.has(e.from) && nodeIds.has(e.to));
-          filteredDoc = { ...doc, nodes: filteredNodes, edges: filteredEdges };
+          // Bug #023: rebuild indexes to match filtered nodes/edges
+          const filteredByIdIndex: Record<string, number> = {};
+          filteredNodes.forEach((n, i) => { filteredByIdIndex[n.id] = i; });
+          const filteredChildrenByParent: Record<string, string[]> = {};
+          const filteredIncomingByNode: Record<string, string[]> = {};
+          const filteredOutgoingByNode: Record<string, string[]> = {};
+          for (const n of filteredNodes) {
+            if (n.parentId && nodeIds.has(n.parentId)) {
+              (filteredChildrenByParent[n.parentId] ??= []).push(n.id);
+            }
+          }
+          for (const e of filteredEdges) {
+            (filteredOutgoingByNode[e.from] ??= []).push(e.id);
+            (filteredIncomingByNode[e.to] ??= []).push(e.id);
+          }
+          filteredDoc = {
+            ...doc,
+            nodes: filteredNodes,
+            edges: filteredEdges,
+            indexes: {
+              byId: filteredByIdIndex,
+              childrenByParent: filteredChildrenByParent,
+              incomingByNode: filteredIncomingByNode,
+              outgoingByNode: filteredOutgoingByNode,
+            },
+          };
         }
         logger.info("tool:export:ok", { format: "json", nodes: filteredDoc.nodes.length });
         return mcpText(filteredDoc);

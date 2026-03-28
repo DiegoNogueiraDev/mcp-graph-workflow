@@ -108,8 +108,8 @@ export function findNextTask(doc: GraphDocument): NextTaskResult | null {
     const acB = getNodeAcTexts(doc, b.id).length;
     if (acA !== acB) return acB - acA;
 
-    // CreatedAt ASC (older first)
-    return a.createdAt.localeCompare(b.createdAt);
+    // CreatedAt ASC (older first) — Bug #093: guard null
+    return (a.createdAt ?? "").localeCompare(b.createdAt ?? "");
   });
 
   const best = unblocked[0];
@@ -181,7 +181,7 @@ function computePriorityRank(
     for (const id of batch) {
       rank.set(id, currentRank);
       for (const neighbor of adj.get(id) ?? []) {
-        const newDeg = (inDegree.get(neighbor) ?? 1) - 1;
+        const newDeg = (inDegree.get(neighbor) ?? 0) - 1;
         inDegree.set(neighbor, newDeg);
         if (newDeg === 0) queue.push(neighbor);
       }

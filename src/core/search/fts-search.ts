@@ -45,6 +45,12 @@ export function searchNodes(
   const sanitized = sanitizeFtsQuery(query);
   logger.debug("FTS search start", { query, sanitized, rerank });
 
+  // Bug #063: if sanitization produces empty query (e.g. query="*"), return empty early
+  if (sanitized === '""') {
+    logger.info("FTS search: query sanitized to empty", { originalQuery: query });
+    return [];
+  }
+
   // Stage 1: FTS5 candidates (fetch extra for reranking)
   const startMs = performance.now();
   const candidateLimit = rerank ? Math.min(limit * 3, 100) : limit;
@@ -54,12 +60,7 @@ export function searchNodes(
     durationMs: Math.round(performance.now() - startMs),
   });
 
-  const resultMap = new Map<string, GraphNode>();
-  for (const r of ftsResults) {
-    const { score: _score, ...node } = r;
-    resultMap.set(node.id, node as GraphNode);
-  }
-
+  // Bug #099: skip resultMap construction when rerank is disabled
   if (!rerank || ftsResults.length === 0) {
     return ftsResults.map((r) => {
       const { score, ...node } = r;
@@ -67,7 +68,13 @@ export function searchNodes(
     });
   }
 
-  // Stage 2: TF-IDF reranking
+  // Stage 2: TF-IDF reranking — build lookup map only when needed
+  const resultMap = new Map<string, GraphNode>();
+  for (const r of ftsResults) {
+    const { score: _score, ...node } = r;
+    resultMap.set(node.id, node as GraphNode);
+  }
+
   const candidates = ftsResults.map((r) => ({
     id: r.id,
     text: [r.title, r.description ?? "", (r as unknown as { tags?: string[] }).tags?.join(" ") ?? ""].join(" "),

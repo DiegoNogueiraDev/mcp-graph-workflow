@@ -23,7 +23,7 @@ export function registerUpdateStatus(server: McpServer, store: SqliteStore): voi
     "update_status",
     "Update the status of one or more nodes. Pass a single ID string or an array of IDs for bulk updates.",
     {
-      id: z.union([z.string(), z.array(z.string())]).describe("Node ID (string) or array of node IDs for bulk update"),
+      id: z.union([z.string().min(1), z.array(z.string().min(1))]).describe("Node ID (string) or array of node IDs for bulk update"),
       status: NodeStatusSchema.describe("The new status"),
       force: z.boolean().optional().describe("Force status change, bypass transition validation"),
       rationale: z.string().optional().describe("AI rationale/learnings for the status change — required when transitioning to done"),

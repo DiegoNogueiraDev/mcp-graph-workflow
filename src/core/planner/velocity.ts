@@ -121,6 +121,8 @@ export function calculateVelocity(doc: GraphDocument): VelocitySummary {
  */
 function computeCompletionHours(node: GraphNode): number | null {
   try {
+    // Bug #094: guard null/undefined timestamps before Date parse
+    if (!node.createdAt || !node.updatedAt) return null;
     const created = new Date(node.createdAt).getTime();
     const updated = new Date(node.updatedAt).getTime();
     if (isNaN(created) || isNaN(updated) || updated <= created) return null;

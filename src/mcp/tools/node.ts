@@ -38,7 +38,7 @@ export function registerNode(server: McpServer, store: SqliteStore): void {
       blocked: z.boolean().optional().describe("Whether the node is blocked (add)"),
       metadata: z.record(z.string(), z.unknown()).optional().describe("Custom metadata (add)"),
       // update/delete params
-      id: z.string().optional().describe("Node ID — required for update/delete"),
+      id: z.string().min(1).optional().describe("Node ID — required for update/delete"),
     },
     async ({ action, id, type, title, description, status, priority, xpSize, estimateMinutes, tags, parentId, sprint, acceptanceCriteria, blocked, metadata }) => {
       logger.debug("tool:node", { action, id, type, title });
@@ -117,47 +117,50 @@ export function registerNode(server: McpServer, store: SqliteStore): void {
         if (parentId !== undefined) fields.parentId = parentId;
         if (acceptanceCriteria !== undefined) fields.acceptanceCriteria = acceptanceCriteria;
 
-        // If parentId is changing, manage edges
+        // If parentId is changing, manage edges atomically (Bug #047)
         if (parentId !== undefined) {
-          const existingNode = store.getNodeById(id);
-          if (existingNode) {
-            const oldParentId = existingNode.parentId;
+          const db = store.getDb();
+          db.transaction(() => {
+            const existingNode = store.getNodeById(id);
+            if (existingNode) {
+              const oldParentId = existingNode.parentId;
 
-            // Remove old parent/child edges
-            if (oldParentId) {
-              const edgesFromOldParent = store.getEdgesFrom(oldParentId);
-              for (const edge of edgesFromOldParent) {
-                if (edge.to === id && edge.relationType === "parent_of") {
-                  store.deleteEdge(edge.id);
+              // Remove old parent/child edges
+              if (oldParentId) {
+                const edgesFromOldParent = store.getEdgesFrom(oldParentId);
+                for (const edge of edgesFromOldParent) {
+                  if (edge.to === id && edge.relationType === "parent_of") {
+                    store.deleteEdge(edge.id);
+                  }
+                }
+                const edgesFromNode = store.getEdgesFrom(id);
+                for (const edge of edgesFromNode) {
+                  if (edge.to === oldParentId && edge.relationType === "child_of") {
+                    store.deleteEdge(edge.id);
+                  }
                 }
               }
-              const edgesFromNode = store.getEdgesFrom(id);
-              for (const edge of edgesFromNode) {
-                if (edge.to === oldParentId && edge.relationType === "child_of") {
-                  store.deleteEdge(edge.id);
-                }
+
+              // Create new parent/child edges
+              if (parentId !== null) {
+                const timestamp = now();
+                store.insertEdge({
+                  id: generateId("edge"),
+                  from: parentId,
+                  to: id,
+                  relationType: "parent_of" as RelationType,
+                  createdAt: timestamp,
+                });
+                store.insertEdge({
+                  id: generateId("edge"),
+                  from: id,
+                  to: parentId,
+                  relationType: "child_of" as RelationType,
+                  createdAt: timestamp,
+                });
               }
             }
-
-            // Create new parent/child edges
-            if (parentId !== null) {
-              const timestamp = now();
-              store.insertEdge({
-                id: generateId("edge"),
-                from: parentId,
-                to: id,
-                relationType: "parent_of" as RelationType,
-                createdAt: timestamp,
-              });
-              store.insertEdge({
-                id: generateId("edge"),
-                from: id,
-                to: parentId,
-                relationType: "child_of" as RelationType,
-                createdAt: timestamp,
-              });
-            }
-          }
+          })();
         }
 
         const updated = store.updateNode(id, fields);

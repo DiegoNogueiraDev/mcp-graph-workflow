@@ -344,7 +344,7 @@ export function buildTaskContext(
   contextPayload.metrics = {
     originalChars,
     compactChars,
-    reductionPercent: Math.max(0, reductionPercent),
+    reductionPercent,
     estimatedTokens: estimateTokens(compactJson),
   };
 

@@ -54,8 +54,9 @@ export function rankChunksByBm25(
     }
   }
 
-  // Average document length
-  const avgDl = tokenizedChunks.reduce((sum, t) => sum + t.length, 0) / totalDocs;
+  // Average document length (Bug #060: guard against zero to prevent NaN)
+  const totalTokens = tokenizedChunks.reduce((sum, t) => sum + t.length, 0);
+  const avgDl = totalTokens > 0 ? totalTokens / totalDocs : 1;
 
   // Score each chunk
   const ranked: RankedChunk[] = chunks.map((chunk, i) => {
@@ -105,7 +106,8 @@ export function compressWithBm25(
   let tokensUsed = 0;
 
   for (const chunk of ranked) {
-    if (tokensUsed + chunk.tokens > tokenBudget && selected.length > 0) break;
+    // Bug #059: respect budget even for the first chunk
+    if (tokensUsed + chunk.tokens > tokenBudget) break;
     selected.push(chunk);
     tokensUsed += chunk.tokens;
   }

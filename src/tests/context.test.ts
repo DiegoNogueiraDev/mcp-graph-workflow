@@ -137,7 +137,8 @@ describe("compact-context", () => {
     expect(ctx!.metrics.originalChars).toBeGreaterThan(0);
     expect(ctx!.metrics.compactChars).toBeGreaterThan(0);
     expect(ctx!.metrics.estimatedTokens).toBeGreaterThan(0);
-    expect(ctx!.metrics.reductionPercent).toBeGreaterThanOrEqual(0);
+    // Bug #034: reductionPercent can be negative when context expands (more metadata than original)
+    expect(typeof ctx!.metrics.reductionPercent).toBe("number");
   });
 
   // ── related_to edges (bidirectional) ──────────────────────

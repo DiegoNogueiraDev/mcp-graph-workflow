@@ -35,8 +35,9 @@ export interface SuggestedSubtask {
 export function detectLargeTasks(doc: GraphDocument): DecomposeResult[] {
   const results: DecomposeResult[] = [];
 
+  // Bug #031: include epics — large epics without children need decomposition too
   const tasks = doc.nodes.filter(
-    (n) => (n.type === "task" || n.type === "subtask") && n.status !== "done",
+    (n) => (n.type === "task" || n.type === "subtask" || n.type === "epic") && n.status !== "done",
   );
 
   for (const node of tasks) {
@@ -79,8 +80,12 @@ function suggestDecomposition(doc: GraphDocument, node: GraphNode): SuggestedSub
   const ac = getNodeAcTexts(doc, node.id);
 
   if (ac.length > 0) {
-    // Group acceptance criteria into subtasks (2-3 AC per subtask)
-    const chunkSize = Math.max(2, Math.ceil(ac.length / Math.ceil(ac.length / 3)));
+    // Bug #088: use estimate-based target chunks instead of always 3
+    const TARGET_SUBTASK_MINUTES = 60;
+    const targetChunks = node.estimateMinutes
+      ? Math.max(2, Math.ceil(node.estimateMinutes / TARGET_SUBTASK_MINUTES))
+      : Math.max(2, Math.ceil(ac.length / 3));
+    const chunkSize = Math.max(1, Math.ceil(ac.length / targetChunks));
 
     for (let i = 0; i < ac.length; i += chunkSize) {
       const chunk = ac.slice(i, i + chunkSize);

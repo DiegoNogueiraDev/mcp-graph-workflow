@@ -88,6 +88,8 @@ export function recommendSkills(
   availableSkills: SkillInfo[],
 ): SkillRecommendation[] {
   const recommendations: SkillRecommendation[] = [];
+  // Bug #098: guard null/undefined availableSkills
+  if (!availableSkills || availableSkills.length === 0) return recommendations;
   const skillNames = new Set(availableSkills.map((s) => s.name));
 
   const tasksByStatus = new Map<string, number>();

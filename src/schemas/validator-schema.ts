@@ -18,6 +18,7 @@ export const DoneIntegrityIssueSchema = z.object({
 export const DoneIntegrityReportSchema = z.object({
   issues: z.array(DoneIntegrityIssueSchema),
   passed: z.boolean(),
+  info: z.string().optional(),
 });
 
 // ── Status Flow ──

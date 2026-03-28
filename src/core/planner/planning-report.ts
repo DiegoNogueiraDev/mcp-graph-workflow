@@ -115,8 +115,9 @@ function buildRecommendedOrder(
     doc.nodes.filter((n) => n.status === "done").map((n) => n.id),
   );
 
-  // Iteratively pick next task (max 20 iterations)
-  for (let i = 0; i < 20 && remaining.size > 0; i++) {
+  // Bug #087: increased cap from 20 to 100 to handle larger graphs
+  const MAX_ITERATIONS = Math.min(remaining.size, 100);
+  for (let i = 0; i < MAX_ITERATIONS && remaining.size > 0; i++) {
     const result = findNextTask({
       ...doc,
       nodes: doc.nodes.map((n) => {

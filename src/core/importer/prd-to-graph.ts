@@ -51,14 +51,15 @@ function extractXpSize(description: string | undefined): XpSize | undefined {
   return match[1].toUpperCase() as XpSize;
 }
 
-const PRIORITY_PATTERN = /\*\*(?:Priority|Prioridade)\s*:\s*\*\*\s*(high|medium|low|alta|m[eé]dia|baixa|[1-5])\b/i;
+// Bug #100: support both bold markdown (**Priority:**) and plain text (Priority:)
+const PRIORITY_PATTERN = /(?:\*\*)?(?:Priority|Prioridade)\s*:\s*(?:\*\*)?\s*(high|medium|low|critical|alta|cr[ií]tica|m[eé]dia|baixa|[1-5])\b/i;
 
 function extractPriority(description: string | undefined): 1 | 2 | 3 | 4 | 5 | undefined {
   if (!description) return undefined;
   const match = description.match(PRIORITY_PATTERN);
   if (!match) return undefined;
   const val = match[1].toLowerCase();
-  if (val === "high" || val === "alta" || val === "1") return 1;
+  if (val === "high" || val === "alta" || val === "critical" || val === "crítica" || val === "critica" || val === "1") return 1;
   if (val === "2") return 2;
   if (val === "medium" || val === "média" || val === "media" || val === "3") return 3;
   if (val === "4") return 4;
@@ -293,12 +294,23 @@ export function convertToGraph(
       levelStack.pop();
     }
 
-    // If stack not empty, the top is the parent
+    // If stack not empty, the top is the parent — but validate type hierarchy (Bug #008)
     if (levelStack.length > 0) {
       const parent = levelStack[levelStack.length - 1].node;
-      node.parentId = parent.id;
-      edges.push(createEdge(parent.id, node.id, "parent_of", "Heading hierarchy", false, 1));
-      edges.push(createEdge(node.id, parent.id, "child_of", "Heading hierarchy", false, 1));
+      // Prevent invalid parent-child type relationships:
+      // epics should not be children of requirements/tasks/subtasks
+      const TYPE_RANK: Record<string, number> = {
+        epic: 5, milestone: 4, requirement: 3, constraint: 3, decision: 3,
+        risk: 3, task: 2, subtask: 1, acceptance_criteria: 0,
+      };
+      const parentRank = TYPE_RANK[parent.type] ?? 2;
+      const childRank = TYPE_RANK[node.type] ?? 2;
+      // Bug #101: only assign parent if not already set by Pass 1 (explicit extraction)
+      if (parentRank >= childRank && !node.parentId) {
+        node.parentId = parent.id;
+        edges.push(createEdge(parent.id, node.id, "parent_of", "Heading hierarchy", false, 1));
+        edges.push(createEdge(node.id, parent.id, "child_of", "Heading hierarchy", false, 1));
+      }
     }
 
     levelStack.push({ level: block.level, node });

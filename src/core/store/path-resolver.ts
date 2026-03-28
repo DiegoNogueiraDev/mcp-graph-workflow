@@ -89,10 +89,14 @@ export function resolveStorePath(options?: ResolveOptions): ResolvedStore {
   if (createGlobal) {
     logger.info("path-resolver:create-global", { globalDir });
     mkdirSync(globalDir, { recursive: true });
+    // Bug #057: ensure db.close() even if configureDb/runMigrations throw
     const db = new Database(globalDbPath);
-    configureDb(db);
-    runMigrations(db);
-    db.close();
+    try {
+      configureDb(db);
+      runMigrations(db);
+    } finally {
+      db.close();
+    }
 
     return {
       mode: "global",

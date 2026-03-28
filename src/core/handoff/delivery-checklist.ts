@@ -6,7 +6,6 @@ import type { GraphDocument } from "../graph/graph-types.js";
 import type { HandoffReadinessReport, HandoffReadinessCheck } from "../../schemas/handoff-schema.js";
 import { assessRisks } from "../analyzer/risk-assessment.js";
 import { analyzeScope } from "../analyzer/scope-analyzer.js";
-import { detectBottlenecks } from "../insights/bottleneck-detector.js";
 import { calculateVelocity } from "../planner/velocity.js";
 import { detectCycles } from "../planner/dependency-chain.js";
 import { checkDocCompleteness } from "./doc-completeness.js";
@@ -41,15 +40,15 @@ export function checkHandoffReadiness(
     severity: "required",
   });
 
-  // 2. no_blocked_nodes — zero blocked nodes
-  const bottlenecks = detectBottlenecks(doc);
-  const noBlocked = bottlenecks.blockedTasks.length === 0;
+  // 2. no_blocked_nodes — zero nodes with status=blocked (Bug #011)
+  const statusBlockedCount = doc.nodes.filter((n) => n.status === "blocked").length;
+  const noBlocked = statusBlockedCount === 0;
   checks.push({
     name: "no_blocked_nodes",
     passed: noBlocked,
     details: noBlocked
       ? "Nenhum node bloqueado"
-      : `${bottlenecks.blockedTasks.length} node(s) bloqueado(s)`,
+      : `${statusBlockedCount} node(s) bloqueado(s)`,
     severity: "required",
   });
 
@@ -72,7 +71,8 @@ export function checkHandoffReadiness(
   const tasksWithAC = tasks.filter(
     (t) => nodeHasAc(doc, t.id),
   );
-  const acCoverage = tasks.length > 0 ? Math.round((tasksWithAC.length / tasks.length) * 100) : 100;
+  // Bug #097: 0 tasks = 0% coverage, not vacuous 100% (consistent with review-readiness fix #027)
+  const acCoverage = tasks.length > 0 ? Math.round((tasksWithAC.length / tasks.length) * 100) : 0;
   const acPass = acCoverage >= 80;
   checks.push({
     name: "ac_coverage",

@@ -20,7 +20,7 @@ export function registerEdge(server: McpServer, store: SqliteStore): void {
       to: z.string().optional().describe("Target node ID (required for add)"),
       relationType: RelationTypeSchema.optional().describe("Relationship type (required for add, optional filter for list)"),
       reason: z.string().optional().describe("Why this relationship exists (add only)"),
-      weight: z.number().optional().describe("Edge weight 0-1 (add only)"),
+      weight: z.number().min(0).max(1).optional().describe("Edge weight 0-1 (add only)"),
       // delete params
       id: z.string().optional().describe("Edge ID (required for delete)"),
       // list params
@@ -34,10 +34,7 @@ export function registerEdge(server: McpServer, store: SqliteStore): void {
           return mcpError("from, to, and relationType are required for add action");
         }
 
-        if (from === to) {
-          return mcpError("Self-referencing edges are not allowed");
-        }
-
+        // Bug #077: check existence before self-reference for clearer error messages
         const fromNode = store.getNodeById(from);
         if (!fromNode) {
           return mcpError(new NodeNotFoundError(from));
@@ -48,27 +45,40 @@ export function registerEdge(server: McpServer, store: SqliteStore): void {
           return mcpError(new NodeNotFoundError(to));
         }
 
-        // Check for duplicate edge
-        const existingEdges = store.getEdgesFrom(from);
-        const duplicate = existingEdges.find(
-          (e) => e.to === to && e.relationType === (relationType as RelationType),
-        );
-        if (duplicate) {
-          logger.info("tool:edge:ok", { action: "existing", edgeId: duplicate.id, from, to, relationType });
-          return mcpText({ ok: true, edge: duplicate, existing: true });
+        if (from === to) {
+          return mcpError("Self-referencing edges are not allowed");
         }
 
-        const edge = {
-          id: generateId("edge"),
-          from,
-          to,
-          relationType: relationType as RelationType,
-          reason,
-          weight,
-          createdAt: now(),
-        };
+        // Bug #045: atomic check-and-insert to prevent duplicate edges under concurrency
+        const db = store.getDb();
+        const result = db.transaction(() => {
+          const existingEdges = store.getEdgesFrom(from);
+          const duplicate = existingEdges.find(
+            (e) => e.to === to && e.relationType === (relationType as RelationType),
+          );
+          if (duplicate) {
+            return { existing: true as const, edge: duplicate };
+          }
 
-        store.insertEdge(edge);
+          const edge = {
+            id: generateId("edge"),
+            from,
+            to,
+            relationType: relationType as RelationType,
+            reason,
+            weight,
+            createdAt: now(),
+          };
+          store.insertEdge(edge);
+          return { existing: false as const, edge };
+        })();
+
+        if (result.existing) {
+          logger.info("tool:edge:ok", { action: "existing", edgeId: result.edge.id, from, to, relationType });
+          return mcpText({ ok: true, edge: result.edge, existing: true });
+        }
+
+        const edge = result.edge;
 
         logger.info("tool:edge:ok", { action: "add", edgeId: edge.id, from, to, relationType });
         return mcpText({ ok: true, edge });
@@ -89,6 +99,11 @@ export function registerEdge(server: McpServer, store: SqliteStore): void {
       }
 
       // action === "list"
+      // Bug #037: warn if direction is used without nodeId
+      if (direction && !nodeId) {
+        return mcpError("direction requires nodeId — without nodeId, all edges are returned regardless of direction");
+      }
+
       let edges: GraphEdge[];
 
       if (nodeId) {

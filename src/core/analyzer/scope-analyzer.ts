@@ -53,10 +53,16 @@ export function analyzeScope(doc: GraphDocument): ScopeAnalysis {
   const cycles = detectCycles(doc);
 
   // ── Coverage matrix ──
+  // Bug #009/#030: only count explicit links between requirements and tasks
+  const taskIds = new Set(tasks.map((t) => t.id));
   const reqsWithTasks = reqNodes.filter((r) => {
-    const hasChild = tasks.some((t) => t.parentId === r.id);
-    const hasEdge = edges.some((e) => e.from === r.id || e.to === r.id);
-    return hasChild || hasEdge;
+    const hasChildTask = tasks.some((t) => t.parentId === r.id);
+    const hasExplicitEdgeToTask = edges.some(
+      (e) =>
+        (e.relationType === "depends_on" || e.relationType === "related_to" || e.relationType === "blocks") &&
+        ((e.from === r.id && taskIds.has(e.to)) || (e.to === r.id && taskIds.has(e.from))),
+    );
+    return hasChildTask || hasExplicitEdgeToTask;
   });
 
   const tasksWithAc = tasks.filter(

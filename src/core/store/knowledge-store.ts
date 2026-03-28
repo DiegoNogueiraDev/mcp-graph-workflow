@@ -68,7 +68,13 @@ export class KnowledgeStore {
    * Insert a knowledge document. Deduplicates by content_hash.
    * Returns the existing doc if content already exists, or the new doc.
    */
+  private static readonly MAX_CONTENT_SIZE = 500_000; // ~125K tokens
+
   insert(doc: InsertKnowledgeDoc): KnowledgeDocument {
+    // Bug #054: reject oversized content to prevent SQLite bloat
+    if (doc.content.length > KnowledgeStore.MAX_CONTENT_SIZE) {
+      throw new Error(`Content too large (${doc.content.length} chars, max ${KnowledgeStore.MAX_CONTENT_SIZE}). Chunk the content before indexing.`);
+    }
     const hash = contentHash(doc.content);
 
     // Check for duplicate content
@@ -185,8 +191,8 @@ export class KnowledgeStore {
     currentPhase: LifecyclePhase,
     limit: number = 20,
   ): Array<KnowledgeDocument & { score: number; phaseBoost: number }> {
-    // Fetch more results than needed to allow re-ranking
-    const rawResults = this.search(query, limit * 2);
+    // Fetch more results than needed to allow re-ranking (Bug #051: cap at 200)
+    const rawResults = this.search(query, Math.min(limit * 2, 200));
 
     const boosted = rawResults.map((result) => {
       const docPhase = result.metadata?.phase as string | undefined;
@@ -286,21 +292,30 @@ export class KnowledgeStore {
    * Batch update staleness_days for all documents.
    */
   batchUpdateStaleness(): number {
-    const rows = this.db
-      .prepare("SELECT id, created_at FROM knowledge_documents")
-      .all() as Array<{ id: string; created_at: string }>;
-
+    // Bug #052: paginate to avoid loading ALL docs into memory
+    const PAGE_SIZE = 1000;
     const update = this.db.prepare("UPDATE knowledge_documents SET staleness_days = ? WHERE id = ?");
+    const select = this.db.prepare("SELECT id, created_at FROM knowledge_documents LIMIT ? OFFSET ?");
     let updated = 0;
+    let offset = 0;
 
-    this.db.transaction(() => {
-      for (const row of rows) {
-        const ageMs = Date.now() - new Date(row.created_at).getTime();
-        const days = Math.max(0, Math.floor(ageMs / (24 * 60 * 60 * 1000)));
-        update.run(days, row.id);
-        updated++;
-      }
-    })();
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const rows = select.all(PAGE_SIZE, offset) as Array<{ id: string; created_at: string }>;
+      if (rows.length === 0) break;
+
+      this.db.transaction(() => {
+        for (const row of rows) {
+          const ageMs = Date.now() - new Date(row.created_at).getTime();
+          const days = Math.max(0, Math.floor(ageMs / (24 * 60 * 60 * 1000)));
+          update.run(days, row.id);
+          updated++;
+        }
+      })();
+
+      offset += PAGE_SIZE;
+      if (rows.length < PAGE_SIZE) break;
+    }
 
     return updated;
   }

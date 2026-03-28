@@ -9,7 +9,7 @@ export function registerShow(server: McpServer, store: SqliteStore): void {
   server.tool(
     "show",
     "Show detailed information about a specific node, including its edges and children",
-    { id: z.string().describe("The node ID to inspect") },
+    { id: z.string().min(1).describe("The node ID to inspect") },
     async ({ id }) => {
       logger.debug("tool:show", { id });
       const node = store.getNodeById(id);

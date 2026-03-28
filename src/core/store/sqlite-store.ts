@@ -15,7 +15,7 @@ import { generateId } from "../utils/id.js";
 import { now } from "../utils/time.js";
 import { configureDb, runMigrations } from "./migrations.js";
 import { logger } from "../utils/logger.js";
-import { GraphNotInitializedError, ValidationError, SnapshotNotFoundError } from "../utils/errors.js";
+import { GraphNotInitializedError, ValidationError, SnapshotNotFoundError, McpGraphError } from "../utils/errors.js";
 import { GraphNodeSchema } from "../../schemas/node.schema.js";
 import { GraphEdgeSchema } from "../../schemas/edge.schema.js";
 import { z } from "zod/v4";
@@ -134,7 +134,14 @@ function rowToNode(row: NodeRow): GraphNode {
   return node;
 }
 
+const MAX_EDGE_METADATA_SIZE = 100_000;
+
 function edgeToRow(edge: GraphEdge, projectId: string): EdgeRow {
+  // Bug #055: validate edge metadata JSON size
+  const metadataJson = edge.metadata ? JSON.stringify(edge.metadata) : null;
+  if (metadataJson && metadataJson.length > MAX_EDGE_METADATA_SIZE) {
+    throw new ValidationError(`Edge metadata too large (${metadataJson.length} chars, max ${MAX_EDGE_METADATA_SIZE})`, []);
+  }
   return {
     id: edge.id,
     project_id: projectId,
@@ -143,7 +150,7 @@ function edgeToRow(edge: GraphEdge, projectId: string): EdgeRow {
     relation_type: edge.relationType,
     weight: edge.weight ?? null,
     reason: edge.reason ?? null,
-    metadata: edge.metadata ? JSON.stringify(edge.metadata) : null,
+    metadata: metadataJson,
     created_at: edge.createdAt,
   };
 }
@@ -1030,7 +1037,17 @@ export class SqliteStore {
       throw new SnapshotNotFoundError(snapshotId);
     }
 
-    const doc = JSON.parse(row.data) as GraphDocument;
+    // Bug #048: validate snapshot JSON structure before restoring
+    let doc: GraphDocument;
+    try {
+      const parsed = JSON.parse(row.data);
+      if (!parsed || !Array.isArray(parsed.nodes) || !Array.isArray(parsed.edges)) {
+        throw new Error("Invalid snapshot structure: missing nodes or edges arrays");
+      }
+      doc = parsed as GraphDocument;
+    } catch (err) {
+      throw new McpGraphError(`Corrupt snapshot ${snapshotId}: ${err instanceof Error ? err.message : String(err)}`);
+    }
 
     this.db.transaction(() => {
       this.db.prepare("DELETE FROM edges WHERE project_id = ?").run(pid);

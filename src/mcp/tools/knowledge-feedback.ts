@@ -15,7 +15,7 @@ export function registerKnowledgeFeedback(server: McpServer, store: SqliteStore)
     "knowledge_feedback",
     "Provide feedback on a knowledge document to improve RAG quality. Mark docs as helpful, unhelpful, or outdated.",
     {
-      docId: z.string().describe("Knowledge document ID"),
+      docId: z.string().min(1).describe("Knowledge document ID"),
       action: z.enum(["helpful", "unhelpful", "outdated"]).describe("Feedback action"),
       query: z.string().optional().describe("The query that surfaced this document"),
       context: z.string().optional().describe("Additional context about why this feedback is given"),
@@ -25,7 +25,8 @@ export function registerKnowledgeFeedback(server: McpServer, store: SqliteStore)
 
       try {
         const contextObj = context ? { note: context } : undefined;
-        applyFeedback(store.getDb(), docId, query ?? "", action, contextObj);
+        // Bug #084: pass null instead of empty string when no query provided
+        applyFeedback(store.getDb(), docId, query || "", action, contextObj);
 
         logger.info("tool:knowledge_feedback:ok", { docId, action });
         return mcpText({

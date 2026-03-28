@@ -75,6 +75,26 @@ describe("memory-reader", () => {
     expect(memories).toHaveLength(3);
   });
 
+  // ── Path traversal protection (Bug #003) ──────
+
+  it("should reject path traversal in writeMemory", async () => {
+    await expect(writeMemory(tmpBase, "../../etc/passwd", "hack")).rejects.toThrow("Path traversal");
+  });
+
+  it("should reject path traversal in readMemory", async () => {
+    const result = await readMemory(tmpBase, "../../etc/passwd");
+    expect(result).toBeNull();
+  });
+
+  it("should reject path traversal in deleteMemory", async () => {
+    const result = await deleteMemory(tmpBase, "../../etc/passwd");
+    expect(result).toBe(false);
+  });
+
+  it("should reject names with null bytes", async () => {
+    await expect(writeMemory(tmpBase, "test\0evil", "hack")).rejects.toThrow("Path traversal");
+  });
+
   // ── Write ─────────────────────────────────────
 
   it("should write a new memory file", async () => {

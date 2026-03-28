@@ -15,7 +15,7 @@ export function registerUpdateNode(server: McpServer, store: SqliteStore): void 
     "update_node",
     "Update arbitrary fields of a node (DEPRECATED — use `node` with action:\"update\")",
     {
-      id: z.string().describe("The node ID to update"),
+      id: z.string().min(1).describe("The node ID to update"),
       title: z.string().optional().describe("New title"),
       description: z.string().optional().describe("New description"),
       type: NodeTypeSchema.optional().describe("New node type"),

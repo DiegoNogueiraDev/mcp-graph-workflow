@@ -16,7 +16,7 @@ export function registerImportPrd(server: McpServer, store: SqliteStore): void {
     "import_prd",
     "Import a PRD file and convert it into graph nodes and edges. Use force=true to re-import a previously imported file (replaces old nodes).",
     {
-      filePath: z.string().describe("Path to the PRD text file"),
+      filePath: z.string().min(1).describe("Path to the PRD text file"),
       force: z
         .boolean()
         .optional()

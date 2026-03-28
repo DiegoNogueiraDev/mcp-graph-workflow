@@ -52,12 +52,7 @@ export interface CodeIntelligenceBlock {
 
 // ── Constants ───────────────────────────────────────────
 
-const READ_ONLY_TOOLS = new Set([
-  "list", "show", "search", "metrics", "export", "context", "rag_context",
-  "analyze", "snapshot", "next", "list_memories", "read_memory", "list_skills",
-  "stats", "velocity", "dependencies", "plan_sprint", "validate_ac",
-  "manage_skill", "knowledge_stats", "knowledge_feedback",
-]);
+import { READ_ONLY_TOOLS } from "./tool-classification.js";
 
 const ENRICHED_PHASES = new Set<string>(["IMPLEMENT", "REVIEW", "VALIDATE"]);
 

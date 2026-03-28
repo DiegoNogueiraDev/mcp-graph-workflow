@@ -33,7 +33,8 @@ export function analyzeCoupling(doc: GraphDocument): CouplingReport {
     parentMap.set(node.id, node.parentId);
   }
 
-  const COUPLING_EDGE_TYPES = new Set(["depends_on", "blocks", "related_to", "implements", "derived_from", "priority_over"]);
+  // Bug #029: include parent_of/child_of — in execution graphs, structural edges represent real coupling
+  const COUPLING_EDGE_TYPES = new Set(["depends_on", "blocks", "related_to", "implements", "derived_from", "priority_over", "parent_of", "child_of"]);
 
   for (const edge of edges) {
     if (!COUPLING_EDGE_TYPES.has(edge.relationType)) continue;

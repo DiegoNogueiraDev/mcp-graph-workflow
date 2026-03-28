@@ -42,7 +42,9 @@ export function checkDoneIntegrity(doc: GraphDocument): DoneIntegrityReport {
   }
 
   const passed = issues.length === 0;
-  logger.info("done-integrity-check", { passed, issueCount: issues.length });
+  // Bug #074: indicate vacuous pass when no done tasks exist
+  const info = doneTasks.length === 0 ? "0 done tasks to check — vacuous pass" : undefined;
+  logger.info("done-integrity-check", { passed, issueCount: issues.length, doneTasks: doneTasks.length });
 
-  return { issues, passed };
+  return { issues, passed, ...(info ? { info } : {}) };
 }

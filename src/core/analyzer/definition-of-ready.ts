@@ -23,16 +23,21 @@ export function checkDefinitionOfReady(doc: GraphDocument): ReadinessReport {
   const blockers: string[] = [];
   const warnings: string[] = [];
 
-  // 1. Has epics or requirements
-  const hasEpicOrReq = nodes.some((n) => n.type === "epic" || n.type === "requirement");
+  // 1. Has requirements (Bug #075: separate requirements from epics)
+  const reqCount = nodes.filter((n) => n.type === "requirement").length;
+  const epicCount = nodes.filter((n) => n.type === "epic").length;
+  const hasReqs = reqCount > 0;
+  const hasEpics = epicCount > 0;
   checks.push({
     name: "has_requirements",
-    passed: hasEpicOrReq,
-    details: hasEpicOrReq
-      ? `${nodes.filter((n) => n.type === "epic" || n.type === "requirement").length} requirements/epics encontrados`
-      : "Nenhum epic ou requirement definido",
+    passed: hasReqs || hasEpics,
+    details: hasReqs
+      ? `${reqCount} requirement(s) encontrado(s)${hasEpics ? ` + ${epicCount} epic(s)` : ""}`
+      : hasEpics
+        ? `${epicCount} epic(s) encontrado(s) (sem requirements explícitos)`
+        : "Nenhum epic ou requirement definido",
   });
-  if (!hasEpicOrReq) blockers.push("Criar pelo menos 1 epic ou requirement");
+  if (!hasReqs && !hasEpics) blockers.push("Criar pelo menos 1 epic ou requirement");
 
   // 2. Tasks with AC
   const tasks = nodes.filter((n) => n.type === "task" || n.type === "subtask");

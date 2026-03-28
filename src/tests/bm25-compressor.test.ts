@@ -74,9 +74,10 @@ describe("BM25Compressor", () => {
       expect(totalTokens).toBeGreaterThan(0);
     });
 
-    it("should always include at least one chunk", () => {
+    it("should respect budget strictly — no chunks if first exceeds budget (Bug #059)", () => {
       const selected = compressWithBm25(chunks, "Express", 1);
-      expect(selected.length).toBeGreaterThanOrEqual(1);
+      // Budget of 1 token is too small for any chunk — should return empty
+      expect(selected.length).toBe(0);
     });
 
     it("should include all chunks if budget allows", () => {

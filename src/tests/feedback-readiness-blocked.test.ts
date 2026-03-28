@@ -25,7 +25,7 @@ function makeDoc(nodes: GraphNode[], edges: GraphEdge[] = []): GraphDocument {
 }
 
 describe("BUG-27: feedback-readiness blocked task detection", () => {
-  it("should detect tasks with unresolved depends_on as blocked", () => {
+  it("should NOT treat unresolved depends_on as blocked — only status=blocked counts (Bug #012)", () => {
     const nodes = [
       makeNode({ id: "t1", title: "Task 1", status: "ready" }),
       makeNode({ id: "t2", title: "Blocker", status: "in_progress" }),
@@ -38,6 +38,17 @@ describe("BUG-27: feedback-readiness blocked task detection", () => {
       createdAt: new Date().toISOString(),
     }];
     const report = checkListeningReadiness(makeDoc(nodes, edges));
+    const blockedCheck = report.checks.find((c) => c.name === "no_blocked");
+    // Unresolved deps should NOT count as "blocked" — only status=blocked should
+    expect(blockedCheck?.passed).toBe(true);
+  });
+
+  it("should detect tasks with status=blocked as blocked", () => {
+    const nodes = [
+      makeNode({ id: "t1", title: "Task 1", status: "blocked" }),
+      makeNode({ id: "t2", title: "Task 2", status: "done" }),
+    ];
+    const report = checkListeningReadiness(makeDoc(nodes));
     const blockedCheck = report.checks.find((c) => c.name === "no_blocked");
     expect(blockedCheck?.passed).toBe(false);
   });

@@ -2,6 +2,8 @@ import { z } from "zod/v4";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import { calculateVelocity } from "../../core/planner/velocity.js";
+import { detectCurrentPhase } from "../../core/planner/lifecycle-phase.js";
+import { KnowledgeStore } from "../../core/store/knowledge-store.js";
 import { buildTaskContext } from "../../core/context/compact-context.js";
 import { logger } from "../../core/utils/logger.js";
 import { mcpText } from "../response-helpers.js";
@@ -22,7 +24,20 @@ export function registerMetrics(server: McpServer, store: SqliteStore): void {
         const summary = calculateVelocity(doc);
 
         if (sprint) {
-          summary.sprints = summary.sprints.filter((s) => s.sprint === sprint);
+          const filtered = summary.sprints.filter((s) => s.sprint === sprint);
+          // Bug #039: warn when sprint filter finds nothing instead of returning global stats
+          if (filtered.length === 0) {
+            logger.info("tool:metrics:velocity:ok", { sprintCount: 0, sprintFilter: sprint });
+            return mcpText({
+              ok: true,
+              mode: "velocity",
+              warning: `No sprint matching '${sprint}' found`,
+              sprintFilter: sprint,
+              sprints: [],
+              overall: summary.overall,
+            });
+          }
+          summary.sprints = filtered;
         }
 
         logger.info("tool:metrics:velocity:ok", { sprintCount: summary.sprints.length });
@@ -44,8 +59,10 @@ export function registerMetrics(server: McpServer, store: SqliteStore): void {
         if (taskNodes.length > 0) {
           let totalReduction = 0;
           let sampled = 0;
+          // Bug #066: sample max 50 nodes instead of ALL tasks for performance
+          const sampleNodes = taskNodes.slice(0, 50);
 
-          for (const node of taskNodes) {
+          for (const node of sampleNodes) {
             const ctx = buildTaskContext(store, node.id);
             if (ctx) {
               totalReduction += ctx.metrics.reductionPercent;
@@ -62,12 +79,25 @@ export function registerMetrics(server: McpServer, store: SqliteStore): void {
         }
       }
 
+      // Bug #067: add sprint count, phase, knowledge count
+      const doc = store.toGraphDocument();
+      const currentPhase = detectCurrentPhase(doc);
+      const velocity = calculateVelocity(doc);
+      let knowledgeDocCount = 0;
+      try {
+        const ks = new KnowledgeStore(store.getDb());
+        knowledgeDocCount = ks.list({}).length;
+      } catch { /* knowledge store may not exist */ }
+
       logger.info("tool:metrics:stats:ok", { totalNodes: stats.totalNodes, totalEdges: stats.totalEdges });
       return mcpText({
         ok: true,
         mode: "stats",
         project: project?.name ?? null,
         ...stats,
+        currentPhase,
+        sprintCount: velocity.sprints.length,
+        knowledgeDocCount,
         contextReduction,
       });
     },

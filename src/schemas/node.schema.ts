@@ -30,7 +30,7 @@ export const GraphNodeSchema = z.object({
   status: NodeStatusSchema,
   priority: PrioritySchema,
   xpSize: XpSizeSchema.optional(),
-  estimateMinutes: z.number().optional(),
+  estimateMinutes: z.number().min(0).optional(),
   tags: z.array(z.string()).optional(),
   parentId: z.string().nullable().optional(),
   sprint: z.string().nullable().optional(),

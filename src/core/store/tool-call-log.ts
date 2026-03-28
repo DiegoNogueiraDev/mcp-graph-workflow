@@ -36,6 +36,11 @@ function rowToEntry(row: ToolCallRow): ToolCallEntry {
   };
 }
 
+/** Escape SQL LIKE wildcards (Bug #053). */
+function escapeLike(value: string): string {
+  return value.replace(/[%_\\]/g, (c) => `\\${c}`);
+}
+
 export class ToolCallLog {
   private db: Database.Database;
 
@@ -58,9 +63,9 @@ export class ToolCallLog {
       if (toolArgs) {
         const row = this.db.prepare(
           `SELECT 1 FROM tool_call_log
-           WHERE project_id = ? AND node_id IS NULL AND tool_name = ? AND tool_args LIKE ?
+           WHERE project_id = ? AND node_id IS NULL AND tool_name = ? AND tool_args LIKE ? ESCAPE '\\'
            LIMIT 1`,
-        ).get(projectId, toolName, `%${toolArgs}%`);
+        ).get(projectId, toolName, `%${escapeLike(toolArgs)}%`);
         return row !== undefined;
       }
       const row = this.db.prepare(
@@ -74,9 +79,9 @@ export class ToolCallLog {
     if (toolArgs) {
       const row = this.db.prepare(
         `SELECT 1 FROM tool_call_log
-         WHERE project_id = ? AND node_id = ? AND tool_name = ? AND tool_args LIKE ?
+         WHERE project_id = ? AND node_id = ? AND tool_name = ? AND tool_args LIKE ? ESCAPE '\\'
          LIMIT 1`,
-      ).get(projectId, nodeId, toolName, `%${toolArgs}%`);
+      ).get(projectId, nodeId, toolName, `%${escapeLike(toolArgs)}%`);
       return row !== undefined;
     }
 

@@ -37,6 +37,8 @@ export function importCommand(): Command {
         output(`Source: ${filePath}`);
       } catch (err) {
         logger.error(`Import failed: ${getErrorMessage(err)}`);
+        // Bug #056: close store before exit to prevent connection leak
+        store.close();
         process.exit(1);
       } finally {
         store.close();

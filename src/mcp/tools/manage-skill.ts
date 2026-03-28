@@ -108,6 +108,12 @@ export function registerManageSkill(server: McpServer, store: SqliteStore): void
             if (!skillName) {
               return mcpError("skillName required for enable/disable");
             }
+            // Bug #017: validate skill exists before enabling
+            const builtIn = getSkillByName(skillName);
+            const custom = getCustomSkillByName(db, projectId, skillName);
+            if (!builtIn && !custom) {
+              return mcpError(`Skill '${skillName}' not found (neither built-in nor custom)`);
+            }
             setSkillEnabled(db, projectId, skillName, action === "enable");
             return mcpText({ ok: true, skillName, enabled: action === "enable" });
           }

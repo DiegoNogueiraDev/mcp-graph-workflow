@@ -50,7 +50,7 @@ describe("BUG-07: Critical path with proper depends_on edges", () => {
 });
 
 describe("BUG-13: Coupling ignores parent_of/child_of edges", () => {
-  it("should not count parent_of edges in fanOut", () => {
+  it("should count parent_of/child_of edges in coupling (Bug #029)", () => {
     const parent = makeNode({ id: "p", title: "Parent" });
     const child1 = makeNode({ id: "c1", title: "Child 1", parentId: "p" });
     const child2 = makeNode({ id: "c2", title: "Child 2", parentId: "p" });
@@ -63,15 +63,17 @@ describe("BUG-13: Coupling ignores parent_of/child_of edges", () => {
         makeEdge("p", "c2", "parent_of"),
         makeEdge("c1", "p", "child_of"),
         makeEdge("c2", "p", "child_of"),
-        makeEdge("p", "d", "depends_on"),  // only semantic edge
+        makeEdge("p", "d", "depends_on"),
       ],
       metadata: { version: "1.0", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
     };
 
     const report = analyzeCoupling(doc);
     const parentMetrics = report.nodes.find((m) => m.nodeId === "p");
-    expect(parentMetrics?.fanOut).toBe(1);  // only depends_on, not parent_of
-    expect(parentMetrics?.fanIn).toBe(0);   // child_of edges excluded
+    // Bug #029: parent_of/child_of now count — parent has 2 parent_of + 1 depends_on fanOut
+    expect(parentMetrics?.fanOut).toBe(3);
+    // parent has 2 child_of fanIn
+    expect(parentMetrics?.fanIn).toBe(2);
   });
 });
 

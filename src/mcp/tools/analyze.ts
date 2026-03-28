@@ -102,6 +102,10 @@ export function registerAnalyze(server: McpServer, store: SqliteStore): void {
           if (!nodeId) {
             return mcpError("nodeId is required for 'blockers' mode");
           }
+          // Bug #025: validate node exists
+          if (!doc.nodes.find((n) => n.id === nodeId)) {
+            return mcpError(`Node not found: ${nodeId}`);
+          }
           const blockers = findTransitiveBlockers(doc, nodeId);
           logger.info("tool:analyze:blockers:ok", { nodeId, blockerCount: blockers.length });
           return mcpText({ ok: true, mode, nodeId, blockers });
@@ -185,6 +189,10 @@ export function registerAnalyze(server: McpServer, store: SqliteStore): void {
         case "implement_done": {
           if (!nodeId) {
             return mcpError("nodeId is required for 'implement_done' mode");
+          }
+          // Bug #026: validate node exists
+          if (!doc.nodes.find((n) => n.id === nodeId)) {
+            return mcpError(`Node not found: ${nodeId}`);
           }
           const phase = detectCurrentPhase(doc);
           const dodReport = checkDefinitionOfDone(doc, nodeId);

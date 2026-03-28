@@ -13,7 +13,7 @@ export function registerMoveNode(server: McpServer, store: SqliteStore): void {
     "move_node",
     "Move a node to a new parent in the hierarchy",
     {
-      id: z.string().describe("The node ID to move"),
+      id: z.string().min(1).describe("The node ID to move"),
       newParentId: z.string().nullable().describe("New parent node ID (null to make root)"),
     },
     async ({ id, newParentId }) => {

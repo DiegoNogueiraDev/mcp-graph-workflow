@@ -60,7 +60,12 @@ export function registerList(server: McpServer, store: SqliteStore): void {
       }));
 
       logger.info("tool:list:ok", { total, limit, offset, returned: paginatedNodes.length });
-      return mcpText({ total, limit, offset, hasMore: offset + limit < total, nodes: summary });
+      // Bug #065: warn when offset exceeds total
+      const result: Record<string, unknown> = { total, limit, offset, hasMore: offset + limit < total, nodes: summary };
+      if (offset >= total && total > 0) {
+        result.warning = `offset (${offset}) exceeds total results (${total})`;
+      }
+      return mcpText(result);
     },
   );
 }
