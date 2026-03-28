@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.18.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.17.0...mcp-graph-v5.18.0) (2026-03-28)
+
+
+### Features
+
+* **dashboard:** Languages tab UI — 2-phase translation workflow ([4181d6b](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/4181d6b6de50150f1792c60837acbde82263e398))
+* **siebel:** batch import via directory param in siebel_import_sif MCP tool ([4525852](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/4525852152aaa9e1769d952568f52a4a51e035e2))
+* **siebel:** WSDL contract validation — field conformance scoring ([b72a27c](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/b72a27cbb78962f8961e5b83aa633675142d8bf3))
+* **siebel:** WSDL documentation generator — Markdown with Mermaid diagrams ([a171c02](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/a171c02b58994844003578df5eed937e13a79c16))
+* **translation:** knowledge store integration — translation_indexer.ts ([628a07d](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/628a07dfba7e4ec14c824c11c9f209c5a48dddd4))
+* **translation:** MCP tools — translate_code + analyze_translation ([ece23a7](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/ece23a7c2bb0069c58dfc13cb67ce6a1b89a6bb9))
+* **translation:** SSE integration — real-time translation events ([17f7f5a](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/17f7f5a9fb8cf2ab0a27ab750e6338eb3f4ab005))
+
+
+### Bug Fixes
+
+* resolve 95 of 101 reported bugs — zero regressions ([28ea9e8](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/28ea9e8a98d0938d8d3894d83bb1801c07fff70e))
+* resolve final 6 bugs — 101/101 complete, zero regressions ([d0bd6d9](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/d0bd6d943e8b5d96208736807eceade820b6bd5c))
+
 ## [5.17.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.16.0...mcp-graph-v5.17.0) (2026-03-28)
 
 
