@@ -38,7 +38,7 @@ Tool categories:
 - **Snapshots & Stats** (4) — stats, create_snapshot, restore_snapshot, list_snapshots
 - **Deprecated shims** (5) — add_node, update_node, delete_node, validate_task, validate_ac (removed in v7.0)
 
-See [MCP Tools Reference](./MCP-TOOLS-REFERENCE.md) for full parameter documentation.
+See [MCP Tools Reference](../reference/MCP-TOOLS-REFERENCE.md) for full parameter documentation.
 
 ### Layer 3: REST API — `src/api/`
 
@@ -71,7 +71,7 @@ middleware/
   validate.ts            # Zod-based request validation
 ```
 
-See [REST API Reference](./REST-API-REFERENCE.md) for full endpoint documentation.
+See [REST API Reference](../reference/REST-API-REFERENCE.md) for full endpoint documentation.
 
 ### Layer 4: Core — `src/core/`
 
@@ -146,7 +146,7 @@ See [Knowledge Pipeline](./KNOWLEDGE-PIPELINE.md) for the full RAG documentation
 | `mcp-deps-installer.ts` | Auto-install MCP server dependencies |
 | `tool-status.ts` | Track integration availability and health |
 
-See [Integrations Guide](./INTEGRATIONS-GUIDE.md) for the full integrations documentation.
+See [Integrations Guide](../reference/INTEGRATIONS-GUIDE.md) for the full integrations documentation.
 
 #### Docs (`core/docs/`)
 
@@ -264,7 +264,7 @@ Key skills: `/xp-bootstrap`, `/project-scaffold`, `/dev-flow-orchestrator`, `/tr
 | Context7 | Library documentation fetching | MCP server config |
 | Playwright | Browser automation, web capture | `@playwright/test` devDependency |
 
-See [Integrations Guide](./INTEGRATIONS-GUIDE.md) for detailed documentation.
+See [Integrations Guide](../reference/INTEGRATIONS-GUIDE.md) for detailed documentation.
 
 ## Data Flow
 

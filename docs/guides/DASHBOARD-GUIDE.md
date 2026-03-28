@@ -1,6 +1,6 @@
 # Dashboard — Guia do Usuário
 
-Guia completo do dashboard web do mcp-graph. Para referência da API REST, veja [REST-API-REFERENCE.md](REST-API-REFERENCE.md). Para workflows do dia-a-dia usando o dashboard, veja a seção Dashboard Deep Dive no [User Guide](USER-GUIDE.md).
+Guia completo do dashboard web do mcp-graph. Para referência da API REST, veja [REST-API-REFERENCE.md](../reference/REST-API-REFERENCE.md). Para workflows do dia-a-dia usando o dashboard, veja a seção Dashboard Deep Dive no [User Guide](./USER-GUIDE.md).
 
 ---
 

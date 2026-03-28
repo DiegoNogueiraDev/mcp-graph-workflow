@@ -62,19 +62,19 @@ src/
 | Capability | Key Modules | Docs |
 |------------|-------------|------|
 | PRD Import | parser/, importer/ | — |
-| 32 MCP Tools | mcp/tools/ | [MCP Tools Reference](docs/MCP-TOOLS-REFERENCE.md) |
-| 17 REST API Routers | api/routes/ | [REST API Reference](docs/REST-API-REFERENCE.md) |
-| Knowledge Store + RAG | store/knowledge-store, rag/ | [Knowledge Pipeline](docs/KNOWLEDGE-PIPELINE.md) |
-| Tiered Context Compression | context/ | [Knowledge Pipeline](docs/KNOWLEDGE-PIPELINE.md) |
+| 32 MCP Tools | mcp/tools/ | [MCP Tools Reference](docs/reference/MCP-TOOLS-REFERENCE.md) |
+| 17 REST API Routers | api/routes/ | [REST API Reference](docs/reference/REST-API-REFERENCE.md) |
+| Knowledge Store + RAG | store/knowledge-store, rag/ | [Knowledge Pipeline](docs/architecture/KNOWLEDGE-PIPELINE.md) |
+| Tiered Context Compression | context/ | [Knowledge Pipeline](docs/architecture/KNOWLEDGE-PIPELINE.md) |
 | Sprint Planning + Velocity | planner/ | — |
-| Integration Mesh | integrations/, docs/, capture/ | [Integrations Guide](docs/INTEGRATIONS-GUIDE.md) |
+| Integration Mesh | integrations/, docs/, capture/ | [Integrations Guide](docs/reference/INTEGRATIONS-GUIDE.md) |
 
 ## Integration Agents
 
 3 MCP agents coordinated by `IntegrationOrchestrator` via `GraphEventBus`:
 **mcp-graph** (execution graph), **Context7** (library docs), **Playwright** (browser validation).
 Native systems: **Code Intelligence** (code analysis), **Native Memories** (project knowledge).
-See [docs/INTEGRATIONS-GUIDE.md](docs/INTEGRATIONS-GUIDE.md).
+See [docs/reference/INTEGRATIONS-GUIDE.md](docs/reference/INTEGRATIONS-GUIDE.md).
 
 ## Non-Regression Rule
 
@@ -187,7 +187,7 @@ This project follows an anti-vibe-coding methodology based on XP (Extreme Progra
 - **Project setup**: Use `/project-scaffold` to auto-generate `.mcp.json`, `CLAUDE.md` template, and `.claude/rules/`
 - **Continuous cycle**: Use `/dev-flow-orchestrator` for ongoing iterations (ANALYZE → DESIGN → PLAN → IMPLEMENT → VALIDATE → REVIEW → HANDOFF → LISTENING)
 - **Graph sync**: Use `/track-with-mcp-graph` to keep the execution graph in sync with real work
-- **Dev lifecycle**: See [docs/LIFECYCLE.md](docs/LIFECYCLE.md) for the 8-phase cycle (ANALYZE → DESIGN → PLAN → IMPLEMENT → VALIDATE → REVIEW → HANDOFF → LISTENING)
+- **Dev lifecycle**: See [docs/reference/LIFECYCLE.md](docs/reference/LIFECYCLE.md) for the 8-phase cycle (ANALYZE → DESIGN → PLAN → IMPLEMENT → VALIDATE → REVIEW → HANDOFF → LISTENING)
 
 Key principles:
 1. **Build to Earning vs Learning** — Production code (Build to Earning) = full discipline, no shortcuts. Side projects (Build to Learning) = experimentation allowed. Know which mode you're in.
@@ -198,7 +198,7 @@ Key principles:
 6. **CLAUDE.md as evolving spec** — Every error, pattern, or architectural decision must be documented to cumulatively train the agent.
 7. **Graph visualization** — Use `export_mermaid` to visualize the execution graph in reviews, handoffs, and debugging.
 
-See [docs/LIFECYCLE.md](docs/LIFECYCLE.md) for the full methodology guide.
+See [docs/reference/LIFECYCLE.md](docs/reference/LIFECYCLE.md) for the full methodology guide.
 
 # Code Intelligence
 

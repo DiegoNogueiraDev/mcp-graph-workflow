@@ -6,7 +6,7 @@
 
 ## Visão Geral
 
-O mcp-graph é o **source of truth** do ciclo de desenvolvimento. Ele transforma PRDs em grafos de execução persistentes (SQLite), permitindo que agents trabalhem de forma estruturada, rastreável e eficiente em tokens. Para um resumo prático das 8 fases com gate checks e analyze modes, veja o [Advanced Guide §1](ADVANCED-GUIDE.md).
+O mcp-graph é o **source of truth** do ciclo de desenvolvimento. Ele transforma PRDs em grafos de execução persistentes (SQLite), permitindo que agents trabalhem de forma estruturada, rastreável e eficiente em tokens. Para um resumo prático das 8 fases com gate checks e analyze modes, veja o [Advanced Guide §1](../guides/ADVANCED-GUIDE.md).
 
 ```mermaid
 graph TD
@@ -127,7 +127,7 @@ docs:synced       → Index into Knowledge Store
 capture:completed → Index captured content
 ```
 
-> Detalhes completos em [Knowledge Pipeline](./KNOWLEDGE-PIPELINE.md) e [Integrations Guide](./INTEGRATIONS-GUIDE.md).
+> Detalhes completos em [Knowledge Pipeline](../architecture/KNOWLEDGE-PIPELINE.md) e [Integrations Guide](./INTEGRATIONS-GUIDE.md).
 
 ---
 

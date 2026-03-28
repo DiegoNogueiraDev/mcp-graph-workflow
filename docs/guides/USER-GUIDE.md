@@ -1,6 +1,6 @@
 # User Guide — mcp-graph
 
-> Complete guide for day-to-day usage. Prerequisite: complete the [Getting Started](GETTING-STARTED.md) tutorial first.
+> Complete guide for day-to-day usage. Prerequisite: complete the [Getting Started](./GETTING-STARTED.md) tutorial first.
 
 ---
 
@@ -198,7 +198,7 @@ Achieves 70-85% token reduction compared to raw data.
 
 ## 4. Dashboard Deep Dive
 
-Start the dashboard with `mcp-graph serve` and open `http://localhost:3000`. For the complete visual guide, see [DASHBOARD-GUIDE.md](DASHBOARD-GUIDE.md).
+Start the dashboard with `mcp-graph serve` and open `http://localhost:3000`. For the complete visual guide, see [DASHBOARD-GUIDE.md](./DASHBOARD-GUIDE.md).
 
 ### 4.1 Graph Tab
 
@@ -523,14 +523,14 @@ Keep the dashboard open (`mcp-graph serve`) while using MCP tools in your editor
 | `blockers` | Find what's blocking a specific task |
 | `ready` | Check if tasks meet Definition of Ready |
 
-For the complete list of 25 analyze modes, see the [Advanced Guide](ADVANCED-GUIDE.md).
+For the complete list of 25 analyze modes, see the [Advanced Guide](./ADVANCED-GUIDE.md).
 
 ---
 
 ## Next Steps
 
-- **[Advanced Guide](ADVANCED-GUIDE.md)** — Lifecycle methodology, all 25 analyze modes, RAG tuning, architecture, and extensibility
-- **[Getting Started](GETTING-STARTED.md)** — Quick-start tutorial and cheat sheet
-- **[Dashboard Guide](DASHBOARD-GUIDE.md)** — Complete visual walkthrough of all dashboard features
-- **[MCP Tools Reference](MCP-TOOLS-REFERENCE.md)** — Full reference for all 30 MCP tools
-- **[Knowledge Pipeline](KNOWLEDGE-PIPELINE.md)** — Deep dive into RAG architecture
+- **[Advanced Guide](./ADVANCED-GUIDE.md)** — Lifecycle methodology, all 25 analyze modes, RAG tuning, architecture, and extensibility
+- **[Getting Started](./GETTING-STARTED.md)** — Quick-start tutorial and cheat sheet
+- **[Dashboard Guide](./DASHBOARD-GUIDE.md)** — Complete visual walkthrough of all dashboard features
+- **[MCP Tools Reference](../reference/MCP-TOOLS-REFERENCE.md)** — Full reference for all 30 MCP tools
+- **[Knowledge Pipeline](../architecture/KNOWLEDGE-PIPELINE.md)** — Deep dive into RAG architecture

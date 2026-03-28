@@ -67,7 +67,7 @@ npm install && npm run build
 npm run dev        # HTTP + dashboard at localhost:3000
 ```
 
-> For detailed setup, see [Getting Started](docs/GETTING-STARTED.md).
+> For detailed setup, see [Getting Started](docs/guides/GETTING-STARTED.md).
 
 ## Features
 
@@ -114,8 +114,8 @@ mcp-graph serve --port 3000    # or: npm run dev
 
 | | Count | Reference |
 |---|---|---|
-| **MCP Tools** | 32 | [MCP-TOOLS-REFERENCE.md](docs/MCP-TOOLS-REFERENCE.md) |
-| **REST Endpoints** | 44 (17 routers) | [REST-API-REFERENCE.md](docs/REST-API-REFERENCE.md) |
+| **MCP Tools** | 32 | [MCP-TOOLS-REFERENCE.md](docs/reference/MCP-TOOLS-REFERENCE.md) |
+| **REST Endpoints** | 44 (17 routers) | [REST-API-REFERENCE.md](docs/reference/REST-API-REFERENCE.md) |
 | **CLI Commands** | 6 | `init`, `import`, `index`, `stats`, `serve`, `doctor` |
 
 ## Integrations
@@ -127,7 +127,7 @@ mcp-graph serve --port 3000    # or: npm run dev
 | **Context7** | Up-to-date library documentation fetching |
 | **Playwright** | Browser-based task validation and A/B testing |
 
-All coordinated by an event-driven `IntegrationOrchestrator`. See [INTEGRATIONS-GUIDE.md](docs/INTEGRATIONS-GUIDE.md).
+All coordinated by an event-driven `IntegrationOrchestrator`. See [INTEGRATIONS-GUIDE.md](docs/reference/INTEGRATIONS-GUIDE.md).
 
 ## Testing
 
@@ -143,15 +143,15 @@ npm run test:all    # Everything
 
 | Document | Description |
 |----------|-------------|
-| [Getting Started](docs/GETTING-STARTED.md) | Step-by-step guide for new users |
-| [Architecture](docs/ARCHITECTURE-GUIDE.md) | System layers, modules, data flows |
-| [MCP Tools Reference](docs/MCP-TOOLS-REFERENCE.md) | 32 tools with full parameters |
-| [REST API Reference](docs/REST-API-REFERENCE.md) | 17 routers, 44 endpoints |
-| [Knowledge Pipeline](docs/KNOWLEDGE-PIPELINE.md) | RAG, embeddings, context assembly |
-| [Integrations](docs/INTEGRATIONS-GUIDE.md) | Serena, GitNexus, Context7, Playwright |
-| [Test Guide](docs/TEST-GUIDE.md) | Test pyramid and best practices |
-| [PRD Writing Guide](docs/PRD-WRITING-GUIDE.md) | How to write PRDs that import correctly |
-| [Lifecycle](docs/LIFECYCLE.md) | 8-phase dev methodology |
+| [Getting Started](docs/guides/GETTING-STARTED.md) | Step-by-step guide for new users |
+| [Architecture](docs/architecture/ARCHITECTURE-GUIDE.md) | System layers, modules, data flows |
+| [MCP Tools Reference](docs/reference/MCP-TOOLS-REFERENCE.md) | 32 tools with full parameters |
+| [REST API Reference](docs/reference/REST-API-REFERENCE.md) | 17 routers, 44 endpoints |
+| [Knowledge Pipeline](docs/architecture/KNOWLEDGE-PIPELINE.md) | RAG, embeddings, context assembly |
+| [Integrations](docs/reference/INTEGRATIONS-GUIDE.md) | Serena, GitNexus, Context7, Playwright |
+| [Test Guide](docs/guides/TEST-GUIDE.md) | Test pyramid and best practices |
+| [PRD Writing Guide](docs/guides/PRD-WRITING-GUIDE.md) | How to write PRDs that import correctly |
+| [Lifecycle](docs/reference/LIFECYCLE.md) | 8-phase dev methodology |
 
 ## Support the Project
 

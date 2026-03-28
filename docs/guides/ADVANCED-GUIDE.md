@@ -2,13 +2,13 @@
 
 > For power users and developers. Covers the full lifecycle methodology, all analyze modes, RAG tuning, architecture, and extensibility.
 >
-> Prerequisites: [Getting Started](GETTING-STARTED.md) and [User Guide](USER-GUIDE.md).
+> Prerequisites: [Getting Started](./GETTING-STARTED.md) and [User Guide](./USER-GUIDE.md).
 
 ---
 
 ## 1. Lifecycle Methodology (8 Phases)
 
-mcp-graph follows an 8-phase development lifecycle inspired by XP (Extreme Programming) anti-vibe-coding principles. For the complete methodology reference, see [LIFECYCLE.md](LIFECYCLE.md).
+mcp-graph follows an 8-phase development lifecycle inspired by XP (Extreme Programming) anti-vibe-coding principles. For the complete methodology reference, see [LIFECYCLE.md](../reference/LIFECYCLE.md).
 
 ### 1.1 Phase Overview
 
@@ -413,14 +413,14 @@ CLI → MCP → API → Core → Store → Dashboard → Skills → Integrations
 - **Skills** (`copilot-ecosystem/`) — SKILL.md-based extensible capabilities
 - **Integrations** (`src/core/integrations/`) — Event-driven MCP orchestration
 
-For the full architecture diagram, see [ARCHITECTURE-MERMAID.md](ARCHITECTURE-MERMAID.md).
-For detailed layer documentation, see [ARCHITECTURE-GUIDE.md](ARCHITECTURE-GUIDE.md).
+For the full architecture diagram, see [ARCHITECTURE-MERMAID.md](../architecture/ARCHITECTURE-MERMAID.md).
+For detailed layer documentation, see [ARCHITECTURE-GUIDE.md](../architecture/ARCHITECTURE-GUIDE.md).
 
 ---
 
 ## 6. REST API Advanced Patterns
 
-The REST API exposes 17+ routers and 44+ endpoints. Full reference: [REST-API-REFERENCE.md](REST-API-REFERENCE.md).
+The REST API exposes 17+ routers and 44+ endpoints. Full reference: [REST-API-REFERENCE.md](../reference/REST-API-REFERENCE.md).
 
 ### Key Patterns
 
@@ -646,14 +646,14 @@ If migrating from the old Serena integration:
 
 | Document | Description |
 |----------|-------------|
-| [MCP-TOOLS-REFERENCE.md](MCP-TOOLS-REFERENCE.md) | Full reference for all 30 MCP tools |
-| [REST-API-REFERENCE.md](REST-API-REFERENCE.md) | 44+ REST API endpoints |
-| [ARCHITECTURE-GUIDE.md](ARCHITECTURE-GUIDE.md) | System layers and design principles |
-| [ARCHITECTURE-MERMAID.md](ARCHITECTURE-MERMAID.md) | Visual architecture diagram |
-| [KNOWLEDGE-PIPELINE.md](KNOWLEDGE-PIPELINE.md) | RAG pipeline deep dive |
-| [INTEGRATIONS-GUIDE.md](INTEGRATIONS-GUIDE.md) | All integration details |
-| [LIFECYCLE.md](LIFECYCLE.md) | Full 8-phase methodology |
-| [DASHBOARD-GUIDE.md](DASHBOARD-GUIDE.md) | Dashboard UI walkthrough |
-| [AGENTS.md](AGENTS.md) | Code Intelligence documentation |
-| [Getting Started](GETTING-STARTED.md) | Quick-start tutorial |
-| [User Guide](USER-GUIDE.md) | Day-to-day usage guide |
+| [MCP-TOOLS-REFERENCE.md](../reference/MCP-TOOLS-REFERENCE.md) | Full reference for all 30 MCP tools |
+| [REST-API-REFERENCE.md](../reference/REST-API-REFERENCE.md) | 44+ REST API endpoints |
+| [ARCHITECTURE-GUIDE.md](../architecture/ARCHITECTURE-GUIDE.md) | System layers and design principles |
+| [ARCHITECTURE-MERMAID.md](../architecture/ARCHITECTURE-MERMAID.md) | Visual architecture diagram |
+| [KNOWLEDGE-PIPELINE.md](../architecture/KNOWLEDGE-PIPELINE.md) | RAG pipeline deep dive |
+| [INTEGRATIONS-GUIDE.md](../reference/INTEGRATIONS-GUIDE.md) | All integration details |
+| [LIFECYCLE.md](../reference/LIFECYCLE.md) | Full 8-phase methodology |
+| [DASHBOARD-GUIDE.md](./DASHBOARD-GUIDE.md) | Dashboard UI walkthrough |
+| [AGENTS.md](../architecture/AGENTS.md) | Code Intelligence documentation |
+| [Getting Started](./GETTING-STARTED.md) | Quick-start tutorial |
+| [User Guide](./USER-GUIDE.md) | Day-to-day usage guide |

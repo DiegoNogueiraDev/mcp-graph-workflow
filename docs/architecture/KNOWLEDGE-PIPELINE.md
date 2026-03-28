@@ -188,5 +188,5 @@ Eight additional modules extend the RAG pipeline with query understanding, post-
 ## Related Documentation
 
 - [Architecture Guide](./ARCHITECTURE-GUIDE.md) — System layers and data flow
-- [Integrations Guide](./INTEGRATIONS-GUIDE.md) — Memories, Code Intelligence, Context7, Playwright
-- [MCP Tools Reference](./MCP-TOOLS-REFERENCE.md) — Complete tool documentation
+- [Integrations Guide](../reference/INTEGRATIONS-GUIDE.md) — Memories, Code Intelligence, Context7, Playwright
+- [MCP Tools Reference](../reference/MCP-TOOLS-REFERENCE.md) — Complete tool documentation

@@ -310,6 +310,6 @@ This enables AI agents to automatically leverage the right integration at the ri
 
 ## Related Documentation
 
-- [Knowledge Pipeline](./KNOWLEDGE-PIPELINE.md) — How knowledge flows from sources to LLM context
-- [Architecture Guide](./ARCHITECTURE-GUIDE.md) — System layers and data flow
+- [Knowledge Pipeline](../architecture/KNOWLEDGE-PIPELINE.md) — How knowledge flows from sources to LLM context
+- [Architecture Guide](../architecture/ARCHITECTURE-GUIDE.md) — System layers and data flow
 - [MCP Tools Reference](./MCP-TOOLS-REFERENCE.md) — Tools that expose integration features

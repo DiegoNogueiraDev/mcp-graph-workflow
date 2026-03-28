@@ -1880,7 +1880,7 @@ Fases testadas: ANALYZE → DESIGN → PLAN → IMPLEMENT → VALIDATE → REVIE
 ## Cenário 34: VALIDATE — Pirâmide de Testes + TDD + Definition of Done
 
 **Objetivo:** Validar o fluxo da Fase 5 (VALIDATE) do LIFECYCLE.md — executar pirâmide de testes (unit, integration, smoke, E2E) e confirmar Definition of Done.
-**Ref:** `docs/LIFECYCLE.md` Fase 5 + CLAUDE.md "Testing & Quality Methodology"
+**Ref:** `docs/reference/LIFECYCLE.md` Fase 5 + CLAUDE.md "Testing & Quality Methodology"
 
 > **Pirâmide de Testes:** Unit (Vitest) → Integration (in-memory SQLite) → E2E (Playwright) → Smoke (CLI/dashboard)
 > **Mock Data Policy:** In-memory SQLite para store tests, factory functions mínimas, mock ONLY de boundaries externas
@@ -2051,7 +2051,7 @@ Fases testadas: ANALYZE → DESIGN → PLAN → IMPLEMENT → VALIDATE → REVIE
 
 **Objetivo:** Executar smoke tests de TODAS as tabs do dashboard e validação E2E via Playwright, seguindo skills do LIFECYCLE: `playwright-explore-website` → `playwright-generate-test` → `playwright-tester-mode`.
 **Tools cobertos:** `browser_navigate`, `browser_snapshot`, `browser_click`, `browser_evaluate`, `browser_console_messages`, `browser_take_screenshot`, `validate_task`
-**Ref:** `docs/LIFECYCLE.md` Fase 5 — Skills em sequência
+**Ref:** `docs/reference/LIFECYCLE.md` Fase 5 — Skills em sequência
 
 ### Step 35.1: Navegar para o dashboard
 

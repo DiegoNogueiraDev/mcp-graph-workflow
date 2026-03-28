@@ -1,6 +1,6 @@
 # Getting Started — mcp-graph
 
-Step-by-step guide for new users. For API reference, see [MCP-TOOLS-REFERENCE.md](MCP-TOOLS-REFERENCE.md).
+Step-by-step guide for new users. For API reference, see [MCP-TOOLS-REFERENCE.md](../reference/MCP-TOOLS-REFERENCE.md).
 
 ---
 
@@ -241,7 +241,7 @@ mcp-graph serve --port 3000   # or: npm run dev
 
 Open `http://localhost:3000`.
 
-> Para o guia completo do dashboard, veja **[DASHBOARD-GUIDE.md](DASHBOARD-GUIDE.md)**.
+> Para o guia completo do dashboard, veja **[DASHBOARD-GUIDE.md](./DASHBOARD-GUIDE.md)**.
 
 ### 7 Tabs
 
@@ -448,11 +448,11 @@ The 10 most-used commands at a glance:
 
 ## Next Steps
 
-- **[User Guide](USER-GUIDE.md)** — Day-to-day workflows: sprint planning, knowledge pipeline, Code Graph, multi-project, and more
-- **[Advanced Guide](ADVANCED-GUIDE.md)** — Lifecycle methodology, 25 analyze modes, RAG tuning, architecture, and extensibility
-- Full 30-tool reference: [MCP-TOOLS-REFERENCE.md](MCP-TOOLS-REFERENCE.md)
-- REST API: [REST-API-REFERENCE.md](REST-API-REFERENCE.md)
-- Knowledge Pipeline: [KNOWLEDGE-PIPELINE.md](KNOWLEDGE-PIPELINE.md)
-- Integrations: [INTEGRATIONS-GUIDE.md](INTEGRATIONS-GUIDE.md)
-- Architecture: [ARCHITECTURE-GUIDE.md](ARCHITECTURE-GUIDE.md)
-- Dashboard: [DASHBOARD-GUIDE.md](DASHBOARD-GUIDE.md)
+- **[User Guide](./USER-GUIDE.md)** — Day-to-day workflows: sprint planning, knowledge pipeline, Code Graph, multi-project, and more
+- **[Advanced Guide](./ADVANCED-GUIDE.md)** — Lifecycle methodology, 25 analyze modes, RAG tuning, architecture, and extensibility
+- Full 30-tool reference: [MCP-TOOLS-REFERENCE.md](../reference/MCP-TOOLS-REFERENCE.md)
+- REST API: [REST-API-REFERENCE.md](../reference/REST-API-REFERENCE.md)
+- Knowledge Pipeline: [KNOWLEDGE-PIPELINE.md](../architecture/KNOWLEDGE-PIPELINE.md)
+- Integrations: [INTEGRATIONS-GUIDE.md](../reference/INTEGRATIONS-GUIDE.md)
+- Architecture: [ARCHITECTURE-GUIDE.md](../architecture/ARCHITECTURE-GUIDE.md)
+- Dashboard: [DASHBOARD-GUIDE.md](./DASHBOARD-GUIDE.md)
