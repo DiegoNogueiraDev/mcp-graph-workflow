@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.18.2](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.18.1...mcp-graph-v5.18.2) (2026-03-28)
+
+
+### Bug Fixes
+
+* **lsp:** normalize Windows path separators in LSP bridge and tests ([2c607a1](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/2c607a14050a6c25d68824a943db41fc9bccef23))
+* **lsp:** Windows path compatibility in bridge and tests ([2d555c3](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/2d555c3787fa57b08a524db50441345944f42bcb))
+
 ## [5.18.1](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.18.0...mcp-graph-v5.18.1) (2026-03-28)
 
 
