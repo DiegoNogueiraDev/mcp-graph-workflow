@@ -46,7 +46,7 @@ describe('detectProjectLanguages', () => {
     const mockedReaddirSync = vi.mocked(fs.readdirSync);
 
     mockedReaddirSync.mockImplementation((dirPath: unknown) => {
-      const p = String(dirPath);
+      const p = String(dirPath).replaceAll("\\", "/");
       if (p === '/project') {
         return [
           { name: 'tsconfig.json', isFile: () => true, isDirectory: () => false },
@@ -79,7 +79,7 @@ describe('detectProjectLanguages', () => {
     const mockedReaddirSync = vi.mocked(fs.readdirSync);
 
     mockedReaddirSync.mockImplementation((dirPath: unknown) => {
-      const p = String(dirPath);
+      const p = String(dirPath).replaceAll("\\", "/");
       if (p === '/project') {
         return [
           { name: 'pyproject.toml', isFile: () => true, isDirectory: () => false },
@@ -104,7 +104,7 @@ describe('detectProjectLanguages', () => {
     const mockedReaddirSync = vi.mocked(fs.readdirSync);
 
     mockedReaddirSync.mockImplementation((dirPath: unknown) => {
-      const p = String(dirPath);
+      const p = String(dirPath).replaceAll("\\", "/");
       if (p === '/project') {
         return [
           { name: 'Cargo.toml', isFile: () => true, isDirectory: () => false },
@@ -134,7 +134,7 @@ describe('detectProjectLanguages', () => {
     const mockedReaddirSync = vi.mocked(fs.readdirSync);
 
     mockedReaddirSync.mockImplementation((dirPath: unknown) => {
-      const p = String(dirPath);
+      const p = String(dirPath).replaceAll("\\", "/");
       if (p === '/project') {
         return [
           { name: 'go.mod', isFile: () => true, isDirectory: () => false },
@@ -159,7 +159,7 @@ describe('detectProjectLanguages', () => {
     const mockedReaddirSync = vi.mocked(fs.readdirSync);
 
     mockedReaddirSync.mockImplementation((dirPath: unknown) => {
-      const p = String(dirPath);
+      const p = String(dirPath).replaceAll("\\", "/");
       if (p === '/project') {
         return [
           { name: 'main.py', isFile: () => true, isDirectory: () => false },
@@ -190,7 +190,7 @@ describe('detectProjectLanguages', () => {
     const mockedReaddirSync = vi.mocked(fs.readdirSync);
 
     mockedReaddirSync.mockImplementation((dirPath: unknown) => {
-      const p = String(dirPath);
+      const p = String(dirPath).replaceAll("\\", "/");
       if (p === '/project') {
         return [
           { name: 'tsconfig.json', isFile: () => true, isDirectory: () => false },
@@ -223,7 +223,7 @@ describe('detectProjectLanguages', () => {
     const mockedReaddirSync = vi.mocked(fs.readdirSync);
 
     mockedReaddirSync.mockImplementation((dirPath: unknown) => {
-      const p = String(dirPath);
+      const p = String(dirPath).replaceAll("\\", "/");
       if (p === '/project') {
         return [
           { name: 'node_modules', isFile: () => false, isDirectory: () => true },
@@ -282,7 +282,7 @@ describe('detectProjectLanguages', () => {
     }));
 
     mockedReaddirSync.mockImplementation((dirPath: unknown) => {
-      const p = String(dirPath);
+      const p = String(dirPath).replaceAll("\\", "/");
       if (p === '/project') {
         return tsFiles as unknown as fs.Dirent[];
       }

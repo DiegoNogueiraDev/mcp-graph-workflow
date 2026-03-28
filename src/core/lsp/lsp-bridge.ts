@@ -673,7 +673,7 @@ export class LspBridge {
 
   private fromFileUri(uri: string): string {
     const absPath = uri.replace(/^file:\/\//, "");
-    return path.relative(this.basePath, absPath);
+    return path.relative(this.basePath, absPath).replaceAll("\\", "/");
   }
 
   private inferLanguageId(file: string): string {
