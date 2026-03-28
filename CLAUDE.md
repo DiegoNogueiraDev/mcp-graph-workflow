@@ -368,7 +368,7 @@ Dados armazenados em `workflow-graph/graph.db` (local, gitignored).
 **O mcp-graph é a fonte de verdade ABSOLUTA. Nenhuma implementação acontece fora do grafo.**
 
 1. **Node deve existir** — antes de escrever QUALQUER código, o node correspondente DEVE existir no grafo
-2. **Fluxo obrigatório** — `next → context → [implementar com TDD] → update_status → next` — SEM EXCEÇÕES
+2. **Fluxo obrigatório** — `next → context → rag_context → [implementar com TDD] → analyze(implement_done) → update_status → next` — SEM EXCEÇÕES
 3. **Epic = estrutura primeiro** — criar Epic + tasks filhas + edges ANTES de implementar
 4. **Status tracking** — `update_status → in_progress` ANTES de codar, `→ done` APÓS completar
 5. **Validação** — usar `validate` (action: `ac`) após cada task para checar critérios de aceitação
@@ -487,8 +487,6 @@ Dados armazenados em `workflow-graph/graph.db` (local, gitignored).
 ```
 next → context → rag_context → [implementar com TDD] → analyze(implement_done) → update_status → next
 ```
-
-> Com `prerequisites: "strict"`, os passos `context`, `rag_context` e `analyze(implement_done)` são **obrigatórios** antes de `update_status(done)`.
 
 ### Lifecycle (8 fases)
 

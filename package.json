@@ -77,7 +77,7 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
-    "@mcp-graph-workflow/mcp-graph": "^5.17.0",
+    "@mcp-graph-workflow/mcp-graph": "^5.19.3",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "better-sqlite3": "^12.6.2",
     "cheerio": "^1.2.0",
@@ -93,9 +93,9 @@
     "zod": "^4.3.6"
   },
   "optionalDependencies": {
+    "intelephense": ">=1.10.0",
     "typescript": ">=5.0.0",
-    "typescript-language-server": ">=4.0.0",
-    "intelephense": ">=1.10.0"
+    "typescript-language-server": ">=4.0.0"
   },
   "peerDependencies": {
     "typescript": ">=5.0.0"
