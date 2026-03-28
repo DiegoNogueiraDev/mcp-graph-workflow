@@ -32,7 +32,7 @@ export function invalidateRagCache(): void {
 export function registerRagContext(server: McpServer, store: SqliteStore): void {
   server.tool(
     "rag_context",
-    "Build a RAG context from a natural language query. Returns relevant nodes with expanded subgraph context, managed within a token budget. Supports detail levels: summary (~20 tok/node), standard (~150 tok/node), deep (~500+ tok/node with knowledge).",
+    "Build a RAG context from a natural language query. Returns relevant nodes with expanded subgraph context, managed within a token budget. Supports detail levels: summary (~40-50 tok/node), standard (~150 tok/node), deep (~500+ tok/node with knowledge).",
     {
       query: z.string().describe("Natural language query to search for"),
       tokenBudget: z
@@ -45,7 +45,7 @@ export function registerRagContext(server: McpServer, store: SqliteStore): void 
       detail: z
         .enum(["summary", "standard", "deep"])
         .optional()
-        .describe("Context detail level: summary (~20 tok/node), standard (~150 tok/node), deep (~500+ tok/node). Default: standard"),
+        .describe("Context detail level: summary (~40-50 tok/node), standard (~150 tok/node), deep (~500+ tok/node). Default: standard"),
       strategy: z
         .enum(["fts", "multi"])
         .optional()

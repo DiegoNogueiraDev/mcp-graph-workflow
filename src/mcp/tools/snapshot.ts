@@ -10,7 +10,7 @@ export function registerSnapshot(server: McpServer, store: SqliteStore): void {
     "Manage graph snapshots: create, list, or restore",
     {
       action: z.enum(["create", "list", "restore"]).describe("Action to perform"),
-      snapshotId: z.number().optional().describe("Snapshot ID (required for restore)"),
+      snapshotId: z.number().int().min(1).optional().describe("Snapshot ID (positive integer, required for restore)"),
     },
     async ({ action, snapshotId }) => {
       logger.debug("tool:snapshot", { action });
