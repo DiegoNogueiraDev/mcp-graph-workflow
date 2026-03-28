@@ -1,4 +1,4 @@
-import type { GraphDocument, GraphEdge, GraphNode, GraphStats, IntegrationStatus, CodeGraphStatus, ProjectMemory, ReindexResult, LogEntry, FolderInfo, OpenFolderResult, BrowseResult, CodeGraphData, ImpactResult, KnowledgeStats, Skill, CustomSkill, CustomSkillInput, ContextBudget, JourneyMap, JourneyMapFull } from "./types";
+import type { GraphDocument, GraphEdge, GraphNode, GraphStats, IntegrationStatus, CodeGraphStatus, ProjectMemory, ReindexResult, LogEntry, FolderInfo, OpenFolderResult, BrowseResult, CodeGraphData, ImpactResult, KnowledgeStats, Skill, CustomSkill, CustomSkillInput, ContextBudget, JourneyMap, JourneyMapFull, TranslationAnalysis, TranslationJob, TranslationPrepareResult, TranslationFinalizeResult, TranslationStats } from "./types";
 
 const BASE = "/api/v1";
 
@@ -333,4 +333,26 @@ export const apiClient = {
     request<{ ok: boolean; file: string; diagnostics: Array<{ file: string; startLine: number; startCharacter: number; endLine: number; endCharacter: number; severity: number; message: string; code?: string; source?: string }> }>(`/code-graph/lsp/diagnostics?file=${encodeURIComponent(file)}`),
   lspSymbols: (file: string) =>
     request<{ ok: boolean; file: string; symbols: Array<{ name: string; kind: string; file: string; startLine: number; endLine: number; children?: unknown[] }> }>(`/code-graph/lsp/symbols?file=${encodeURIComponent(file)}`),
+
+  // Translation
+  translationAnalyze: (code: string, languageHint?: string, targetLanguage?: string) =>
+    request<TranslationAnalysis>("/translation/analyze", {
+      method: "POST", body: JSON.stringify({ code, languageHint, targetLanguage }),
+    }),
+  translationCreateJob: (sourceCode: string, targetLanguage: string, scope?: string, sourceLanguage?: string) =>
+    request<TranslationPrepareResult>("/translation/jobs", {
+      method: "POST", body: JSON.stringify({ sourceCode, targetLanguage, scope: scope ?? "snippet", sourceLanguage }),
+    }),
+  translationListJobs: () =>
+    request<{ jobs: TranslationJob[] }>("/translation/jobs"),
+  translationGetJob: (id: string) =>
+    request<TranslationJob>(`/translation/jobs/${id}`),
+  translationFinalize: (id: string, generatedCode: string) =>
+    request<TranslationFinalizeResult>(`/translation/jobs/${id}/finalize`, {
+      method: "POST", body: JSON.stringify({ generatedCode }),
+    }),
+  translationDeleteJob: (id: string) =>
+    request<null>(`/translation/jobs/${id}`, { method: "DELETE" }),
+  translationStats: () =>
+    request<TranslationStats>("/translation/stats"),
 };

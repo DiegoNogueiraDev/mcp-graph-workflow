@@ -328,3 +328,73 @@ export interface JourneyMapFull extends JourneyMap {
   edges: JourneyEdge[];
   variants: JourneyVariant[];
 }
+
+// ── Translation ─────────────────────────────────────────
+
+export type TranslationJobStatus = "pending" | "analyzing" | "translating" | "validating" | "done" | "failed";
+export type TranslationScope = "snippet" | "function" | "module";
+
+export interface TranslationConstructInfo {
+  canonicalName: string;
+  count: number;
+  confidence: number;
+}
+
+export interface TranslationAnalysis {
+  detectedLanguage: string;
+  detectedConfidence?: number;
+  constructs: TranslationConstructInfo[];
+  complexityScore: number;
+  estimatedTranslatability: number;
+  ambiguousConstructs?: string[];
+  totalConstructs: number;
+}
+
+export interface TranslationJob {
+  id: string;
+  projectId: string;
+  sourceLanguage: string;
+  targetLanguage: string;
+  sourceCode: string;
+  targetCode?: string;
+  status: TranslationJobStatus;
+  scope: TranslationScope;
+  confidenceScore?: number;
+  warnings?: string[];
+  errorMessage?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EvidenceRisk {
+  construct: string;
+  severity: string;
+  message: string;
+}
+
+export interface EvidencePack {
+  diff: string;
+  translatedConstructs: Array<{ source: string; target: string; method: string }>;
+  risks: EvidenceRisk[];
+  confidenceScore: number;
+  humanReviewPoints: string[];
+}
+
+export interface TranslationPrepareResult {
+  jobId: string;
+  prompt: string;
+  analysis: TranslationAnalysis;
+}
+
+export interface TranslationFinalizeResult {
+  job: { id: string; status: string; targetCode?: string; confidenceScore?: number };
+  evidence: EvidencePack;
+}
+
+export interface TranslationStats {
+  totalJobs: number;
+  done: number;
+  failed: number;
+  pending: number;
+  avgConfidence: number;
+}
