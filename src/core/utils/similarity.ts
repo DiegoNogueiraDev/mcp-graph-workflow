@@ -7,7 +7,7 @@
 export function tokenize(name: string): string[] {
   return name
     .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .replace(/[_\-]/g, " ")
+    .replace(/[_-]/g, " ")
     .toLowerCase()
     .split(/\s+/)
     .filter((t) => t.length > 1);

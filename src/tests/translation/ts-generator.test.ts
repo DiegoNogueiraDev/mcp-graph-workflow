@@ -3,7 +3,6 @@ import Database from "better-sqlite3";
 import { ConstructRegistry } from "../../core/translation/ucr/construct-registry.js";
 import { loadAndSeedRegistry } from "../../core/translation/ucr/construct-seed.js";
 import { TsGenerator } from "../../core/translation/generators/ts-generator.js";
-import type { GeneratedCode } from "../../core/translation/generators/generator-adapter.js";
 import type { ParsedConstruct } from "../../core/translation/parsers/parser-adapter.js";
 
 function createSeededRegistry(): ConstructRegistry {

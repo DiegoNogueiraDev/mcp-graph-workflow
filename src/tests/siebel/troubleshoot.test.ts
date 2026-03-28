@@ -1,8 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
   troubleshootSiebel,
-  type TroubleshootRequest,
-  type TroubleshootResult,
 } from "../../core/siebel/troubleshoot.js";
 import type { SiebelObject, SiebelDependency } from "../../schemas/siebel.schema.js";
 

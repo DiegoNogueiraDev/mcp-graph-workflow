@@ -3,9 +3,6 @@ import {
   validateSecurity,
   validatePerformance,
   validateMigrationReadiness,
-  type SecurityValidationResult,
-  type PerformanceValidationResult,
-  type MigrationReadinessResult,
 } from "../../core/siebel/siebel-validators.js";
 import type { SiebelObject, SiebelDependency } from "../../schemas/siebel.schema.js";
 

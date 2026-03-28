@@ -299,7 +299,6 @@ export class KnowledgeStore {
     let updated = 0;
     let offset = 0;
 
-    // eslint-disable-next-line no-constant-condition
     while (true) {
       const rows = select.all(PAGE_SIZE, offset) as Array<{ id: string; created_at: string }>;
       if (rows.length === 0) break;

@@ -15,7 +15,6 @@ import { findEnvironment } from "../../core/siebel/siebel-config.js";
 import { buildMigrationPackage } from "../../core/siebel/migration-package.js";
 import { parseSifContent } from "../../core/siebel/sif-parser.js";
 import { normalizeNewlines } from "../response-helpers.js";
-import { KnowledgeStore } from "../../core/store/knowledge-store.js";
 import { STORE_DIR } from "../../core/utils/constants.js";
 import { logger } from "../../core/utils/logger.js";
 import { mcpText, mcpError } from "../response-helpers.js";

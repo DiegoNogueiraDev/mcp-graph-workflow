@@ -4,7 +4,6 @@ import { ConstructRegistry } from "../../core/translation/ucr/construct-registry
 import { loadAndSeedRegistry } from "../../core/translation/ucr/construct-seed.js";
 import { TranslationStore } from "../../core/translation/translation-store.js";
 import { TranslationOrchestrator } from "../../core/translation/translation-orchestrator.js";
-import type { TranslationAnalysis } from "../../core/translation/translation-types.js";
 
 function createTestDeps(): { db: Database.Database; registry: ConstructRegistry; store: TranslationStore } {
   const db = new Database(":memory:");

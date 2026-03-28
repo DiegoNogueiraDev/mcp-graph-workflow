@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 import {
   generateEScript,
   type EScriptGenerationRequest,
-  type EScriptGenerationResult,
 } from "../../core/siebel/escript-generator.js";
 import type { SiebelObject } from "../../schemas/siebel.schema.js";
 

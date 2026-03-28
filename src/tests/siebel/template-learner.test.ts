@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
   learnTemplates,
-  type LearnedTemplate,
 } from "../../core/siebel/template-learner.js";
 import type { SiebelObject } from "../../schemas/siebel.schema.js";
 

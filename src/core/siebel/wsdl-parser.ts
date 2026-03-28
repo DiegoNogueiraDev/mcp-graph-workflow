@@ -70,9 +70,9 @@ export interface WsdlParseResult {
 
 const WSDL_DEFINITIONS_KEYS = ["definitions", "wsdl:definitions"];
 const WSDL_TYPES_KEYS = ["types", "wsdl:types"];
-const WSDL_MESSAGE_KEYS = ["message", "wsdl:message"];
-const WSDL_PORT_TYPE_KEYS = ["portType", "wsdl:portType"];
-const WSDL_SERVICE_KEYS = ["service", "wsdl:service"];
+const _WSDL_MESSAGE_KEYS = ["message", "wsdl:message"];
+const _WSDL_PORT_TYPE_KEYS = ["portType", "wsdl:portType"];
+const _WSDL_SERVICE_KEYS = ["service", "wsdl:service"];
 
 /**
  * Parse WSDL XML content into structured result.

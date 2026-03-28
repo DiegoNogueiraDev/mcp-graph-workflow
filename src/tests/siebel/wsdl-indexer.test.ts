@@ -104,7 +104,7 @@ describe("WSDL Knowledge Store indexing", () => {
 
   it("should also index complex types as separate documents", () => {
     const parseResult = parseWsdlContent(WSDL_CONTENT, "sample.wsdl");
-    const result = indexWsdlContent(knowledgeStore, parseResult);
+    const _result = indexWsdlContent(knowledgeStore, parseResult);
 
     const wsdlDocs = knowledgeStore.list({ sourceType: "siebel_wsdl" });
     const typeDocs = wsdlDocs.filter((d) => d.title.includes("Type:"));

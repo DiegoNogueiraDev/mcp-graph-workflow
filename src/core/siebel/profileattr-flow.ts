@@ -2,7 +2,6 @@
  * ProfileAttr Flow Analyzer — maps Set/GetProfileAttr flows between scripts.
  */
 
-import { extractScriptReferences } from "./escript-crossref.js";
 import type { SiebelObject } from "../../schemas/siebel.schema.js";
 
 export interface AttrRef {

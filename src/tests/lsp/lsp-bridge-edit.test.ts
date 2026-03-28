@@ -25,7 +25,7 @@ function createMockManager(client: ReturnType<typeof createMockClient> | null = 
   };
 }
 
-function createMockCache() {
+function _createMockCache() {
   return {
     get: vi.fn((): unknown => null),
     set: vi.fn(),

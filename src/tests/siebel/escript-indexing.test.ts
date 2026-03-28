@@ -48,7 +48,7 @@ beforeEach(() => {
 describe("eScript indexing into Knowledge Store", () => {
   it("should index eScript children with source_type siebel_escript", () => {
     const parseResult = parseSifContent(SIF_CONTENT, "test-escript.sif");
-    const result = indexSifContent(knowledgeStore, parseResult);
+    const _result = indexSifContent(knowledgeStore, parseResult);
 
     const escriptDocs = knowledgeStore.list({ sourceType: "siebel_escript" });
     expect(escriptDocs.length).toBeGreaterThan(0);

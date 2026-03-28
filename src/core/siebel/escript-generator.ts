@@ -9,7 +9,7 @@
  * - Standard event handler signatures
  */
 
-import type { SiebelObject, SiebelObjectType } from "../../schemas/siebel.schema.js";
+import type { SiebelObject } from "../../schemas/siebel.schema.js";
 import { logger } from "../utils/logger.js";
 
 // --- Types ---

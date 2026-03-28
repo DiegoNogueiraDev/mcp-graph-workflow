@@ -170,10 +170,10 @@ function calculateAdherence(
   appletClassDist: Record<string, number>,
 ): number {
   let score = 0;
-  let checks = 0;
+  // checks counter removed — was write-only (lint: no-useless-assignment)
 
   // Check naming pattern adherence (30 pts)
-  checks++;
+  // (check counted)
   if (namingPatterns.length > 0) {
     const firstWord = obj.name.split(" ")[0];
     const matchesKnownPrefix = namingPatterns.some((p) => p.prefix === firstWord);
@@ -185,7 +185,7 @@ function calculateAdherence(
   // Check required properties (40 pts)
   const typeProps = requiredProps.find((r) => r.objectType === obj.type);
   if (typeProps && typeProps.properties.length > 0) {
-    checks++;
+    // (check counted)
     const objPropNames = new Set(obj.properties.map((p) => p.name));
     const matched = typeProps.properties.filter((p) => objPropNames.has(p)).length;
     score += Math.round((matched / typeProps.properties.length) * 40);
@@ -193,7 +193,7 @@ function calculateAdherence(
 
   // Check applet class (30 pts)
   if (obj.type === "applet") {
-    checks++;
+    // (check counted)
     const cls = obj.properties.find((p) => p.name === "CLASS")?.value;
     if (cls && appletClassDist[cls]) {
       score += 30;

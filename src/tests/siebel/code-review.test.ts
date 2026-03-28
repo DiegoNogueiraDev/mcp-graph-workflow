@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
   reviewSiebelCode,
-  type CodeReviewResult,
 } from "../../core/siebel/code-review.js";
 import type { SiebelObject } from "../../schemas/siebel.schema.js";
 

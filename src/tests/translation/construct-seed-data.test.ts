@@ -7,14 +7,14 @@ import type { UcrSeedData } from "../../core/translation/ucr/construct-types.js"
 const SEED_PATH = resolve(__dirname, "../../core/translation/ucr/construct-seed-data.json");
 
 describe("UCR Seed Data (construct-seed-data.json)", () => {
-  let data: UcrSeedData;
+  let _data: UcrSeedData;
 
   it("should be valid JSON that parses against UcrSeedDataSchema", () => {
     const raw = readFileSync(SEED_PATH, "utf-8");
     const parsed = JSON.parse(raw) as unknown;
     const result = UcrSeedDataSchema.safeParse(parsed);
     expect(result.success).toBe(true);
-    if (result.success) data = result.data;
+    if (result.success) _data = result.data;
   });
 
   it("should have at least 8 categories", () => {

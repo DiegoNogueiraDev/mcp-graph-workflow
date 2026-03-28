@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 import {
   diffSifObjects,
   formatDiffMarkdown,
-  type SifDiffResult,
 } from "../../core/siebel/sif-diff.js";
 import type { SiebelObject } from "../../schemas/siebel.schema.js";
 

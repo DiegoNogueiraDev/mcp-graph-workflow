@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 import {
   getSiebelBestPractices,
   getBestPracticesByCategory,
-  type BestPracticeRule,
 } from "../../core/siebel/best-practices.js";
 
 describe("best-practices", () => {

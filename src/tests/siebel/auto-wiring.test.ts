@@ -1,9 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
   autoWireDependencies,
-  type AutoWireRequest,
-  type AutoWireResult,
-  type MissingDependency,
 } from "../../core/siebel/auto-wiring.js";
 import type { SiebelObject } from "../../schemas/siebel.schema.js";
 

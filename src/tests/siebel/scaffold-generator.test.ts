@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 import {
   scaffoldSiebelObjects,
   type ScaffoldRequest,
-  type ScaffoldResult,
 } from "../../core/siebel/scaffold-generator.js";
 import type { SiebelObject } from "../../schemas/siebel.schema.js";
 

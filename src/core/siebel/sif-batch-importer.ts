@@ -6,7 +6,7 @@ import { readdir } from "node:fs/promises";
 import { join, extname } from "node:path";
 import { parseSifFile } from "./sif-parser.js";
 import { logger } from "../utils/logger.js";
-import type { SiebelSifParseResult, SiebelObjectType } from "../../schemas/siebel.schema.js";
+import type { SiebelSifParseResult } from "../../schemas/siebel.schema.js";
 
 export interface BatchImportOptions {
   concurrency?: number;

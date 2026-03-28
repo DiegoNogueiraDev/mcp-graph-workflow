@@ -4,7 +4,7 @@
  * Uses sif-diff.ts to generate a structural diff between original and cloned object.
  */
 
-import type { SiebelObject, SiebelObjectType } from "../../schemas/siebel.schema.js";
+import type { SiebelObject } from "../../schemas/siebel.schema.js";
 import { diffSifObjects, type SifDiffResult } from "./sif-diff.js";
 import { logger } from "../utils/logger.js";
 

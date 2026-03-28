@@ -46,12 +46,12 @@ export function createTranslationRouter(storeRef: StoreRef, eventBus?: GraphEven
       _store = new TranslationStore(db);
       _orchestrator = new TranslationOrchestrator(_registry, _store);
     }
-    return _orchestrator!;
+    return _orchestrator as TranslationOrchestrator;
   }
 
   function getStore(): TranslationStore {
     getOrchestrator(); // ensure initialized
-    return _store!;
+    return _store as TranslationStore;
   }
 
   /** POST /analyze — analyze source code */

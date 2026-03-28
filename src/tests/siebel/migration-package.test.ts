@@ -1,8 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
   buildMigrationPackage,
-  type MigrationPackageRequest,
-  type MigrationPackage,
   DEPLOY_ORDER,
 } from "../../core/siebel/migration-package.js";
 import type { SiebelObject, SiebelDependency } from "../../schemas/siebel.schema.js";
@@ -55,7 +53,7 @@ describe("migration-package", () => {
     });
 
     it("should detect modified objects via diff when provided", () => {
-      const baseObjects = [makeObj("CX_Account BC", "business_component", { TABLE: "S_ORG_EXT" })];
+      const _baseObjects = [makeObj("CX_Account BC", "business_component", { TABLE: "S_ORG_EXT" })];
       const currentObjects = [makeObj("CX_Account BC", "business_component", { TABLE: "S_ORG_EXT_X" })];
 
       const result = buildMigrationPackage({

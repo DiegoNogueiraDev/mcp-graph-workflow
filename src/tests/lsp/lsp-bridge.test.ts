@@ -71,7 +71,7 @@ function createBridge(
   cache: ReturnType<typeof createMockCache> | null,
   diagnostics: LspDiagnosticsCollector,
 ): LspBridge {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+   
   return new LspBridge(
     manager as never,
     cache as never,

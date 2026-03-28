@@ -237,7 +237,7 @@ export function autoWireDependencies(request: AutoWireRequest): AutoWireResult {
 
   // Build combined index of all known objects (repo + new)
   const allKnown = buildObjectIndex([...repository, ...newObjects]);
-  const repoIndex = buildObjectIndex(repository);
+  const _repoIndex = buildObjectIndex(repository);
 
   const wiredEdges: SiebelDependency[] = [];
   const missingDependencies: MissingDependency[] = [];

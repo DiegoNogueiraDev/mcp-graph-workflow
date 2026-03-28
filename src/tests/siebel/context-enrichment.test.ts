@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
   enrichSifContext,
-  type EnrichmentResult,
 } from "../../core/siebel/context-enrichment.js";
 import type { SiebelObject, SiebelDependency } from "../../schemas/siebel.schema.js";
 

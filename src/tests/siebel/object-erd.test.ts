@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
   generateSiebelErd,
-  type ErdResult,
 } from "../../core/siebel/object-erd.js";
 import type { SiebelObject } from "../../schemas/siebel.schema.js";
 

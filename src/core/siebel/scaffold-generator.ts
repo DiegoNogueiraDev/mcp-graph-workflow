@@ -212,7 +212,7 @@ export function scaffoldSiebelObjects(request: ScaffoldRequest): ScaffoldResult 
 
   // -- Applet --
   const appletClass = intent.appletStyle === "list" ? "CSSFrameList" : "CSSFrameBase";
-  const appletTemplate = findBestTemplate(templates, "applet", appletClass);
+  const _appletTemplate = findBestTemplate(templates, "applet", appletClass);
   const appletChildTag = intent.appletStyle === "list" ? "LIST_COLUMN" : "CONTROL";
   const appletChildType: SiebelObjectType = intent.appletStyle === "list" ? "list_column" : "control";
 

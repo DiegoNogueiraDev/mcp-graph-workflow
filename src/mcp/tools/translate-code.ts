@@ -26,7 +26,7 @@ export function registerTranslateCode(server: McpServer, store: SqliteStore): vo
       const translationStore = new TranslationStore(db);
       _orchestrator = new TranslationOrchestrator(registry, translationStore);
     }
-    return _orchestrator!;
+    return _orchestrator as TranslationOrchestrator;
   }
 
   server.tool(

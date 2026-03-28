@@ -252,7 +252,7 @@ export class LspClient extends EventEmitter {
   private handleData(data: Buffer): void {
     this.buffer = Buffer.concat([this.buffer, data]);
 
-    // eslint-disable-next-line no-constant-condition
+     
     while (true) {
       const headerStr = this.buffer.toString("ascii", 0, Math.min(this.buffer.byteLength, 256));
       const match = HEADER_REGEX.exec(headerStr);

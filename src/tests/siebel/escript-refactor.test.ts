@@ -1,8 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
   refactorEscript,
-  type RefactorResult,
-  type RefactorIssue,
 } from "../../core/siebel/escript-refactor.js";
 
 describe("escript-refactor", () => {

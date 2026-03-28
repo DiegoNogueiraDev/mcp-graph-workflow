@@ -1,9 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   checkSiebelReady,
-  type ReadyCheckResult,
 } from "../../core/siebel/definition-of-ready.js";
-import type { SiebelObject, SiebelDependency } from "../../schemas/siebel.schema.js";
+import type { SiebelObject } from "../../schemas/siebel.schema.js";
 
 // --- Factory ---
 
@@ -14,10 +13,6 @@ function makeObj(
   children: SiebelObject[] = [],
 ): SiebelObject {
   return { name, type, properties: Object.entries(props).map(([k, v]) => ({ name: k, value: v })), children };
-}
-
-function makeDep(from: string, fromType: SiebelObject["type"], to: string, toType: SiebelObject["type"]): SiebelDependency {
-  return { from: { name: from, type: fromType }, to: { name: to, type: toType }, relationType: "references" };
 }
 
 describe("definition-of-ready", () => {

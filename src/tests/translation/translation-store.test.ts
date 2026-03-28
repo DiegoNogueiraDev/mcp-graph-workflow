@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import Database from "better-sqlite3";
 import { TranslationStore } from "../../core/translation/translation-store.js";
-import type { TranslationJob } from "../../core/translation/translation-types.js";
 
 function createDb(): Database.Database {
   const db = new Database(":memory:");

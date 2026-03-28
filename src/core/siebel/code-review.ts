@@ -65,7 +65,7 @@ function getAllScripts(objects: readonly SiebelObject[]): Array<{ parent: string
   return scripts;
 }
 
-function escapeRegex(str: string): string {
+function _escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 

@@ -1,8 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
   suggestFields,
-  type FieldSuggestion,
-  type FieldSuggestionResult,
 } from "../../core/siebel/field-suggestion.js";
 import type { SiebelObject } from "../../schemas/siebel.schema.js";
 

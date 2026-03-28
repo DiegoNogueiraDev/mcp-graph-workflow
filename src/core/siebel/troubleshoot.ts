@@ -99,7 +99,7 @@ function buildDependencyChain(
 ): SiebelObjectRef[] {
   if (relatedRefs.length === 0 || dependencies.length === 0) return [];
 
-  const relatedKeys = new Set(relatedRefs.map((r) => `${r.type}:${r.name}`));
+  const _relatedKeys = new Set(relatedRefs.map((r) => `${r.type}:${r.name}`));
   const chain: SiebelObjectRef[] = [];
   const visited = new Set<string>();
 

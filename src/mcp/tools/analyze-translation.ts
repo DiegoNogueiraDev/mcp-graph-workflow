@@ -26,7 +26,7 @@ export function registerAnalyzeTranslation(server: McpServer, store: SqliteStore
       const translationStore = new TranslationStore(db);
       _orchestrator = new TranslationOrchestrator(registry, translationStore);
     }
-    return _orchestrator!;
+    return _orchestrator as TranslationOrchestrator;
   }
 
   server.tool(

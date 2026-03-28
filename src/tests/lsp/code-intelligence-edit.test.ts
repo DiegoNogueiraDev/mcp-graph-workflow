@@ -6,7 +6,6 @@
 
 import { describe, it, expect, beforeEach } from "vitest";
 import { resetSingletons } from "../../mcp/tools/code-intelligence.js";
-import type { LspCodeAction } from "../../core/lsp/lsp-types.js";
 
 // We test via the exported module-level state + resetSingletons
 // The actual tool registration requires McpServer which is heavy,

@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
   generateSifFromWsdl,
-  type WsdlToSifResult,
 } from "../../core/siebel/wsdl-to-sif.js";
 import type { WsdlParseResult } from "../../core/siebel/wsdl-parser.js";
 

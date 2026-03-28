@@ -1,10 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   generateIntegrationTests,
-  type IntegrationTestSuite,
-  type IntegrationTestCase,
 } from "../../core/siebel/integration-test-gen.js";
-import type { WsdlParseResult, WsdlOperation, WsdlComplexType, WsdlMessage, WsdlService } from "../../core/siebel/wsdl-parser.js";
+import type { WsdlParseResult } from "../../core/siebel/wsdl-parser.js";
 
 // --- Factory ---
 

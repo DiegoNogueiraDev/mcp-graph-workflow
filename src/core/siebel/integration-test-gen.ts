@@ -10,7 +10,6 @@
 
 import type {
   WsdlParseResult,
-  WsdlOperation,
   WsdlComplexType,
   WsdlMessage,
   WsdlField,
