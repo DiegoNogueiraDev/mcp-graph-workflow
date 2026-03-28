@@ -242,6 +242,10 @@ export class LspBridge {
     }
 
     try {
+      // Ensure document is open (LSP protocol requires didOpen before queries)
+      const absPath = path.resolve(this.basePath, file);
+      await this.ensureDocumentOpen(client, file, absPath);
+
       // Step 1: prepareCallHierarchy
       const items = await client.sendRequest<RawCallHierarchyItem[]>(
         "textDocument/prepareCallHierarchy",
@@ -290,6 +294,10 @@ export class LspBridge {
     }
 
     try {
+      // Ensure document is open (LSP protocol requires didOpen before queries)
+      const absPath = path.resolve(this.basePath, file);
+      await this.ensureDocumentOpen(client, file, absPath);
+
       // Step 1: prepareCallHierarchy
       const items = await client.sendRequest<RawCallHierarchyItem[]>(
         "textDocument/prepareCallHierarchy",

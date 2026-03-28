@@ -86,6 +86,7 @@ function createBridge(
 
 vi.mock("node:fs", () => ({
   statSync: vi.fn(() => ({ mtimeMs: 1000 })),
+  readFileSync: vi.fn(() => "// mock file content"),
 }));
 
 // ---------------------------------------------------------------------------
@@ -329,5 +330,86 @@ describe("LspBridge", () => {
     const result = await bridge.rename("src/a.ts", 1, 5, "newName");
 
     expect(result).toBeNull();
+  });
+
+  // ---- 13. callHierarchyIncoming sends didOpen before request ----
+  it("should send didOpen before callHierarchyIncoming request", async () => {
+    const prepareResult = [{ name: "myFunc", kind: 12, uri: `file://${BASE_PATH}/src/a.ts`, range: { start: { line: 0, character: 0 }, end: { line: 0, character: 10 } }, selectionRange: { start: { line: 0, character: 0 }, end: { line: 0, character: 6 } } }];
+    const incomingResult = [{ from: { name: "caller", kind: 12, uri: `file://${BASE_PATH}/src/b.ts`, range: { start: { line: 5, character: 0 }, end: { line: 5, character: 10 } }, selectionRange: { start: { line: 5, character: 0 }, end: { line: 5, character: 6 } } }, fromRanges: [] }];
+
+    const client = createMockClient({
+      "textDocument/prepareCallHierarchy": prepareResult,
+      "callHierarchy/incomingCalls": incomingResult,
+    });
+    manager = createMockManager(client);
+    cache = createMockCache();
+    bridge = createBridge(manager, cache, diagnostics);
+
+    await bridge.callHierarchyIncoming("src/a.ts", 1, 0);
+
+    // Verify didOpen was sent before the LSP request
+    expect(client.sendNotification).toHaveBeenCalledWith(
+      "textDocument/didOpen",
+      expect.objectContaining({
+        textDocument: expect.objectContaining({
+          uri: `file://${BASE_PATH}/src/a.ts`,
+        }),
+      }),
+    );
+
+    // Verify the order: didOpen notification comes before prepareCallHierarchy request
+    const notifCalls = client.sendNotification.mock.invocationCallOrder;
+    const reqCalls = client.sendRequest.mock.invocationCallOrder;
+    expect(notifCalls[0]).toBeLessThan(reqCalls[0]);
+  });
+
+  // ---- 14. callHierarchyOutgoing sends didOpen before request ----
+  it("should send didOpen before callHierarchyOutgoing request", async () => {
+    const prepareResult = [{ name: "myFunc", kind: 12, uri: `file://${BASE_PATH}/src/a.ts`, range: { start: { line: 0, character: 0 }, end: { line: 0, character: 10 } }, selectionRange: { start: { line: 0, character: 0 }, end: { line: 0, character: 6 } } }];
+    const outgoingResult = [{ to: { name: "callee", kind: 12, uri: `file://${BASE_PATH}/src/c.ts`, range: { start: { line: 10, character: 0 }, end: { line: 10, character: 10 } }, selectionRange: { start: { line: 10, character: 0 }, end: { line: 10, character: 6 } } }, fromRanges: [] }];
+
+    const client = createMockClient({
+      "textDocument/prepareCallHierarchy": prepareResult,
+      "callHierarchy/outgoingCalls": outgoingResult,
+    });
+    manager = createMockManager(client);
+    cache = createMockCache();
+    bridge = createBridge(manager, cache, diagnostics);
+
+    await bridge.callHierarchyOutgoing("src/a.ts", 1, 0);
+
+    // Verify didOpen was sent
+    expect(client.sendNotification).toHaveBeenCalledWith(
+      "textDocument/didOpen",
+      expect.objectContaining({
+        textDocument: expect.objectContaining({
+          uri: `file://${BASE_PATH}/src/a.ts`,
+        }),
+      }),
+    );
+
+    // Verify order: didOpen before prepareCallHierarchy
+    const notifCalls = client.sendNotification.mock.invocationCallOrder;
+    const reqCalls = client.sendRequest.mock.invocationCallOrder;
+    expect(notifCalls[0]).toBeLessThan(reqCalls[0]);
+  });
+
+  // ---- 15. ensureDocumentOpen is idempotent ----
+  it("should only send didOpen once for the same file", async () => {
+    const rawResponse = [{ uri: `file://${BASE_PATH}/src/utils.ts`, range: { start: { line: 0, character: 0 }, end: { line: 0, character: 5 } } }];
+    const client = createMockClient({ "textDocument/definition": rawResponse });
+    manager = createMockManager(client);
+    cache = createMockCache();
+    bridge = createBridge(manager, cache, diagnostics);
+
+    // Call twice on same file
+    await bridge.goToDefinition("src/main.ts", 1, 0);
+    await bridge.goToDefinition("src/main.ts", 2, 0);
+
+    // didOpen should be sent only once
+    const didOpenCalls = client.sendNotification.mock.calls.filter(
+      (call) => call[0] === "textDocument/didOpen",
+    );
+    expect(didOpenCalls).toHaveLength(1);
   });
 });
