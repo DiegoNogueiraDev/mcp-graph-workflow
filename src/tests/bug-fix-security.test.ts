@@ -46,7 +46,7 @@ describe("Bug Fix — assertPathInsideProject (siebel path traversal)", () => {
 
   it("should accept path inside project", () => {
     const result = assertPathInsideProject("./src");
-    expect(result).toContain("mcp-graph-workflow/src");
+    expect(result.replaceAll("\\", "/")).toContain("mcp-graph-workflow/src");
   });
 });
 
