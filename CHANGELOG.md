@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.19.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.18.3...mcp-graph-v5.19.0) (2026-03-28)
+
+
+### Features
+
+* **lsp:** auto-detect and check LSP language server dependencies ([9ca3527](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/9ca3527709feeebcb2cf51ab13d59a94df727bde))
+
+
+### Bug Fixes
+
+* **deps:** sync package-lock.json with intelephense optionalDependency ([fd20eef](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/fd20eefbb7ea282c940a675b8c6677a0ddcfa79f))
+
 ## [5.18.3](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.18.2...mcp-graph-v5.18.3) (2026-03-28)
 
 
