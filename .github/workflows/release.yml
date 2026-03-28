@@ -8,10 +8,16 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  id-token: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
@@ -39,9 +45,19 @@ jobs:
     needs: release-please
     if: ${{ needs.release-please.outputs.release_created }}
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment: npm
 
     steps:
+      - name: Wait for CI to pass
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.sha }}
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          check-name: 'build-and-test (ubuntu-latest, 22)'
+          wait-interval: 15
+          allowed-conclusions: success
+
       - uses: actions/checkout@v6
 
       - name: Setup Node.js
@@ -54,16 +70,24 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Cache dashboard dependencies
+        id: dashboard-cache
+        uses: actions/cache@v4
+        with:
+          path: src/web/dashboard/node_modules
+          key: dashboard-ubuntu-latest-node22-${{ hashFiles('src/web/dashboard/package-lock.json') }}
+
       - name: Install dashboard dependencies
+        if: steps.dashboard-cache.outputs.cache-hit != 'true'
         run: cd src/web/dashboard && npm ci
 
       - name: Build
         run: npm run build
 
-      - name: Test
-        run: npm test
+      - name: Verify package (dry run)
+        run: npm publish --dry-run --access public
 
       - name: Publish to npm
-        run: npm publish --access public
+        run: npm publish --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
