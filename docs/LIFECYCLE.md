@@ -612,6 +612,15 @@ graph TD
 
 ---
 
+## Code Intelligence Enforcement Automático
+
+Além das sugestões, o Code Intelligence pode ser **automaticamente enforced** via `code-intelligence-wrapper.ts`. Quando ativado, toda resposta MCP inclui um bloco `_code_intelligence` com:
+- **Index status** — disponibilidade e staleness do índice
+- **Enrichment phase-aware** — IMPLEMENT (impact analysis depth 2), REVIEW (blast radius depth 3), VALIDATE (symbol context 1-hop)
+- **Warnings** — índice vazio, stale, sem símbolos relevantes
+
+Ativar: `set_phase { codeIntelligence: "strict" }` (ou `"advisory"` / `"off"`).
+
 ## Sugestões de MCPs Externos por Fase (Lifecycle Wrapper)
 
 O lifecycle wrapper (`_lifecycle` block) agora sugere automaticamente sistemas contextuais via `suggestedMcpAgents`. Cada fase do ciclo indica quais agents/sistemas usar e com quais tools:

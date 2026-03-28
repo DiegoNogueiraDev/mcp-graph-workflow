@@ -231,6 +231,33 @@ The **Code Graph** tab in the dashboard visualizes symbols, relationships, and e
 
 The code index is stored in `workflow-graph/` alongside the execution graph. It is rebuilt by the `reindex_knowledge` MCP tool or via the dashboard.
 
+## Automatic Enforcement (MCP Wrapper)
+
+Code Intelligence is automatically enforced during MCP tool execution via `src/mcp/code-intelligence-wrapper.ts`. This wrapper appends a `_code_intelligence` block to every MCP tool response, providing automatic impact analysis and symbol context.
+
+### Modes
+
+Configure via `set_phase({codeIntelligence: "strict" | "advisory" | "off"})`:
+
+| Mode | Behavior |
+|------|----------|
+| `strict` | **Blocks** mutating tools if code index is empty. Warns on stale index. Appends enrichment. |
+| `advisory` | **Warns** on empty/stale index but never blocks. Appends enrichment. |
+| `off` | No enrichment, no checks (default). |
+
+### Phase-Aware Enrichment
+
+| Phase | Enrichment Type | Query |
+|-------|----------------|-------|
+| IMPLEMENT | Impact analysis (upstream, depth 2) | `analyzeImpact()` for symbols in tool args |
+| REVIEW | Blast radius (upstream, depth 3) | `analyzeImpact()` with deeper traversal |
+| VALIDATE | Symbol context (1-hop neighbors) | `getSymbolContext()` |
+| Others | Generic (index status only) | Index metadata |
+
+### Setting (persisted per project)
+
+Key: `code_intelligence_mode` in project settings. Set via `set_phase` tool or `store.setProjectSetting()`.
+
 ## mcp-graph Execution Rule
 
 **MANDATORY — applies to every task the AI performs, no exceptions.**
@@ -342,7 +369,7 @@ Dados armazenados em `workflow-graph/graph.db` (local, gitignored).
 | `import_prd` | Importar PRD → segmentar → classificar → extrair → inferir deps → criar grafo + indexar knowledge |
 | `plan_sprint` | Gerar relatório de planejamento de sprint (capacity, velocity, recomendações) |
 | `analyze` | 24 modos de análise por fase do lifecycle (ver modos abaixo) |
-| `set_phase` | Forçar/resetar fase do lifecycle (strict/advisory, gate checks) |
+| `set_phase` | Forçar/resetar fase do lifecycle (strict/advisory, gate checks) + Code Intelligence mode (strict/advisory/off) |
 
 #### Contexto & RAG
 

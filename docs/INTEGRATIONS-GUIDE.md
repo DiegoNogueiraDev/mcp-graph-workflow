@@ -129,6 +129,20 @@ Code Intelligence is exposed via REST at `/api/v1/code-graph/*`:
 - `GET /flows` — Detected execution flows
 - `POST /reindex` — Trigger reindexing
 
+### Automatic MCP Enforcement
+
+**File:** `src/mcp/code-intelligence-wrapper.ts`
+
+Code Intelligence can be automatically enforced during MCP tool execution. When enabled, a `_code_intelligence` block is appended to every tool response with:
+- Index health status (available, stale, symbol count)
+- Phase-aware enrichment (impact analysis in IMPLEMENT, blast radius in REVIEW, symbol context in VALIDATE)
+- Warnings for stale/empty index
+
+**Modes:** `set_phase({ codeIntelligence: "strict" | "advisory" | "off" })`
+- `strict` — blocks mutating tools if index is empty
+- `advisory` — warns but allows execution
+- `off` — disabled (default)
+
 ### Enriched Context
 
 **File:** `src/core/integrations/enriched-context.ts`

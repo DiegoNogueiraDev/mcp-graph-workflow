@@ -22,12 +22,17 @@ ANALYZE → DESIGN → PLAN → IMPLEMENT → VALIDATE → REVIEW → HANDOFF �
 
 **Manual override:**
 ```
-set_phase { phase: "IMPLEMENT", mode: "strict" }
+set_phase { phase: "IMPLEMENT", mode: "strict", codeIntelligence: "strict" }
 ```
 
 Modes:
 - **strict** — blocks tools that don't belong to the current phase
 - **advisory** — suggests the correct phase but allows all tools
+
+Code Intelligence enforcement (optional):
+- **strict** — blocks mutating tools if code index is empty, appends impact analysis to responses
+- **advisory** — warns on empty/stale index, appends enrichment
+- **off** — no Code Intelligence enrichment (default)
 
 ### 1.2 Phase Details
 

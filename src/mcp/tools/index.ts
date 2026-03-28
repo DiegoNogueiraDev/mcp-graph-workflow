@@ -49,6 +49,7 @@ import { registerValidateTask } from "./validate-task.js";
 import { registerValidateAc } from "./validate-ac.js";
 import { registerListSkills } from "./list-skills.js";
 import { wrapToolsWithLifecycle } from "../lifecycle-wrapper.js";
+import { wrapToolsWithCodeIntelligence } from "../code-intelligence-wrapper.js";
 
 export function registerAllTools(server: McpServer, store: SqliteStore): void {
   // Core tools
@@ -108,4 +109,7 @@ export function registerAllTools(server: McpServer, store: SqliteStore): void {
 
   // Wrap all registered tool responses with lifecycle context
   wrapToolsWithLifecycle(server, store);
+
+  // Wrap with Code Intelligence enrichment (outermost layer)
+  wrapToolsWithCodeIntelligence(server, store);
 }
