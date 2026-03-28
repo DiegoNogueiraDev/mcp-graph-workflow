@@ -1,6 +1,6 @@
 {
   "name": "@mcp-graph-workflow/mcp-graph",
-  "version": "5.19.1",
+  "version": "5.19.2",
   "description": "MCP local-first PRD to task graph — transforms text into executable structure",
   "type": "module",
   "main": "dist/index.js",
