@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.19.1](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.19.0...mcp-graph-v5.19.1) (2026-03-28)
+
+
+### Bug Fixes
+
+* remaining bug verification tests + rag-context/snapshot hardening ([4b99099](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/4b99099e8af7bac9e1b9378a5b0aa9284325d80e))
+* **security:** path traversal prevention + input validation hardening ([1334ed3](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/1334ed3d40b98ef0ca7e73e09bab13554788f62f))
+* **test:** normalize Windows path in assertPathInsideProject test ([e516061](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/e516061c44bdec124ad6abd174b8ee46c13de2b2))
+
 ## [5.19.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.18.3...mcp-graph-v5.19.0) (2026-03-28)
 
 
