@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.18.3](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.18.2...mcp-graph-v5.18.3) (2026-03-28)
+
+
+### Bug Fixes
+
+* **lsp:** prevent unhandled error on spawn failure + Windows path fixes ([0d32d9d](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/0d32d9df427d21e7a2bfc7c9fc03272681accf30))
+* **test:** increase timeout for reindex tests (30s for coverage mode) ([d66befe](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/d66befe57936c72a1855341f3073883c926f69c1))
+
 ## [5.18.2](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.18.1...mcp-graph-v5.18.2) (2026-03-28)
 
 
