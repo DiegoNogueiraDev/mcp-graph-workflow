@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.17.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.16.0...mcp-graph-v5.17.0) (2026-03-28)
+
+
+### Features
+
+* **dashboard:** API client + types for translation — 7 methods, 8 interfaces ([4ef753e](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/4ef753e1ce33d92b9ebf53960160af9c7ebc4a00))
+* **dashboard:** register Languages tab — sidebar + lazy load + placeholder component ([8a3de4e](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/8a3de4e89c3b6f4de002274e5c58f61f3e52e2a0))
+* **dashboard:** translation hooks — useTranslation (2-phase workflow) + useTranslationHistory ([e6481e8](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/e6481e85fbc07f31d241f93bd9b19d332dd9b4ea))
+* **events:** translation event types — job_created, analyzed, finalized, error ([da1baa2](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/da1baa232ffcdc41b5e4e7fa7449331c3ba815ca))
+* **lifecycle:** tool prerequisites enforcement — mandatory tool gates per phase ([1b20916](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/1b20916196bbf7b7367673d66695596c344cdb4b))
+* **lsp:** edit applier — atomic workspace edits with rollback, code-intelligence write ops ([6e507ec](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/6e507ecac5a322545ab41ef66836bef82d57c60d))
+* **mcp:** code intelligence auto-enforcement wrapper — strict/advisory/off modes ([e776624](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/e7766248e722aab78e49c326f53e5883119b2934))
+* **perf:** cache layer optimization — SQLite PRAGMAs, eliminate N+1 queries, fix LRU, extend RAG cache ([bfbd012](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/bfbd0124d7a6221a00a4ef102a0a336d1cc9282c))
+* **translation:** prompt builder, orchestrator, API routes — sprint-lang-1 complete ([63f1bd9](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/63f1bd90772406c0e0acd70b5e491c2fde6ef5e4))
+* **translation:** scorer, ambiguity, parsers, generators, store, language detection — 8 tasks done ([c71afd3](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/c71afd31211027b6921086cd50cb21c0c5f64d1f))
+* **translation:** UCR foundation — construct types, registry, seed data (12 langs), migration v15 ([984ca4b](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/984ca4b5ab27da01bb8ed20ee0d64fbc8d3ea844))
+
 ## [5.16.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.15.1...mcp-graph-v5.16.0) (2026-03-28)
 
 
