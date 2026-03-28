@@ -4,6 +4,7 @@
 
 import type { WsdlParseResult } from "./wsdl-parser.js";
 import type { SiebelObject } from "../../schemas/siebel.schema.js";
+import { tokenize, jaccardSimilarity } from "../utils/similarity.js";
 
 export interface WsdlCorrelationMatch {
   serviceName: string;
@@ -80,17 +81,4 @@ export function correlateWsdlWithObjects(
   return { matches, unmatchedOperations, unmatchedIOs, coverageScore };
 }
 
-function tokenize(name: string): string[] {
-  return name
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .replace(/[_\-]/g, " ")
-    .toLowerCase()
-    .split(/\s+/)
-    .filter((t) => t.length > 1);
-}
-
-function jaccardSimilarity(a: Set<string>, b: Set<string>): number {
-  const intersection = new Set([...a].filter((x) => b.has(x)));
-  const union = new Set([...a, ...b]);
-  return union.size > 0 ? intersection.size / union.size : 0;
-}
+// tokenize and jaccardSimilarity imported from ../utils/similarity.js

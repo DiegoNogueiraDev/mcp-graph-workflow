@@ -47,3 +47,35 @@ export const DEFAULT_CHUNK_MAX_TOKENS = 500;
 
 /** Default overlap tokens between chunks */
 export const DEFAULT_CHUNK_OVERLAP = 50;
+
+// ── Translation / UCR constants ──
+
+/** All languages supported by the UCR (matches LSP server-registry) */
+export const SUPPORTED_LANGUAGES = [
+  "typescript", "python", "rust", "go", "java", "cpp",
+  "ruby", "php", "kotlin", "swift", "csharp", "lua",
+] as const;
+
+export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
+
+/** Language pairs available for translation */
+export const SUPPORTED_LANGUAGE_PAIRS: ReadonlyArray<{ from: SupportedLanguage; to: SupportedLanguage }> = [
+  { from: "typescript", to: "python" },
+  { from: "python", to: "typescript" },
+] as const;
+
+/** MVP language pairs (initially only TS <-> Python) */
+export const MVP_LANGUAGE_PAIRS = SUPPORTED_LANGUAGE_PAIRS;
+
+/** Confidence threshold below which AI assistance is needed */
+export const UCR_CONFIDENCE_THRESHOLD = 0.7;
+
+/** Check if a language is supported */
+export function isLanguageSupported(lang: string): lang is SupportedLanguage {
+  return (SUPPORTED_LANGUAGES as readonly string[]).includes(lang);
+}
+
+/** Check if a language pair is supported for translation */
+export function isLanguagePairSupported(from: string, to: string): boolean {
+  return SUPPORTED_LANGUAGE_PAIRS.some((p) => p.from === from && p.to === to);
+}

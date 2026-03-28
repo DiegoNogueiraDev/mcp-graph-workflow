@@ -116,7 +116,7 @@ describe("Migration 8 — fs_path + knowledge project_id", () => {
       .prepare("SELECT version FROM _migrations ORDER BY version")
       .all() as Array<{ version: number }>;
 
-    expect(migrations.length).toBe(14);
-    expect(migrations.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]);
+    expect(migrations.length).toBe(15);
+    expect(migrations.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
   });
 });

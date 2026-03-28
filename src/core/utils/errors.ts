@@ -45,6 +45,35 @@ export function getErrorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
+// ── Translation errors ──
+
+export class TranslationError extends McpGraphError {
+  constructor(message: string) {
+    super(`Translation error: ${message}`);
+    this.name = "TranslationError";
+  }
+}
+
+export class UnsupportedLanguagePairError extends McpGraphError {
+  constructor(
+    public readonly from: string,
+    public readonly to: string,
+  ) {
+    super(`Unsupported language pair: ${from} → ${to}`);
+    this.name = "UnsupportedLanguagePairError";
+  }
+}
+
+export class TranslationValidationError extends McpGraphError {
+  constructor(
+    public readonly jobId: string,
+    message: string,
+  ) {
+    super(`Translation validation failed for job ${jobId}: ${message}`);
+    this.name = "TranslationValidationError";
+  }
+}
+
 export class LifecycleGateError extends McpGraphError {
   constructor(
     public readonly toolName: string,

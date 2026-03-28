@@ -28,6 +28,7 @@ Thumbs.db
 .env.*
 raw-*
 raw.md
+docs/raw/
 
 # MCP / Local Tools
 workflow-graph/

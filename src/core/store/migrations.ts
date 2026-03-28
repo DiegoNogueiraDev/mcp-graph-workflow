@@ -552,6 +552,83 @@ const migrations: Migration[] = [
       END;
     `,
   },
+  {
+    version: 15,
+    description: "Translation jobs + UCR (Universal Construct Registry) tables",
+    sql: `
+      CREATE TABLE IF NOT EXISTS translation_jobs (
+        id                TEXT PRIMARY KEY,
+        project_id        TEXT NOT NULL,
+        source_language   TEXT NOT NULL,
+        target_language   TEXT NOT NULL,
+        source_code       TEXT NOT NULL,
+        target_code       TEXT,
+        status            TEXT NOT NULL DEFAULT 'pending',
+        scope             TEXT NOT NULL DEFAULT 'snippet',
+        constraints       TEXT,
+        analysis          TEXT,
+        result            TEXT,
+        evidence          TEXT,
+        confidence_score  REAL,
+        warnings          TEXT,
+        error_message     TEXT,
+        created_at        TEXT NOT NULL,
+        updated_at        TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_tj_project ON translation_jobs(project_id);
+      CREATE INDEX IF NOT EXISTS idx_tj_status ON translation_jobs(status);
+      CREATE INDEX IF NOT EXISTS idx_tj_lang_pair ON translation_jobs(source_language, target_language);
+
+      CREATE TABLE IF NOT EXISTS ucr_categories (
+        id          TEXT PRIMARY KEY,
+        name        TEXT NOT NULL,
+        description TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS ucr_constructs (
+        id              TEXT PRIMARY KEY,
+        category_id     TEXT NOT NULL,
+        canonical_name  TEXT NOT NULL UNIQUE,
+        description     TEXT,
+        semantic_group  TEXT,
+        metadata        TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_ucr_constructs_category ON ucr_constructs(category_id);
+      CREATE INDEX IF NOT EXISTS idx_ucr_constructs_group ON ucr_constructs(semantic_group);
+
+      CREATE TABLE IF NOT EXISTS ucr_language_mappings (
+        id              TEXT PRIMARY KEY,
+        construct_id    TEXT NOT NULL,
+        language_id     TEXT NOT NULL,
+        syntax_pattern  TEXT NOT NULL,
+        ast_node_type   TEXT,
+        confidence      REAL NOT NULL DEFAULT 1.0,
+        is_primary      INTEGER NOT NULL DEFAULT 1,
+        constraints     TEXT,
+        UNIQUE(construct_id, language_id, syntax_pattern)
+      );
+      CREATE INDEX IF NOT EXISTS idx_ucr_mapping_construct ON ucr_language_mappings(construct_id);
+      CREATE INDEX IF NOT EXISTS idx_ucr_mapping_language ON ucr_language_mappings(language_id);
+
+      CREATE TABLE IF NOT EXISTS ucr_equivalence_classes (
+        id                TEXT PRIMARY KEY,
+        name              TEXT NOT NULL,
+        description       TEXT,
+        equivalence_type  TEXT NOT NULL DEFAULT 'exact'
+      );
+
+      CREATE TABLE IF NOT EXISTS ucr_translation_log (
+        id              INTEGER PRIMARY KEY AUTOINCREMENT,
+        source_lang     TEXT NOT NULL,
+        target_lang     TEXT NOT NULL,
+        construct_id    TEXT NOT NULL,
+        mapping_id      TEXT NOT NULL,
+        success         INTEGER NOT NULL DEFAULT 1,
+        feedback        TEXT,
+        created_at      TEXT NOT NULL
+      );
+    `,
+  },
 ];
 
 export function runMigrations(db: Database.Database): void {
