@@ -19,7 +19,11 @@ export type GraphEventType =
   | "siebel:sif_imported"
   | "siebel:composer_action"
   | "siebel:objects_indexed"
-  | "siebel:sif_generated";
+  | "siebel:sif_generated"
+  | "translation:job_created"
+  | "translation:analyzed"
+  | "translation:finalized"
+  | "translation:error";
 
 export interface GraphEvent {
   type: GraphEventType;
@@ -136,4 +140,26 @@ export interface CodeReindexedEvent extends GraphEvent {
 export interface KnowledgeQualityUpdatedEvent extends GraphEvent {
   type: "knowledge:quality_updated";
   payload: { updated: number };
+}
+
+// ── Translation events ──────────────────────────────────
+
+export interface TranslationJobCreatedEvent extends GraphEvent {
+  type: "translation:job_created";
+  payload: { jobId: string; sourceLanguage: string; targetLanguage: string };
+}
+
+export interface TranslationAnalyzedEvent extends GraphEvent {
+  type: "translation:analyzed";
+  payload: { jobId: string; constructCount: number; complexity: number };
+}
+
+export interface TranslationFinalizedEvent extends GraphEvent {
+  type: "translation:finalized";
+  payload: { jobId: string; confidence: number; evidenceCount: number };
+}
+
+export interface TranslationErrorEvent extends GraphEvent {
+  type: "translation:error";
+  payload: { jobId: string; errorMessage: string };
 }
