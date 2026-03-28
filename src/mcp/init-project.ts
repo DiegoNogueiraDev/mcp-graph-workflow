@@ -5,6 +5,9 @@ import { logger } from "../core/utils/logger.js";
 import { GraphNotInitializedError } from "../core/utils/errors.js";
 import { buildMcpServersConfig } from "../core/integrations/mcp-servers-config.js";
 import { installAllMcpDeps } from "../core/integrations/mcp-deps-installer.js";
+import { installLspDeps } from "../core/lsp/lsp-deps-installer.js";
+import { detectProjectLanguages } from "../core/lsp/language-detector.js";
+import { ServerRegistry } from "../core/lsp/server-registry.js";
 import { generateClaudeMdSection, generateCopilotInstructions, applySection } from "../core/config/ai-memory-generator.js";
 
 import { STORE_DIR } from "../core/utils/constants.js";
@@ -262,6 +265,22 @@ export async function runUpdate(
       step: "deps",
       status: "up-to-date",
       message: `MCP dependencies: ${ready.length}/${depResults.length} ready`,
+    });
+  }
+
+  // 3b. LSP language server dependencies
+  if (shouldRun("lsp-deps")) {
+    const registry = new ServerRegistry();
+    const detected = detectProjectLanguages(projectDir, registry);
+    const langIds = detected.map((d) => d.languageId);
+    const lspResults = await installLspDeps(langIds);
+    const available = lspResults.filter((r) => r.status === "already_available");
+    const missing = lspResults.filter((r) => r.status === "not_found");
+    const hints = missing.map((r) => `${r.languageId}: ${r.installHint ?? r.message}`).join("; ");
+    steps.push({
+      step: "lsp-deps",
+      status: missing.length === 0 ? "up-to-date" : "updated",
+      message: `LSP servers: ${available.length}/${lspResults.length} available${missing.length > 0 ? `. Missing: ${hints}` : ""}`,
     });
   }
 

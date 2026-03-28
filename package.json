@@ -94,7 +94,8 @@
   },
   "optionalDependencies": {
     "typescript": ">=5.0.0",
-    "typescript-language-server": ">=4.0.0"
+    "typescript-language-server": ">=4.0.0",
+    "intelephense": ">=1.10.0"
   },
   "peerDependencies": {
     "typescript": ">=5.0.0"
