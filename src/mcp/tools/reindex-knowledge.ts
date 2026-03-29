@@ -95,7 +95,7 @@ export function registerReindexKnowledge(server: McpServer, store: SqliteStore):
       if (allSources || sources?.includes("code")) {
         try {
           const symbols = store.getDb()
-            .prepare("SELECT name, kind, file_path as file, is_exported as exported FROM code_symbols LIMIT 500")
+            .prepare("SELECT name, kind, file, exported FROM code_symbols LIMIT 500")
             .all() as Array<{ name: string; kind: string; file: string; exported: number }>;
           if (symbols.length > 0) {
             results.code = indexCodeAnalysis(
