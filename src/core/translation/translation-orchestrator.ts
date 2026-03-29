@@ -7,6 +7,8 @@
 import { createHash } from "node:crypto";
 import { ConstructRegistry } from "./ucr/construct-registry.js";
 import { TranslationStore } from "./translation-store.js";
+import type { CodeStore } from "../code/code-store.js";
+import { analyzeFromIndex } from "./pre-indexed-analyzer.js";
 import type { TranslationAnalysis, TranslationJob, TranslationScope } from "./translation-types.js";
 import type { TranslationScore, AmbiguityReport } from "./ucr/construct-types.js";
 import { detectLanguageFromCode } from "./language-detect.js";
@@ -16,6 +18,16 @@ import { JavaParserAdapter } from "./parsers/java-parser-adapter.js";
 import { GoParserAdapter } from "./parsers/go-parser-adapter.js";
 import { CSharpParserAdapter } from "./parsers/csharp-parser-adapter.js";
 import { RustParserAdapter } from "./parsers/rust-parser-adapter.js";
+import { RubyParserAdapter } from "./parsers/ruby-parser-adapter.js";
+import { PhpParserAdapter } from "./parsers/php-parser-adapter.js";
+import { SwiftParserAdapter } from "./parsers/swift-parser-adapter.js";
+import { KotlinParserAdapter } from "./parsers/kotlin-parser-adapter.js";
+import { ScalaParserAdapter } from "./parsers/scala-parser-adapter.js";
+import { ElixirParserAdapter } from "./parsers/elixir-parser-adapter.js";
+import { DartParserAdapter } from "./parsers/dart-parser-adapter.js";
+import { HaskellParserAdapter } from "./parsers/haskell-parser-adapter.js";
+import { CppParserAdapter } from "./parsers/cpp-parser-adapter.js";
+import { LuaParserAdapter } from "./parsers/lua-parser-adapter.js";
 import type { ParserAdapter, ParsedConstruct } from "./parsers/parser-adapter.js";
 import { scoreConstructs } from "./confidence/equivalence-scorer.js";
 import { detectAmbiguities } from "./confidence/ambiguity-detector.js";
@@ -105,19 +117,41 @@ const PARSERS = new Map<string, ParserAdapter>([
   ["go", new GoParserAdapter()],
   ["csharp", new CSharpParserAdapter()],
   ["rust", new RustParserAdapter()],
+  ["ruby", new RubyParserAdapter()],
+  ["php", new PhpParserAdapter()],
+  ["swift", new SwiftParserAdapter()],
+  ["kotlin", new KotlinParserAdapter()],
+  ["scala", new ScalaParserAdapter()],
+  ["elixir", new ElixirParserAdapter()],
+  ["dart", new DartParserAdapter()],
+  ["haskell", new HaskellParserAdapter()],
+  ["cpp", new CppParserAdapter()],
+  ["lua", new LuaParserAdapter()],
 ]);
 
 export class TranslationOrchestrator {
   constructor(
     private readonly registry: ConstructRegistry,
     private readonly store: TranslationStore,
+    private readonly codeStore?: CodeStore,
   ) {}
 
   /**
    * Analyze source code — detect language, identify constructs, compute complexity.
    * Results are cached with SHA-256 content hash (TTL 60min, max 100 entries).
+   * When filePath + projectId are provided and Code Intelligence has indexed the file,
+   * uses pre-indexed analysis (instant, zero parsing cost).
    */
-  analyzeSource(code: string, hints?: AnalyzeHints): TranslationAnalysis & { cacheHit: boolean } {
+  analyzeSource(code: string, hints?: AnalyzeHints, filePath?: string, projectId?: string): TranslationAnalysis & { cacheHit: boolean } {
+    // Try pre-indexed analysis (Layer 5) when file context is available
+    if (filePath && projectId && this.codeStore) {
+      const preIndexed = analyzeFromIndex(this.codeStore, projectId, filePath);
+      if (preIndexed) {
+        const result = { ...preIndexed.analysis, cacheHit: false };
+        return result;
+      }
+    }
+
     // Check cache
     const cacheKey = computeCacheKey(code, hints?.targetLanguage);
     const cached = analysisCache.get(cacheKey);
