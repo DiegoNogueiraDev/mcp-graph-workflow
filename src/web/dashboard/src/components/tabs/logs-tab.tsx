@@ -183,8 +183,9 @@ export function LogsTab(): React.JSX.Element {
         data-testid="log-list"
       >
         {filteredLogs.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-muted">
-            No logs to display
+          <div className="flex flex-col items-center justify-center h-full gap-2 text-muted">
+            <p className="text-xs">No logs to display</p>
+            <p className="text-[10px] text-muted/60">Logs appear when mcp-graph tools are executed</p>
           </div>
         ) : (
           filteredLogs.map((entry) => (

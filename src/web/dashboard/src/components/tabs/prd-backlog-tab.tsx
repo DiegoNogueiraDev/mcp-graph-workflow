@@ -27,10 +27,13 @@ const edgeTypes = { workflowEdge: WorkflowEdge };
 const proOptions = { hideAttribution: true };
 
 interface PrdBacklogTabProps {
-  graph: GraphDocument;
+  graph: GraphDocument | null;
+  loading?: boolean;
+  error?: string | null;
+  onRetry?: () => void;
 }
 
-function PrdBacklogFlow({ graph }: PrdBacklogTabProps): React.JSX.Element {
+function PrdBacklogFlow({ graph }: { graph: GraphDocument }): React.JSX.Element {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<WorkflowNodeData>>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge<WorkflowEdgeData>>([]);
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
@@ -166,7 +169,69 @@ function PrdBacklogFlow({ graph }: PrdBacklogTabProps): React.JSX.Element {
   );
 }
 
-export function PrdBacklogTab({ graph }: PrdBacklogTabProps): React.JSX.Element {
+export function PrdBacklogTab({ graph, loading, error, onRetry }: PrdBacklogTabProps): React.JSX.Element {
+  if (loading || !graph) {
+    return (
+      <div className="flex h-full">
+        {/* Left: Canvas skeleton */}
+        <div className="flex-1 min-w-0 flex flex-col">
+          <div className="px-3 py-1.5 bg-surface-alt border-b border-edge">
+            <div className="h-3 w-48 rounded bg-surface animate-pulse" />
+          </div>
+          <div className="flex-1 bg-surface-alt animate-pulse" />
+        </div>
+        {/* Right: Sidebar skeleton */}
+        <div className="w-96 border-l border-edge flex flex-col">
+          <div className="px-4 py-3 border-b border-edge bg-surface-alt space-y-2">
+            <div className="flex justify-between">
+              <div className="h-4 w-28 rounded bg-surface animate-pulse" />
+              <div className="h-4 w-40 rounded bg-surface animate-pulse" />
+            </div>
+            <div className="h-2 rounded-full bg-surface animate-pulse" />
+          </div>
+          <div className="flex-1 p-3 space-y-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-14 rounded-lg border border-edge bg-surface-alt animate-pulse" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-4">
+        <div className="text-center">
+          <p className="text-sm font-medium text-foreground">Failed to load PRD & Backlog</p>
+          <p className="text-xs text-muted mt-1">{error}</p>
+        </div>
+        {onRetry && (
+          <button
+            type="button"
+            onClick={onRetry}
+            className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-md border border-edge text-muted hover:text-foreground transition-colors cursor-pointer"
+          >
+            Retry
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  if (!graph) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-3 text-muted">
+        <p className="text-xs">No graph data available</p>
+        {onRetry && (
+          <button type="button" onClick={onRetry} className="text-xs px-3 py-1.5 rounded border border-edge hover:text-foreground transition-colors cursor-pointer">
+            Retry
+          </button>
+        )}
+      </div>
+    );
+  }
+
   return (
     <ReactFlowProvider>
       <PrdBacklogFlow graph={graph} />

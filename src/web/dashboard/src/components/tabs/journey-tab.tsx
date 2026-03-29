@@ -335,8 +335,15 @@ function MapSelector({
 }): React.JSX.Element {
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full text-muted">
-        Loading journey maps...
+      <div className="h-full flex flex-col">
+        {/* Selector bar skeleton */}
+        <div className="flex items-center gap-2 p-2 border-b border-edge bg-surface-alt">
+          <div className="h-4 w-16 rounded bg-surface animate-pulse" />
+          <div className="h-7 flex-1 rounded bg-surface animate-pulse" />
+          <div className="h-7 w-20 rounded bg-surface animate-pulse" />
+        </div>
+        {/* Canvas skeleton */}
+        <div className="flex-1 bg-surface-alt animate-pulse rounded-lg m-4" />
       </div>
     );
   }

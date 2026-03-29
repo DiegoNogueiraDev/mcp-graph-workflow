@@ -683,8 +683,20 @@ export function LspTab(): React.JSX.Element {
   // Error state
   if (error && !languages) {
     return (
-      <div className="flex items-center justify-center h-full text-danger">
-        Failed to load: {error}
+      <div className="flex flex-col items-center justify-center h-full gap-4">
+        <AlertCircle className="w-10 h-10 text-danger" />
+        <div className="text-center">
+          <p className="text-sm font-medium text-foreground">Failed to load LSP data</p>
+          <p className="text-xs text-muted mt-1">{error}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => void refresh()}
+          className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-md border border-edge text-muted hover:text-foreground transition-colors cursor-pointer"
+        >
+          <RefreshCw className="w-3 h-3" />
+          Retry
+        </button>
       </div>
     );
   }
@@ -692,9 +704,24 @@ export function LspTab(): React.JSX.Element {
   // Loading state
   if (loading || !languages) {
     return (
-      <div className="flex items-center justify-center h-full text-muted">
-        <RefreshCw className="w-4 h-4 animate-spin mr-2" />
-        Loading LSP data...
+      <div className="flex flex-col h-full overflow-hidden">
+        {/* Header bar skeleton */}
+        <div className="flex items-center justify-between px-4 py-2 border-b border-edge bg-surface-alt">
+          <div className="flex items-center gap-1">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-7 w-28 rounded-lg bg-surface animate-pulse" />
+            ))}
+          </div>
+          <div className="h-7 w-20 rounded-lg bg-surface animate-pulse" />
+        </div>
+        {/* Content area skeleton (sidebar + main) */}
+        <div className="flex-1 p-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-44 rounded-xl border border-edge bg-surface-alt animate-pulse" />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }

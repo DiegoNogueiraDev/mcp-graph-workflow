@@ -29,8 +29,17 @@ export function MemoriesTab(): React.JSX.Element {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full text-muted">
-        Loading Memories...
+      <div className="h-full flex">
+        <div className="w-64 border-r border-edge bg-surface-alt p-2 space-y-2">
+          <div className="h-4 w-16 rounded bg-surface animate-pulse" />
+          <div className="h-6 w-full rounded bg-surface animate-pulse" />
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-4 rounded bg-surface animate-pulse" style={{ width: `${50 + Math.random() * 40}%`, marginLeft: `${(i % 3) * 12}px` }} />
+          ))}
+        </div>
+        <div className="flex-1 flex items-center justify-center text-muted text-xs">
+          Loading memories...
+        </div>
       </div>
     );
   }
@@ -219,7 +228,7 @@ function TreeNodeList({
                 if (isFolder) onToggle(node.path);
                 if (node.memory) onSelect(node.memory);
               }}
-              className={`w-full text-left px-2 py-0.5 flex items-center gap-1 hover:bg-surface-elevated transition-colors ${
+              className={`w-full text-left px-2 py-0.5 flex items-center gap-1 hover:bg-surface-elevated transition-colors cursor-pointer ${
                 isSelected ? "bg-accent15 text-accent" : "text-foreground"
               }`}
               style={{ paddingLeft: `${depth * 12 + 8}px` }}
@@ -253,22 +262,56 @@ function TreeNodeList({
 // ── MemoryContentViewer ──────────────────────────
 
 function MemoryContentViewer({ selectedMemory }: { selectedMemory: ProjectMemory | null }): React.JSX.Element {
+  const [copied, setCopied] = useState(false);
+
   if (!selectedMemory) {
     return (
       <div className="flex items-center justify-center h-full text-muted">
         <div className="text-center">
           <p className="text-sm mb-1">Select a memory from the explorer</p>
-          <p className="text-xs">Project memories appear as navigable files</p>
+          <p className="text-xs text-muted/60">Project memories appear as navigable files</p>
         </div>
       </div>
     );
   }
 
+  const handleCopy = (): void => {
+    void navigator.clipboard.writeText(selectedMemory.content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  // Build breadcrumb from memory name (e.g., "architecture/design" → ["architecture", "design"])
+  const parts = selectedMemory.name.split("/");
+
   return (
     <div className="p-4">
-      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-edge">
-        <span className="text-sm font-semibold">{selectedMemory.name}</span>
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-1 mb-2 text-[10px] text-muted">
+        <span>memories</span>
+        {parts.map((part, i) => (
+          <span key={i} className="flex items-center gap-1">
+            <span>/</span>
+            <span className={i === parts.length - 1 ? "text-foreground font-medium" : ""}>{part}</span>
+          </span>
+        ))}
       </div>
+
+      {/* Header with copy */}
+      <div className="flex items-center justify-between mb-3 pb-2 border-b border-edge">
+        <span className="text-sm font-semibold">{parts[parts.length - 1]}</span>
+        <button
+          onClick={handleCopy}
+          className={`text-[10px] px-2 py-0.5 rounded border transition-all cursor-pointer ${
+            copied
+              ? "border-green-500/30 text-green-500 bg-green-500/5"
+              : "border-edge text-muted hover:text-foreground"
+          }`}
+        >
+          {copied ? "Copied!" : "Copy"}
+        </button>
+      </div>
+
       <pre className="text-xs whitespace-pre-wrap text-muted font-mono leading-relaxed">
         {selectedMemory.content}
       </pre>

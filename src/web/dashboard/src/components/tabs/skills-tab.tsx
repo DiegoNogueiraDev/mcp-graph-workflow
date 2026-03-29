@@ -11,7 +11,7 @@ const TOKEN_BUDGET = 4000;
 
 function MetricCard({ value, label }: { value: string | number; label: string }): React.JSX.Element {
   return (
-    <div className="p-3 rounded-xl border border-edge shadow-sm hover:shadow-md transition-shadow bg-surface-alt text-center" data-testid="metric-card">
+    <div className="p-3 rounded-xl border border-edge bg-surface-alt text-center" data-testid="metric-card">
       <div className="text-xl font-bold">{value}</div>
       <div className="text-[10px] text-muted uppercase">{label}</div>
     </div>
@@ -193,8 +193,19 @@ export function SkillsTab(): React.JSX.Element {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full text-muted">
-        Loading skills...
+      <div className="p-6 max-w-5xl mx-auto space-y-6">
+        <div className="h-5 w-32 rounded bg-surface animate-pulse" />
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="h-20 rounded-xl border border-edge bg-surface-alt animate-pulse" />
+          ))}
+        </div>
+        <div className="h-8 rounded bg-surface animate-pulse" />
+        <div className="space-y-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-16 rounded-xl border border-edge bg-surface-alt animate-pulse" />
+          ))}
+        </div>
       </div>
     );
   }

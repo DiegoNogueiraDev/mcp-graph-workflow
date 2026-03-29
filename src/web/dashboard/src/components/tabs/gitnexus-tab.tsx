@@ -353,16 +353,52 @@ export function GitNexusTab(): React.JSX.Element {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full text-muted">
-        Loading Code Graph...
+      <div className="h-full flex flex-col">
+        {/* Header bar skeleton */}
+        <div className="flex items-center gap-3 px-4 py-2 border-b border-edge bg-surface-alt">
+          <div className="h-4 w-48 rounded bg-surface animate-pulse" />
+          <div className="h-5 w-24 rounded-full bg-surface animate-pulse" />
+        </div>
+        {/* Path bar skeleton */}
+        <div className="flex items-center gap-3 px-4 py-1.5 border-b border-edge bg-surface-alt">
+          <div className="h-3 w-40 rounded bg-surface animate-pulse" />
+          <div className="h-6 w-24 rounded bg-surface animate-pulse" />
+        </div>
+        {/* 2-panel body skeleton */}
+        <div className="flex flex-1 min-h-0">
+          {/* Left sidebar skeleton */}
+          <div className="w-full md:w-[30%] md:min-w-[280px] border-r border-edge flex flex-col">
+            <div className="flex border-b border-edge bg-surface-alt px-2 py-2 gap-2">
+              <div className="flex-1 h-6 rounded bg-surface animate-pulse" />
+              <div className="flex-1 h-6 rounded bg-surface animate-pulse" />
+            </div>
+            <div className="p-3 space-y-2">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="h-5 rounded bg-surface animate-pulse" style={{ width: `${60 + Math.random() * 30}%` }} />
+              ))}
+            </div>
+          </div>
+          {/* Right graph canvas skeleton */}
+          <div className="flex-1 bg-surface-alt animate-pulse" />
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-full text-danger">
-        Failed to load: {error}
+      <div className="flex flex-col items-center justify-center h-full gap-4">
+        <div className="text-center">
+          <p className="text-sm font-medium text-foreground">Failed to load Code Graph</p>
+          <p className="text-xs text-muted mt-1">{error}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => void loadData()}
+          className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-md border border-edge text-muted hover:text-foreground transition-colors cursor-pointer"
+        >
+          Retry
+        </button>
       </div>
     );
   }

@@ -204,16 +204,59 @@ export function SiebelTab(): React.JSX.Element {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full text-muted">
-        Loading Siebel...
+      <div className="h-full overflow-auto">
+        <div className="p-4 space-y-6 max-w-6xl mx-auto">
+          {/* Sub-tab bar skeleton */}
+          <div className="flex gap-1 border-b border-edge pb-1">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-7 w-24 rounded-t bg-surface animate-pulse" />
+            ))}
+          </div>
+          {/* Table section skeleton */}
+          <div className="rounded-lg border border-edge bg-surface-alt animate-pulse">
+            <div className="px-4 py-3 border-b border-edge">
+              <div className="h-4 w-40 rounded bg-surface" />
+            </div>
+            <div className="p-4 space-y-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex gap-4">
+                  <div className="h-4 w-32 rounded bg-surface" />
+                  <div className="h-4 w-20 rounded bg-surface" />
+                  <div className="h-4 w-24 rounded bg-surface" />
+                  <div className="h-4 flex-1 rounded bg-surface" />
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Generation section skeleton */}
+          <div className="rounded-lg border border-edge bg-surface-alt animate-pulse">
+            <div className="px-4 py-3 border-b border-edge">
+              <div className="h-4 w-32 rounded bg-surface" />
+            </div>
+            <div className="p-4 space-y-3">
+              <div className="h-20 rounded bg-surface" />
+              <div className="h-8 w-48 rounded bg-surface" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-full text-danger">
-        {error}
+      <div className="flex flex-col items-center justify-center h-full gap-4">
+        <div className="text-center">
+          <p className="text-sm font-medium text-foreground">Failed to load Siebel data</p>
+          <p className="text-xs text-muted mt-1">{error}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => void loadData()}
+          className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-md border border-edge text-muted hover:text-foreground transition-colors cursor-pointer"
+        >
+          Retry
+        </button>
       </div>
     );
   }

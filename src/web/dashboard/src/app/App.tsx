@@ -173,7 +173,7 @@ function AppContent(): React.JSX.Element {
                     <GraphTab graph={graph} loading={loading} error={error} onRetry={handleRefresh} onImportPrd={() => setImportOpen(true)} />
                   </div>
                   <div style={{ display: activeTab === "prd-backlog" ? "contents" : "none" }}>
-                    {graph && <PrdBacklogTab graph={graph} />}
+                    <PrdBacklogTab graph={graph} loading={loading} error={error} onRetry={handleRefresh} />
                   </div>
                   {activeTab === "journey" && <JourneyTab />}
                   {activeTab === "gitnexus" && <GitNexusTab />}
