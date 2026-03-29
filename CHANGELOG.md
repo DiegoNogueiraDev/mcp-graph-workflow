@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.26.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.25.0...mcp-graph-v5.26.0) (2026-03-29)
+
+
+### Features
+
+* **language-convert:** Language Convert v2 — full project conversion, deterministic indicator, knowledge tab ([c77d555](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/c77d555a1f1e607c4ea60fa7bc67d4bfe06d1288))
+
+
+### Bug Fixes
+
+* **code-graph:** improve indexer coverage for barrel files, arrow functions, and file metrics ([2cb352e](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/2cb352e499d703ee1cc7122689ae352a5857f546))
+* **language-convert:** index translation evidence on finalize + real data in Graph tab ([20034bc](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/20034bc49db41e2cc684cb786e24bef4f0a2e5ec))
+* **reindex:** correct SQL column names in code symbol reindex query ([7bb4b41](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/7bb4b41d452c3cc18a88bce512aa8012a3e85a7e))
+
 ## [5.25.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.24.1...mcp-graph-v5.25.0) (2026-03-29)
 
 
