@@ -656,25 +656,24 @@ export class SqliteStore {
       };
       collectDescendants(id);
 
-      // Delete edges and nodes for all collected IDs
-      for (const nodeId of toDelete) {
+      // Batch DELETE edges and nodes for all collected IDs (avoids N+1 pattern)
+      if (toDelete.length > 0) {
+        const placeholders = toDelete.map(() => "?").join(",");
         this.db
           .prepare(
-            "DELETE FROM edges WHERE project_id = ? AND (from_node = ? OR to_node = ?)",
+            `DELETE FROM edges WHERE project_id = ? AND (from_node IN (${placeholders}) OR to_node IN (${placeholders}))`,
           )
-          .run(pid, nodeId, nodeId);
-      }
+          .run(pid, ...toDelete, ...toDelete);
 
-      let anyDeleted = false;
-      for (const nodeId of toDelete) {
         const result = this.db
-          .prepare("DELETE FROM nodes WHERE id = ? AND project_id = ?")
-          .run(nodeId, pid);
+          .prepare(`DELETE FROM nodes WHERE project_id = ? AND id IN (${placeholders})`)
+          .run(pid, ...toDelete);
         if (result.changes > 0) {
-          anyDeleted = true;
-          deletedNodeIds.push(nodeId);
+          deletedNodeIds.push(...toDelete);
         }
       }
+
+      const anyDeleted = deletedNodeIds.length > 0;
 
       return anyDeleted;
     })();

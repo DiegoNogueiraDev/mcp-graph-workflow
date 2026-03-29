@@ -663,6 +663,16 @@ const migrations: Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_knowledge_recency ON knowledge_documents(recency_score);
     `,
   },
+  {
+    version: 19,
+    description: "Add missing performance indexes for knowledge_documents, tool_call_log, code_symbols",
+    sql: `
+      CREATE INDEX IF NOT EXISTS idx_knowledge_project_id ON knowledge_documents(project_id);
+      CREATE INDEX IF NOT EXISTS idx_knowledge_source_type ON knowledge_documents(source_type);
+      CREATE INDEX IF NOT EXISTS idx_tool_call_node ON tool_call_log(project_id, node_id);
+      CREATE INDEX IF NOT EXISTS idx_code_symbols_file ON code_symbols(file);
+    `,
+  },
 ];
 
 export function runMigrations(db: Database.Database): void {
