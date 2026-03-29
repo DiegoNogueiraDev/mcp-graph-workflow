@@ -90,8 +90,15 @@ export function createBenchmarkRouter(storeRef: StoreRef): Router {
       // Cost calculations
       const opusInputPrice = 15.0; // $/MTok
       const sonnetInputPrice = 3.0; // $/MTok
-      const opusPerTask = avgTokensPerTask > 0 ? (avgTokensPerTask * opusInputPrice) / 1_000_000 : 0;
-      const sonnetPerTask = avgTokensPerTask > 0 ? (avgTokensPerTask * sonnetInputPrice) / 1_000_000 : 0;
+      // Cost per task AFTER compression (what you actually pay)
+      const opusCostPerTask = avgTokensPerTask > 0 ? (avgTokensPerTask * opusInputPrice) / 1_000_000 : 0;
+      const sonnetCostPerTask = avgTokensPerTask > 0 ? (avgTokensPerTask * sonnetInputPrice) / 1_000_000 : 0;
+      // Actual savings from compression (what you save)
+      const avgTokensSavedPerTask = sampleSize > 0 ? Math.round(totalTokensSaved / sampleSize) : 0;
+      const opusSavedPerTask = avgTokensSavedPerTask > 0 ? (avgTokensSavedPerTask * opusInputPrice) / 1_000_000 : 0;
+      const sonnetSavedPerTask = avgTokensSavedPerTask > 0 ? (avgTokensSavedPerTask * sonnetInputPrice) / 1_000_000 : 0;
+      const opusTotalSaved = totalTokensSaved > 0 ? (totalTokensSaved * opusInputPrice) / 1_000_000 : 0;
+      const sonnetTotalSaved = totalTokensSaved > 0 ? (totalTokensSaved * sonnetInputPrice) / 1_000_000 : 0;
 
       // Tool token usage — nullable for backward compatibility
       let toolTokenUsage: ToolTokenSummary | null = null;
@@ -115,9 +122,14 @@ export function createBenchmarkRouter(storeRef: StoreRef): Router {
           perTaskMetrics,
           totalTokensSaved,
           avgTokensPerTask,
+          avgTokensSavedPerTask,
           costSavings: {
-            opusPerTask: Math.round(opusPerTask * 1000) / 1000,
-            sonnetPerTask: Math.round(sonnetPerTask * 1000) / 1000,
+            opusCostPerTask: Math.round(opusCostPerTask * 1000) / 1000,
+            sonnetCostPerTask: Math.round(sonnetCostPerTask * 1000) / 1000,
+            opusSavedPerTask: Math.round(opusSavedPerTask * 1000) / 1000,
+            sonnetSavedPerTask: Math.round(sonnetSavedPerTask * 1000) / 1000,
+            opusTotalSaved: Math.round(opusTotalSaved * 100) / 100,
+            sonnetTotalSaved: Math.round(sonnetTotalSaved * 100) / 100,
           },
         },
         layeredCompression,
@@ -132,7 +144,9 @@ export function createBenchmarkRouter(storeRef: StoreRef): Router {
           compressionPercent: "1 - (compactChars / rawChars) * 100 — vs full graph (inflated baseline)",
           tokenEstimate: "ceil(chars / 4) — industry standard ~4 chars/token",
           tokensSavedPerTask: "estimateTokens(rawChars) - estimateTokens(compactChars)",
-          costPerTask: "tokens * pricePerMTok / 1_000_000",
+          costPerTask: "avgTokensPerTask * pricePerMTok / 1_000_000 (cost after compression)",
+          savedPerTask: "avgTokensSavedPerTask * pricePerMTok / 1_000_000 (actual savings)",
+          totalSaved: "totalTokensSaved * pricePerMTok / 1_000_000",
           opusInputPrice: "$15.00/MTok",
           sonnetInputPrice: "$3.00/MTok",
           toolInputTokens: "ceil(JSON.stringify(args).length / 4)",

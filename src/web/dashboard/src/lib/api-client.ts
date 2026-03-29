@@ -170,6 +170,8 @@ export const apiClient = {
 
   // Memories
   getMemories: () => request<ProjectMemory[]>("/integrations/memories"),
+  readMemory: (name: string) =>
+    request<ProjectMemory>(`/integrations/memories/${encodeURIComponent(name)}`),
   /** @deprecated Use getMemories instead */
   getSerenaMemories: () => request<ProjectMemory[]>("/integrations/memories"),
 

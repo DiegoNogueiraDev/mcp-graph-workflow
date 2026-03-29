@@ -35,6 +35,7 @@ import { registerSiebelGenerateSif } from "./siebel-generate-sif.js";
 import { registerSiebelImportDocs } from "./siebel-import-docs.js";
 import { registerTranslateCode } from "./translate-code.js";
 import { registerAnalyzeTranslation } from "./analyze-translation.js";
+import { registerTranslationJobs } from "./translation-jobs.js";
 // RAG knowledge tools
 import { registerKnowledgeFeedback } from "./knowledge-feedback.js";
 import { registerKnowledgeStats } from "./knowledge-stats.js";
@@ -93,6 +94,7 @@ export function registerAllTools(server: McpServer, store: SqliteStore): void {
   // Translation tools
   registerTranslateCode(server, store);
   registerAnalyzeTranslation(server, store);
+  registerTranslationJobs(server, store);
 
   // RAG knowledge tools
   registerKnowledgeFeedback(server, store);

@@ -40,12 +40,41 @@ describe("JavaParserAdapter", () => {
     const code = "if (x > 0) {\nfor (int i = 0; i < n; i++) {\nwhile (true) {";
     const result = parser.parseSnippet(code);
     expect(result.some((c) => c.constructId === "uc_if_else")).toBe(true);
-    expect(result.some((c) => c.constructId === "uc_for_loop")).toBe(true);
+    expect(result.some((c) => c.constructId === "uc_for_each")).toBe(true);
     expect(result.some((c) => c.constructId === "uc_while")).toBe(true);
+  });
+
+  it("should detect enum", () => {
+    const result = parser.parseSnippet("public enum Color {");
+    expect(result.some((c) => c.constructId === "uc_type_enum" && c.name === "Color")).toBe(true);
+  });
+
+  it("should detect extends/implements", () => {
+    const result = parser.parseSnippet("public class Dog extends Animal implements Runnable {");
+    expect(result.some((c) => c.constructId === "uc_class_def" && c.name === "Dog")).toBe(true);
+    expect(result.some((c) => c.constructId === "uc_extends")).toBe(true);
   });
 
   it("should return empty array for empty code", () => {
     expect(parser.parseSnippet("")).toEqual([]);
+  });
+
+  it("should detect >0 constructs for non-trivial code", () => {
+    const code = [
+      "import java.util.List;",
+      "public class UserService {",
+      "  public String getName() {",
+      "    if (name != null) {",
+      "      return name;",
+      "    }",
+      "  }",
+      "}",
+    ].join("\n");
+    const result = parser.parseSnippet(code);
+    expect(result.length).toBeGreaterThan(0);
+    expect(result.some((c) => c.constructId === "uc_fn_def")).toBe(true);
+    expect(result.some((c) => c.constructId === "uc_class_def")).toBe(true);
+    expect(result.some((c) => c.constructId === "uc_if_else")).toBe(true);
   });
 });
 
@@ -80,12 +109,46 @@ describe("GoParserAdapter", () => {
     const code = "if err != nil {\nfor i := 0; i < n; i++ {";
     const result = parser.parseSnippet(code);
     expect(result.some((c) => c.constructId === "uc_if_else")).toBe(true);
-    expect(result.some((c) => c.constructId === "uc_for_loop")).toBe(true);
+    expect(result.some((c) => c.constructId === "uc_for_each")).toBe(true);
   });
 
   it("should detect goroutine (async)", () => {
     const result = parser.parseSnippet("go func() {");
     expect(result.some((c) => c.constructId === "uc_async_fn")).toBe(true);
+  });
+
+  it("should detect const enum pattern", () => {
+    const result = parser.parseSnippet("const (");
+    expect(result.some((c) => c.constructId === "uc_type_enum")).toBe(true);
+  });
+
+  it("should detect switch", () => {
+    const result = parser.parseSnippet("switch value {");
+    expect(result.some((c) => c.constructId === "uc_switch")).toBe(true);
+  });
+
+  it("should return empty array for empty code", () => {
+    expect(parser.parseSnippet("")).toEqual([]);
+  });
+
+  it("should detect >0 constructs for non-trivial code", () => {
+    const code = [
+      'import "fmt"',
+      "type UserService struct {",
+      "  Name string",
+      "}",
+      "func (s *UserService) GetName() string {",
+      "  if s.Name != \"\" {",
+      "    return s.Name",
+      "  }",
+      '  return "unknown"',
+      "}",
+    ].join("\n");
+    const result = parser.parseSnippet(code);
+    expect(result.length).toBeGreaterThan(0);
+    expect(result.some((c) => c.constructId === "uc_fn_def")).toBe(true);
+    expect(result.some((c) => c.constructId === "uc_class_def")).toBe(true);
+    expect(result.some((c) => c.constructId === "uc_if_else")).toBe(true);
   });
 });
 
@@ -121,6 +184,46 @@ describe("CSharpParserAdapter", () => {
     const result = parser.parseSnippet(code);
     expect(result.some((c) => c.constructId === "uc_try_catch")).toBe(true);
     expect(result.some((c) => c.constructId === "uc_throw")).toBe(true);
+  });
+
+  it("should detect enum", () => {
+    const result = parser.parseSnippet("public enum Direction {");
+    expect(result.some((c) => c.constructId === "uc_type_enum" && c.name === "Direction")).toBe(true);
+  });
+
+  it("should detect class with inheritance (extends)", () => {
+    const result = parser.parseSnippet("public class Dog : Animal {");
+    expect(result.some((c) => c.constructId === "uc_class_def" && c.name === "Dog")).toBe(true);
+    expect(result.some((c) => c.constructId === "uc_extends")).toBe(true);
+  });
+
+  it("should detect for/foreach as uc_for_each", () => {
+    const code = "for (int i = 0; i < n; i++) {\nforeach (var item in list) {";
+    const result = parser.parseSnippet(code);
+    const forConstructs = result.filter((c) => c.constructId === "uc_for_each");
+    expect(forConstructs.length).toBe(2);
+  });
+
+  it("should return empty array for empty code", () => {
+    expect(parser.parseSnippet("")).toEqual([]);
+  });
+
+  it("should detect >0 constructs for non-trivial code", () => {
+    const code = [
+      "using System;",
+      "public class UserService {",
+      "  public string GetName() {",
+      "    if (name != null) {",
+      "      return name;",
+      "    }",
+      "  }",
+      "}",
+    ].join("\n");
+    const result = parser.parseSnippet(code);
+    expect(result.length).toBeGreaterThan(0);
+    expect(result.some((c) => c.constructId === "uc_fn_def")).toBe(true);
+    expect(result.some((c) => c.constructId === "uc_class_def")).toBe(true);
+    expect(result.some((c) => c.constructId === "uc_if_else")).toBe(true);
   });
 });
 
@@ -207,5 +310,36 @@ describe("RustParserAdapter", () => {
     expect(result.some((c) => c.constructId === "uc_if_else")).toBe(true);
     expect(result.some((c) => c.constructId === "uc_while")).toBe(true);
     expect(result.some((c) => c.constructId === "uc_for_each")).toBe(true);
+  });
+
+  it("should detect enum as uc_type_enum", () => {
+    const result = parser.parseSnippet("enum Color {");
+    expect(result.some((c) => c.constructId === "uc_type_enum" && c.name === "Color")).toBe(true);
+  });
+
+  it("should return empty array for empty code", () => {
+    expect(parser.parseSnippet("")).toEqual([]);
+  });
+
+  it("should detect >0 constructs for non-trivial code", () => {
+    const code = [
+      "use std::io;",
+      "struct User {",
+      "  name: String,",
+      "}",
+      "impl User {",
+      "  fn get_name(&self) -> &str {",
+      "    if !self.name.is_empty() {",
+      '      return &self.name;',
+      "    }",
+      '    "unknown"',
+      "  }",
+      "}",
+    ].join("\n");
+    const result = parser.parseSnippet(code);
+    expect(result.length).toBeGreaterThan(0);
+    expect(result.some((c) => c.constructId === "uc_fn_def")).toBe(true);
+    expect(result.some((c) => c.constructId === "uc_class_def")).toBe(true);
+    expect(result.some((c) => c.constructId === "uc_if_else")).toBe(true);
   });
 });

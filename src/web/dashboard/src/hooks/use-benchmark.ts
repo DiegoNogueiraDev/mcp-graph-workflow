@@ -18,9 +18,14 @@ export interface BenchmarkData {
     }>;
     totalTokensSaved: number;
     avgTokensPerTask: number;
+    avgTokensSavedPerTask: number;
     costSavings: {
-      opusPerTask: number;
-      sonnetPerTask: number;
+      opusCostPerTask: number;
+      sonnetCostPerTask: number;
+      opusSavedPerTask: number;
+      sonnetSavedPerTask: number;
+      opusTotalSaved: number;
+      sonnetTotalSaved: number;
     };
   };
   dependencyIntelligence: {

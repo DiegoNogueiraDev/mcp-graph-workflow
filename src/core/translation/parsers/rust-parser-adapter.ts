@@ -17,7 +17,7 @@ const LINE_RULES: Rule[] = [
   // eslint-disable-next-line security/detect-unsafe-regex
   { pattern: /^\s*(pub\s+)?struct\s+(\w+)/, constructId: "uc_class_def", nameGroup: 2 },
   // eslint-disable-next-line security/detect-unsafe-regex
-  { pattern: /^\s*(pub\s+)?enum\s+(\w+)/, constructId: "uc_class_def", nameGroup: 2 },
+  { pattern: /^\s*(pub\s+)?enum\s+(\w+)/, constructId: "uc_type_enum", nameGroup: 2 },
   // eslint-disable-next-line security/detect-unsafe-regex
   { pattern: /^\s*(pub\s+)?trait\s+(\w+)/, constructId: "uc_interface", nameGroup: 2 },
   { pattern: /^\s*impl\s+([\w<>]+)/, constructId: "uc_class_def", nameGroup: 1 },

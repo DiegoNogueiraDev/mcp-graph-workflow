@@ -114,6 +114,137 @@ const PROFILES: LanguageProfile[] = [
       /\blet\s+\w+/, /\breturn\s+/,
     ],
   },
+  {
+    id: "ruby",
+    unique: [
+      /\bdef\s+\w+.*\bend\b/, /\bdo\s*\|/, /\battr_accessor\b/,
+      /\brequire\b/, /puts\b/,
+    ],
+    strong: [
+      /\bclass\s+\w+\s*</, /\bmodule\b/, /@\w+/,
+    ],
+    weak: [
+      /\bdef\b/, /\bend\b/,
+    ],
+  },
+  {
+    id: "php",
+    unique: [
+      /<\?php/, /\$\w+/, /->/, /\bfunction\s+\w+\s*\(/,
+      /\becho\b/,
+    ],
+    strong: [
+      /\bnamespace\b/, /\buse\s+/, /\barray\(/,
+    ],
+    weak: [
+      /\bclass\b/, /\breturn\b/,
+    ],
+  },
+  {
+    id: "swift",
+    unique: [
+      /\bfunc\s+\w+.*->/, /\blet\s+\w+\s*:/, /\bvar\s+\w+\s*:/,
+      /\bguard\b/, /\bprotocol\b/,
+    ],
+    strong: [
+      /\bstruct\b/, /\benum\b.*\bcase\b/, /\bimport\s+Foundation/,
+    ],
+    weak: [
+      /\bif\b/, /\breturn\b/,
+    ],
+  },
+  {
+    id: "kotlin",
+    unique: [
+      /\bfun\s+\w+/, /\bval\s+\w+/, /\bvar\s+\w+/,
+      /\bwhen\s*\(/, /\bdata\s+class\b/,
+    ],
+    strong: [
+      /\bcompanion\s+object\b/, /\bsealed\s+class\b/,
+      /\bimport\s+\w+\.\w+/,
+    ],
+    weak: [
+      /\bclass\b/, /\bif\b/,
+    ],
+  },
+  {
+    id: "scala",
+    unique: [
+      /\bdef\s+\w+.*:\s*\w+\s*=/, /\bcase\s+class\b/,
+      /\bcase\s+object\b/, /\bobject\s+\w+/, /\btrait\s+\w+/,
+    ],
+    strong: [
+      /\bval\s+\w+/, /\bvar\s+\w+/, /\bimplicit\b/,
+    ],
+    weak: [
+      /\bimport\b/, /\bif\b/,
+    ],
+  },
+  {
+    id: "elixir",
+    unique: [
+      /\bdefmodule\b/, /\bdef\s+\w+.*\bdo\b/, /\bdefp\b/,
+      /\|>\b/, /@\w+/,
+    ],
+    strong: [
+      /\bcase\s+\w+\s+do\b/, /\bwith\b.*<-/, /\bGenServer\b/,
+    ],
+    weak: [
+      /\bif\b/, /\bend\b/,
+    ],
+  },
+  {
+    id: "dart",
+    unique: [
+      /\bvoid\s+main\b.*\{/, /\bfinal\s+\w+\s*=/, /\bFuture</,
+      /\bStream</, /\brequired\s+this\./,
+    ],
+    strong: [
+      /\bclass\s+\w+\s+extends\b/, /\bimport\s+'/, /\basync\b/,
+    ],
+    weak: [
+      /\bif\b/, /\breturn\b/,
+    ],
+  },
+  {
+    id: "haskell",
+    unique: [
+      /\b::\s*/, /\bwhere\b$/, /\bmodule\s+\w+/,
+      /<-/, /->/,
+    ],
+    strong: [
+      /\bdata\b/, /\binstance\b/, /\bderiving\b/, /\bimport\s+/,
+    ],
+    weak: [
+      /\bif\b/, /\blet\b/,
+    ],
+  },
+  {
+    id: "cpp",
+    unique: [
+      /#include\s*</, /\bstd::\b/, /\btemplate\s*</,
+      /\bnamespace\b/, /::/,
+    ],
+    strong: [
+      /\bcout\b/, /\bnew\b/, /\bdelete\b/, /\bvirtual\b/,
+    ],
+    weak: [
+      /\bclass\b/, /\breturn\b/,
+    ],
+  },
+  {
+    id: "lua",
+    unique: [
+      /\bfunction\s+\w+.*\)\s*$/, /\blocal\s+\w+\s*=/,
+      /\btable\.\w+/, /\brequire\s*\(/, /\bself\.\w+/,
+    ],
+    strong: [
+      /\bfor\s+\w+\s*,/, /\bipairs\b/, /\bpairs\b/,
+    ],
+    weak: [
+      /\bif\b/, /\bend\b/,
+    ],
+  },
 ];
 
 const UNIQUE_WEIGHT = 3;
