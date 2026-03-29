@@ -116,12 +116,17 @@ function rowToNode(row: NodeRow): GraphNode {
   if (row.description) node.description = row.description;
   if (row.xp_size) node.xpSize = row.xp_size as GraphNode["xpSize"];
   if (row.estimate_minutes != null) node.estimateMinutes = row.estimate_minutes;
-  if (row.tags) node.tags = JSON.parse(row.tags);
+  if (row.tags) {
+    try { node.tags = JSON.parse(row.tags); } catch { node.tags = []; }
+  }
   if (row.parent_id) node.parentId = row.parent_id;
   if (row.sprint) node.sprint = row.sprint;
-  if (row.acceptance_criteria)
-    node.acceptanceCriteria = JSON.parse(row.acceptance_criteria);
-  if (row.metadata) node.metadata = JSON.parse(row.metadata);
+  if (row.acceptance_criteria) {
+    try { node.acceptanceCriteria = JSON.parse(row.acceptance_criteria); } catch { node.acceptanceCriteria = []; }
+  }
+  if (row.metadata) {
+    try { node.metadata = JSON.parse(row.metadata); } catch { node.metadata = {}; }
+  }
 
   if (row.source_file) {
     const ref: SourceRef = { file: row.source_file };
@@ -166,7 +171,9 @@ function rowToEdge(row: EdgeRow): GraphEdge {
 
   if (row.weight != null) edge.weight = row.weight;
   if (row.reason) edge.reason = row.reason;
-  if (row.metadata) edge.metadata = JSON.parse(row.metadata);
+  if (row.metadata) {
+    try { edge.metadata = JSON.parse(row.metadata); } catch { /* corrupted edge metadata — skip */ }
+  }
 
   return edge;
 }

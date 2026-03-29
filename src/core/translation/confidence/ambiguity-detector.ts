@@ -16,7 +16,10 @@ import { z } from "zod/v4";
 
 type AmbiguityCandidate = z.infer<typeof AmbiguityCandidateSchema>;
 
-const LOSSY_THRESHOLD = 0.65;
+import { UCR_CONFIDENCE_THRESHOLD } from "../../utils/constants.js";
+
+/** Threshold below which a translation is flagged as lossy. Uses the unified UCR constant. */
+const LOSSY_THRESHOLD = UCR_CONFIDENCE_THRESHOLD;
 
 /**
  * Detect ambiguities in scored constructs.

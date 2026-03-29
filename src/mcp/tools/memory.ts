@@ -80,6 +80,7 @@ export function registerMemory(server: McpServer, store: SqliteStore): void {
       const names = await listMemories(basePath);
 
       return mcpText({
+        ok: true,
         count: names.length,
         memories: names,
       });

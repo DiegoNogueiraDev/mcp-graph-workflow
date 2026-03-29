@@ -4,6 +4,7 @@
  * node.ts self-parenting, edge weight schema, reductionPercent clamp.
  */
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import path from "node:path";
 import { safeReadFileSync, assertPathInsideProject } from "../core/utils/fs.js";
 import { SqliteStore } from "../core/store/sqlite-store.js";
 import { makeNode } from "./helpers/factories.js";
@@ -47,6 +48,48 @@ describe("Bug Fix — assertPathInsideProject (siebel path traversal)", () => {
   it("should accept path inside project", () => {
     const result = assertPathInsideProject("./src");
     expect(result.replaceAll("\\", "/")).toContain("mcp-graph-workflow/src");
+  });
+});
+
+describe("Bug Fix — validateBrowsePath (folder.ts path traversal)", () => {
+  let validateBrowsePath: (p: string) => string;
+
+  beforeEach(async () => {
+    const mod = await import("../api/routes/folder.js");
+    validateBrowsePath = mod.validateBrowsePath;
+  });
+
+  it("should reject /proc path traversal", () => {
+    expect(() => validateBrowsePath("/proc/1/status")).toThrow("restricted");
+  });
+
+  it("should reject /sys path traversal", () => {
+    expect(() => validateBrowsePath("/sys/class")).toThrow("restricted");
+  });
+
+  it("should reject /dev path traversal", () => {
+    expect(() => validateBrowsePath("/dev/shm")).toThrow("restricted");
+  });
+
+  it("should reject null byte injection", () => {
+    expect(() => validateBrowsePath("/home/user\0/etc")).toThrow("null bytes");
+  });
+
+  it("should accept home directory path", () => {
+    const home = process.env.HOME ?? process.env.USERPROFILE ?? "/tmp";
+    const result = validateBrowsePath(home);
+    expect(result).toBe(home);
+  });
+
+  it("should accept valid absolute directory paths", () => {
+    const home = process.env.HOME ?? process.env.USERPROFILE ?? "/tmp";
+    const result = validateBrowsePath(home);
+    expect(path.isAbsolute(result)).toBe(true);
+  });
+
+  it("should resolve relative paths to absolute", () => {
+    const result = validateBrowsePath(".");
+    expect(path.isAbsolute(result)).toBe(true);
   });
 });
 
@@ -149,6 +192,51 @@ describe("Bug Fix — context reductionPercent clamp (#034)", () => {
     expect(ctx).not.toBeNull();
     // reductionPercent is a number — may be negative for standalone nodes
     expect(typeof ctx!.metrics.reductionPercent).toBe("number");
+  });
+});
+
+describe("Bug Fix — /browse endpoint path validation", () => {
+  /**
+   * The /browse endpoint is a folder picker — it MUST navigate the filesystem.
+   * But it should validate that resolved paths:
+   * 1. Are absolute after resolution (no relative tricks)
+   * 2. Don't contain null bytes (injection)
+   * 3. Reject system-sensitive directories
+   */
+  // Dynamic import since folder.ts has Express dependency
+  let validateBrowsePath: (p: string) => string;
+
+  beforeEach(async () => {
+    const mod = await import("../api/routes/folder.js");
+    validateBrowsePath = mod.validateBrowsePath;
+  });
+
+  it("should reject paths with null bytes", () => {
+    expect(() => validateBrowsePath("/tmp/foo\x00bar")).toThrow("null bytes");
+    expect(() => validateBrowsePath("test\0path")).toThrow("null bytes");
+  });
+
+  it("should resolve relative paths to absolute", () => {
+    const result = validateBrowsePath(".");
+    expect(path.isAbsolute(result)).toBe(true);
+  });
+
+  it("should accept valid absolute directory paths", () => {
+    const home = process.env.HOME ?? process.env.USERPROFILE ?? "/tmp";
+    const result = validateBrowsePath(home);
+    expect(path.isAbsolute(result)).toBe(true);
+  });
+
+  it("should reject system-sensitive directories", () => {
+    for (const sensitive of ["/proc", "/sys", "/dev"]) {
+      expect(() => validateBrowsePath(sensitive)).toThrow("restricted");
+    }
+  });
+
+  it("should reject paths under system-sensitive directories", () => {
+    expect(() => validateBrowsePath("/proc/self/fd")).toThrow("restricted");
+    expect(() => validateBrowsePath("/sys/class")).toThrow("restricted");
+    expect(() => validateBrowsePath("/dev/shm")).toThrow("restricted");
   });
 });
 

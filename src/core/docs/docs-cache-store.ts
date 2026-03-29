@@ -87,7 +87,7 @@ export class DocsCacheStore {
 
   listCached(): CachedDoc[] {
     const rows = this.db
-      .prepare("SELECT * FROM docs_cache ORDER BY fetched_at DESC")
+      .prepare("SELECT * FROM docs_cache ORDER BY fetched_at DESC LIMIT 1000")
       .all() as DocRow[];
     return rows.map(rowToDoc);
   }

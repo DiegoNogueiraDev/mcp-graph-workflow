@@ -129,7 +129,7 @@ export function registerEdge(server: McpServer, store: SqliteStore): void {
       }
 
       logger.info("tool:edge:ok", { action: "list", total: edges.length });
-      return mcpText({ total: edges.length, edges });
+      return mcpText({ ok: true, total: edges.length, edges });
     },
   );
 }

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { readdirSync, statSync, existsSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import type { StoreManager } from "../../core/store/store-manager.js";
 import { OpenFolderBodySchema } from "../../schemas/folder.schema.js";
@@ -8,6 +9,40 @@ import { STORE_DIR, LEGACY_STORE_DIR, DB_FILE } from "../../core/utils/constants
 import { CodeStore } from "../../core/code/code-store.js";
 import { CodeIndexer } from "../../core/code/code-indexer.js";
 import { logger } from "../../core/utils/logger.js";
+
+/** Directories that should never be browsable (OS-level sensitive paths). */
+const BLOCKED_PATHS = new Set(["/proc", "/sys", "/dev", "/boot", "/lost+found"]);
+
+/**
+ * Validate and resolve a browse path for the folder picker endpoint.
+ * Rejects null bytes, blocked system directories, and non-absolute resolved paths.
+ * Exported for testing.
+ */
+export function validateBrowsePath(rawPath: string): string {
+  // Reject null byte injection
+  if (rawPath.includes("\0")) {
+    throw new Error("Path contains null bytes");
+  }
+
+  const resolved = path.resolve(rawPath);
+
+  // Reject system-sensitive directories
+  for (const blocked of BLOCKED_PATHS) {
+    if (resolved === blocked || resolved.startsWith(blocked + path.sep)) {
+      throw new Error(`Access denied: ${blocked} is a restricted system directory`);
+    }
+  }
+
+  // Restrict browsing to home directory tree or system tmpdir
+  const home = process.env.HOME ?? process.env.USERPROFILE ?? "";
+  const tmpDir = tmpdir();
+  const allowed = [home, path.dirname(home), tmpDir].filter(Boolean);
+  if (home && !allowed.some((a) => resolved === a || resolved.startsWith(a + path.sep))) {
+    throw new Error("Access denied: browsing restricted to home directory");
+  }
+
+  return resolved;
+}
 
 export function createFolderRouter(storeManager: StoreManager): Router {
   const router = Router();
@@ -66,24 +101,33 @@ export function createFolderRouter(storeManager: StoreManager): Router {
       return;
     }
 
-    if (!existsSync(dirPath)) {
-      res.status(400).json({ error: `Directory does not exist: ${dirPath}` });
+    // Security: validate and resolve path before any filesystem access
+    let resolvedPath: string;
+    try {
+      resolvedPath = validateBrowsePath(dirPath);
+    } catch (err) {
+      res.status(403).json({ error: err instanceof Error ? err.message : "Invalid path" });
+      return;
+    }
+
+    if (!existsSync(resolvedPath)) {
+      res.status(400).json({ error: `Directory does not exist: ${resolvedPath}` });
       return;
     }
 
     try {
-      const stat = statSync(dirPath);
+      const stat = statSync(resolvedPath);
       if (!stat.isDirectory()) {
-        res.status(400).json({ error: `Not a directory: ${dirPath}` });
+        res.status(400).json({ error: `Not a directory: ${resolvedPath}` });
         return;
       }
 
-      const rawEntries = readdirSync(dirPath, { withFileTypes: true });
+      const rawEntries = readdirSync(resolvedPath, { withFileTypes: true });
 
       const entries = rawEntries
         .filter((entry) => entry.isDirectory() && !entry.name.startsWith("."))
         .map((entry) => {
-          const fullPath = path.join(dirPath, entry.name);
+          const fullPath = path.join(resolvedPath, entry.name);
           const hasNewStore = existsSync(path.join(fullPath, STORE_DIR, DB_FILE));
           const hasLegacyStore = existsSync(path.join(fullPath, LEGACY_STORE_DIR, DB_FILE));
 
@@ -100,8 +144,8 @@ export function createFolderRouter(storeManager: StoreManager): Router {
         });
 
       res.json({
-        path: dirPath,
-        parent: path.dirname(dirPath),
+        path: resolvedPath,
+        parent: path.dirname(resolvedPath),
         entries,
       });
     } catch (err) {

@@ -43,7 +43,6 @@ export const READ_ONLY_TOOLS = new Set([
   "dependencies",
   "plan_sprint",
   "validate_ac",
-  "manage_skill",
   "knowledge_stats",
   "knowledge_feedback",
   "code_intelligence",
