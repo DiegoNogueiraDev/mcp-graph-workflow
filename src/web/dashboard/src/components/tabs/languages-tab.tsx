@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Languages, ArrowLeftRight, Clock, BarChart3 } from "lucide-react";
+import { Languages, ArrowLeftRight, Clock, BarChart3, Loader2 } from "lucide-react";
 import { useTranslation } from "@/hooks/use-translation";
 import { useTranslationHistory } from "@/hooks/use-translation-history";
 import { useSSE } from "@/hooks/use-sse";
@@ -110,8 +110,56 @@ export function LanguagesTab(): React.JSX.Element {
               onFinalize={handleFinalize}
               onReset={handleReset}
             />
-            <AnalysisResults analysis={translation.analysis} />
-            <FinalizeResults result={translation.finalizeResult} />
+
+            {/* Animated processing card during analysis */}
+            {translation.phase === "analyzing" && (
+              <div className="rounded-lg border-2 border-accent/40 bg-accent/5 p-5 transition-all duration-300">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <div className="absolute inset-0 rounded-full bg-accent/20 animate-ping" />
+                    <Loader2 className="w-5 h-5 text-accent animate-spin relative" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-semibold text-foreground">Analyzing your code...</p>
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <span className="text-[10px] text-accent font-medium">Detecting language</span>
+                      <span className="text-[10px] text-muted">→</span>
+                      <span className="text-[10px] text-muted">Analyzing constructs</span>
+                      <span className="text-[10px] text-muted">→</span>
+                      <span className="text-[10px] text-muted">Generating prompt</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-3 h-1 rounded-full bg-surface overflow-hidden">
+                  <div className="h-full bg-accent/60 rounded-full animate-pulse" style={{ width: "60%" }} />
+                </div>
+              </div>
+            )}
+
+            {/* Finalizing indicator */}
+            {translation.phase === "finalizing" && (
+              <div className="rounded-lg border-2 border-green-500/40 bg-green-500/5 p-5 transition-all duration-300">
+                <div className="flex items-center gap-3">
+                  <Loader2 className="w-5 h-5 text-green-500 animate-spin" />
+                  <div>
+                    <p className="text-xs font-semibold text-foreground">Finalizing translation...</p>
+                    <p className="text-[10px] text-muted mt-1">Validating output and generating evidence pack</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Results with fade-in */}
+            {translation.analysis && (
+              <div className="animate-in fade-in-0 duration-300" style={{ animationFillMode: "both" }}>
+                <AnalysisResults analysis={translation.analysis} />
+              </div>
+            )}
+            {translation.finalizeResult && (
+              <div className="animate-in fade-in-0 duration-300" style={{ animationFillMode: "both" }}>
+                <FinalizeResults result={translation.finalizeResult} />
+              </div>
+            )}
           </div>
         )}
 

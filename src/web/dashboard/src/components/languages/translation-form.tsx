@@ -1,4 +1,5 @@
-import { Play, CheckCircle, RotateCcw, Copy, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { Play, CheckCircle, RotateCcw, Copy, Check, Loader2 } from "lucide-react";
 import type { UseTranslationState } from "@/hooks/use-translation";
 import type { TranslationScope } from "@/lib/types";
 
@@ -36,9 +37,12 @@ export function TranslationForm({
   const isPrepared = phase === "prepared";
   const isDone = phase === "done";
 
+  const [copied, setCopied] = useState(false);
   const copyPrompt = (): void => {
     if (prepareResult?.prompt) {
       void navigator.clipboard.writeText(prepareResult.prompt);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
@@ -50,14 +54,18 @@ export function TranslationForm({
           <h3 className="text-xs font-semibold text-foreground">Source Code</h3>
           <p className="text-[10px] text-muted mt-0.5">Paste the code you want to translate</p>
         </div>
-        <div className="p-4">
+        <div className="p-4 relative">
+          {/* Visual lock overlay during processing */}
+          {!isIdle && !isPrepared && !isDone && (
+            <div className="absolute inset-0 bg-surface/20 backdrop-blur-[1px] rounded-lg z-10 pointer-events-none" />
+          )}
           <textarea
             value={sourceCode}
             onChange={(e) => setSourceCode(e.target.value)}
             placeholder="// Paste your code here..."
             rows={10}
             disabled={!isIdle}
-            className="w-full px-3 py-2 text-xs rounded-md border border-edge bg-surface text-foreground placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-accent font-mono disabled:opacity-50"
+            className="w-full px-3 py-2 text-xs rounded-md border border-edge bg-surface text-foreground placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-accent font-mono disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-surface/50"
           />
 
           {/* Controls row */}
@@ -147,10 +155,14 @@ export function TranslationForm({
             </div>
             <button
               onClick={copyPrompt}
-              className="flex items-center gap-1 px-2 py-1 text-[10px] rounded border border-edge text-muted hover:text-foreground transition-colors"
+              className={`flex items-center gap-1 px-2 py-1 text-[10px] rounded border transition-all duration-200 ${
+                copied
+                  ? "border-green-500/30 text-green-500 bg-green-500/5"
+                  : "border-edge text-muted hover:text-foreground"
+              }`}
             >
-              <Copy className="w-3 h-3" />
-              Copy
+              {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+              {copied ? "Copied!" : "Copy"}
             </button>
           </div>
           <div className="p-4 space-y-3">

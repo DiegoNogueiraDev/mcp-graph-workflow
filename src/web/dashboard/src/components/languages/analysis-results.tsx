@@ -15,8 +15,8 @@ function ScoreBar({ value, max = 100, label }: { value: number; max?: number; la
         <span className="text-muted">{label}</span>
         <span className="text-foreground font-medium">{pct}%</span>
       </div>
-      <div className="h-1.5 rounded-full bg-surface overflow-hidden">
-        <div className={`h-full rounded-full ${color} transition-all`} style={{ width: `${pct}%` }} />
+      <div className="h-1.5 rounded-full bg-surface overflow-hidden" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={`${label}: ${pct}%`}>
+        <div className={`h-full rounded-full ${color} transition-all duration-500`} style={{ width: `${pct}%` }} />
       </div>
     </div>
   );

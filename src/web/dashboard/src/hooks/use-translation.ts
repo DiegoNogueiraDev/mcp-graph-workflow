@@ -45,7 +45,14 @@ export function useTranslation(): [UseTranslationState, UseTranslationActions] {
   const analyze = useCallback(async (code: string, targetLanguage: string, scope: TranslationScope = "snippet") => {
     setState((s) => ({ ...s, phase: "analyzing", loading: true, error: null }));
     try {
-      const prepareResult = await apiClient.translationCreateJob(code, targetLanguage, scope);
+      const TIMEOUT_MS = 30_000;
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Analysis timed out after 30s. Please try again.")), TIMEOUT_MS),
+      );
+      const prepareResult = await Promise.race([
+        apiClient.translationCreateJob(code, targetLanguage, scope),
+        timeout,
+      ]);
       setState({
         phase: "prepared",
         analysis: prepareResult.analysis,
