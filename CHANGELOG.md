@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.22.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.21.0...mcp-graph-v5.22.0) (2026-03-29)
+
+
+### Features
+
+* UX overhaul for all remaining dashboard tabs (12/12 complete) ([32a7562](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/32a75628a8a9ca769783d99ccd5a9e58e5aceb18))
+* UX overhaul for Graph, Insights, Context, Benchmark tabs ([7f21fe7](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/7f21fe7f88ee85ec1ccd59ae1444da6e8d85ac4e))
+
 ## [5.21.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.20.1...mcp-graph-v5.21.0) (2026-03-29)
 
 
