@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.28.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.27.0...mcp-graph-v5.28.0) (2026-03-29)
+
+
+### Features
+
+* **deploy:** add DEPLOY as 9th lifecycle phase + CI/CD pipeline infrastructure ([42c9673](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/42c96733e876cfcdf0f3e08a574425901d794b21))
+
 ## [5.27.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.26.0...mcp-graph-v5.27.0) (2026-03-29)
 
 
