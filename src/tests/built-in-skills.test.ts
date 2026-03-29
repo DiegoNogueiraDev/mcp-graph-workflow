@@ -30,7 +30,7 @@ describe("BuiltInSkills Registry", () => {
   });
 
   it("should only contain valid lifecycle phases", () => {
-    const validPhases = new Set(["ANALYZE", "DESIGN", "PLAN", "IMPLEMENT", "VALIDATE", "REVIEW", "HANDOFF", "LISTENING"]);
+    const validPhases = new Set(["ANALYZE", "DESIGN", "PLAN", "IMPLEMENT", "VALIDATE", "REVIEW", "HANDOFF", "DEPLOY", "LISTENING"]);
     for (const skill of BUILT_IN_SKILLS) {
       for (const phase of skill.phases) {
         expect(validPhases.has(phase)).toBe(true);

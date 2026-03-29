@@ -162,7 +162,7 @@ describe("detectCurrentPhase", () => {
 
 describe("getPhaseGuidance", () => {
   const phases: LifecyclePhase[] = [
-    "ANALYZE", "DESIGN", "PLAN", "IMPLEMENT", "VALIDATE", "REVIEW", "HANDOFF", "LISTENING",
+    "ANALYZE", "DESIGN", "PLAN", "IMPLEMENT", "VALIDATE", "REVIEW", "HANDOFF", "DEPLOY", "LISTENING",
   ];
 
   it("should return guidance for every phase", () => {

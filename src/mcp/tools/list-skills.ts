@@ -15,7 +15,7 @@ export function registerListSkills(server: McpServer): void {
     "List built-in skills (DEPRECATED — use `manage_skill` with action:\"list\")",
     {
       phase: z
-        .enum(["ANALYZE", "DESIGN", "PLAN", "IMPLEMENT", "VALIDATE", "REVIEW", "HANDOFF", "LISTENING"])
+        .enum(["ANALYZE", "DESIGN", "PLAN", "IMPLEMENT", "VALIDATE", "REVIEW", "HANDOFF", "DEPLOY", "LISTENING"])
         .optional()
         .describe("Filter skills by lifecycle phase"),
       name: z

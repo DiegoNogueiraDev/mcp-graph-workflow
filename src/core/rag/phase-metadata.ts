@@ -45,6 +45,11 @@ export const PHASE_BOOST_WEIGHTS: Record<LifecyclePhase, Partial<Record<Lifecycl
     REVIEW: 1.5,
     VALIDATE: 1.3,
   },
+  DEPLOY: {
+    DEPLOY: 2.0,
+    HANDOFF: 1.5,
+    REVIEW: 1.3,
+  },
   LISTENING: {
     LISTENING: 2.0,
     ANALYZE: 1.5,

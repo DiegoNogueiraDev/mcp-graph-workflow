@@ -271,6 +271,23 @@ export class KnowledgeStore {
   }
 
   /**
+   * Count documents grouped by source type in a single query.
+   */
+  countBySource(): { total: number; bySource: Record<string, number> } {
+    const rows = this.db
+      .prepare("SELECT source_type, COUNT(*) as cnt FROM knowledge_documents GROUP BY source_type")
+      .all() as Array<{ source_type: string; cnt: number }>;
+
+    const bySource: Record<string, number> = {};
+    let total = 0;
+    for (const row of rows) {
+      bySource[row.source_type] = row.cnt;
+      total += row.cnt;
+    }
+    return { total, bySource };
+  }
+
+  /**
    * Check if content already exists (by hash).
    */
   existsByHash(hash: string): boolean {

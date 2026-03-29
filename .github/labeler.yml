@@ -1,0 +1,38 @@
+backend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/core/**'
+          - 'src/api/**'
+          - 'src/mcp/**'
+
+frontend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/web/**'
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/tests/**'
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/**'
+
+docs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'docs/**'
+          - '*.md'
+
+schemas:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/schemas/**'
+
+translation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/core/translation/**'
+          - 'src/web/dashboard/src/components/languages/**'

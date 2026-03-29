@@ -46,8 +46,8 @@ describe("phase-metadata", () => {
   });
 
   describe("PHASE_BOOST_WEIGHTS", () => {
-    it("should have weights for all 8 lifecycle phases", () => {
-      const phases = ["ANALYZE", "DESIGN", "PLAN", "IMPLEMENT", "VALIDATE", "REVIEW", "HANDOFF", "LISTENING"];
+    it("should have weights for all 9 lifecycle phases", () => {
+      const phases = ["ANALYZE", "DESIGN", "PLAN", "IMPLEMENT", "VALIDATE", "REVIEW", "HANDOFF", "DEPLOY", "LISTENING"];
       for (const phase of phases) {
         expect(PHASE_BOOST_WEIGHTS).toHaveProperty(phase);
       }

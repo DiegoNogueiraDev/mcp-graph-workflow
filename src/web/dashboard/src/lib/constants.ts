@@ -48,12 +48,12 @@ export const ALL_TYPES: NodeType[] = [
 // ── Lifecycle Phases ──────────────────────────────
 
 export const LIFECYCLE_PHASES = [
-  "ANALYZE", "DESIGN", "PLAN", "IMPLEMENT", "VALIDATE", "REVIEW", "HANDOFF", "LISTENING",
+  "ANALYZE", "DESIGN", "PLAN", "IMPLEMENT", "VALIDATE", "REVIEW", "HANDOFF", "DEPLOY", "LISTENING",
 ] as const;
 
 export const PHASE_COLORS: Record<string, string> = {
   ANALYZE: "#8b5cf6", DESIGN: "#3b82f6", PLAN: "#06b6d4", IMPLEMENT: "#10b981",
-  VALIDATE: "#f59e0b", REVIEW: "#ef4444", HANDOFF: "#ec4899", LISTENING: "#6b7280",
+  VALIDATE: "#f59e0b", REVIEW: "#ef4444", HANDOFF: "#ec4899", DEPLOY: "#f97316", LISTENING: "#6b7280",
 };
 
 // ── Code Graph ─────────────────────────────────

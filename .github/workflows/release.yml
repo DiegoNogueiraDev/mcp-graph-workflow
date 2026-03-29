@@ -91,3 +91,22 @@ jobs:
         run: npm publish --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  smoke-test:
+    needs: [publish]
+    if: needs.release-please.outputs.release_created == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Wait for npm propagation
+        run: sleep 30
+      - name: Install published package
+        run: npm install -g @mcp-graph-workflow/mcp-graph@${{ needs.release-please.outputs.tag_name }}
+      - name: Smoke test CLI
+        run: |
+          mcp-graph --help
+          mcp-graph --version
+          echo "✅ Post-release smoke test passed" >> $GITHUB_STEP_SUMMARY

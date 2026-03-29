@@ -2,10 +2,59 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { apiClient } from "@/lib/api-client";
 import type { ProjectMemory } from "@/lib/types";
 import { buildMemoryTree, type MemoryTreeNode } from "@/lib/memory-tree";
+import { KnowledgeStorePanel } from "@/components/memories/knowledge-store-panel";
+import { KnowledgeExportPanel } from "@/components/memories/knowledge-export-panel";
+import { KnowledgeFeedbackPanel } from "@/components/memories/knowledge-feedback-panel";
+
+type MemoriesSubTab = "memories" | "knowledge" | "export";
 
 // ── Main component ───────────────────────────────
 
 export function MemoriesTab(): React.JSX.Element {
+  const [subTab, setSubTab] = useState<MemoriesSubTab>("memories");
+
+  return (
+    <div className="h-full flex flex-col">
+      {/* Sub-tab navigation */}
+      <div className="flex gap-1 p-2 border-b border-zinc-700 shrink-0">
+        {([
+          { id: "memories" as const, label: "Memories" },
+          { id: "knowledge" as const, label: "Knowledge Store" },
+          { id: "export" as const, label: "Export / Import" },
+        ]).map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setSubTab(tab.id)}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${subTab === tab.id ? "bg-blue-600/20 text-blue-400" : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"}`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Sub-tab content */}
+      <div className="flex-1 overflow-y-auto">
+        {subTab === "knowledge" && (
+          <div className="p-4"><KnowledgeStorePanel /></div>
+        )}
+        {subTab === "export" && (
+          <div className="p-4 space-y-6">
+            <KnowledgeExportPanel />
+            <div className="border-t border-zinc-700 pt-4">
+              <h3 className="text-sm font-semibold text-zinc-200 mb-3">Knowledge Feedback</h3>
+              <KnowledgeFeedbackPanel />
+            </div>
+          </div>
+        )}
+        {subTab === "memories" && <MemoriesContent />}
+      </div>
+    </div>
+  );
+}
+
+// ── Original memories content (extracted to sub-component) ──
+
+function MemoriesContent(): React.JSX.Element {
   const [memories, setMemories] = useState<ProjectMemory[]>([]);
   const [selectedMemory, setSelectedMemory] = useState<ProjectMemory | null>(null);
   const [error, setError] = useState<string | null>(null);

@@ -1,0 +1,39 @@
+name: PR Validation
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate PR title (conventional commit format)
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          echo "$PR_TITLE" | grep -qE '^(feat|fix|perf|refactor|docs|chore|ci|test|build|style|deps)(\(.+\))?!?: .+' || {
+            echo "❌ PR title must follow conventional commit format: type(scope): description"
+            echo "Valid types: feat, fix, perf, refactor, docs, chore, ci, test, build, style, deps"
+            echo "Example: feat(language-convert): add ZIP upload support"
+            exit 1
+          }
+          echo "✅ PR title follows conventional commit format"
+
+      - name: Check PR size
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ADDITIONS=$(gh pr view ${{ github.event.pull_request.number }} --json additions -q '.additions')
+          DELETIONS=$(gh pr view ${{ github.event.pull_request.number }} --json deletions -q '.deletions')
+          TOTAL=$((ADDITIONS + DELETIONS))
+          echo "PR size: +$ADDITIONS -$DELETIONS ($TOTAL total lines)"
+          if [ "$TOTAL" -gt 500 ]; then
+            echo "⚠️ Large PR ($TOTAL lines). Consider splitting into smaller PRs." >> $GITHUB_STEP_SUMMARY
+          fi

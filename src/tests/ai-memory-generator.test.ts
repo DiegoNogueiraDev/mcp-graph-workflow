@@ -88,7 +88,7 @@ describe("tool completeness", () => {
 
   it("should claim correct tool count (28 + 6 deprecated)", () => {
     const section = generateClaudeMdSection("test");
-    expect(section).toContain("28 tools + 6 deprecated");
+    expect(section).toContain("46 tools + 6 deprecated");
   });
 
   it("should include deprecated tools reference", () => {
@@ -159,7 +159,7 @@ describe("copilot instructions parity", () => {
     const content = generateCopilotInstructions("test");
     expect(content).toContain("Projeto & Grafo");
     expect(content).toContain("Contexto & RAG");
-    expect(content).toContain("28 tools + 6 deprecated");
+    expect(content).toContain("46 tools + 6 deprecated");
   });
 
   it("should include analyze modes", () => {
@@ -209,6 +209,63 @@ describe("skills section", () => {
   it("copilot instructions should mention manage_skill", () => {
     const content = generateCopilotInstructions("test");
     expect(content).toContain("manage_skill");
+  });
+});
+
+describe("lean mode", () => {
+  it("should generate lean section with < 800 tokens", () => {
+    const section = generateClaudeMdSection("test", "lean");
+    const estimatedTokens = Math.ceil(section.length / 4);
+
+    // Lean mode: behavioral rules only (~700 tokens)
+    // Full mode: ~2500 tokens — lean must be at least 60% smaller
+    expect(estimatedTokens).toBeLessThan(800);
+  });
+
+  it("should include behavioral rules in lean mode", () => {
+    const section = generateClaudeMdSection("test", "lean");
+
+    expect(section).toContain("fonte de verdade ABSOLUTA");
+    expect(section).toContain("Fluxo de trabalho");
+    expect(section).toContain("Lifecycle");
+    expect(section).toContain("Anti-Vibe-Coding");
+  });
+
+  it("should NOT include reference tables in lean mode", () => {
+    const section = generateClaudeMdSection("test", "lean");
+
+    expect(section).not.toContain("Projeto & Grafo");
+    expect(section).not.toContain("Modos do analyze por fase");
+    expect(section).not.toContain("Skills Built-in");
+    expect(section).not.toContain("npx mcp-graph stats");
+    expect(section).not.toContain("Tools Deprecated");
+  });
+
+  it("should include help tool discovery hint in lean mode", () => {
+    const section = generateClaudeMdSection("test", "lean");
+
+    expect(section).toContain("help");
+    expect(section).toContain("on-demand");
+  });
+
+  it("lean copilot instructions should match lean CLAUDE.md body", () => {
+    const claude = generateClaudeMdSection("test", "lean");
+    const copilot = generateCopilotInstructions("test", "lean");
+
+    const extractBody = (s: string): string => {
+      const start = s.indexOf(MARKER_START) + MARKER_START.length;
+      const end = s.indexOf(MARKER_END);
+      return s.substring(start, end).trim();
+    };
+
+    expect(extractBody(copilot)).toBe(extractBody(claude));
+  });
+
+  it("full mode should be much larger than lean mode", () => {
+    const lean = generateClaudeMdSection("test", "lean");
+    const full = generateClaudeMdSection("test", "full");
+
+    expect(full.length).toBeGreaterThan(lean.length * 2);
   });
 });
 

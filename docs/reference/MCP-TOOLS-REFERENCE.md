@@ -1,21 +1,19 @@
 # MCP Tools Reference
 
-> 32 tools organized in 8 categories — complete parameter reference.
->
-> **v5.5.0:** `node` (3 actions) and `validate` (2 actions) consolidate 5 individual tools. The old names (`add_node`, `update_node`, `delete_node`, `validate_task`, `validate_ac`) still work as deprecated shims — they will be removed in v7.0.
+<!-- mcp-graph:tools-summary:start -->
+> 45 tools + 6 deprecated organized in 6 categories — complete parameter reference.
 
 ## Summary
 
 | Category | Tools | Count |
 |----------|-------|-------|
-| [Graph CRUD](#graph-crud) | init, import_prd, import_graph, **node** *(add/update/delete)*, edge, move_node, clone_node, export | 8 |
-| [Querying](#querying) | list, show, search, rag_context | 4 |
-| [Planning & Execution](#planning--execution) | next, update_status, decompose, velocity, dependencies, plan_sprint | 6 |
-| [Knowledge & RAG](#knowledge--rag) | context, reindex_knowledge, sync_stack_docs | 3 |
-| [Validation](#validation) | **validate** *(ac/task)* | 1 |
-| [Snapshots & Stats](#snapshots--stats) | stats, snapshot | 2 |
-| [User Journeys](#user-journeys) | journey | 1 |
-| [Deprecated](#deprecated-tools) | add_node, update_node, delete_node, validate_task, validate_ac | 5 |
+| Core | analyze, clone_node, context, delete_memory, edge, export, help, import_graph, import_prd, init, journey, list, list_memories, manage_skill, metrics, move_node, next, node, plan_sprint, rag_context, read_memory, reindex_knowledge, search, set_phase, show, snapshot, sync_stack_docs, update_status, validate, write_memory | 30 |
+| Translation | analyze_translation, translate_code, translation_jobs | 3 |
+| Code Intelligence | code_intelligence | 1 |
+| Knowledge | export_knowledge, knowledge_feedback, knowledge_stats | 3 |
+| Siebel CRM | siebel_analyze, siebel_composer, siebel_env, siebel_generate_sif, siebel_import_docs, siebel_import_sif, siebel_search, siebel_validate | 8 |
+| Deprecated | add_node, delete_node, list_skills, update_node, validate_ac, validate_task | 6 |
+<!-- mcp-graph:tools-summary:end -->
 
 ---
 
@@ -462,6 +460,81 @@ When `prerequisites` is `"strict"` or `"advisory"`, the system tracks tool calls
 | `validate_ac` | `validate { action: "ac", ... }` | Same parameters |
 
 Deprecated tools log a warning on each call and include a `_deprecated` field in their response.
+
+---
+
+## Knowledge Tools
+
+### `export_knowledge`
+
+Export, import, or preview knowledge packages for team collaboration.
+
+| Param | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `action` | `"export"` \| `"import"` \| `"preview"` | Yes | — | Action to perform |
+| `filePath` | string | No | `./knowledge-export.json` | Path for export output or import input |
+| `sources` | string[] | No | all | Filter by source types (e.g. `["docs", "memory"]`) |
+| `minQuality` | number | No | 0 | Minimum quality score filter (0-1) |
+| `includeMemories` | boolean | No | true | Include project memories |
+| `includeTranslationMemory` | boolean | No | true | Include translation memory entries |
+
+**Example:**
+```
+export_knowledge({ action: "export", sources: ["memory", "docs"], minQuality: 0.5 })
+→ { ok: true, filePath: "./knowledge-export.json", stats: { documents: 120, memories: 18, relations: 5 } }
+
+export_knowledge({ action: "preview", filePath: "./team-knowledge.json" })
+→ { ok: true, preview: { newDocuments: 45, existingDocuments: 75, newMemories: 3 } }
+```
+
+### `knowledge_feedback`
+
+Provide feedback on a knowledge document to improve RAG quality.
+
+| Param | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `docId` | string | Yes | — | Knowledge document ID |
+| `action` | `"helpful"` \| `"unhelpful"` \| `"outdated"` | Yes | — | Feedback action |
+| `query` | string | No | — | The query that surfaced this document |
+| `context` | string | No | — | Additional context about the feedback |
+
+**Example:**
+```
+knowledge_feedback({ docId: "kdoc_abc123", action: "helpful", query: "lifecycle phases" })
+→ { ok: true, docId: "kdoc_abc123", action: "helpful" }
+```
+
+### `knowledge_stats`
+
+Get statistics about the knowledge store.
+
+| Param | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `topK` | number | No | 5 | Number of top accessed docs to return (1-50) |
+
+**Example:**
+```
+knowledge_stats({ topK: 3 })
+→ { total: 459, bySourceType: { memory: 25, docs: 7, graph_node: 224 }, topDocs: [...] }
+```
+
+### `help`
+
+On-demand reference for mcp-graph tools, analyze modes, skills, CLI commands, and workflow.
+
+| Param | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `topic` | `"tools"` \| `"analyze_modes"` \| `"skills"` \| `"cli"` \| `"knowledge"` \| `"workflow"` \| `"all"` | Yes | — | Reference topic |
+| `phase` | string | No | — | Lifecycle phase to filter by |
+
+**Example:**
+```
+help({ topic: "tools", phase: "IMPLEMENT" })
+→ Returns tools relevant to IMPLEMENT phase (next, context, rag_context, update_status, ...)
+
+help({ topic: "analyze_modes", phase: "DESIGN" })
+→ Returns only DESIGN modes (adr, traceability, coupling, interfaces, tech_risk, design_ready)
+```
 
 ---
 

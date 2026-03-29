@@ -9,6 +9,9 @@ import type { StoreRef } from "../../core/store/store-manager.js";
 import { KnowledgeStore } from "../../core/store/knowledge-store.js";
 import { KnowledgeSourceTypeSchema } from "../../schemas/knowledge.schema.js";
 import { chunkText } from "../../core/rag/chunk-text.js";
+import { exportKnowledge, importKnowledge, previewImport } from "../../core/knowledge/knowledge-packager.js";
+import { KnowledgePackageSchema } from "../../schemas/knowledge-package.schema.js";
+import { applyFeedback } from "../../core/rag/knowledge-feedback.js";
 import { logger } from "../../core/utils/logger.js";
 
 const UploadSchema = z.object({
@@ -161,15 +164,103 @@ export function createKnowledgeRouter(storeRef: StoreRef): Router {
   router.get("/stats/summary", (_req, res, next) => {
     try {
       const knowledgeStore = getKnowledgeStore();
-      const total = knowledgeStore.count();
-      const bySource: Record<string, number> = {};
-      const sourceTypes = KnowledgeSourceTypeSchema.options;
-      for (const st of sourceTypes) {
-        const c = knowledgeStore.count(st);
-        if (c > 0) bySource[st] = c;
+      const stats = knowledgeStore.countBySource();
+      res.json(stats);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // ── POST /export — export knowledge package ────
+  router.post("/export", async (req, res, next) => {
+    try {
+      const db = storeRef.current.getDb();
+      const basePath = process.cwd();
+      const sources = req.body?.sources as string[] | undefined;
+      const minQuality = typeof req.body?.minQuality === "number" ? req.body.minQuality : 0;
+      const includeMemories = req.body?.includeMemories !== false;
+      const includeTranslationMemory = req.body?.includeTranslationMemory !== false;
+
+      const result = await exportKnowledge(db, basePath, {
+        sources,
+        minQuality,
+        includeMemories,
+        includeTranslationMemory,
+        includeRelations: true,
+      });
+
+      logger.info("knowledge:export:ok", { ...result.stats });
+      res.json({ ok: true, package: result.package, stats: result.stats });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // ── POST /import — import knowledge package ────
+  router.post("/import", async (req, res, next) => {
+    try {
+      const parsed = KnowledgePackageSchema.safeParse(req.body?.package ?? req.body);
+      if (!parsed.success) {
+        const errorMsg = parsed.error.issues
+          .map((i) => `${i.path.join(".")}: ${i.message}`)
+          .join("; ");
+        res.status(400).json({ error: `Invalid knowledge package: ${errorMsg}` });
+        return;
       }
 
-      res.json({ total, bySource });
+      const db = storeRef.current.getDb();
+      const basePath = process.cwd();
+      const result = await importKnowledge(db, basePath, parsed.data);
+
+      logger.info("knowledge:import:ok", { documentsImported: result.documentsImported });
+      res.json({ ok: true, result });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // ── POST /preview — preview import diff ────────
+  router.post("/preview", async (req, res, next) => {
+    try {
+      const parsed = KnowledgePackageSchema.safeParse(req.body?.package ?? req.body);
+      if (!parsed.success) {
+        const errorMsg = parsed.error.issues
+          .map((i) => `${i.path.join(".")}: ${i.message}`)
+          .join("; ");
+        res.status(400).json({ error: `Invalid knowledge package: ${errorMsg}` });
+        return;
+      }
+
+      const db = storeRef.current.getDb();
+      const basePath = process.cwd();
+      const preview = await previewImport(db, basePath, parsed.data);
+
+      logger.info("knowledge:preview:ok", { newDocuments: preview.newDocuments });
+      res.json({ ok: true, preview });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // ── POST /:id/feedback — feedback on document ──
+  router.post("/:id/feedback", (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const action = req.body?.action as string | undefined;
+      const query = req.body?.query as string | undefined;
+      const context = req.body?.context as string | undefined;
+
+      if (!action || !["helpful", "unhelpful", "outdated"].includes(action)) {
+        res.status(400).json({ error: "action must be helpful, unhelpful, or outdated" });
+        return;
+      }
+
+      const db = storeRef.current.getDb();
+      const contextObj = context ? { note: context } : undefined;
+      applyFeedback(db, id, query ?? "", action as "helpful" | "unhelpful" | "outdated", contextObj);
+
+      logger.info("knowledge:feedback:ok", { docId: id, action });
+      res.json({ ok: true, docId: id, action });
     } catch (err) {
       next(err);
     }

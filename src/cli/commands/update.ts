@@ -26,7 +26,7 @@ export function updateCommand(): Command {
   return new Command("update")
     .description("Update mcp-graph configuration to latest version")
     .option("-d, --dir <dir>", "Project directory", process.cwd())
-    .option("--only <steps>", "Comma-separated: db,mcp-json,vscode-mcp,gitignore,deps,claude-md,copilot-md")
+    .option("--only <steps>", "Comma-separated: db,mcp-json,vscode-mcp,gitignore,deps,claude-md,copilot-md,ignore-files,docs")
     .option("--dry-run", "Show what would change without writing")
     .option("--json", "Output as JSON")
     .action(async (opts: { dir: string; only?: string; dryRun?: boolean; json?: boolean }) => {

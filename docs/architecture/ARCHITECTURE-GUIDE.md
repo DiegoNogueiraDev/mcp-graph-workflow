@@ -24,27 +24,28 @@ Thin orchestration layer. Commands call core functions and format output. No bus
 
 **Protocol:** Model Context Protocol (Streamable HTTP + Stdio)
 
-30 tools registered (22 core + 2 consolidated + 5 deprecated shims + 1 skills) via `@modelcontextprotocol/sdk`. Two transport modes:
+<!-- mcp-graph:arch-mcp:start -->
+51 tool registrations (45 active + 6 deprecated shims) via `@modelcontextprotocol/sdk`. Two transport modes:
 
 - **HTTP** (`server.ts`) — Express server with `/mcp` endpoint + REST API + static dashboard
 - **Stdio** (`stdio.ts`) — Standard I/O transport for direct MCP client integration
 
 Tool categories:
-- **Graph CRUD** (9) — init, import_prd, node (add/update/delete), edge (add/delete/list), move_node, clone_node, export
-- **Querying** (4) — list, show, search, rag_context
-- **Planning & Execution** (6) — next, update_status, decompose, velocity, dependencies, plan_sprint
-- **Knowledge & RAG** (3) — context, reindex_knowledge, sync_stack_docs
-- **Validation** (1) — validate (task/ac)
-- **Snapshots & Stats** (4) — stats, create_snapshot, restore_snapshot, list_snapshots
-- **Deprecated shims** (5) — add_node, update_node, delete_node, validate_task, validate_ac (removed in v7.0)
-
-See [MCP Tools Reference](../reference/MCP-TOOLS-REFERENCE.md) for full parameter documentation.
+- **Core** (30) — analyze, clone_node, context, delete_memory, edge, export, help, import_graph, import_prd, init, journey, list, list_memories, manage_skill, metrics, move_node, next, node, plan_sprint, rag_context, read_memory, reindex_knowledge, search, set_phase, show, snapshot, sync_stack_docs, update_status, validate, write_memory
+- **Translation** (3) — analyze_translation, translate_code, translation_jobs
+- **Code Intelligence** (1) — code_intelligence
+- **Knowledge** (3) — export_knowledge, knowledge_feedback, knowledge_stats
+- **Siebel CRM** (8) — siebel_analyze, siebel_composer, siebel_env, siebel_generate_sif, siebel_import_docs, siebel_import_sif, siebel_search, siebel_validate
+- **Deprecated shims** (6) — add_node, delete_node, list_skills, update_node, validate_ac, validate_task (removed in v7.0)
+<!-- mcp-graph:arch-mcp:end -->
 
 ### Layer 3: REST API — `src/api/`
 
 **Framework:** Express v5
 
-17 routers, 44 endpoints. Modular router architecture:
+<!-- mcp-graph:arch-api:start -->
+25 routers, 128 endpoints. Modular router architecture:
+<!-- mcp-graph:arch-api:end -->
 
 ```
 router.ts                # Main router composition

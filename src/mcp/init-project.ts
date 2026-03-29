@@ -9,6 +9,12 @@ import { installLspDeps } from "../core/lsp/lsp-deps-installer.js";
 import { detectProjectLanguages } from "../core/lsp/language-detector.js";
 import { ServerRegistry } from "../core/lsp/server-registry.js";
 import { generateClaudeMdSection, generateCopilotInstructions, applySection } from "../core/config/ai-memory-generator.js";
+import { loadConfig } from "../core/config/config-loader.js";
+import { ensureClaudeIgnore, ensureCopilotIgnore } from "../core/config/ignore-templates.js";
+import { introspectTools } from "../core/docs/tool-introspector.js";
+import { introspectRoutes } from "../core/docs/route-introspector.js";
+import { generateReadmeStats, generateArchToolSection, generateArchRouteSection, generateToolRefSummary } from "../core/docs/doc-generator.js";
+import { applySectionWithName } from "../core/docs/doc-updater.js";
 
 import { STORE_DIR } from "../core/utils/constants.js";
 
@@ -159,10 +165,10 @@ function ensureGitignore(projectDir: string, dryRun?: boolean): UpdateStepResult
   return { step: "gitignore", status: "updated", message: ".gitignore updated with workflow-graph/" };
 }
 
-function generateAndWriteClaudeMd(projectDir: string, dryRun?: boolean): UpdateStepResult {
+function generateAndWriteClaudeMd(projectDir: string, dryRun?: boolean, contextMode?: "lean" | "full"): UpdateStepResult {
   const projectName = path.basename(projectDir);
   const claudeMdPath = path.join(projectDir, "CLAUDE.md");
-  const section = generateClaudeMdSection(projectName);
+  const section = generateClaudeMdSection(projectName, contextMode ?? "lean");
 
   const fileExists = existsSync(claudeMdPath);
   let existing = "";
@@ -188,11 +194,11 @@ function generateAndWriteClaudeMd(projectDir: string, dryRun?: boolean): UpdateS
   };
 }
 
-function generateAndWriteCopilotInstructions(projectDir: string, dryRun?: boolean): UpdateStepResult {
+function generateAndWriteCopilotInstructions(projectDir: string, dryRun?: boolean, contextMode?: "lean" | "full"): UpdateStepResult {
   const projectName = path.basename(projectDir);
   const githubDir = path.join(projectDir, ".github");
   const copilotPath = path.join(githubDir, "copilot-instructions.md");
-  const section = generateCopilotInstructions(projectName);
+  const section = generateCopilotInstructions(projectName, contextMode ?? "lean");
 
   const fileExists = existsSync(copilotPath);
   let existing = "";
@@ -229,6 +235,52 @@ function initStore(projectDir: string): void {
   store.close();
 
   logger.info("Database initialized", { dir: STORE_DIR });
+}
+
+function generateAndUpdateDocs(projectDir: string, dryRun?: boolean): UpdateStepResult {
+  // Only run inside the mcp-graph source repo
+  const toolsDir = path.join(projectDir, "src", "mcp", "tools");
+  const apiDir = path.join(projectDir, "src", "api");
+  if (!existsSync(toolsDir) || !existsSync(apiDir)) {
+    return { step: "docs", status: "skipped", message: "Not inside mcp-graph repo, skipping auto-docs" };
+  }
+
+  const tools = introspectTools(toolsDir);
+  const routes = introspectRoutes(apiDir);
+
+  const targets = [
+    { file: "README.md", section: "readme-stats", content: generateReadmeStats(tools, routes) },
+    { file: "docs/architecture/ARCHITECTURE-GUIDE.md", section: "arch-mcp", content: generateArchToolSection(tools) },
+    { file: "docs/architecture/ARCHITECTURE-GUIDE.md", section: "arch-api", content: generateArchRouteSection(routes) },
+    { file: "docs/reference/MCP-TOOLS-REFERENCE.md", section: "tools-summary", content: generateToolRefSummary(tools) },
+  ];
+
+  let changed = 0;
+  for (const target of targets) {
+    const filePath = path.join(projectDir, target.file);
+    if (!existsSync(filePath)) continue;
+
+    const existing = readFileSync(filePath, "utf-8");
+    const updated = applySectionWithName(existing, target.section, target.content);
+
+    if (existing !== updated) {
+      if (!dryRun) {
+        writeFileSync(filePath, updated, "utf-8");
+      }
+      changed++;
+      logger.info(`Auto-docs: ${target.file} [${target.section}] updated`);
+    }
+  }
+
+  if (changed === 0) {
+    return { step: "docs", status: "up-to-date", message: "All docs up-to-date" };
+  }
+
+  return {
+    step: "docs",
+    status: dryRun ? "up-to-date" : "updated",
+    message: `${changed} doc section(s) ${dryRun ? "would be " : ""}updated`,
+  };
 }
 
 // --- Public API ---
@@ -287,8 +339,21 @@ export async function runUpdate(
   }
 
   // 4. AI instruction files
-  if (shouldRun("claude-md")) steps.push(generateAndWriteClaudeMd(projectDir, options.dryRun));
-  if (shouldRun("copilot-md")) steps.push(generateAndWriteCopilotInstructions(projectDir, options.dryRun));
+  const config = loadConfig(projectDir);
+  const ctxMode = config.contextMode;
+  if (shouldRun("claude-md")) steps.push(generateAndWriteClaudeMd(projectDir, options.dryRun, ctxMode));
+  if (shouldRun("copilot-md")) steps.push(generateAndWriteCopilotInstructions(projectDir, options.dryRun, ctxMode));
+
+  // 5. Ignore files (create if missing, never overwrite)
+  if (shouldRun("ignore-files") && !options.dryRun) {
+    ensureClaudeIgnore(projectDir);
+    ensureCopilotIgnore(projectDir);
+  }
+
+  // 6. Auto-docs (only inside mcp-graph repo)
+  if (shouldRun("docs")) {
+    steps.push(generateAndUpdateDocs(projectDir, options.dryRun));
+  }
 
   const report: UpdateReport = {
     steps,
@@ -328,8 +393,13 @@ export async function runInit(projectDir: string): Promise<void> {
   }
 
   // Generate AI instruction files (idempotent)
-  generateAndWriteClaudeMd(projectDir);
-  generateAndWriteCopilotInstructions(projectDir);
+  const initConfig = loadConfig(projectDir);
+  generateAndWriteClaudeMd(projectDir, undefined, initConfig.contextMode);
+  generateAndWriteCopilotInstructions(projectDir, undefined, initConfig.contextMode);
+
+  // Generate ignore files (does NOT overwrite existing)
+  ensureClaudeIgnore(projectDir);
+  ensureCopilotIgnore(projectDir);
 
   logger.success("mcp-graph initialized", {
     dir: projectDir,

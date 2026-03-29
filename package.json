@@ -29,7 +29,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/ --max-warnings 9",
     "lint:fix": "eslint src/ --fix",
-    "setup:mcp": "bash scripts/setup-mcp.sh"
+    "setup:mcp": "bash scripts/setup-mcp.sh",
+    "prepare": "husky"
   },
   "keywords": [
     "mcp",
@@ -60,6 +61,8 @@
     "node": ">=20.0.0"
   },
   "devDependencies": {
+    "@commitlint/cli": "^20.5.0",
+    "@commitlint/config-conventional": "^20.5.0",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.58.2",
     "@types/adm-zip": "^0.5.8",
@@ -73,6 +76,8 @@
     "eslint": "^10.0.3",
     "eslint-plugin-security": "^4.0.0",
     "graphology": "^0.26.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
     "supertest": "^7.2.2",
     "tsx": "^4.21.0",
     "typescript-eslint": "^8.57.0",
@@ -108,5 +113,13 @@
     "typescript": {
       "optional": true
     }
+  },
+  "lint-staged": {
+    "src/**/*.ts": [
+      "eslint --max-warnings 9"
+    ],
+    "src/**/*.tsx": [
+      "eslint --max-warnings 9"
+    ]
   }
 }

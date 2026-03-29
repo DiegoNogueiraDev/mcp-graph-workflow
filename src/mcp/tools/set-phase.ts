@@ -7,7 +7,7 @@ import { generateAndIndexPhaseSummary } from "../../core/rag/phase-summary.js";
 import { logger } from "../../core/utils/logger.js";
 import { mcpText, mcpError } from "../response-helpers.js";
 
-const VALID_PHASES = ["ANALYZE", "DESIGN", "PLAN", "IMPLEMENT", "VALIDATE", "REVIEW", "HANDOFF", "LISTENING", "auto"] as const;
+const VALID_PHASES = ["ANALYZE", "DESIGN", "PLAN", "IMPLEMENT", "VALIDATE", "REVIEW", "HANDOFF", "DEPLOY", "LISTENING", "auto"] as const;
 
 export function registerSetPhase(server: McpServer, store: SqliteStore): void {
   server.tool(

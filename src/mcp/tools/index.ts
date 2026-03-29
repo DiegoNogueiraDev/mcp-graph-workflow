@@ -24,6 +24,7 @@ import { registerSetPhase } from "./set-phase.js";
 import { registerMemory } from "./memory.js";
 import { registerManageSkill } from "./manage-skill.js";
 import { registerJourney } from "./journey.js";
+import { registerHelp } from "./help.js";
 // Siebel CRM integration tools
 import { registerSiebelImportSif } from "./siebel-import-sif.js";
 import { registerSiebelAnalyze } from "./siebel-analyze.js";
@@ -81,6 +82,7 @@ export function registerAllTools(server: McpServer, store: SqliteStore): void {
   registerMemory(server, store);
   registerManageSkill(server, store);
   registerJourney(server, store);
+  registerHelp(server);
 
   // Siebel CRM integration tools
   registerSiebelImportSif(server, store);

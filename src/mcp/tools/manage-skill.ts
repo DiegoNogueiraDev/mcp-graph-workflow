@@ -39,7 +39,7 @@ export function registerManageSkill(server: McpServer, store: SqliteStore): void
         .optional()
         .describe("Skill ID (for update/delete)"),
       phase: z
-        .enum(["ANALYZE", "DESIGN", "PLAN", "IMPLEMENT", "VALIDATE", "REVIEW", "HANDOFF", "LISTENING"])
+        .enum(["ANALYZE", "DESIGN", "PLAN", "IMPLEMENT", "VALIDATE", "REVIEW", "HANDOFF", "DEPLOY", "LISTENING"])
         .optional()
         .describe("Filter skills by lifecycle phase (list only)"),
       data: z

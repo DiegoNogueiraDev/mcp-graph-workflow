@@ -1,6 +1,6 @@
 # REST API Reference
 
-> 19 routers, 59 endpoints — all served from `mcp-graph serve`.
+> 25 routers, 128+ endpoints — all served from `mcp-graph serve`.
 
 ## Base URL
 
@@ -499,3 +499,186 @@ Website journey mapping — screen flows, form fields, CTAs, A/B variants.
 |--------|------|-------------|
 | GET | `/journey/screenshots` | List available screenshot files |
 | GET | `/journey/screenshots/:mapId/:filename` | Serve a screenshot image |
+
+---
+
+## Docs Reference (`/docs-reference`)
+
+Live introspection of MCP tools, API routes, and project documentation.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/docs-reference` | List available markdown docs |
+| GET | `/docs-reference/tools` | Introspected MCP tool catalog |
+| GET | `/docs-reference/routes` | Introspected API route catalog |
+| GET | `/docs-reference/stats` | Aggregated counts (tools, routes, docs) |
+| GET | `/docs-reference/:category/:slug` | Read a specific markdown doc |
+
+### Examples
+
+**GET /docs-reference/stats**
+
+```json
+{
+  "tools": { "active": 45, "deprecated": 6 },
+  "routes": { "routers": 25, "endpoints": 128 },
+  "docs": 26
+}
+```
+
+**GET /docs-reference/tools** (truncated)
+
+```json
+{
+  "total": 51,
+  "active": 45,
+  "deprecated": 6,
+  "tools": [
+    {
+      "name": "init",
+      "description": "Initialize a new project graph...",
+      "category": "Core",
+      "deprecated": false,
+      "sourceFile": "init.ts"
+    },
+    {
+      "name": "siebel_analyze",
+      "description": "Analyze Siebel objects...",
+      "category": "Siebel CRM",
+      "deprecated": false,
+      "sourceFile": "siebel-analyze.ts"
+    }
+  ]
+}
+```
+
+**GET /docs-reference/routes** (truncated)
+
+```json
+{
+  "totalRouters": 25,
+  "totalEndpoints": 128,
+  "routes": [
+    {
+      "routerName": "nodes",
+      "mountPath": "/nodes",
+      "endpoints": [
+        { "method": "get", "path": "/" },
+        { "method": "post", "path": "/" },
+        { "method": "get", "path": "/:id" },
+        { "method": "patch", "path": "/:id" },
+        { "method": "delete", "path": "/:id" }
+      ],
+      "sourceFile": "nodes.ts"
+    }
+  ]
+}
+```
+
+**GET /docs-reference/guides/GETTING-STARTED**
+
+```json
+{
+  "slug": "guides/GETTING-STARTED",
+  "content": "# Getting Started\n\n## Quick Start\n..."
+}
+```
+
+---
+
+## Knowledge Export/Import (`/knowledge`)
+
+Package and share RAG knowledge between project instances.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/knowledge/export` | Export knowledge package (JSON) |
+| POST | `/knowledge/import` | Import knowledge package |
+| POST | `/knowledge/preview` | Preview import diff before confirming |
+| POST | `/knowledge/:id/feedback` | Rate a document (helpful/unhelpful/outdated) |
+
+### Examples
+
+**POST /knowledge/export**
+
+Request:
+```json
+{
+  "sources": ["memory", "docs"],
+  "minQuality": 0.5,
+  "includeMemories": true
+}
+```
+
+Response:
+```json
+{
+  "ok": true,
+  "package": { "version": "1.0.0", "documents": [...], "memories": [...] },
+  "stats": {
+    "documents": 459,
+    "memories": 18,
+    "relations": 0,
+    "translationEntries": 0
+  }
+}
+```
+
+**POST /knowledge/preview**
+
+Request:
+```json
+{
+  "package": { "version": "1.0.0", "documents": [...], "memories": [...] }
+}
+```
+
+Response:
+```json
+{
+  "ok": true,
+  "preview": {
+    "newDocuments": 12,
+    "existingDocuments": 447,
+    "newMemories": 3,
+    "existingMemories": 15,
+    "sourceTypes": ["memory", "docs", "sprint_plan"]
+  }
+}
+```
+
+**POST /knowledge/import**
+
+Request: same as preview. Response:
+```json
+{
+  "ok": true,
+  "result": {
+    "documentsImported": 12,
+    "documentsSkipped": 447,
+    "memoriesImported": 3,
+    "memoriesSkipped": 15,
+    "relationsImported": 0,
+    "translationEntriesImported": 0
+  }
+}
+```
+
+**POST /knowledge/:id/feedback**
+
+Request:
+```json
+{
+  "action": "helpful",
+  "query": "how to configure lifecycle phases",
+  "context": "This doc answered my question about set_phase"
+}
+```
+
+Response:
+```json
+{
+  "ok": true,
+  "docId": "kdoc_abc123",
+  "action": "helpful"
+}

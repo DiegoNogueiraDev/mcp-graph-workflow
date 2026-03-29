@@ -112,26 +112,27 @@ mcp-graph serve --port 3000    # or: npm run dev
 
 ## Tools & API
 
+<!-- mcp-graph:readme-stats:start -->
 | | Count | Reference |
 |---|---|---|
-| **MCP Tools** | 32 | [MCP-TOOLS-REFERENCE.md](docs/reference/MCP-TOOLS-REFERENCE.md) |
-| **REST Endpoints** | 44 (17 routers) | [REST-API-REFERENCE.md](docs/reference/REST-API-REFERENCE.md) |
+| **MCP Tools** | 45 + 6 deprecated | [MCP-TOOLS-REFERENCE.md](docs/reference/MCP-TOOLS-REFERENCE.md) |
+| **REST Endpoints** | 128 (25 routers) | [REST-API-REFERENCE.md](docs/reference/REST-API-REFERENCE.md) |
+<!-- mcp-graph:readme-stats:end -->
 | **CLI Commands** | 6 | `init`, `import`, `index`, `stats`, `serve`, `doctor` |
 
 ## Integrations
 
 | Integration | Role |
 |-------------|------|
-| **Serena** | Code analysis, memory, symbol navigation |
-| **GitNexus** | Git graph, impact analysis, dependency visualization |
+| **Code Intelligence** | Native LSP-based code analysis, symbol navigation, multi-language |
 | **Context7** | Up-to-date library documentation fetching |
 | **Playwright** | Browser-based task validation and A/B testing |
 
-All coordinated by an event-driven `IntegrationOrchestrator`. See [INTEGRATIONS-GUIDE.md](docs/reference/INTEGRATIONS-GUIDE.md).
+Native systems: **Code Intelligence** (code analysis), **Native Memories** (project knowledge). See [INTEGRATIONS-GUIDE.md](docs/reference/INTEGRATIONS-GUIDE.md).
 
 ## Testing
 
-**910+ tests** across 101 Vitest files + 11 Playwright E2E specs.
+**4200+ tests** across 390 Vitest files + Playwright E2E specs.
 
 ```bash
 npm test            # Unit + integration
@@ -145,10 +146,10 @@ npm run test:all    # Everything
 |----------|-------------|
 | [Getting Started](docs/guides/GETTING-STARTED.md) | Step-by-step guide for new users |
 | [Architecture](docs/architecture/ARCHITECTURE-GUIDE.md) | System layers, modules, data flows |
-| [MCP Tools Reference](docs/reference/MCP-TOOLS-REFERENCE.md) | 32 tools with full parameters |
-| [REST API Reference](docs/reference/REST-API-REFERENCE.md) | 17 routers, 44 endpoints |
+| [MCP Tools Reference](docs/reference/MCP-TOOLS-REFERENCE.md) | 46 tools + 6 deprecated, full parameters |
+| [REST API Reference](docs/reference/REST-API-REFERENCE.md) | 19 routers, 59 endpoints |
 | [Knowledge Pipeline](docs/architecture/KNOWLEDGE-PIPELINE.md) | RAG, embeddings, context assembly |
-| [Integrations](docs/reference/INTEGRATIONS-GUIDE.md) | Serena, GitNexus, Context7, Playwright |
+| [Integrations](docs/reference/INTEGRATIONS-GUIDE.md) | Code Intelligence, Context7, Playwright |
 | [Test Guide](docs/guides/TEST-GUIDE.md) | Test pyramid and best practices |
 | [PRD Writing Guide](docs/guides/PRD-WRITING-GUIDE.md) | How to write PRDs that import correctly |
 | [Lifecycle](docs/reference/LIFECYCLE.md) | 8-phase dev methodology |

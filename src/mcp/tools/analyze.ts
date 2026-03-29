@@ -23,6 +23,7 @@ import { checkStatusFlow } from "../../core/validator/status-flow-checker.js";
 import { checkReviewReadiness } from "../../core/reviewer/review-readiness.js";
 import { checkHandoffReadiness } from "../../core/handoff/delivery-checklist.js";
 import { checkDocCompleteness } from "../../core/handoff/doc-completeness.js";
+import { checkDeployReadiness } from "../../core/deployer/deploy-readiness.js";
 import { checkListeningReadiness } from "../../core/listener/feedback-readiness.js";
 import { analyzeBacklogHealth } from "../../core/listener/backlog-health.js";
 import { KnowledgeStore } from "../../core/store/knowledge-store.js";
@@ -57,6 +58,8 @@ const ANALYZE_MODES = z.enum([
   "review_ready",
   "handoff_ready",
   "doc_completeness",
+  "deploy_ready",
+  "release_check",
   "listening_ready",
   "backlog_health",
 ]);
@@ -64,7 +67,7 @@ const ANALYZE_MODES = z.enum([
 export function registerAnalyze(server: McpServer, store: SqliteStore): void {
   server.tool(
     "analyze",
-    "Analyze the project graph. Modes: prd_quality, scope, ready, risk, blockers, cycles, critical_path, decompose, adr, traceability, coupling, interfaces, tech_risk, design_ready (DESIGN→PLAN gate), implement_done, tdd_check, progress, validate_ready (IMPLEMENT→VALIDATE gate), done_integrity, status_flow, review_ready (VALIDATE→REVIEW gate), handoff_ready (REVIEW→HANDOFF gate), doc_completeness, listening_ready (HANDOFF→LISTENING gate), backlog_health.",
+    "Analyze the project graph. Modes: prd_quality, scope, ready, risk, blockers, cycles, critical_path, decompose, adr, traceability, coupling, interfaces, tech_risk, design_ready (DESIGN→PLAN gate), implement_done, tdd_check, progress, validate_ready (IMPLEMENT→VALIDATE gate), done_integrity, status_flow, review_ready (VALIDATE→REVIEW gate), handoff_ready (REVIEW→HANDOFF gate), doc_completeness, deploy_ready (HANDOFF→DEPLOY gate), release_check, listening_ready (DEPLOY→LISTENING gate), backlog_health.",
     {
       mode: ANALYZE_MODES.describe("Analysis mode"),
       nodeId: z.string().optional().describe("Node ID (required for 'blockers'/'implement_done', optional for 'decompose'/'tdd_check'. For 'progress' mode, used as sprint name filter)"),
@@ -265,6 +268,43 @@ export function registerAnalyze(server: McpServer, store: SqliteStore): void {
           const docReport = checkDocCompleteness(doc);
           logger.info("tool:analyze:doc_completeness:ok", { coverageRate: docReport.coverageRate });
           return mcpText({ ok: true, mode, ...docReport });
+        }
+
+        case "deploy_ready": {
+          const phase = detectCurrentPhase(doc);
+          const snapshots = store.listSnapshots();
+          const hasSnapshots = snapshots.length > 0;
+          const ksD = new KnowledgeStore(store.getDb());
+          const knowledgeCountD = ksD.count();
+          const deployReport = checkDeployReadiness(doc, { hasSnapshots, knowledgeCount: knowledgeCountD });
+          logger.info("tool:analyze:deploy_ready:ok", { ready: deployReport.ready, grade: deployReport.grade });
+          const deployResponse: Record<string, unknown> = { ok: true, mode, ...deployReport };
+          if (phase !== "DEPLOY" && phase !== "HANDOFF") deployResponse._info = `Modo deploy_ready é específico das fases HANDOFF/DEPLOY (fase atual: ${phase})`;
+          return mcpText(deployResponse);
+        }
+
+        case "release_check": {
+          const phase = detectCurrentPhase(doc);
+          const snapshots = store.listSnapshots();
+          const hasSnapshots = snapshots.length > 0;
+          const tasks = doc.nodes.filter((n) => n.type === "task" || n.type === "subtask");
+          const doneTasks = tasks.filter((n) => n.status === "done");
+          const allDone = tasks.length > 0 && tasks.every((n) => n.status === "done");
+          const blockedCount = doc.nodes.filter((n) => n.status === "blocked").length;
+          const inProgressCount = tasks.filter((n) => n.status === "in_progress").length;
+
+          const releaseChecks = {
+            all_tasks_done: allDone,
+            no_blocked_nodes: blockedCount === 0,
+            no_in_progress: inProgressCount === 0,
+            snapshot_exists: hasSnapshots,
+            task_summary: `${doneTasks.length}/${tasks.length} tasks done`,
+          };
+          const releaseReady = allDone && blockedCount === 0 && inProgressCount === 0 && hasSnapshots;
+          logger.info("tool:analyze:release_check:ok", { releaseReady });
+          const releaseResponse: Record<string, unknown> = { ok: true, mode, releaseReady, checks: releaseChecks };
+          if (phase !== "DEPLOY") releaseResponse._info = `Modo release_check é específico da fase DEPLOY (fase atual: ${phase})`;
+          return mcpText(releaseResponse);
         }
 
         case "listening_ready": {

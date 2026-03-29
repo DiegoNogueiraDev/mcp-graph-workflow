@@ -7,6 +7,7 @@ import { checkDefinitionOfDone } from "../implementer/definition-of-done.js";
 import { checkValidationReadiness } from "../validator/definition-of-ready.js";
 import { checkReviewReadiness } from "../reviewer/review-readiness.js";
 import { checkHandoffReadiness } from "../handoff/delivery-checklist.js";
+import { checkDeployReadiness } from "../deployer/deploy-readiness.js";
 import { checkListeningReadiness } from "../listener/feedback-readiness.js";
 
 export type LifecyclePhase =
@@ -17,6 +18,7 @@ export type LifecyclePhase =
   | "VALIDATE"
   | "REVIEW"
   | "HANDOFF"
+  | "DEPLOY"
   | "LISTENING";
 
 export interface McpAgentSuggestion {
@@ -195,6 +197,15 @@ const GUIDANCE: Record<LifecyclePhase, PhaseGuidance> = {
       { name: "code-graph", action: "Scope check final antes do PR", tools: ["impact", "search"] },
     ],
   },
+  DEPLOY: {
+    reminder: "Fase DEPLOY: Valide CI pipeline, execute release, e verifique post-release smoke tests.",
+    suggestedTools: ["export", "snapshot", "analyze", "metrics"],
+    principles: ["CI green before release", "Semantic versioning", "Post-release validation", "Rollback ready"],
+    suggestedMcpAgents: [
+      { name: "code-graph", action: "Final scope and impact check", tools: ["impact", "search"] },
+    ],
+    suggestedSkills: ["deployment-engineer", "devops-deploy", "git-pushing"],
+  },
   LISTENING: {
     reminder: "Fase LISTENING: Colete feedback e adicione novos nodes ao grafo. Inicie novo ciclo se necessário.",
     suggestedTools: ["add_node", "import_prd", "search", "list", "analyze"],
@@ -302,7 +313,27 @@ const PHASE_GATES: Partial<Record<`${LifecyclePhase}_to_${LifecyclePhase}`, Phas
         .map((c) => c.details),
     };
   },
+  HANDOFF_to_DEPLOY: (doc) => {
+    const report = checkDeployReadiness(doc);
+    return {
+      allowed: report.ready,
+      reason: report.ready ? null : report.summary,
+      unmetConditions: report.checks
+        .filter((c) => c.severity === "required" && !c.passed)
+        .map((c) => c.details),
+    };
+  },
   HANDOFF_to_LISTENING: (doc) => {
+    const report = checkListeningReadiness(doc);
+    return {
+      allowed: report.ready,
+      reason: report.ready ? null : report.summary,
+      unmetConditions: report.checks
+        .filter((c) => c.severity === "required" && !c.passed)
+        .map((c) => c.details),
+    };
+  },
+  DEPLOY_to_LISTENING: (doc) => {
     const report = checkListeningReadiness(doc);
     return {
       allowed: report.ready,
@@ -343,6 +374,7 @@ const PHASE_RECOMMENDED_TOOLS: Record<LifecyclePhase, Set<string>> = {
   VALIDATE: new Set(["validate", "analyze", "update_status", "validate_task"]),
   REVIEW: new Set(["analyze", "export", "metrics", "validate_task"]),
   HANDOFF: new Set(["export", "snapshot", "write_memory", "validate_task"]),
+  DEPLOY: new Set(["export", "snapshot", "analyze", "metrics", "write_memory"]),
   LISTENING: new Set(["import_prd", "node", "analyze", "manage_skill", "list_skills", "validate_task"]),
 };
 
@@ -548,6 +580,16 @@ export const PHASE_PREREQUISITES: Record<LifecyclePhase, PrerequisiteRule[]> = {
   HANDOFF: [
     {
       triggerTool: "set_phase",
+      triggerCondition: (args) => args.phase === "DEPLOY",
+      requiredTools: [
+        { tool: "analyze", args: "deploy_ready", scope: "project" },
+        { tool: "snapshot", scope: "project" },
+        { tool: "write_memory", scope: "project" },
+      ],
+      description: "Antes de HANDOFF→DEPLOY: chamar `analyze(deploy_ready)` + `snapshot` + `write_memory`",
+    },
+    {
+      triggerTool: "set_phase",
       triggerCondition: (args) => args.phase === "LISTENING",
       requiredTools: [
         { tool: "analyze", args: "handoff_ready", scope: "project" },
@@ -555,6 +597,17 @@ export const PHASE_PREREQUISITES: Record<LifecyclePhase, PrerequisiteRule[]> = {
         { tool: "write_memory", scope: "project" },
       ],
       description: "Antes de HANDOFF→LISTENING: chamar `analyze(handoff_ready)` + `snapshot` + `write_memory`",
+    },
+  ],
+  DEPLOY: [
+    {
+      triggerTool: "set_phase",
+      triggerCondition: (args) => args.phase === "LISTENING",
+      requiredTools: [
+        { tool: "analyze", args: "deploy_ready", scope: "project" },
+        { tool: "snapshot", scope: "project" },
+      ],
+      description: "Antes de DEPLOY→LISTENING: chamar `analyze(deploy_ready)` + `snapshot`",
     },
   ],
   LISTENING: [],

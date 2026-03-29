@@ -1,7 +1,7 @@
 import { z } from "zod/v4";
 
 export const LifecyclePhaseEnum = z.enum([
-  "ANALYZE", "DESIGN", "PLAN", "IMPLEMENT", "VALIDATE", "REVIEW", "HANDOFF", "LISTENING",
+  "ANALYZE", "DESIGN", "PLAN", "IMPLEMENT", "VALIDATE", "REVIEW", "HANDOFF", "DEPLOY", "LISTENING",
 ]);
 
 export const SkillPreferenceSchema = z.object({

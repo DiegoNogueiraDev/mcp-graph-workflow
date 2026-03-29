@@ -416,4 +416,49 @@ export const apiClient = {
     request<TranslationGraphData>(`/translation/projects/${projectId}/graph`),
   translationDeleteProject: (projectId: string) =>
     request<null>(`/translation/projects/${projectId}`, { method: "DELETE" }),
+
+  // Docs Reference
+  getDocsTools: () =>
+    request<{ total: number; active: number; deprecated: number; tools: Array<{ name: string; description: string; category: string; deprecated: boolean; sourceFile: string }> }>("/docs-reference/tools"),
+  getDocsRoutes: () =>
+    request<{ totalRouters: number; totalEndpoints: number; routes: Array<{ routerName: string; mountPath: string; endpoints: Array<{ method: string; path: string }>; sourceFile: string }> }>("/docs-reference/routes"),
+  getDocsStats: () =>
+    request<{ tools: { active: number; deprecated: number }; routes: { routers: number; endpoints: number }; docs: number }>("/docs-reference/stats"),
+  getDocsList: () =>
+    request<{ docs: Array<{ slug: string; title: string; category: string }> }>("/docs-reference"),
+  getDocContent: (category: string, slug: string) =>
+    request<{ slug: string; content: string }>(`/docs-reference/${category}/${slug}`),
+
+  // Knowledge Export/Import
+  knowledgeExport: (options?: { sources?: string[]; minQuality?: number; includeMemories?: boolean }) =>
+    request<{ ok: boolean; package: unknown; stats: { documents: number; memories: number; relations: number; translationEntries: number } }>("/knowledge/export", {
+      method: "POST",
+      body: JSON.stringify(options ?? {}),
+    }),
+  knowledgeImport: (pkg: unknown) =>
+    request<{ ok: boolean; result: { documentsImported: number; documentsSkipped: number; memoriesImported: number; memoriesSkipped: number } }>("/knowledge/import", {
+      method: "POST",
+      body: JSON.stringify({ package: pkg }),
+    }),
+  knowledgePreview: (pkg: unknown) =>
+    request<{ ok: boolean; preview: { newDocuments: number; existingDocuments: number; newMemories: number; existingMemories: number; sourceTypes: string[] } }>("/knowledge/preview", {
+      method: "POST",
+      body: JSON.stringify({ package: pkg }),
+    }),
+  knowledgeFeedback: (docId: string, action: "helpful" | "unhelpful" | "outdated") =>
+    request<{ ok: boolean; docId: string; action: string }>(`/knowledge/${docId}/feedback`, {
+      method: "POST",
+      body: JSON.stringify({ action }),
+    }),
+  knowledgeList: (limit?: number) =>
+    request<{ documents: Array<{ id: string; title: string; sourceType: string; qualityScore?: number; createdAt?: string }>; total: number }>(`/knowledge${limit ? `?limit=${limit}` : ""}`),
+  knowledgeDelete: (id: string) =>
+    request<{ ok: boolean }>(`/knowledge/${id}`, { method: "DELETE" }),
+  knowledgeGetStats: () =>
+    request<{ total: number; bySource: Record<string, number> }>("/knowledge/stats/summary"),
+  knowledgeSearch: (query: string, limit?: number) =>
+    request<{ query: string; results: unknown[]; total: number }>("/knowledge/search", {
+      method: "POST",
+      body: JSON.stringify({ query, limit }),
+    }),
 };

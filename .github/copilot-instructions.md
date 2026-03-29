@@ -17,7 +17,7 @@ Dados armazenados em `workflow-graph/graph.db` (local, gitignored).
 
 > **Sem node no grafo = sem código escrito.**
 
-### Ferramentas MCP disponíveis (28 tools + 6 deprecated)
+### Ferramentas MCP disponíveis (46 tools + 6 deprecated)
 
 #### Projeto & Grafo
 
@@ -81,6 +81,49 @@ Dados armazenados em `workflow-graph/graph.db` (local, gitignored).
 | Tool | Quando usar |
 |------|-------------|
 | `manage_skill` | Gerenciar skills: action `list` (listar/filtrar por fase), `enable`/`disable`, CRUD de custom skills |
+
+#### Utilitários
+
+| Tool | Quando usar |
+|------|-------------|
+| `help` | Referência on-demand de tools, analyze modes, skills, CLI, workflow |
+| `journey` | Gerenciar journey maps de websites (list, get, search, index para RAG) |
+| `import_graph` | Importar/merge grafo JSON exportado (local wins, dry_run disponível) |
+
+#### Code Intelligence (LSP)
+
+| Tool | Quando usar |
+|------|-------------|
+| `code_intelligence` | Análise semântica via LSP: definition, references, hover, rename, call_hierarchy, diagnostics, symbols. Multi-language (TS, Python, Rust, Go, Java, C/C++, Ruby, PHP, Kotlin, Swift, C#, Lua) |
+
+#### Knowledge Avançado
+
+| Tool | Quando usar |
+|------|-------------|
+| `knowledge_feedback` | Feedback em docs do knowledge store (helpful/unhelpful/outdated) para melhorar RAG |
+| `knowledge_stats` | Estatísticas do knowledge store: contagem por source, qualidade, docs mais acessados |
+| `export_knowledge` | Export/import/preview de knowledge packages para colaboração entre projetos |
+
+#### Siebel CRM (8 tools)
+
+| Tool | Quando usar |
+|------|-------------|
+| `siebel_import_sif` | Importar .SIF (XML Siebel) — parse, extrai objetos, mapeia no grafo, indexa no knowledge |
+| `siebel_analyze` | Analisar objetos Siebel: impact, dependencies, circular, diff, refactor_script, troubleshoot |
+| `siebel_composer` | Automação do Siebel Composer via Playwright: navigate, import_sif, edit, publish, capture |
+| `siebel_env` | Gerenciar ambientes Siebel CRM: list, add, remove |
+| `siebel_validate` | Validar .SIF: full, naming, security, performance, migration_ready, code_review |
+| `siebel_search` | Buscar objetos Siebel indexados no knowledge store (BCs, Applets, Views, Workflows) |
+| `siebel_generate_sif` | Gerar SIF: prepare, finalize, templates, scaffold, clone_adapt, auto_wire, wsdl_to_sif |
+| `siebel_import_docs` | Importar docs (Swagger/WSDL/PDF/HTML/DOCX/MD) no knowledge store para contexto Siebel |
+
+#### Translation (3 tools)
+
+| Tool | Quando usar |
+|------|-------------|
+| `translate_code` | Traduzir código entre linguagens — cria job, analisa constructs, gera prompt, finaliza com código |
+| `analyze_translation` | Analisar código-fonte para prontidão de tradução (language, constructs, complexity, translatability) |
+| `translation_jobs` | Gerenciar jobs de tradução: list, get, delete, stats |
 
 #### Tools Deprecated (backward compat, removidos na v7.0)
 

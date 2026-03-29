@@ -39,10 +39,15 @@ describe("runUpdate", () => {
     expect(report.steps.length).toBeGreaterThan(0);
 
     const configSteps = report.steps.filter(
-      (s) => s.step !== "db" && s.step !== "deps",
+      (s) => s.step !== "db" && s.step !== "deps" && s.step !== "docs",
     );
     for (const step of configSteps) {
       expect(step.status).toBe("up-to-date");
+    }
+    // docs step is "skipped" in test dir (not inside mcp-graph repo)
+    const docsStep = report.steps.find((s) => s.step === "docs");
+    if (docsStep) {
+      expect(docsStep.status).toBe("skipped");
     }
     expect(report.hasChanges).toBe(false);
   });
