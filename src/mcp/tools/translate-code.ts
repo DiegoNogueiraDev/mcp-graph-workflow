@@ -4,6 +4,8 @@
  */
 
 import { z } from "zod/v4";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { SqliteStore } from "../../core/store/sqlite-store.js";
 import { TranslationStore } from "../../core/translation/translation-store.js";
@@ -11,7 +13,32 @@ import { TranslationOrchestrator } from "../../core/translation/translation-orch
 import { ConstructRegistry } from "../../core/translation/ucr/construct-registry.js";
 import { loadAndSeedRegistry } from "../../core/translation/ucr/construct-seed.js";
 import { logger } from "../../core/utils/logger.js";
+import { assertPathInsideProject } from "../../core/utils/fs.js";
 import { mcpText, mcpError } from "../response-helpers.js";
+
+const EXTENSION_TO_LANGUAGE: Record<string, string> = {
+  ".py": "python",
+  ".ts": "typescript",
+  ".js": "javascript",
+  ".java": "java",
+  ".go": "go",
+  ".rs": "rust",
+  ".cs": "csharp",
+  ".rb": "ruby",
+  ".php": "php",
+  ".swift": "swift",
+  ".kt": "kotlin",
+  ".scala": "scala",
+  ".lua": "lua",
+  ".hs": "haskell",
+  ".cpp": "cpp",
+  ".cc": "cpp",
+  ".cxx": "cpp",
+  ".c": "c",
+  ".dart": "dart",
+  ".ex": "elixir",
+  ".exs": "elixir",
+};
 
 export function registerTranslateCode(server: McpServer, store: SqliteStore): void {
   let _cachedDb: unknown = null;
@@ -33,18 +60,32 @@ export function registerTranslateCode(server: McpServer, store: SqliteStore): vo
     "translate_code",
     "Translate code between programming languages. Creates a translation job, analyzes constructs, and returns a prompt for AI code generation. Call with generatedCode to finalize.",
     {
-      code: z.string().min(1).describe("Source code to translate"),
+      code: z.string().optional().describe("Source code to translate (alternative to filePath)"),
+      filePath: z.string().optional().describe("Path to source file (alternative to code)"),
       sourceLanguage: z.string().optional().describe("Source language hint (auto-detected if omitted)"),
       targetLanguage: z.string().min(1).describe("Target programming language"),
       scope: z.enum(["snippet", "function", "module"]).optional().default("snippet").describe("Translation scope"),
       generatedCode: z.string().optional().describe("AI-generated code to finalize (omit for analyze-only phase)"),
       jobId: z.string().optional().describe("Existing job ID to finalize (use with generatedCode)"),
     },
-    async ({ code, sourceLanguage, targetLanguage, scope, generatedCode, jobId }) => {
-      logger.info("tool:translate_code", { targetLanguage, scope, hasGeneratedCode: !!generatedCode, jobId });
+    async ({ code, filePath, sourceLanguage, targetLanguage, scope, generatedCode, jobId }) => {
+      logger.info("tool:translate_code", { filePath, targetLanguage, scope, hasGeneratedCode: !!generatedCode, jobId });
 
       try {
         const orchestrator = getOrchestrator();
+
+        // Resolve code from filePath if provided
+        let resolvedCode = code;
+        let resolvedSourceLanguage = sourceLanguage;
+
+        if (filePath) {
+          const resolvedPath = assertPathInsideProject(filePath);
+          resolvedCode = readFileSync(resolvedPath, "utf-8");
+          if (!resolvedSourceLanguage) {
+            const ext = path.extname(resolvedPath).toLowerCase();
+            resolvedSourceLanguage = EXTENSION_TO_LANGUAGE[ext];
+          }
+        }
 
         // Finalize mode: submit generated code for an existing job
         if (jobId && generatedCode) {
@@ -60,12 +101,17 @@ export function registerTranslateCode(server: McpServer, store: SqliteStore): vo
           });
         }
 
+        // Validate code is available for prepare mode
+        if (!resolvedCode) {
+          return mcpError("Either code or filePath is required");
+        }
+
         // Prepare mode: analyze + create job + return prompt
         const projectId = store.getProject()?.id ?? "default";
         const prepareResult = orchestrator.prepareTranslation({
           projectId,
-          sourceCode: code,
-          sourceLanguage,
+          sourceCode: resolvedCode,
+          sourceLanguage: resolvedSourceLanguage,
           targetLanguage,
           scope,
         });

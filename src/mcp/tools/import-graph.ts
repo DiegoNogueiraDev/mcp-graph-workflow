@@ -65,9 +65,11 @@ export function registerImportGraph(server: McpServer, store: SqliteStore): void
         ).map((r) => r.id),
       );
 
-      // 4. Merge
+      // 4. Merge (wrapped in transaction for atomicity)
       try {
-        const result = mergeGraph(store, parsed, { dryRun: dry_run });
+        const result = store.getDb().transaction(() => {
+          return mergeGraph(store, parsed, { dryRun: dry_run });
+        })();
 
         // Index only newly inserted nodes into Knowledge Store + KG (skip on dry_run)
         if (!dry_run && result.nodesInserted > 0) {

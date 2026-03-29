@@ -6,6 +6,13 @@
 import type Database from "better-sqlite3";
 import type { TranslationJob, TranslationJobStatus, TranslationScope } from "./translation-types.js";
 import { generateId } from "../utils/id.js";
+import { logger } from "../utils/logger.js";
+
+/** Jobs older than this many days are purged on cleanup. */
+const TRANSLATION_JOB_TTL_DAYS = 7;
+
+/** Maximum number of jobs to keep. Oldest are purged when exceeded. */
+const TRANSLATION_JOB_MAX_COUNT = 500;
 
 interface JobRow {
   id: string;
@@ -97,10 +104,42 @@ export class TranslationStore {
   }
 
   listJobs(projectId: string): TranslationJob[] {
+    // Lazy cleanup on access
+    this.cleanup();
+
     const rows = this.db.prepare(
       "SELECT * FROM translation_jobs WHERE project_id = ? ORDER BY created_at DESC",
     ).all(projectId) as JobRow[];
     return rows.map(rowToJob);
+  }
+
+  /**
+   * Purge stale translation jobs:
+   * 1. Delete jobs older than TRANSLATION_JOB_TTL_DAYS
+   * 2. If total jobs > TRANSLATION_JOB_MAX_COUNT, delete oldest until at limit
+   */
+  cleanup(): void {
+    let purged = 0;
+
+    // 1. Delete jobs older than TTL
+    const ttlResult = this.db.prepare(
+      `DELETE FROM translation_jobs WHERE created_at < datetime('now', '-${TRANSLATION_JOB_TTL_DAYS} days')`,
+    ).run();
+    purged += ttlResult.changes;
+
+    // 2. Cap total jobs at max count
+    const countRow = this.db.prepare("SELECT COUNT(*) as cnt FROM translation_jobs").get() as { cnt: number };
+    if (countRow.cnt > TRANSLATION_JOB_MAX_COUNT) {
+      const excess = countRow.cnt - TRANSLATION_JOB_MAX_COUNT;
+      const capResult = this.db.prepare(
+        "DELETE FROM translation_jobs WHERE id IN (SELECT id FROM translation_jobs ORDER BY created_at ASC LIMIT ?)",
+      ).run(excess);
+      purged += capResult.changes;
+    }
+
+    if (purged > 0) {
+      logger.info("translation:cleanup", { purgedJobs: purged });
+    }
   }
 
   updateJob(id: string, input: UpdateJobInput): TranslationJob | null {

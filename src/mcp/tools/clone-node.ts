@@ -109,8 +109,11 @@ export function registerCloneNode(server: McpServer, store: SqliteStore): void {
       const parentForClone = newParentId ?? source.parentId;
 
       if (deep) {
-        const cloned: GraphNode[] = [];
-        cloneDeep(store, id, parentForClone, timestamp, cloned);
+        const cloned: GraphNode[] = store.getDb().transaction(() => {
+          const nodes: GraphNode[] = [];
+          cloneDeep(store, id, parentForClone, timestamp, nodes);
+          return nodes;
+        })();
         for (const c of cloned) {
           indexNodeAsKnowledge(store.getDb(), c);
         }
@@ -118,7 +121,9 @@ export function registerCloneNode(server: McpServer, store: SqliteStore): void {
         return mcpText({ ok: true, clonedCount: cloned.length, nodes: cloned });
       }
 
-      const clone = cloneSingle(store, source, parentForClone, timestamp);
+      const clone = store.getDb().transaction(() => {
+        return cloneSingle(store, source, parentForClone, timestamp);
+      })();
       indexNodeAsKnowledge(store.getDb(), clone);
       logger.info("tool:clone_node:ok", { sourceId: id, deep: false, cloneId: clone.id });
       return mcpText({ ok: true, node: clone });

@@ -9,6 +9,13 @@
  */
 
 import type { TranslationScore, AmbiguityReport } from "./ucr/construct-types.js";
+import { estimateTokens } from "../context/token-estimator.js";
+
+/** Default max prompt token budget (~32KB). */
+const DEFAULT_MAX_PROMPT_TOKENS = 8000;
+
+/** Max constructs to show in the table when truncating. */
+const MAX_CONSTRUCTS_ON_TRUNCATE = 20;
 
 export interface PromptContext {
   sourceLanguage: string;
@@ -16,6 +23,8 @@ export interface PromptContext {
   sourceCode: string;
   scores: TranslationScore[];
   ambiguities: AmbiguityReport[];
+  /** Max prompt token budget (default: 8000). */
+  maxPromptTokens?: number;
 }
 
 /**
@@ -37,7 +46,7 @@ export function buildMappingPrompt(ctx: PromptContext): string {
     sections.push(``, `### Ambiguities Requiring Decision`, ``);
     for (const amb of ctx.ambiguities) {
       sections.push(
-        `- **${amb.canonicalName}** (${amb.ambiguityType}): ${amb.candidates.length} candidates`,
+        `- **${amb.canonicalName ?? amb.constructId}** (${amb.ambiguityType}): ${amb.candidates.length} candidates`,
       );
       for (const c of amb.candidates) {
         sections.push(`  - ${c.tradeoff} (confidence: ${c.confidence})`);
@@ -62,27 +71,44 @@ export function buildMappingPrompt(ctx: PromptContext): string {
  * Build a full translation prompt — asks the LLM to translate the code.
  */
 export function buildTranslationPrompt(ctx: PromptContext): string {
-  const deterministicCount = ctx.scores.filter((s) => !s.needsAiAssist).length;
-  const aiAssistCount = ctx.scores.filter((s) => s.needsAiAssist).length;
+  const maxTokens = ctx.maxPromptTokens ?? DEFAULT_MAX_PROMPT_TOKENS;
+  let truncated = false;
+
+  // Possibly truncate scores to top N by count (we don't have count here, so limit by total)
+  let effectiveScores = ctx.scores;
+  if (effectiveScores.length > MAX_CONSTRUCTS_ON_TRUNCATE) {
+    // Sort by finalConfidence desc, keep top N
+    effectiveScores = [...effectiveScores]
+      .sort((a, b) => b.finalConfidence - a.finalConfidence)
+      .slice(0, MAX_CONSTRUCTS_ON_TRUNCATE);
+    truncated = true;
+  }
+
+  const deterministicCount = effectiveScores.filter((s) => !s.needsAiAssist).length;
+  const aiAssistCount = effectiveScores.filter((s) => s.needsAiAssist).length;
+
+  // Possibly truncate source code to fit budget
+  let sourceBlock = ctx.sourceCode;
+  const sourceLines = ctx.sourceCode.split("\n");
 
   const sections: string[] = [
     `## Code Translation: ${ctx.sourceLanguage} → ${ctx.targetLanguage}`,
     ``,
     `### Source Code`,
     "```" + ctx.sourceLanguage,
-    ctx.sourceCode,
+    sourceBlock,
     "```",
     ``,
     `### Construct Analysis`,
     `- **Deterministic mappings**: ${deterministicCount} (high confidence, direct translation)`,
     `- **AI-assisted mappings**: ${aiAssistCount} (require judgment)`,
     ``,
-    formatScoresTable(ctx.scores),
+    formatScoresTable(effectiveScores),
   ];
 
   if (aiAssistCount > 0) {
     sections.push(``, `### Constructs Requiring AI Judgment`);
-    for (const score of ctx.scores.filter((s) => s.needsAiAssist)) {
+    for (const score of effectiveScores.filter((s) => s.needsAiAssist)) {
       sections.push(
         `- **${score.constructId}** (confidence: ${score.finalConfidence.toFixed(2)})`,
       );
@@ -97,7 +123,8 @@ export function buildTranslationPrompt(ctx: PromptContext): string {
   if (ctx.ambiguities.length > 0) {
     sections.push(``, `### Ambiguity Warnings`);
     for (const amb of ctx.ambiguities) {
-      sections.push(`- **${amb.canonicalName}**: ${amb.ambiguityType} — ${amb.recommendation ?? "review needed"}`);
+      const name = amb.canonicalName ?? amb.constructId;
+      sections.push(`- **${name}**: ${amb.ambiguityType} — ${amb.recommendation ?? "review needed"}`);
     }
   }
 
@@ -110,7 +137,36 @@ export function buildTranslationPrompt(ctx: PromptContext): string {
     `Return ONLY the translated code.`,
   );
 
-  return sections.join("\n");
+  // Check token budget — if over, truncate source code block
+  let result = sections.join("\n");
+  if (estimateTokens(result) > maxTokens) {
+    // Binary search for max lines that fit within budget
+    let lo = 1;
+    let hi = sourceLines.length;
+    while (lo < hi) {
+      const mid = Math.ceil((lo + hi) / 2);
+      const candidate = sourceLines.slice(0, mid).join("\n")
+        + `\n... [truncated — showing first ${mid} lines of ${sourceLines.length} total]`;
+      sections[4] = candidate; // replace source code block content
+      const candidateResult = sections.join("\n");
+      if (estimateTokens(candidateResult) <= maxTokens) {
+        lo = mid;
+      } else {
+        hi = mid - 1;
+      }
+    }
+    sourceBlock = sourceLines.slice(0, lo).join("\n")
+      + `\n... [truncated — showing first ${lo} lines of ${sourceLines.length} total]`;
+    sections[4] = sourceBlock;
+    truncated = true;
+    result = sections.join("\n");
+  }
+
+  if (truncated) {
+    result += `\n<!-- truncated: true -->`;
+  }
+
+  return result;
 }
 
 /**
