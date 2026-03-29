@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useContextBudget } from "@/hooks/use-context-budget";
 import { apiClient } from "@/lib/api-client";
 
@@ -21,17 +21,31 @@ export function ContextTab(): React.JSX.Element {
 
   if (loading || !budget) {
     return (
-      <div className="flex items-center justify-center h-full text-muted">
-        Loading context budget...
+      <div className="p-6 max-w-6xl mx-auto space-y-6">
+        <div className="h-5 w-48 rounded bg-surface animate-pulse" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-20 rounded-xl border border-edge bg-surface-alt animate-pulse" />
+          ))}
+        </div>
+        <div className="h-24 rounded-lg border border-edge bg-surface-alt animate-pulse" />
+        <div className="h-12 rounded-xl border border-edge bg-surface-alt animate-pulse" />
       </div>
     );
   }
 
   const healthStyle = HEALTH_COLORS[budget.health] ?? HEALTH_COLORS.green;
 
-  const handleQuickDisable = async (skillName: string): Promise<void> => {
-    await apiClient.toggleSkill(skillName, false);
-    refresh();
+  const [confirmingDisable, setConfirmingDisable] = useState<string | null>(null);
+
+  const handleQuickDisable = (skillName: string): void => {
+    if (confirmingDisable === skillName) {
+      setConfirmingDisable(null);
+      void apiClient.toggleSkill(skillName, false).then(() => refresh());
+    } else {
+      setConfirmingDisable(skillName);
+      setTimeout(() => setConfirmingDisable((prev) => prev === skillName ? null : prev), 3000);
+    }
   };
 
   return (
@@ -156,10 +170,14 @@ export function ContextTab(): React.JSX.Element {
                 </span>
                 {item.enabled && (
                   <button
-                    onClick={() => void handleQuickDisable(item.name)}
-                    className="text-[10px] px-1.5 py-0.5 rounded border border-edge text-muted hover:text-red-500 hover:border-red-500/50 shrink-0"
+                    onClick={() => handleQuickDisable(item.name)}
+                    className={`text-[10px] px-1.5 py-0.5 rounded border shrink-0 cursor-pointer transition-all ${
+                      confirmingDisable === item.name
+                        ? "bg-red-500/10 text-red-400 border-red-500/30 font-medium"
+                        : "border-edge text-muted hover:text-red-500 hover:border-red-500/50"
+                    }`}
                   >
-                    Disable
+                    {confirmingDisable === item.name ? "Sure?" : "Disable"}
                   </button>
                 )}
               </div>

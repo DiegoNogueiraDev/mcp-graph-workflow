@@ -5,16 +5,29 @@ export function BenchmarkTab(): React.JSX.Element {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full text-muted">
-        Loading benchmark data...
+      <div className="p-6 max-w-5xl mx-auto space-y-6">
+        <div className="h-5 w-40 rounded bg-surface animate-pulse" />
+        <div className="grid grid-cols-4 gap-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-20 rounded-xl border border-edge bg-surface-alt animate-pulse" />
+          ))}
+        </div>
+        <div className="space-y-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="h-6 rounded bg-surface animate-pulse" style={{ width: `${60 + Math.random() * 30}%` }} />
+          ))}
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-full text-danger">
-        Failed to load: {error}
+      <div className="flex flex-col items-center justify-center h-full gap-4">
+        <div className="text-center">
+          <p className="text-sm font-medium text-foreground">Failed to load benchmark</p>
+          <p className="text-xs text-muted mt-1">{error}</p>
+        </div>
       </div>
     );
   }

@@ -170,7 +170,7 @@ function AppContent(): React.JSX.Element {
                 <Suspense fallback={<LoadingFallback />}>
                   {/* Keep-alive: hide with CSS instead of unmounting to avoid expensive re-renders */}
                   <div style={{ display: activeTab === "graph" ? "contents" : "none" }}>
-                    {graph && <GraphTab graph={graph} />}
+                    <GraphTab graph={graph} loading={loading} error={error} onRetry={handleRefresh} onImportPrd={() => setImportOpen(true)} />
                   </div>
                   <div style={{ display: activeTab === "prd-backlog" ? "contents" : "none" }}>
                     {graph && <PrdBacklogTab graph={graph} />}
