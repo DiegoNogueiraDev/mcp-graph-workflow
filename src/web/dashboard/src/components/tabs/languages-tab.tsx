@@ -207,10 +207,66 @@ export function LanguagesTab(): React.JSX.Element {
         {subTab === "knowledge" && <KnowledgeSection />}
 
         {subTab === "graph" && (
-          <div className="text-center py-12">
-            <GitFork className="w-12 h-12 text-muted mx-auto mb-3" />
-            <p className="text-sm text-muted">Translation graph visualization</p>
-            <p className="text-[10px] text-muted mt-1">Complete some translations to see the relationship graph</p>
+          <div className="space-y-4">
+            {/* Build graph from completed translation jobs with evidence */}
+            {(() => {
+              const doneJobs = history.jobs.filter(j => j.status === "done" && j.confidenceScore != null);
+              if (doneJobs.length === 0) {
+                return (
+                  <div className="text-center py-12">
+                    <GitFork className="w-12 h-12 text-muted mx-auto mb-3" />
+                    <p className="text-sm text-muted">Translation graph visualization</p>
+                    <p className="text-[10px] text-muted mt-1">Complete some translations to see the relationship graph</p>
+                  </div>
+                );
+              }
+
+              // Build unique language pairs and confidence from done jobs
+              const pairs: Array<{ source: string; target: string; confidence: number; count: number }> = [];
+              const pairMap = new Map<string, { source: string; target: string; totalConf: number; count: number }>();
+              for (const job of doneJobs) {
+                const key = `${job.sourceLanguage}→${job.targetLanguage}`;
+                const existing = pairMap.get(key);
+                if (existing) {
+                  existing.totalConf += job.confidenceScore ?? 0;
+                  existing.count++;
+                } else {
+                  pairMap.set(key, { source: job.sourceLanguage, target: job.targetLanguage, totalConf: job.confidenceScore ?? 0, count: 1 });
+                }
+              }
+              for (const v of pairMap.values()) {
+                pairs.push({ source: v.source, target: v.target, confidence: v.totalConf / v.count, count: v.count });
+              }
+
+              return (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <GitFork className="w-4 h-4 text-accent" />
+                    <h3 className="text-xs font-semibold text-foreground">Translation Flow Graph</h3>
+                    <span className="text-[10px] text-muted">({doneJobs.length} completed translations)</span>
+                  </div>
+                  <div className="grid gap-3">
+                    {pairs.map((p) => {
+                      const pct = Math.round(p.confidence * 100);
+                      const color = pct >= 80 ? "border-green-500/30 bg-green-500/5" : pct >= 50 ? "border-yellow-500/30 bg-yellow-500/5" : "border-red-500/30 bg-red-500/5";
+                      const textColor = pct >= 80 ? "text-green-500" : pct >= 50 ? "text-yellow-500" : "text-red-500";
+                      return (
+                        <div key={`${p.source}→${p.target}`} className={`flex items-center gap-4 rounded-lg border ${color} px-4 py-3`}>
+                          <span className="px-2 py-0.5 text-[10px] font-medium rounded bg-blue-500/10 text-blue-400">{p.source}</span>
+                          <div className="flex-1 flex items-center gap-2">
+                            <div className="flex-1 h-0.5 bg-edge rounded" />
+                            <span className="text-[10px] text-muted">x{p.count}</span>
+                            <div className="flex-1 h-0.5 bg-edge rounded" />
+                          </div>
+                          <span className="px-2 py-0.5 text-[10px] font-medium rounded bg-green-500/10 text-green-400">{p.target}</span>
+                          <span className={`text-xs font-bold ${textColor}`}>{pct}%</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
       </div>

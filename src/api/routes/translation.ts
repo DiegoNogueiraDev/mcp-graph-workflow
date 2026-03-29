@@ -12,6 +12,7 @@ import { ConstructRegistry } from "../../core/translation/ucr/construct-registry
 import { loadAndSeedRegistry } from "../../core/translation/ucr/construct-seed.js";
 import { CodeStore } from "../../core/code/code-store.js";
 import { KnowledgeStore } from "../../core/store/knowledge-store.js";
+import { indexTranslationEvidence } from "../../core/rag/translation-indexer.js";
 import { logger } from "../../core/utils/logger.js";
 
 const AnalyzeSchema = z.object({
@@ -165,6 +166,29 @@ export function createTranslationRouter(storeRef: StoreRef, eventBus?: GraphEven
       }
 
       const result = getOrchestrator().finalizeTranslation(req.params.id, parsed.data.generatedCode);
+
+      // Index translation evidence into knowledge store for RAG
+      try {
+        const job = getStore().getJob(req.params.id);
+        if (job && result.evidence) {
+          const ks = getKnowledgeStore();
+          indexTranslationEvidence(ks, {
+            jobId: req.params.id,
+            sourceLanguage: job.sourceLanguage,
+            targetLanguage: job.targetLanguage,
+            sourceCode: job.sourceCode,
+            targetCode: parsed.data.generatedCode,
+            scope: job.scope,
+            confidenceScore: result.evidence.confidenceScore,
+            translatedConstructs: result.evidence.translatedConstructs,
+            risks: result.evidence.risks,
+            humanReviewPoints: result.evidence.humanReviewPoints,
+          });
+        }
+      } catch (indexErr) {
+        logger.error("Translation evidence indexing failed (non-blocking)", { error: indexErr });
+      }
+
       eventBus?.emit({ type: "translation:finalized", timestamp: new Date().toISOString(), payload: { jobId: req.params.id, confidence: result.evidence?.confidenceScore } });
       res.json(result);
     } catch (err) {

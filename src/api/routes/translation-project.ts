@@ -17,6 +17,8 @@ import { ProjectTranslationOrchestrator } from "../../core/translation/project-t
 import { ConstructRegistry } from "../../core/translation/ucr/construct-registry.js";
 import { loadAndSeedRegistry } from "../../core/translation/ucr/construct-seed.js";
 import { CodeStore } from "../../core/code/code-store.js";
+import { KnowledgeStore } from "../../core/store/knowledge-store.js";
+import { indexTranslationEvidence } from "../../core/rag/translation-indexer.js";
 import { logger } from "../../core/utils/logger.js";
 
 const UploadSchema = z.object({
@@ -216,6 +218,32 @@ export function createTranslationProjectRouter(storeRef: StoreRef, eventBus?: Gr
       logger.info("Finalizing translation file", { projectId: id, fileId });
 
       const result = projectOrchestrator.finalizeFile(id, fileId, parsed.data.generatedCode);
+
+      // Index translation evidence into knowledge store for RAG
+      try {
+        const file = getProjectStore().getFile(fileId);
+        if (file?.jobId && result.evidence) {
+          const job = (_translationStore as TranslationStore).getJob(file.jobId);
+          const ev = result.evidence as Record<string, unknown>;
+          if (job) {
+            const ks = new KnowledgeStore(storeRef.current.getDb());
+            indexTranslationEvidence(ks, {
+              jobId: file.jobId,
+              sourceLanguage: job.sourceLanguage,
+              targetLanguage: job.targetLanguage,
+              sourceCode: job.sourceCode,
+              targetCode: parsed.data.generatedCode,
+              scope: job.scope,
+              confidenceScore: (ev.confidenceScore as number) ?? 0,
+              translatedConstructs: (ev.translatedConstructs as Array<{ source: string; target: string; method: string }>) ?? [],
+              risks: (ev.risks as Array<{ construct: string; severity: string; message: string }>) ?? [],
+              humanReviewPoints: (ev.humanReviewPoints as string[]) ?? [],
+            });
+          }
+        }
+      } catch (indexErr) {
+        logger.error("Translation evidence indexing failed (non-blocking)", { error: indexErr });
+      }
 
       eventBus?.emit({
         type: "translation:finalized",
