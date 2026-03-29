@@ -74,6 +74,64 @@ export function createService(db: unknown): UserService {
 `.trim(),
   );
 
+  // Fixture: barrel file with named re-exports
+  writeFileSync(
+    path.join(FIXTURE_DIR, "barrel-named.ts"),
+    `
+export { greet } from "./simple.js";
+export { UserService } from "./user-service.js";
+`.trim(),
+  );
+
+  // Fixture: barrel file with star re-export
+  writeFileSync(
+    path.join(FIXTURE_DIR, "barrel-star.ts"),
+    `
+export * from "./simple.js";
+export * from "./shapes.js";
+`.trim(),
+  );
+
+  // Fixture: barrel file with local re-exports
+  writeFileSync(
+    path.join(FIXTURE_DIR, "barrel-local.ts"),
+    `
+const internalFoo = 42;
+const internalBar = "hello";
+export { internalFoo, internalBar };
+`.trim(),
+  );
+
+  // Fixture: arrow functions (exported and non-exported)
+  writeFileSync(
+    path.join(FIXTURE_DIR, "arrow-fns.ts"),
+    `
+import { greet } from "./simple.js";
+
+const internalHandler = (req: Request) => {
+  greet("internal");
+  return new Response("ok");
+};
+
+export const publicHandler = async (req: Request) => {
+  return new Response("public");
+};
+
+const plainValue = 42;
+const plainString = "hello";
+`.trim(),
+  );
+
+  // Fixture: barrel file with mixed re-exports
+  writeFileSync(
+    path.join(FIXTURE_DIR, "barrel-mixed.ts"),
+    `
+export { greet as hello } from "./simple.js";
+export * from "./shapes.js";
+export { UserService } from "./user-service.js";
+`.trim(),
+  );
+
   // Fixture: inheritance
   writeFileSync(
     path.join(FIXTURE_DIR, "shapes.ts"),
@@ -213,6 +271,94 @@ describe("ts-analyzer", () => {
         (r) => r.fromSymbol === "Circle" && r.toSymbol === "Drawable",
       );
       expect(circleImpl).toBeDefined();
+    });
+  });
+
+  describe("analyzeFile — export declarations (barrel files)", () => {
+    it("should extract symbols from named re-exports", async () => {
+      const result = await analyzeFile(path.join(FIXTURE_DIR, "barrel-named.ts"), FIXTURE_DIR);
+
+      expect(result.symbols.length).toBeGreaterThan(0);
+      const greetReExport = result.symbols.find((s) => s.name === "greet");
+      expect(greetReExport).toBeDefined();
+      expect(greetReExport!.exported).toBe(true);
+    });
+
+    it("should create exports relations for named re-exports", async () => {
+      const result = await analyzeFile(path.join(FIXTURE_DIR, "barrel-named.ts"), FIXTURE_DIR);
+
+      const exports = result.relations.filter((r) => r.type === "exports");
+      expect(exports.length).toBeGreaterThanOrEqual(2); // greet + UserService
+      const greetExport = exports.find((r) => r.toSymbol === "greet");
+      expect(greetExport).toBeDefined();
+      expect(greetExport!.metadata).toBeDefined();
+      expect(greetExport!.metadata?.reExportFrom).toBe("./simple.js");
+    });
+
+    it("should create exports relations for star re-exports", async () => {
+      const result = await analyzeFile(path.join(FIXTURE_DIR, "barrel-star.ts"), FIXTURE_DIR);
+
+      const exports = result.relations.filter((r) => r.type === "exports");
+      expect(exports.length).toBeGreaterThanOrEqual(2); // 2 star re-exports
+      const starExport = exports.find((r) => r.metadata?.reExportFrom === "./simple.js");
+      expect(starExport).toBeDefined();
+      expect(starExport!.toSymbol).toBe("*");
+    });
+
+    it("should create exports relations for local re-exports", async () => {
+      const result = await analyzeFile(path.join(FIXTURE_DIR, "barrel-local.ts"), FIXTURE_DIR);
+
+      const exports = result.relations.filter((r) => r.type === "exports");
+      expect(exports.length).toBeGreaterThanOrEqual(2); // internalFoo + internalBar
+      const fooExport = exports.find((r) => r.toSymbol === "internalFoo");
+      expect(fooExport).toBeDefined();
+    });
+
+    it("should handle mixed re-exports with aliases", async () => {
+      const result = await analyzeFile(path.join(FIXTURE_DIR, "barrel-mixed.ts"), FIXTURE_DIR);
+
+      const exports = result.relations.filter((r) => r.type === "exports");
+      expect(exports.length).toBeGreaterThanOrEqual(3); // hello (alias), *, UserService
+      // Aliased: export { greet as hello } — the exported name is "hello", original is "greet"
+      const aliasExport = exports.find((r) => r.toSymbol === "greet" || r.metadata?.originalName === "greet");
+      expect(aliasExport).toBeDefined();
+    });
+  });
+
+  describe("analyzeFile — arrow functions", () => {
+    it("should extract non-exported arrow functions as kind function", async () => {
+      const result = await analyzeFile(path.join(FIXTURE_DIR, "arrow-fns.ts"), FIXTURE_DIR);
+
+      const handler = result.symbols.find((s) => s.name === "internalHandler");
+      expect(handler).toBeDefined();
+      expect(handler!.kind).toBe("function");
+      expect(handler!.exported).toBe(false);
+    });
+
+    it("should extract exported arrow functions as kind function", async () => {
+      const result = await analyzeFile(path.join(FIXTURE_DIR, "arrow-fns.ts"), FIXTURE_DIR);
+
+      const handler = result.symbols.find((s) => s.name === "publicHandler");
+      expect(handler).toBeDefined();
+      expect(handler!.kind).toBe("function");
+      expect(handler!.exported).toBe(true);
+    });
+
+    it("should NOT extract plain non-exported variables", async () => {
+      const result = await analyzeFile(path.join(FIXTURE_DIR, "arrow-fns.ts"), FIXTURE_DIR);
+
+      const plainValue = result.symbols.find((s) => s.name === "plainValue");
+      expect(plainValue).toBeUndefined();
+      const plainString = result.symbols.find((s) => s.name === "plainString");
+      expect(plainString).toBeUndefined();
+    });
+
+    it("should capture call relations from arrow function bodies", async () => {
+      const result = await analyzeFile(path.join(FIXTURE_DIR, "arrow-fns.ts"), FIXTURE_DIR);
+
+      const calls = result.relations.filter((r) => r.type === "calls");
+      const greetCall = calls.find((r) => r.fromSymbol === "internalHandler" && r.toSymbol === "greet");
+      expect(greetCall).toBeDefined();
     });
   });
 

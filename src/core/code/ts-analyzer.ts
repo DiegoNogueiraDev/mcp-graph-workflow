@@ -306,14 +306,39 @@ function visitNode(
     });
   }
 
-  // Variable statements (top-level exports: export const X = ...)
-  if (tsLib.isVariableStatement(node) && hasExportModifier(tsLib, node)) {
+  // Variable statements (arrow functions + exported variables)
+  if (tsLib.isVariableStatement(node)) {
+    const isExported = hasExportModifier(tsLib, node);
     for (const decl of node.declarationList.declarations) {
-      if (tsLib.isIdentifier(decl.name)) {
-        const name = decl.name.text;
-        const { line: startLine } = tsLib.getLineAndCharacterOfPosition(sourceFile, node.getStart());
-        const { line: endLine } = tsLib.getLineAndCharacterOfPosition(sourceFile, node.getEnd());
+      if (!tsLib.isIdentifier(decl.name)) continue;
 
+      const name = decl.name.text;
+      const { line: startLine } = tsLib.getLineAndCharacterOfPosition(sourceFile, node.getStart());
+      const { line: endLine } = tsLib.getLineAndCharacterOfPosition(sourceFile, node.getEnd());
+
+      const isArrowOrFn = decl.initializer && (
+        tsLib.isArrowFunction(decl.initializer) ||
+        tsLib.isFunctionExpression(decl.initializer)
+      );
+
+      if (isArrowOrFn) {
+        // Arrow functions / function expressions → kind "function"
+        symbols.push({
+          name,
+          kind: "function",
+          file,
+          startLine: startLine + 1,
+          endLine: endLine + 1,
+          exported: isExported,
+        });
+
+        // Scan body for calls
+        const fnNode = decl.initializer as ts.ArrowFunction | ts.FunctionExpression;
+        if (fnNode.body) {
+          collectCalls(tsLib, fnNode.body, sourceFile, file, name, relations, importMap);
+        }
+      } else if (isExported) {
+        // Non-function exported variables → kind "variable"
         symbols.push({
           name,
           kind: "variable",
@@ -323,6 +348,59 @@ function visitNode(
           exported: true,
         });
       }
+    }
+  }
+
+  // Export declarations → re-exports from barrel files
+  if (tsLib.isExportDeclaration(node)) {
+    const { line } = tsLib.getLineAndCharacterOfPosition(sourceFile, node.getStart());
+    const modulePath = node.moduleSpecifier && tsLib.isStringLiteral(node.moduleSpecifier)
+      ? node.moduleSpecifier.text
+      : null;
+
+    if (node.exportClause && tsLib.isNamedExports(node.exportClause)) {
+      // Named re-exports: export { foo, bar as baz } from './mod' OR export { foo }
+      for (const specifier of node.exportClause.elements) {
+        const exportedName = specifier.name.text;
+        const originalName = specifier.propertyName?.text ?? exportedName;
+
+        symbols.push({
+          name: exportedName,
+          kind: "variable",
+          file,
+          startLine: line + 1,
+          endLine: line + 1,
+          exported: true,
+          metadata: modulePath ? { isReExport: true, reExportFrom: modulePath, originalName } : undefined,
+        });
+
+        const metadata: Record<string, unknown> = {};
+        if (modulePath) {
+          metadata.reExportFrom = modulePath;
+        }
+        if (originalName !== exportedName) {
+          metadata.originalName = originalName;
+        }
+
+        relations.push({
+          fromSymbol: file,
+          toSymbol: originalName,
+          type: "exports",
+          file,
+          line: line + 1,
+          metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
+        });
+      }
+    } else if (!node.exportClause && modulePath) {
+      // Star re-export: export * from './mod'
+      relations.push({
+        fromSymbol: file,
+        toSymbol: "*",
+        type: "exports",
+        file,
+        line: line + 1,
+        metadata: { reExportFrom: modulePath },
+      });
     }
   }
 

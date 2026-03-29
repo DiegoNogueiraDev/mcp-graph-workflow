@@ -160,6 +160,26 @@ describe("CodeStore", () => {
     });
   });
 
+  describe("exports relation type", () => {
+    it("should accept 'exports' as a valid relation type", () => {
+      const s1 = store.insertSymbol({ projectId, name: "index", kind: "variable", file: "index.ts", startLine: 1, endLine: 1, exported: true });
+      const s2 = store.insertSymbol({ projectId, name: "foo", kind: "function", file: "foo.ts", startLine: 1, endLine: 5, exported: true });
+
+      const rel = store.insertRelation({
+        projectId,
+        fromSymbol: s1.id,
+        toSymbol: s2.id,
+        type: "exports",
+        file: "index.ts",
+        line: 1,
+        metadata: { reExportFrom: "./foo.js" },
+      });
+
+      expect(rel.id).toMatch(/^crel_/);
+      expect(rel.type).toBe("exports");
+    });
+  });
+
   describe("insertRelationsBulk", () => {
     it("should insert multiple relations in a transaction", () => {
       const s1 = store.insertSymbol({ projectId, name: "a", kind: "function", file: "a.ts", startLine: 1, endLine: 5, exported: true });
@@ -185,6 +205,29 @@ describe("CodeStore", () => {
       expect(store.getRelationsFrom(s1.id)).toHaveLength(1);
       expect(store.getRelationsTo(s2.id)).toHaveLength(1);
       expect(store.getRelationsFrom(s2.id)).toHaveLength(0);
+    });
+  });
+
+  describe("BFS traversal follows exports edges", () => {
+    it("should traverse exports edges via getRelationsFrom/getRelationsTo", () => {
+      // foo.ts exports foo → index.ts re-exports via "exports" → consumer.ts calls foo via index
+      const foo = store.insertSymbol({ projectId, name: "foo", kind: "function", file: "foo.ts", startLine: 1, endLine: 5, exported: true });
+      const indexReExport = store.insertSymbol({ projectId, name: "foo", kind: "variable", file: "index.ts", startLine: 1, endLine: 1, exported: true });
+      const consumer = store.insertSymbol({ projectId, name: "main", kind: "function", file: "consumer.ts", startLine: 1, endLine: 10, exported: true });
+
+      // index.ts re-exports foo
+      store.insertRelation({ projectId, fromSymbol: indexReExport.id, toSymbol: foo.id, type: "exports" });
+      // consumer imports from index (via the re-exported symbol)
+      store.insertRelation({ projectId, fromSymbol: consumer.id, toSymbol: indexReExport.id, type: "calls" });
+
+      // BFS upstream from foo should find: indexReExport (via exports), then consumer (via calls)
+      const fromFoo = store.getRelationsTo(foo.id);
+      expect(fromFoo.length).toBe(1);
+      expect(fromFoo[0].type).toBe("exports");
+
+      const fromIndex = store.getRelationsTo(indexReExport.id);
+      expect(fromIndex.length).toBe(1);
+      expect(fromIndex[0].type).toBe("calls");
     });
   });
 

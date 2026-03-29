@@ -80,6 +80,41 @@ describe("CodeIndexer", () => {
     });
   });
 
+  describe("filesWithSymbols metric", () => {
+    it("should track filesWithSymbols separately from fileCount", async () => {
+      const result = await indexer.indexDirectory(FIXTURE_DIR, FIXTURE_DIR);
+
+      // fileCount = total files scanned (including those with 0 symbols)
+      expect(result.fileCount).toBeGreaterThan(0);
+      // filesWithSymbols = files that produced at least 1 symbol
+      expect(result.filesWithSymbols).toBeGreaterThan(0);
+      expect(result.filesWithSymbols).toBeLessThanOrEqual(result.fileCount);
+    });
+  });
+
+  describe("TEST_OR_DECL_PATTERN filter", () => {
+    // Import the pattern directly for unit testing
+    it("should exclude .test.tsx and .spec.tsx files", async () => {
+      const { TEST_OR_DECL_PATTERN } = await import("../core/code/code-indexer.js");
+      expect(TEST_OR_DECL_PATTERN.test("component.test.tsx")).toBe(true);
+      expect(TEST_OR_DECL_PATTERN.test("component.spec.tsx")).toBe(true);
+      expect(TEST_OR_DECL_PATTERN.test("component.test.ts")).toBe(true);
+      expect(TEST_OR_DECL_PATTERN.test("component.spec.ts")).toBe(true);
+      expect(TEST_OR_DECL_PATTERN.test("component.test.js")).toBe(true);
+      expect(TEST_OR_DECL_PATTERN.test("component.test.jsx")).toBe(true);
+      expect(TEST_OR_DECL_PATTERN.test("types.d.ts")).toBe(true);
+      expect(TEST_OR_DECL_PATTERN.test("types.d.mts")).toBe(true);
+    });
+
+    it("should NOT exclude regular source files", async () => {
+      const { TEST_OR_DECL_PATTERN } = await import("../core/code/code-indexer.js");
+      expect(TEST_OR_DECL_PATTERN.test("component.tsx")).toBe(false);
+      expect(TEST_OR_DECL_PATTERN.test("utils.ts")).toBe(false);
+      expect(TEST_OR_DECL_PATTERN.test("app.jsx")).toBe(false);
+      expect(TEST_OR_DECL_PATTERN.test("index.js")).toBe(false);
+    });
+  });
+
   describe("reindex (incremental)", () => {
     it("should clear old data before reindexing", async () => {
       await indexer.indexDirectory(FIXTURE_DIR, FIXTURE_DIR);

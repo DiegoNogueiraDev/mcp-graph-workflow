@@ -27,6 +27,7 @@ export const RelationTypeSchema = z.enum([
   "extends",
   "implements",
   "belongs_to",
+  "exports",
 ]);
 
 export type CodeRelationType = z.infer<typeof RelationTypeSchema>;
@@ -176,6 +177,7 @@ export interface CodeAnalyzer {
 
 export interface IndexResult {
   fileCount: number;
+  filesWithSymbols: number;
   symbolCount: number;
   relationCount: number;
   typescriptAvailable: boolean;

@@ -16,6 +16,9 @@ import { logger } from "../utils/logger.js";
 const TS_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mts", ".cts"]);
 const IGNORED_DIRS = new Set(["node_modules", "dist", ".git", "coverage", ".next", ".nuxt"]);
 
+/** Matches test files (.test.*, .spec.*) and declaration files (.d.*) across all supported extensions. */
+export const TEST_OR_DECL_PATTERN = /\.(test|spec)\.(ts|tsx|js|jsx|mts|cts)$|\.d\.(ts|mts|cts)$/;
+
 export class CodeIndexer {
   private readonly extensionMap: Map<string, CodeAnalyzer>;
 
@@ -91,12 +94,13 @@ export class CodeIndexer {
         relationCount: 0,
       });
 
-      return { fileCount: 0, symbolCount: 0, relationCount: 0, typescriptAvailable: false, languageStatus: langStats };
+      return { fileCount: 0, filesWithSymbols: 0, symbolCount: 0, relationCount: 0, typescriptAvailable: false, languageStatus: langStats };
     }
 
     let totalSymbols = 0;
     let totalRelations = 0;
     let fileCount = 0;
+    let filesWithSymbols = 0;
 
     for (const filePath of filePaths) {
       const ext = path.extname(filePath);
@@ -114,7 +118,11 @@ export class CodeIndexer {
 
         const result = await analyzer.analyzeFile(filePath, basePath);
 
+        fileCount++;
+
         if (result.symbols.length === 0) continue;
+
+        filesWithSymbols++;
 
         // Insert symbols
         const symbolsWithProject = result.symbols.map((s) => ({
@@ -148,8 +156,6 @@ export class CodeIndexer {
             totalRelations += relCount;
           }
         }
-
-        fileCount++;
       } catch (err) {
         logger.warn("code-indexer:file-error", {
           file: filePath,
@@ -169,12 +175,14 @@ export class CodeIndexer {
 
     logger.info("code-indexer:done", {
       fileCount,
+      filesWithSymbols,
       symbolCount: totalSymbols,
       relationCount: totalRelations,
     });
 
     return {
       fileCount,
+      filesWithSymbols,
       symbolCount: totalSymbols,
       relationCount: totalRelations,
       typescriptAvailable,
@@ -206,7 +214,7 @@ function walkDirectory(dir: string, supportedExtensions: Set<string> = TS_EXTENS
         recurse(fullPath);
       } else if (entry.isFile() && supportedExtensions.has(path.extname(entry.name))) {
         // Skip test files and declaration files
-        if (entry.name.endsWith(".test.ts") || entry.name.endsWith(".d.ts") || entry.name.endsWith(".spec.ts")) {
+        if (TEST_OR_DECL_PATTERN.test(entry.name)) {
           continue;
         }
         files.push(fullPath);
