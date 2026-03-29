@@ -226,7 +226,8 @@ export function createCodeGraphRouter(options: CodeGraphRouterOptions): Router {
     // Auto-prune stale cache entries (> 7 days) on bridge initialization
     try {
       cache.prune();
-    } catch {
+    } catch (err) {
+      logger.debug("codeGraph:cachePruneFailure", { error: err instanceof Error ? err.message : String(err) });
       // Non-critical — ignore prune errors
     }
 

@@ -109,7 +109,8 @@ export function createImportRouter(storeRef: StoreRef): Router {
 async function cleanupFile(filePath: string): Promise<void> {
   try {
     await unlink(filePath);
-  } catch {
+  } catch (err) {
+    logger.debug("import:fileCleanupFailure", { error: err instanceof Error ? err.message : String(err) });
     // File may already be cleaned up
   }
 }
