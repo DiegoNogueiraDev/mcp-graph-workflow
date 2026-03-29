@@ -40,6 +40,16 @@ describe("Config layer", () => {
     expect(config.port).toBe(3000);
     expect(config.dbPath).toBe("workflow-graph");
     expect(config.integrations.codeGraphAutoIndex).toBe(false);
+    expect(config.integrations.codeGraphReindexIntervalSec).toBe(0);
+  });
+
+  it("should accept codeGraphReindexIntervalSec config", () => {
+    writeFileSync(
+      path.join(tmpDir, "mcp-graph.config.json"),
+      JSON.stringify({ integrations: { codeGraphReindexIntervalSec: 120 } }),
+    );
+    const config = loadConfig(tmpDir);
+    expect(config.integrations.codeGraphReindexIntervalSec).toBe(120);
   });
 
   // ── File loading ──────────────────────────────────
@@ -100,6 +110,40 @@ describe("Config layer", () => {
     expect(config.dbPath).toBe("workflow-graph");
     expect(config.basePath).toBeUndefined();
     expect(config.integrations.codeGraphAutoIndex).toBe(false);
+  });
+
+  // ── contextMode ───────────────────────────────────
+
+  it("should default contextMode to lean", () => {
+    const config = loadConfig(tmpDir);
+
+    expect(config.contextMode).toBe("lean");
+  });
+
+  it("should accept contextMode lean from config file", () => {
+    writeFileSync(
+      path.join(tmpDir, "mcp-graph.config.json"),
+      JSON.stringify({ contextMode: "lean" }),
+    );
+
+    const config = loadConfig(tmpDir);
+
+    expect(config.contextMode).toBe("lean");
+  });
+
+  it("should accept contextMode full from config file", () => {
+    writeFileSync(
+      path.join(tmpDir, "mcp-graph.config.json"),
+      JSON.stringify({ contextMode: "full" }),
+    );
+
+    const config = loadConfig(tmpDir);
+
+    expect(config.contextMode).toBe("full");
+  });
+
+  it("should reject invalid contextMode via Zod schema", () => {
+    expect(() => ConfigSchema.parse({ contextMode: "invalid" })).toThrow();
   });
 
   it("should handle malformed JSON gracefully and use defaults", () => {

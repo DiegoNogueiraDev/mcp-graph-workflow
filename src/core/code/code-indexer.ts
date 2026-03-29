@@ -5,6 +5,7 @@
  */
 
 import { readdirSync } from "node:fs";
+import { execSync } from "node:child_process";
 import path from "node:path";
 import type { CodeStore } from "./code-store.js";
 import type { CodeAnalyzer, IndexResult } from "./code-types.js";
@@ -12,6 +13,14 @@ import { isTypeScriptAvailable } from "./ts-analyzer.js";
 import { TsAnalyzer } from "./ts-analyzer.js";
 import { now } from "../utils/time.js";
 import { logger } from "../utils/logger.js";
+
+function getGitHash(basePath: string): string | null {
+  try {
+    return execSync("git rev-parse HEAD", { cwd: basePath, encoding: "utf-8", timeout: 5000 }).trim();
+  } catch {
+    return null;
+  }
+}
 
 const TS_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mts", ".cts"]);
 const IGNORED_DIRS = new Set(["node_modules", "dist", ".git", "coverage", ".next", ".nuxt"]);
@@ -164,13 +173,14 @@ export class CodeIndexer {
       }
     }
 
-    // Update metadata
+    // Update metadata (with git hash for staleness detection)
     this.store.upsertIndexMeta({
       projectId: this.projectId,
       lastIndexed: now(),
       fileCount,
       symbolCount: totalSymbols,
       relationCount: totalRelations,
+      gitHash: getGitHash(basePath),
     });
 
     logger.info("code-indexer:done", {

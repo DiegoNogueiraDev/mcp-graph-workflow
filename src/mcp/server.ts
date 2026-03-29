@@ -34,28 +34,47 @@ const app = createApp({
   storeManager,
 });
 
-// ── Code Graph auto-index ────────────────────────────────
+// ── Code Graph auto-index + periodic reindex ─────────────
+let reindexTimer: ReturnType<typeof setInterval> | null = null;
+let reindexRunning = false;
+
+async function runCodeGraphReindex(label: string): Promise<void> {
+  if (reindexRunning) {
+    logger.debug("code-graph:reindex:skipped", { reason: "already running" });
+    return;
+  }
+  reindexRunning = true;
+  try {
+    const project = storeManager.store.getProject();
+    if (!project) return;
+    const basePath = storeManager.basePath;
+    const codeStore = new CodeStore(storeManager.store.getDb());
+    const indexer = new CodeIndexer(codeStore, project.id);
+    const result = await indexer.indexDirectory(basePath, basePath);
+    logger.info(`code-graph:${label}`, {
+      files: result.fileCount,
+      symbols: result.symbolCount,
+      relations: result.relationCount,
+    });
+  } catch (err) {
+    logger.warn(`code-graph:${label}:failed`, {
+      error: err instanceof Error ? err.message : String(err),
+    });
+  } finally {
+    reindexRunning = false;
+  }
+}
+
 if (config.integrations.codeGraphAutoIndex) {
-  const basePath = storeManager.basePath;
-  (async () => {
-    try {
-      const project = storeManager.store.getProject();
-      if (project) {
-        const codeStore = new CodeStore(storeManager.store.getDb());
-        const indexer = new CodeIndexer(codeStore, project.id);
-        const result = await indexer.indexDirectory(basePath, basePath);
-        logger.info("Code graph auto-indexed", {
-          files: result.fileCount,
-          symbols: result.symbolCount,
-          relations: result.relationCount,
-        });
-      }
-    } catch (err) {
-      logger.warn("Code graph auto-index failed (non-blocking)", {
-        error: err instanceof Error ? err.message : String(err),
-      });
-    }
-  })();
+  runCodeGraphReindex("auto-index");
+}
+
+const reindexIntervalSec = config.integrations.codeGraphReindexIntervalSec;
+if (reindexIntervalSec > 0) {
+  reindexTimer = setInterval(() => {
+    runCodeGraphReindex("periodic-reindex");
+  }, reindexIntervalSec * 1000);
+  logger.info("code-graph:periodic-reindex:enabled", { intervalSec: reindexIntervalSec });
 }
 
 // ── Cleanup on shutdown ──────────────────────────────────
@@ -65,6 +84,11 @@ let httpServer: ReturnType<typeof app.listen>;
 function cleanup(signal: string): void {
   logger.info("server:shutdown", { signal });
   try {
+    // 0. Stop periodic reindex timer
+    if (reindexTimer) {
+      clearInterval(reindexTimer);
+      reindexTimer = null;
+    }
     // 1. Stop accepting new connections and drain in-flight requests
     if (httpServer) {
       httpServer.close(() => {

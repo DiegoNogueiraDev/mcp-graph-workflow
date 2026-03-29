@@ -55,6 +55,16 @@ describe("CodeIndexer", () => {
       expect(meta!.fileCount).toBeGreaterThan(0);
       expect(meta!.symbolCount).toBeGreaterThan(0);
     });
+
+    it("should store git hash in index metadata", async () => {
+      await indexer.indexDirectory(FIXTURE_DIR, FIXTURE_DIR);
+
+      const meta = store.getIndexMeta(projectId);
+      expect(meta).not.toBeNull();
+      // FIXTURE_DIR is inside a git repo, so gitHash should be captured
+      expect(meta!.gitHash).toBeTruthy();
+      expect(meta!.gitHash!.length).toBe(40); // SHA-1 hex
+    });
   });
 
   describe("indexFiles", () => {
