@@ -41,14 +41,18 @@ export function BenchmarkTab(): React.JSX.Element {
       {/* Token Economy */}
       <section>
         <h3 className="text-sm font-semibold mb-3">Token Economy</h3>
-        <div className="grid grid-cols-4 gap-3 mb-4">
+        <div className="grid grid-cols-5 gap-3 mb-4">
           <MetricCard
             value={`${tokenEconomy.avgCompressionPercent}%`}
             label="Avg Compress"
           />
           <MetricCard
-            value={tokenEconomy.sampleSize > 0 ? Math.round(tokenEconomy.totalTokensSaved / tokenEconomy.sampleSize).toLocaleString() : "0"}
-            label="Tokens Saved/Task"
+            value={tokenEconomy.totalTokensSaved.toLocaleString()}
+            label="Total Tokens Saved"
+          />
+          <MetricCard
+            value={tokenEconomy.avgTokensSavedPerTask.toLocaleString()}
+            label="Saved / Task"
           />
           <MetricCard
             value={tokenEconomy.totalNodes}
@@ -87,7 +91,7 @@ export function BenchmarkTab(): React.JSX.Element {
       </section>
 
       {/* Real Token Savings (Per-Layer) */}
-      {layeredCompression && (
+      {layeredCompression && layeredCompression.avgLayer1SavingsPercent != null ? (
         <section>
           <h3 className="text-sm font-semibold mb-3">Real Token Savings (Per-Layer)</h3>
           <div className="grid grid-cols-5 gap-3 mb-4">
@@ -146,6 +150,13 @@ export function BenchmarkTab(): React.JSX.Element {
               </div>
             );
           })()}
+        </section>
+      ) : (
+        <section>
+          <h3 className="text-sm font-semibold mb-3">Real Token Savings (Per-Layer)</h3>
+          <div className="px-3 py-4 rounded-xl border border-edge bg-surface-alt text-center text-xs text-muted">
+            No compression data available
+          </div>
         </section>
       )}
 
@@ -231,15 +242,35 @@ export function BenchmarkTab(): React.JSX.Element {
 
       {/* Cost Savings */}
       <section>
-        <h3 className="text-sm font-semibold mb-3">Cost Savings per Task</h3>
-        <div className="grid grid-cols-2 gap-3">
+        <h3 className="text-sm font-semibold mb-3">Cost Analysis</h3>
+        <h4 className="text-xs font-medium text-muted mb-2">Savings from Compression</h4>
+        <div className="grid grid-cols-4 gap-3 mb-3">
           <MetricCard
-            value={`$${tokenEconomy.costSavings.opusPerTask.toFixed(3)}`}
-            label="Opus Input"
+            value={`$${tokenEconomy.costSavings.opusSavedPerTask.toFixed(3)}`}
+            label="Opus Saved/Task"
           />
           <MetricCard
-            value={`$${tokenEconomy.costSavings.sonnetPerTask.toFixed(3)}`}
-            label="Sonnet Input"
+            value={`$${tokenEconomy.costSavings.sonnetSavedPerTask.toFixed(3)}`}
+            label="Sonnet Saved/Task"
+          />
+          <MetricCard
+            value={`$${tokenEconomy.costSavings.opusTotalSaved.toFixed(2)}`}
+            label="Opus Total Saved"
+          />
+          <MetricCard
+            value={`$${tokenEconomy.costSavings.sonnetTotalSaved.toFixed(2)}`}
+            label="Sonnet Total Saved"
+          />
+        </div>
+        <h4 className="text-xs font-medium text-muted mb-2">Cost per Task (after compression)</h4>
+        <div className="grid grid-cols-2 gap-3">
+          <MetricCard
+            value={`$${tokenEconomy.costSavings.opusCostPerTask.toFixed(3)}`}
+            label="Opus Input/Task"
+          />
+          <MetricCard
+            value={`$${tokenEconomy.costSavings.sonnetCostPerTask.toFixed(3)}`}
+            label="Sonnet Input/Task"
           />
         </div>
       </section>

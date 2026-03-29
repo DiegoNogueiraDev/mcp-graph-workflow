@@ -10,6 +10,8 @@ export function MemoriesTab(): React.JSX.Element {
   const [selectedMemory, setSelectedMemory] = useState<ProjectMemory | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [contentLoading, setContentLoading] = useState(false);
+  const [contentCache, setContentCache] = useState<Map<string, string>>(new Map());
 
   const loadData = useCallback(async () => {
     try {
@@ -26,6 +28,34 @@ export function MemoriesTab(): React.JSX.Element {
   useEffect(() => {
     void loadData();
   }, [loadData]);
+
+  const handleSelectMemory = useCallback(async (mem: ProjectMemory) => {
+    // Set selected immediately (shows name/breadcrumb)
+    setSelectedMemory(mem);
+
+    // If content is already cached, use it
+    const cached = contentCache.get(mem.name);
+    if (cached !== undefined) {
+      setSelectedMemory({ ...mem, content: cached });
+      return;
+    }
+
+    // Lazy-load content
+    try {
+      setContentLoading(true);
+      const fullMemory = await apiClient.readMemory(mem.name);
+      setContentCache((prev) => {
+        const next = new Map(prev);
+        next.set(mem.name, fullMemory.content);
+        return next;
+      });
+      setSelectedMemory({ ...mem, content: fullMemory.content });
+    } catch {
+      setSelectedMemory({ ...mem, content: "[Failed to load content]" });
+    } finally {
+      setContentLoading(false);
+    }
+  }, [contentCache]);
 
   if (loading) {
     return (
@@ -74,12 +104,12 @@ export function MemoriesTab(): React.JSX.Element {
         <FileExplorerPanel
           memories={memories}
           selectedMemory={selectedMemory}
-          onSelect={setSelectedMemory}
+          onSelect={handleSelectMemory}
         />
 
         {/* Right: Memory Content Viewer */}
         <div className="flex-1 min-w-0 overflow-auto">
-          <MemoryContentViewer selectedMemory={selectedMemory} />
+          <MemoryContentViewer selectedMemory={selectedMemory} contentLoading={contentLoading} />
         </div>
       </div>
     </div>
@@ -261,7 +291,13 @@ function TreeNodeList({
 
 // ── MemoryContentViewer ──────────────────────────
 
-function MemoryContentViewer({ selectedMemory }: { selectedMemory: ProjectMemory | null }): React.JSX.Element {
+function MemoryContentViewer({
+  selectedMemory,
+  contentLoading,
+}: {
+  selectedMemory: ProjectMemory | null;
+  contentLoading: boolean;
+}): React.JSX.Element {
   const [copied, setCopied] = useState(false);
 
   if (!selectedMemory) {
@@ -281,7 +317,7 @@ function MemoryContentViewer({ selectedMemory }: { selectedMemory: ProjectMemory
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Build breadcrumb from memory name (e.g., "architecture/design" → ["architecture", "design"])
+  // Build breadcrumb from memory name (e.g., "architecture/design" -> ["architecture", "design"])
   const parts = selectedMemory.name.split("/");
 
   return (
@@ -302,6 +338,7 @@ function MemoryContentViewer({ selectedMemory }: { selectedMemory: ProjectMemory
         <span className="text-sm font-semibold">{parts[parts.length - 1]}</span>
         <button
           onClick={handleCopy}
+          disabled={contentLoading}
           className={`text-[10px] px-2 py-0.5 rounded border transition-all cursor-pointer ${
             copied
               ? "border-green-500/30 text-green-500 bg-green-500/5"
@@ -312,9 +349,17 @@ function MemoryContentViewer({ selectedMemory }: { selectedMemory: ProjectMemory
         </button>
       </div>
 
-      <pre className="text-xs whitespace-pre-wrap text-muted font-mono leading-relaxed">
-        {selectedMemory.content}
-      </pre>
+      {contentLoading ? (
+        <div className="space-y-2">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="h-3 rounded bg-surface animate-pulse" style={{ width: `${40 + Math.random() * 50}%` }} />
+          ))}
+        </div>
+      ) : (
+        <pre className="text-xs whitespace-pre-wrap text-muted font-mono leading-relaxed">
+          {selectedMemory.content}
+        </pre>
+      )}
     </div>
   );
 }

@@ -18,10 +18,13 @@ const LINE_RULES: Rule[] = [
   { pattern: /^func\s+(\w+)\s*\(/, constructId: "uc_fn_def", nameGroup: 1 },
   { pattern: /^\s*go\s+func/, constructId: "uc_async_fn" },
   { pattern: /^\s*if\s+/, constructId: "uc_if_else" },
-  { pattern: /^\s*for\s+/, constructId: "uc_for_loop" },
-  { pattern: /^\s*switch\s+/, constructId: "uc_switch" },
+  { pattern: /^\s*}\s*else\b/, constructId: "uc_if_else" },
+  { pattern: /^\s*for\s+/, constructId: "uc_for_each" },
+  { pattern: /^\s*for\s*\{/, constructId: "uc_for_each" },
+  { pattern: /^\s*switch\b/, constructId: "uc_switch" },
   { pattern: /^\s*return\b/, constructId: "uc_return" },
   { pattern: /^\s*defer\s+/, constructId: "uc_try_catch" }, // Go defer ~ finally
+  { pattern: /^\s*const\s*\(/, constructId: "uc_type_enum" }, // Go enum pattern with iota
 ];
 
 export class GoParserAdapter implements ParserAdapter {

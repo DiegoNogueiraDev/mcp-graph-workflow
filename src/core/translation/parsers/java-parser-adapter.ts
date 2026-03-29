@@ -13,14 +13,19 @@ interface Rule {
 const LINE_RULES: Rule[] = [
   { pattern: /^\s*import\s+[\w.]+;/, constructId: "uc_import_named" },
   // eslint-disable-next-line security/detect-unsafe-regex
+  { pattern: /^\s*(public|private|protected)?\s*(abstract\s+)?class\s+(\w+).*\b(extends|implements)\b/,
+    constructId: "uc_class_def", nameGroup: 3, also: [{ constructId: "uc_extends" }] },
+  // eslint-disable-next-line security/detect-unsafe-regex
   { pattern: /^\s*(public|private|protected)?\s*(abstract\s+)?class\s+(\w+)/, constructId: "uc_class_def", nameGroup: 3 },
   { pattern: /^\s*(public|private|protected)?\s*interface\s+(\w+)/, constructId: "uc_interface", nameGroup: 2 },
+  { pattern: /^\s*(public|private|protected)?\s*enum\s+(\w+)/, constructId: "uc_type_enum", nameGroup: 2 },
   // eslint-disable-next-line security/detect-unsafe-regex
   { pattern: /^\s*(public|private|protected)?\s*(static\s+)?(synchronized\s+)?([\w<>[\]]+)\s+(\w+)\s*\(/, constructId: "uc_fn_def", nameGroup: 5 },
   { pattern: /^\s*try\s*\{/, constructId: "uc_try_catch" },
   { pattern: /^\s*throw\s+/, constructId: "uc_throw" },
   { pattern: /^\s*if\s*\(/, constructId: "uc_if_else" },
-  { pattern: /^\s*for\s*\(/, constructId: "uc_for_loop" },
+  { pattern: /^\s*}\s*else\b/, constructId: "uc_if_else" },
+  { pattern: /^\s*for\s*\(/, constructId: "uc_for_each" },
   { pattern: /^\s*(while)\s*\(/, constructId: "uc_while" },
   { pattern: /^\s*switch\s*\(/, constructId: "uc_switch" },
   { pattern: /^\s*return\b/, constructId: "uc_return" },

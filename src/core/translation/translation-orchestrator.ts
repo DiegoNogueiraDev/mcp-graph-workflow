@@ -4,6 +4,7 @@
  * Flow: analyzeSource → prepareTranslation → (AI generates code) → finalizeTranslation
  */
 
+import { createHash } from "node:crypto";
 import { ConstructRegistry } from "./ucr/construct-registry.js";
 import { TranslationStore } from "./translation-store.js";
 import type { TranslationAnalysis, TranslationJob, TranslationScope } from "./translation-types.js";
@@ -11,6 +12,10 @@ import type { TranslationScore, AmbiguityReport } from "./ucr/construct-types.js
 import { detectLanguageFromCode } from "./language-detect.js";
 import { TsParserAdapter } from "./parsers/ts-parser-adapter.js";
 import { PythonParserAdapter } from "./parsers/python-parser-adapter.js";
+import { JavaParserAdapter } from "./parsers/java-parser-adapter.js";
+import { GoParserAdapter } from "./parsers/go-parser-adapter.js";
+import { CSharpParserAdapter } from "./parsers/csharp-parser-adapter.js";
+import { RustParserAdapter } from "./parsers/rust-parser-adapter.js";
 import type { ParserAdapter, ParsedConstruct } from "./parsers/parser-adapter.js";
 import { scoreConstructs } from "./confidence/equivalence-scorer.js";
 import { detectAmbiguities } from "./confidence/ambiguity-detector.js";
@@ -29,6 +34,37 @@ const EQUIVALENT_CONSTRUCTS: ReadonlyMap<string, string> = new Map([
   ["uc_fn_def", "uc_arrow_fn"],
   ["uc_arrow_fn", "uc_fn_def"],
 ]);
+
+// ── Analysis Cache (LRU, SHA-256 keyed) ────────────
+
+const ANALYSIS_CACHE_TTL_MS = 3_600_000; // 60 minutes
+const ANALYSIS_CACHE_MAX_ENTRIES = 100;
+
+interface AnalysisCacheEntry {
+  result: TranslationAnalysis & { cacheHit: boolean };
+  timestamp: number;
+}
+
+const analysisCache = new Map<string, AnalysisCacheEntry>();
+
+function computeCacheKey(code: string, targetLanguage?: string): string {
+  return createHash("sha256")
+    .update(code + "|" + (targetLanguage ?? ""))
+    .digest("hex");
+}
+
+function evictOldestIfNeeded(): void {
+  if (analysisCache.size <= ANALYSIS_CACHE_MAX_ENTRIES) return;
+  let oldestKey: string | undefined;
+  let oldestTs = Infinity;
+  for (const [key, entry] of analysisCache) {
+    if (entry.timestamp < oldestTs) {
+      oldestTs = entry.timestamp;
+      oldestKey = key;
+    }
+  }
+  if (oldestKey) analysisCache.delete(oldestKey);
+}
 
 interface AnalyzeHints {
   languageHint?: string;
@@ -65,6 +101,10 @@ interface FinalizeResult {
 const PARSERS = new Map<string, ParserAdapter>([
   ["typescript", new TsParserAdapter()],
   ["python", new PythonParserAdapter()],
+  ["java", new JavaParserAdapter()],
+  ["go", new GoParserAdapter()],
+  ["csharp", new CSharpParserAdapter()],
+  ["rust", new RustParserAdapter()],
 ]);
 
 export class TranslationOrchestrator {
@@ -75,8 +115,16 @@ export class TranslationOrchestrator {
 
   /**
    * Analyze source code — detect language, identify constructs, compute complexity.
+   * Results are cached with SHA-256 content hash (TTL 60min, max 100 entries).
    */
-  analyzeSource(code: string, hints?: AnalyzeHints): TranslationAnalysis {
+  analyzeSource(code: string, hints?: AnalyzeHints): TranslationAnalysis & { cacheHit: boolean } {
+    // Check cache
+    const cacheKey = computeCacheKey(code, hints?.targetLanguage);
+    const cached = analysisCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < ANALYSIS_CACHE_TTL_MS) {
+      return { ...cached.result, cacheHit: true };
+    }
+
     // Detect language
     const detection = detectLanguageFromCode(code);
     const lang = hints?.languageHint ?? detection.languageId;
@@ -127,7 +175,7 @@ export class TranslationOrchestrator {
       ? scores.reduce((sum, s) => sum + s.finalConfidence, 0) / scores.length
       : 0;
 
-    return {
+    const result: TranslationAnalysis & { cacheHit: boolean } = {
       detectedLanguage: lang,
       detectedConfidence: confidence,
       constructs,
@@ -135,7 +183,14 @@ export class TranslationOrchestrator {
       estimatedTranslatability,
       ambiguousConstructs: ambiguities.map((a) => a.constructId),
       totalConstructs: parsed.length,
+      cacheHit: false,
     };
+
+    // Store in cache
+    analysisCache.set(cacheKey, { result, timestamp: Date.now() });
+    evictOldestIfNeeded();
+
+    return result;
   }
 
   /**
