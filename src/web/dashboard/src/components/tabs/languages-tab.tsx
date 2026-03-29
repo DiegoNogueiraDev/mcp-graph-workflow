@@ -1,5 +1,8 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Languages, ArrowLeftRight, Clock, BarChart3, Loader2, BookOpen, GitFork } from "lucide-react";
+import { ReactFlow, Background, Controls, type Node, type Edge } from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
+import Dagre from "@dagrejs/dagre";
 import { useTranslation } from "@/hooks/use-translation";
 import { useTranslationHistory } from "@/hooks/use-translation-history";
 import { useProjectTranslation } from "@/hooks/use-project-translation";
@@ -30,6 +33,107 @@ const persistedForm = {
   scope: "snippet" as TranslationScope,
   generatedCode: "",
 };
+
+interface TranslationFlowGraphProps {
+  jobs: Array<{ status: string; sourceLanguage: string; targetLanguage: string; confidenceScore?: number }>;
+}
+
+function TranslationFlowGraph({ jobs }: TranslationFlowGraphProps): React.JSX.Element {
+  const doneJobs = useMemo(() => jobs.filter(j => j.status === "done" && j.confidenceScore != null), [jobs]);
+
+  const { flowNodes, flowEdges } = useMemo(() => {
+    if (doneJobs.length === 0) return { flowNodes: [] as Node[], flowEdges: [] as Edge[] };
+
+    const languages = new Set<string>();
+    const edgeMap = new Map<string, { count: number; totalConf: number }>();
+
+    for (const job of doneJobs) {
+      languages.add(job.sourceLanguage);
+      languages.add(job.targetLanguage);
+      const key = `${job.sourceLanguage}->${job.targetLanguage}`;
+      const existing = edgeMap.get(key) ?? { count: 0, totalConf: 0 };
+      existing.count++;
+      existing.totalConf += job.confidenceScore ?? 0;
+      edgeMap.set(key, existing);
+    }
+
+    const nodes: Node[] = [...languages].map((lang) => ({
+      id: lang,
+      data: { label: lang },
+      position: { x: 0, y: 0 },
+      style: {
+        background: "rgba(99, 102, 241, 0.1)",
+        border: "1px solid rgba(99, 102, 241, 0.3)",
+        borderRadius: "8px",
+        padding: "8px 16px",
+        color: "#a5b4fc",
+        fontSize: "12px",
+        fontWeight: 600,
+      },
+    }));
+
+    const edges: Edge[] = [...edgeMap.entries()].map(([key, val]) => {
+      const [source, target] = key.split("->");
+      const avgConf = Math.round((val.totalConf / val.count) * 100);
+      const color = avgConf >= 80 ? "#22c55e" : avgConf >= 50 ? "#eab308" : "#ef4444";
+      return {
+        id: key,
+        source,
+        target,
+        label: `x${val.count} · ${avgConf}%`,
+        style: { stroke: color, strokeWidth: 2 },
+        labelStyle: { fill: "#9ca3af", fontSize: 10 },
+        labelBgStyle: { fill: "#1e1e2e", fillOpacity: 0.9 },
+        animated: true,
+      };
+    });
+
+    // Apply dagre layout
+    const g = new Dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
+    g.setGraph({ rankdir: "LR", nodesep: 80, ranksep: 150 });
+    nodes.forEach(n => g.setNode(n.id, { width: 120, height: 40 }));
+    edges.forEach(e => g.setEdge(e.source, e.target));
+    Dagre.layout(g);
+    nodes.forEach(n => {
+      const pos = g.node(n.id);
+      n.position = { x: pos.x - 60, y: pos.y - 20 };
+    });
+
+    return { flowNodes: nodes, flowEdges: edges };
+  }, [doneJobs]);
+
+  if (doneJobs.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <GitFork className="w-12 h-12 text-muted mx-auto mb-3" />
+        <p className="text-sm text-muted">Translation graph visualization</p>
+        <p className="text-[10px] text-muted mt-1">Complete some translations to see the relationship graph</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 mb-2">
+        <GitFork className="w-4 h-4 text-accent" />
+        <h3 className="text-xs font-semibold text-foreground">Translation Flow Graph</h3>
+        <span className="text-[10px] text-muted">({doneJobs.length} completed translations)</span>
+      </div>
+      <div style={{ height: 400 }} className="rounded-lg border border-edge bg-surface-alt">
+        <ReactFlow
+          nodes={flowNodes}
+          edges={flowEdges}
+          fitView
+          proOptions={{ hideAttribution: true }}
+          style={{ background: "transparent" }}
+        >
+          <Background color="#333" gap={20} />
+          <Controls showInteractive={false} />
+        </ReactFlow>
+      </div>
+    </div>
+  );
+}
 
 export function LanguagesTab(): React.JSX.Element {
   const [subTab, setSubTab] = useState<SubTab>("convert");
@@ -207,67 +311,7 @@ export function LanguagesTab(): React.JSX.Element {
         {subTab === "knowledge" && <KnowledgeSection />}
 
         {subTab === "graph" && (
-          <div className="space-y-4">
-            {/* Build graph from completed translation jobs with evidence */}
-            {(() => {
-              const doneJobs = history.jobs.filter(j => j.status === "done" && j.confidenceScore != null);
-              if (doneJobs.length === 0) {
-                return (
-                  <div className="text-center py-12">
-                    <GitFork className="w-12 h-12 text-muted mx-auto mb-3" />
-                    <p className="text-sm text-muted">Translation graph visualization</p>
-                    <p className="text-[10px] text-muted mt-1">Complete some translations to see the relationship graph</p>
-                  </div>
-                );
-              }
-
-              // Build unique language pairs and confidence from done jobs
-              const pairs: Array<{ source: string; target: string; confidence: number; count: number }> = [];
-              const pairMap = new Map<string, { source: string; target: string; totalConf: number; count: number }>();
-              for (const job of doneJobs) {
-                const key = `${job.sourceLanguage}→${job.targetLanguage}`;
-                const existing = pairMap.get(key);
-                if (existing) {
-                  existing.totalConf += job.confidenceScore ?? 0;
-                  existing.count++;
-                } else {
-                  pairMap.set(key, { source: job.sourceLanguage, target: job.targetLanguage, totalConf: job.confidenceScore ?? 0, count: 1 });
-                }
-              }
-              for (const v of pairMap.values()) {
-                pairs.push({ source: v.source, target: v.target, confidence: v.totalConf / v.count, count: v.count });
-              }
-
-              return (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <GitFork className="w-4 h-4 text-accent" />
-                    <h3 className="text-xs font-semibold text-foreground">Translation Flow Graph</h3>
-                    <span className="text-[10px] text-muted">({doneJobs.length} completed translations)</span>
-                  </div>
-                  <div className="grid gap-3">
-                    {pairs.map((p) => {
-                      const pct = Math.round(p.confidence * 100);
-                      const color = pct >= 80 ? "border-green-500/30 bg-green-500/5" : pct >= 50 ? "border-yellow-500/30 bg-yellow-500/5" : "border-red-500/30 bg-red-500/5";
-                      const textColor = pct >= 80 ? "text-green-500" : pct >= 50 ? "text-yellow-500" : "text-red-500";
-                      return (
-                        <div key={`${p.source}→${p.target}`} className={`flex items-center gap-4 rounded-lg border ${color} px-4 py-3`}>
-                          <span className="px-2 py-0.5 text-[10px] font-medium rounded bg-blue-500/10 text-blue-400">{p.source}</span>
-                          <div className="flex-1 flex items-center gap-2">
-                            <div className="flex-1 h-0.5 bg-edge rounded" />
-                            <span className="text-[10px] text-muted">x{p.count}</span>
-                            <div className="flex-1 h-0.5 bg-edge rounded" />
-                          </div>
-                          <span className="px-2 py-0.5 text-[10px] font-medium rounded bg-green-500/10 text-green-400">{p.target}</span>
-                          <span className={`text-xs font-bold ${textColor}`}>{pct}%</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
+          <TranslationFlowGraph jobs={history.jobs} />
         )}
       </div>
     </div>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BookOpen, Search, RefreshCw, Loader2 } from "lucide-react";
+import { BookOpen, Search, RefreshCw, Loader2, ChevronDown, ChevronRight } from "lucide-react";
 import { useTranslationKnowledge } from "@/hooks/use-translation-knowledge";
 
 interface KnowledgeEntry {
@@ -9,6 +9,7 @@ interface KnowledgeEntry {
   targetLanguage?: string;
   createdAt: string;
   confidence?: number;
+  metadata?: Record<string, unknown>;
 }
 
 function StatCard({ label, value }: { label: string; value: string | number }): React.JSX.Element {
@@ -20,23 +21,95 @@ function StatCard({ label, value }: { label: string; value: string | number }): 
   );
 }
 
-function EntryCard({ entry }: { entry: KnowledgeEntry }): React.JSX.Element {
+function EntryCard({
+  entry,
+  expanded,
+  onToggle,
+  onSearch,
+}: {
+  entry: KnowledgeEntry;
+  expanded: boolean;
+  onToggle: () => void;
+  onSearch: (query: string) => void;
+}): React.JSX.Element {
+  const meta = entry.metadata;
+  const confPct = entry.confidence != null ? Math.round(entry.confidence * 100) : null;
+  const confColor = confPct != null
+    ? confPct >= 80 ? "text-green-500" : confPct >= 50 ? "text-yellow-500" : "text-red-500"
+    : "text-muted";
+  const riskCount = (meta?.riskCount as number) ?? 0;
+
   return (
-    <div className="rounded-lg border border-edge bg-surface-alt px-4 py-3">
-      <p className="text-xs font-medium text-foreground truncate">{entry.title}</p>
-      <div className="flex items-center gap-2 mt-1.5">
+    <div
+      className="rounded-lg border border-edge bg-surface-alt px-4 py-3 cursor-pointer transition-colors hover:border-accent/30"
+      onClick={onToggle}
+    >
+      <div className="flex items-center gap-2">
+        {expanded
+          ? <ChevronDown className="w-3.5 h-3.5 text-muted flex-shrink-0" />
+          : <ChevronRight className="w-3.5 h-3.5 text-muted flex-shrink-0" />
+        }
+        <p className="text-xs font-medium text-foreground truncate flex-1">{entry.title}</p>
+        <span className="text-[10px] text-muted flex-shrink-0">
+          {new Date(entry.createdAt).toLocaleDateString()}
+        </span>
+      </div>
+      <div className="flex items-center gap-2 mt-1.5 ml-5">
         {entry.sourceLanguage && entry.targetLanguage && (
           <span className="text-[10px] text-muted">
             {entry.sourceLanguage} → {entry.targetLanguage}
           </span>
         )}
-        {entry.confidence != null && (
-          <span className="text-[10px] text-accent">{Math.round(entry.confidence * 100)}%</span>
+        {confPct != null && (
+          <span className={`text-[10px] ${confColor}`}>{confPct}%</span>
         )}
-        <span className="text-[10px] text-muted ml-auto">
-          {new Date(entry.createdAt).toLocaleDateString()}
-        </span>
       </div>
+      {expanded && (
+        <div className="mt-2 pt-2 border-t border-edge space-y-2 ml-5">
+          <div className="flex items-center gap-2 flex-wrap">
+            {meta?.sourceLanguage ? (
+              <span className="px-2 py-0.5 text-[10px] rounded bg-blue-500/10 text-blue-400">
+                {String(meta.sourceLanguage)}
+              </span>
+            ) : null}
+            <span className="text-[10px] text-muted">&rarr;</span>
+            {meta?.targetLanguage ? (
+              <span className="px-2 py-0.5 text-[10px] rounded bg-green-500/10 text-green-400">
+                {String(meta.targetLanguage)}
+              </span>
+            ) : null}
+            {meta?.scope ? (
+              <span className="px-2 py-0.5 text-[10px] rounded bg-accent/10 text-accent">
+                {String(meta.scope)}
+              </span>
+            ) : null}
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-[10px]">
+            <div>
+              <span className="text-muted">Confidence: </span>
+              <span className={confColor}>{confPct ?? "—"}%</span>
+            </div>
+            <div>
+              <span className="text-muted">Constructs: </span>
+              <span className="text-foreground">{(meta?.constructCount as number) ?? "—"}</span>
+            </div>
+            <div>
+              <span className="text-muted">Risks: </span>
+              <span className={riskCount > 0 ? "text-yellow-500" : "text-green-500"}>{riskCount}</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSearch(entry.title);
+            }}
+            className="text-[10px] text-accent hover:text-accent/80 transition-colors"
+          >
+            View in Search
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -44,6 +117,7 @@ function EntryCard({ entry }: { entry: KnowledgeEntry }): React.JSX.Element {
 export function KnowledgeSection(): React.JSX.Element {
   const [state, { search, refresh }] = useTranslationKnowledge();
   const [query, setQuery] = useState("");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const handleSearch = (e: React.FormEvent): void => {
     e.preventDefault();
@@ -151,7 +225,13 @@ export function KnowledgeSection(): React.JSX.Element {
       {entries.length > 0 && (
         <div className="space-y-2 max-h-80 overflow-auto">
           {entries.map((entry) => (
-            <EntryCard key={entry.id} entry={entry} />
+            <EntryCard
+              key={entry.id}
+              entry={entry}
+              expanded={expandedId === entry.id}
+              onToggle={() => setExpandedId(expandedId === entry.id ? null : entry.id)}
+              onSearch={(q) => { setQuery(q); void search(q); }}
+            />
           ))}
         </div>
       )}
