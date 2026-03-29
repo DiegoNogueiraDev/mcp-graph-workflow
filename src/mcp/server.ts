@@ -59,6 +59,7 @@ if (config.integrations.codeGraphAutoIndex) {
 }
 
 // ── Cleanup on shutdown ──────────────────────────────────
+// eslint-disable-next-line prefer-const -- assigned after function definition
 let httpServer: ReturnType<typeof app.listen>;
 
 function cleanup(signal: string): void {

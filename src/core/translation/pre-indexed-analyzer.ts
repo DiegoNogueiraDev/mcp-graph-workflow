@@ -70,7 +70,8 @@ export function analyzeFromIndex(
     if (fileSymbols.length === 0) return null;
 
     // Detect language from file extension
-    const ext = filePath.includes(".") ? "." + filePath.split(".").pop()!.toLowerCase() : "";
+    const parts = filePath.split(".");
+    const ext = parts.length > 1 ? "." + parts[parts.length - 1].toLowerCase() : "";
     const detectedLanguage = EXT_TO_LANGUAGE[ext] ?? "unknown";
 
     // Map symbols to constructs
