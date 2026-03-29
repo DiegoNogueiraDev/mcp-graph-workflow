@@ -673,6 +673,47 @@ const migrations: Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_code_symbols_file ON code_symbols(file);
     `,
   },
+  {
+    version: 20,
+    description: "Translation projects + project files tables for full project conversion",
+    sql: `
+      CREATE TABLE IF NOT EXISTS translation_projects (
+        id                  TEXT PRIMARY KEY,
+        project_id          TEXT NOT NULL,
+        name                TEXT NOT NULL,
+        source_language     TEXT,
+        target_language     TEXT NOT NULL,
+        status              TEXT NOT NULL DEFAULT 'uploading',
+        total_files         INTEGER NOT NULL DEFAULT 0,
+        processed_files     INTEGER NOT NULL DEFAULT 0,
+        overall_confidence  REAL,
+        deterministic_pct   REAL,
+        created_at          TEXT NOT NULL,
+        updated_at          TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_tp_project ON translation_projects(project_id);
+      CREATE INDEX IF NOT EXISTS idx_tp_status ON translation_projects(status);
+
+      CREATE TABLE IF NOT EXISTS translation_project_files (
+        id                      TEXT PRIMARY KEY,
+        translation_project_id  TEXT NOT NULL REFERENCES translation_projects(id) ON DELETE CASCADE,
+        file_path               TEXT NOT NULL,
+        source_code             TEXT NOT NULL,
+        source_language         TEXT,
+        status                  TEXT NOT NULL DEFAULT 'pending',
+        job_id                  TEXT REFERENCES translation_jobs(id) ON DELETE SET NULL,
+        deterministic           INTEGER,
+        analysis                TEXT,
+        confidence_score        REAL,
+        error_message           TEXT,
+        created_at              TEXT NOT NULL,
+        updated_at              TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_tpf_project ON translation_project_files(translation_project_id);
+      CREATE INDEX IF NOT EXISTS idx_tpf_job ON translation_project_files(job_id);
+      CREATE INDEX IF NOT EXISTS idx_tpf_status ON translation_project_files(status);
+    `,
+  },
 ];
 
 export function runMigrations(db: Database.Database): void {

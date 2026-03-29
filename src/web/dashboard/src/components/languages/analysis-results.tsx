@@ -1,5 +1,6 @@
 import { Cpu, AlertTriangle } from "lucide-react";
 import type { TranslationAnalysis } from "@/lib/types";
+import { DeterministicIndicator } from "./deterministic-indicator";
 
 interface AnalysisResultsProps {
   analysis: TranslationAnalysis | null;
@@ -70,6 +71,9 @@ export function AnalysisResults({ analysis }: AnalysisResultsProps): React.JSX.E
             </div>
           </div>
         )}
+
+        {/* Deterministic indicator */}
+        <DeterministicIndicator analysis={analysis} />
 
         {/* Ambiguous constructs warning */}
         {analysis.ambiguousConstructs && analysis.ambiguousConstructs.length > 0 && (

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Play, CheckCircle, RotateCcw, Copy, Check, Loader2 } from "lucide-react";
+import { Play, CheckCircle, RotateCcw, Copy, Check, Loader2, Download } from "lucide-react";
 import type { UseTranslationState } from "@/hooks/use-translation";
 import type { TranslationScope } from "@/lib/types";
 
@@ -132,6 +132,26 @@ export function TranslationForm({
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 New
+              </button>
+            )}
+
+            {isDone && translation.finalizeResult?.job?.targetCode && (
+              <button
+                onClick={() => {
+                  const code = translation.finalizeResult?.job?.targetCode;
+                  if (!code) return;
+                  const blob = new Blob([code], { type: "text/plain" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `translated.txt`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-green-500/30 text-green-500 text-xs font-medium hover:bg-green-500/5 transition-colors"
+              >
+                <Download className="w-3 h-3" />
+                Download
               </button>
             )}
           </div>

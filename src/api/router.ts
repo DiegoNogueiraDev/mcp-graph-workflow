@@ -25,6 +25,7 @@ import { createJourneyRouter } from "./routes/journey.js";
 import { createFolderRouter } from "./routes/folder.js";
 import { createSiebelRouter } from "./routes/siebel.js";
 import { createTranslationRouter } from "./routes/translation.js";
+import { createTranslationProjectRouter } from "./routes/translation-project.js";
 import { errorHandler } from "./middleware/error-handler.js";
 import { requestLogger } from "./middleware/request-logger.js";
 import { setLogListener } from "../core/utils/logger.js";
@@ -77,6 +78,7 @@ export function createApiRouter(storeOrOptions: SqliteStore | ApiRouterOptions):
   router.use("/logs", createLogsRouter());
   router.use("/journey", createJourneyRouter(storeRef, getBasePath));
   router.use("/translation", createTranslationRouter(storeRef, eventBus ?? undefined));
+  router.use("/translation/projects", createTranslationProjectRouter(storeRef, eventBus ?? undefined));
 
   if (storeManager) {
     router.use("/folder", createFolderRouter(storeManager));

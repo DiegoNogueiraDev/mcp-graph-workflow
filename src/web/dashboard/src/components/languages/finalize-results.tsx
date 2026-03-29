@@ -1,5 +1,6 @@
 import { Shield, AlertTriangle, Eye, FileCode2 } from "lucide-react";
 import type { TranslationFinalizeResult } from "@/lib/types";
+import { DeterministicIndicator } from "./deterministic-indicator";
 
 interface FinalizeResultsProps {
   result: TranslationFinalizeResult | null;
@@ -37,6 +38,12 @@ export function FinalizeResults({ result }: FinalizeResultsProps): React.JSX.Ele
         <ConfidenceBadge score={evidence.confidenceScore} />
       </div>
       <div className="p-4 space-y-4">
+        {/* Deterministic indicator from evidence */}
+        <DeterministicIndicator
+          deterministicPct={Math.round(evidence.confidenceScore * 100)}
+          totalConstructs={evidence.translatedConstructs.length + evidence.risks.length}
+        />
+
         {/* Translated constructs */}
         {evidence.translatedConstructs.length > 0 && (
           <div>

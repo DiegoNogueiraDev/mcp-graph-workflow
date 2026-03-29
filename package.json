@@ -62,6 +62,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.58.2",
+    "@types/adm-zip": "^0.5.8",
     "@types/better-sqlite3": "^7.6.13",
     "@types/express": "^5.0.6",
     "@types/multer": "^2.1.0",
@@ -78,8 +79,9 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
-    "@mcp-graph-workflow/mcp-graph": "^5.24.1",
+    "@mcp-graph-workflow/mcp-graph": "^5.25.0",
     "@modelcontextprotocol/sdk": "^1.27.1",
+    "adm-zip": "^0.5.16",
     "better-sqlite3": "^12.6.2",
     "cheerio": "^1.2.0",
     "commander": "^14.0.3",

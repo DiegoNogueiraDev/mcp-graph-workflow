@@ -1,4 +1,4 @@
-import type { GraphDocument, GraphEdge, GraphNode, GraphStats, IntegrationStatus, CodeGraphStatus, ProjectMemory, ReindexResult, LogEntry, FolderInfo, OpenFolderResult, BrowseResult, CodeGraphData, ImpactResult, KnowledgeStats, Skill, CustomSkill, CustomSkillInput, ContextBudget, JourneyMap, JourneyMapFull, TranslationAnalysis, TranslationJob, TranslationPrepareResult, TranslationFinalizeResult, TranslationStats } from "./types";
+import type { GraphDocument, GraphEdge, GraphNode, GraphStats, IntegrationStatus, CodeGraphStatus, ProjectMemory, ReindexResult, LogEntry, FolderInfo, OpenFolderResult, BrowseResult, CodeGraphData, ImpactResult, KnowledgeStats, Skill, CustomSkill, CustomSkillInput, ContextBudget, JourneyMap, JourneyMapFull, TranslationAnalysis, TranslationJob, TranslationPrepareResult, TranslationFinalizeResult, TranslationStats, TranslationKnowledgeStats, TranslationProject, TranslationProjectFile, TranslationProjectSummary, TranslationGraphData } from "./types";
 
 const BASE = "/api/v1";
 const REQUEST_TIMEOUT_MS = 30_000;
@@ -367,4 +367,53 @@ export const apiClient = {
     request<null>(`/translation/jobs/${id}`, { method: "DELETE" }),
   translationStats: () =>
     request<TranslationStats>("/translation/stats"),
+
+  // --- Translation Knowledge ---
+  translationGetKnowledge: () =>
+    request<TranslationKnowledgeStats>("/translation/knowledge"),
+  translationSearchKnowledge: (query: string) =>
+    request<{ query: string; results: Array<{ id: string; title: string; snippet?: string; metadata?: Record<string, unknown>; score?: number; createdAt: string }> }>(`/translation/knowledge/search?q=${encodeURIComponent(query)}`),
+
+  // --- Translation Projects ---
+  translationUploadProject: (file: File, targetLanguage: string, name?: string) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("targetLanguage", targetLanguage);
+    if (name) formData.append("name", name);
+    return fetch(`${BASE}/translation/projects/upload`, {
+      method: "POST",
+      body: formData,
+    }).then(async (res) => {
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? res.statusText);
+      return res.json() as Promise<{ project: TranslationProject; files: TranslationProjectFile[] }>;
+    });
+  },
+  translationListProjects: () =>
+    request<{ projects: TranslationProject[] }>("/translation/projects"),
+  translationGetProject: (id: string) =>
+    request<{ project: TranslationProject; files: TranslationProjectFile[] }>(`/translation/projects/${id}`),
+  translationPrepareFiles: (projectId: string, fileIds?: string[]) =>
+    request<{ results: Array<{ fileId: string; jobId: string; prompt: string }> }>(`/translation/projects/${projectId}/prepare`, {
+      method: "POST", body: JSON.stringify({ fileIds }),
+    }),
+  translationFinalizeFile: (projectId: string, fileId: string, generatedCode: string) =>
+    request<TranslationFinalizeResult>(`/translation/projects/${projectId}/files/${fileId}/finalize`, {
+      method: "POST", body: JSON.stringify({ generatedCode }),
+    }),
+  translationDownloadProject: async (projectId: string): Promise<Blob> => {
+    const res = await fetch(`${BASE}/translation/projects/${projectId}/download`);
+    if (!res.ok) throw new Error("Download failed");
+    return res.blob();
+  },
+  translationDownloadFile: async (projectId: string, fileId: string): Promise<Blob> => {
+    const res = await fetch(`${BASE}/translation/projects/${projectId}/files/${fileId}/download`);
+    if (!res.ok) throw new Error("File download failed");
+    return res.blob();
+  },
+  translationProjectSummary: (projectId: string) =>
+    request<TranslationProjectSummary>(`/translation/projects/${projectId}/summary`),
+  translationProjectGraph: (projectId: string) =>
+    request<TranslationGraphData>(`/translation/projects/${projectId}/graph`),
+  translationDeleteProject: (projectId: string) =>
+    request<null>(`/translation/projects/${projectId}`, { method: "DELETE" }),
 };

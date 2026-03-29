@@ -398,3 +398,94 @@ export interface TranslationStats {
   pending: number;
   avgConfidence: number;
 }
+
+// --- Translation Project Types (v2) ---
+
+export type TranslationProjectStatus = "uploading" | "analyzing" | "ready" | "translating" | "done" | "failed";
+export type TranslationProjectFileStatus = "pending" | "analyzing" | "analyzed" | "translating" | "done" | "failed";
+
+export interface TranslationProject {
+  id: string;
+  projectId: string;
+  name: string;
+  sourceLanguage?: string;
+  targetLanguage: string;
+  status: TranslationProjectStatus;
+  totalFiles: number;
+  processedFiles: number;
+  overallConfidence?: number;
+  deterministicPct?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TranslationProjectFile {
+  id: string;
+  translationProjectId: string;
+  filePath: string;
+  sourceCode: string;
+  sourceLanguage?: string;
+  status: TranslationProjectFileStatus;
+  jobId?: string;
+  deterministic?: boolean;
+  analysis?: TranslationAnalysis;
+  confidenceScore?: number;
+  errorMessage?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TranslationProjectSummary {
+  overallConfidence: number;
+  deterministicPct: number;
+  totalFiles: number;
+  analyzedFiles: number;
+  translatedFiles: number;
+  failedFiles: number;
+  pendingFiles: number;
+}
+
+export interface DeterministicAnalysis {
+  percentage: number;
+  ruleTranslatedCount: number;
+  aiNeededCount: number;
+  totalConstructs: number;
+  ruleTranslated: string[];
+  aiNeeded: Array<{ construct: string; reason: string }>;
+}
+
+export interface TranslationKnowledgeEntry {
+  id: string;
+  title: string;
+  sourceType: string;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface TranslationKnowledgeStats {
+  totalDocuments: number;
+  byLanguagePair: Array<{ pair: string; count: number }>;
+  avgConfidence: number;
+  recentEntries: TranslationKnowledgeEntry[];
+}
+
+export interface TranslationGraphNode {
+  id: string;
+  path: string;
+  language?: string;
+  status: string;
+  confidence?: number;
+}
+
+export interface TranslationGraphEdge {
+  id: string;
+  from: string;
+  to: string;
+  method: string;
+  confidence: number;
+}
+
+export interface TranslationGraphData {
+  nodes: TranslationGraphNode[];
+  edges: TranslationGraphEdge[];
+}

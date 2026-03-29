@@ -11,6 +11,7 @@ import { TranslationOrchestrator } from "../../core/translation/translation-orch
 import { ConstructRegistry } from "../../core/translation/ucr/construct-registry.js";
 import { loadAndSeedRegistry } from "../../core/translation/ucr/construct-seed.js";
 import { CodeStore } from "../../core/code/code-store.js";
+import { KnowledgeStore } from "../../core/store/knowledge-store.js";
 import { logger } from "../../core/utils/logger.js";
 
 const AnalyzeSchema = z.object({
@@ -54,6 +55,11 @@ export function createTranslationRouter(storeRef: StoreRef, eventBus?: GraphEven
   function getStore(): TranslationStore {
     getOrchestrator(); // ensure initialized
     return _store as TranslationStore;
+  }
+
+  function getKnowledgeStore(): KnowledgeStore {
+    const db = storeRef.current.getDb();
+    return new KnowledgeStore(db);
   }
 
   function requireProjectId(): string {
@@ -205,6 +211,86 @@ export function createTranslationRouter(storeRef: StoreRef, eventBus?: GraphEven
     } catch (err) {
       logger.error("Translation stats failed", { error: err });
       res.status(errorStatus(err)).json({ error: err instanceof Error ? err.message : "Stats failed" });
+    }
+  });
+
+  /** GET /knowledge — stats + entries from translation_evidence */
+  router.get("/knowledge", (_req, res) => {
+    try {
+      requireProjectId();
+      const ks = getKnowledgeStore();
+
+      // Get all translation evidence documents
+      const docs = ks.list({ sourceType: "translation_evidence" });
+
+      // Aggregate stats
+      const byPair: Record<string, number> = {};
+      let totalConfidence = 0;
+      let confidenceCount = 0;
+
+      for (const doc of docs) {
+        const meta = doc.metadata as Record<string, unknown> | undefined;
+        if (meta) {
+          const src = (meta.sourceLanguage as string) ?? "unknown";
+          const tgt = (meta.targetLanguage as string) ?? "unknown";
+          const key = `${src} → ${tgt}`;
+          byPair[key] = (byPair[key] ?? 0) + 1;
+          if (typeof meta.confidenceScore === "number") {
+            totalConfidence += meta.confidenceScore;
+            confidenceCount++;
+          }
+        }
+      }
+
+      res.json({
+        totalDocuments: docs.length,
+        byLanguagePair: Object.entries(byPair).map(([pair, count]) => ({ pair, count })),
+        avgConfidence: confidenceCount > 0 ? totalConfidence / confidenceCount : 0,
+        recentEntries: docs.slice(0, 20).map(d => ({
+          id: d.id,
+          title: d.title,
+          sourceType: d.sourceType,
+          metadata: d.metadata,
+          createdAt: d.createdAt,
+        })),
+      });
+    } catch (err) {
+      logger.error("Translation knowledge failed", { error: err });
+      res.status(errorStatus(err)).json({ error: err instanceof Error ? err.message : "Knowledge failed" });
+    }
+  });
+
+  /** GET /knowledge/search — FTS search over translation evidence */
+  router.get("/knowledge/search", (req, res) => {
+    try {
+      requireProjectId();
+      const query = req.query.q as string;
+      if (!query || query.trim().length === 0) {
+        res.status(400).json({ error: "Query parameter 'q' is required" });
+        return;
+      }
+
+      const ks = getKnowledgeStore();
+      const allResults = ks.search(query, 100);
+      // Filter to translation_evidence only
+      const results = allResults
+        .filter(r => r.sourceType === "translation_evidence")
+        .slice(0, 20);
+
+      res.json({
+        query,
+        results: results.map(r => ({
+          id: r.id,
+          title: r.title,
+          snippet: r.content?.substring(0, 200),
+          metadata: r.metadata,
+          score: r.score,
+          createdAt: r.createdAt,
+        })),
+      });
+    } catch (err) {
+      logger.error("Translation knowledge search failed", { error: err });
+      res.status(errorStatus(err)).json({ error: err instanceof Error ? err.message : "Search failed" });
     }
   });
 
