@@ -77,7 +77,8 @@ function getCurrentGitHash(basePath?: string): string | null {
     }).trim();
     gitHashTimestamp = now;
     return cachedGitHash;
-  } catch {
+  } catch (err) {
+    logger.debug("codeIntelligence:gitHashFailure", { error: err instanceof Error ? err.message : String(err) });
     cachedGitHash = null;
     gitHashTimestamp = now;
     return null;
@@ -336,7 +337,8 @@ export function wrapToolsWithCodeIntelligence(server: McpServer, store: SqliteSt
       if (modeValue === "strict" || modeValue === "advisory" || modeValue === "off") {
         return modeValue;
       }
-    } catch {
+    } catch (err) {
+      logger.debug("codeIntelligence:loadModeFailure", { error: err instanceof Error ? err.message : String(err) });
       // No project loaded
     }
     return "off";

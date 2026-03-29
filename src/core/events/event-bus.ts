@@ -15,11 +15,19 @@ export class GraphEventBus {
     this.emitter.setMaxListeners(50);
   }
 
-  /** Emit a graph event */
+  /** Emit a graph event with error boundaries — one crashing handler won't stop others */
   emit(event: GraphEvent): void {
     logger.info("Event emitted", { type: event.type });
-    this.emitter.emit(event.type, event);
-    this.emitter.emit("*", event);
+    try {
+      this.emitter.emit(event.type, event);
+    } catch (err) {
+      logger.error("Event handler crashed", { type: event.type, error: err instanceof Error ? err.message : String(err) });
+    }
+    try {
+      this.emitter.emit("*", event);
+    } catch (err) {
+      logger.error("Wildcard handler crashed", { type: event.type, error: err instanceof Error ? err.message : String(err) });
+    }
   }
 
   /** Listen for a specific event type */

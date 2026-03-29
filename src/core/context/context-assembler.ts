@@ -177,6 +177,12 @@ export function assembleContext(
     sections: sections.map((s) => `${s.name}:${s.tokens}`).join(", "),
   });
 
+  // Hard limit: drop last sections until within budget
+  while (tokensUsed > tokenBudget && sections.length > 1) {
+    const removed = sections.pop();
+    if (removed) tokensUsed -= removed.tokens;
+    logger.debug("context:budget-truncated", { removed: removed?.name, tokensUsed, tokenBudget });
+  }
   if (tokensUsed > tokenBudget) {
     logger.warn("context:budget-exceeded", { tokensUsed, tokenBudget, overage: tokensUsed - tokenBudget });
   }

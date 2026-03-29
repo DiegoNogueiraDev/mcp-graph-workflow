@@ -13,6 +13,7 @@ import {
 } from "../../core/skills/skill-store.js";
 import { CustomSkillInputSchema } from "../../schemas/skill.schema.js";
 import type { LifecyclePhase } from "../../core/planner/lifecycle-phase.js";
+import { logger } from "../../core/utils/logger.js";
 import type { StoreRef } from "../../core/store/store-manager.js";
 
 interface SkillResponse {
@@ -37,7 +38,8 @@ export function createSkillsRouter(getBasePath: () => string, storeRef?: StoreRe
       const project = storeRef.current.getProject();
       if (!project) return null;
       return { db: storeRef.current.getDb(), projectId: project.id };
-    } catch {
+    } catch (err) {
+      logger.debug("skills:getProjectContextFailure", { error: err instanceof Error ? err.message : String(err) });
       return null;
     }
   }
@@ -90,7 +92,8 @@ export function createSkillsRouter(getBasePath: () => string, storeRef?: StoreRe
           try {
             const content = await readFile(skill.filePath, "utf-8");
             tokens = estimateTokens(content);
-          } catch {
+          } catch (err) {
+            logger.debug("skills:fileUnreadable", { error: err instanceof Error ? err.message : String(err) });
             // file unreadable — default to 0
           }
 

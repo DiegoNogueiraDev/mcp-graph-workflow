@@ -62,7 +62,8 @@ async function tryPackageJson(basePath: string): Promise<DetectedStack | null> {
       libraries,
       sourceFile: "package.json",
     };
-  } catch {
+  } catch (err) {
+    logger.debug("stackDetector:packageJsonReadFailure", { error: err instanceof Error ? err.message : String(err) });
     return null;
   }
 }
@@ -89,7 +90,8 @@ async function tryRequirementsTxt(basePath: string): Promise<DetectedStack | nul
       libraries,
       sourceFile: "requirements.txt",
     };
-  } catch {
+  } catch (err) {
+    logger.debug("stackDetector:requirementsTxtReadFailure", { error: err instanceof Error ? err.message : String(err) });
     return null;
   }
 }
@@ -119,7 +121,8 @@ async function tryGoMod(basePath: string): Promise<DetectedStack | null> {
       libraries,
       sourceFile: "go.mod",
     };
-  } catch {
+  } catch (err) {
+    logger.debug("stackDetector:goModReadFailure", { error: err instanceof Error ? err.message : String(err) });
     return null;
   }
 }

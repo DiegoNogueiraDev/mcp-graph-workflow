@@ -59,16 +59,32 @@ if (config.integrations.codeGraphAutoIndex) {
 }
 
 // ── Cleanup on shutdown ──────────────────────────────────
+let httpServer: ReturnType<typeof app.listen>;
+
 function cleanup(signal: string): void {
   logger.info("server:shutdown", { signal });
-  storeManager.close();
-  logger.info("server:shutdown:ok", { signal });
-  process.exit(0);
+  try {
+    // 1. Stop accepting new connections and drain in-flight requests
+    if (httpServer) {
+      httpServer.close(() => {
+        logger.info("server:http-closed");
+      });
+    }
+    // 2. Close store (flushes WAL checkpoint)
+    storeManager.close();
+    logger.info("server:shutdown:ok", { signal });
+    process.exit(0);
+  } catch (err) {
+    logger.error("server:shutdown:error", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    process.exit(1);
+  }
 }
 process.on("SIGTERM", () => cleanup("SIGTERM"));
 process.on("SIGINT", () => cleanup("SIGINT"));
 process.on("SIGHUP", () => cleanup("SIGHUP"));
 
-app.listen(PORT, () => {
+httpServer = app.listen(PORT, () => {
   logger.info(`mcp-graph server listening on http://localhost:${PORT}/mcp`);
 });

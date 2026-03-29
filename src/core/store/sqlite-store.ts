@@ -116,12 +116,17 @@ function rowToNode(row: NodeRow): GraphNode {
   if (row.description) node.description = row.description;
   if (row.xp_size) node.xpSize = row.xp_size as GraphNode["xpSize"];
   if (row.estimate_minutes != null) node.estimateMinutes = row.estimate_minutes;
-  if (row.tags) node.tags = JSON.parse(row.tags);
+  if (row.tags) {
+    try { node.tags = JSON.parse(row.tags); } catch { node.tags = []; }
+  }
   if (row.parent_id) node.parentId = row.parent_id;
   if (row.sprint) node.sprint = row.sprint;
-  if (row.acceptance_criteria)
-    node.acceptanceCriteria = JSON.parse(row.acceptance_criteria);
-  if (row.metadata) node.metadata = JSON.parse(row.metadata);
+  if (row.acceptance_criteria) {
+    try { node.acceptanceCriteria = JSON.parse(row.acceptance_criteria); } catch { node.acceptanceCriteria = []; }
+  }
+  if (row.metadata) {
+    try { node.metadata = JSON.parse(row.metadata); } catch { node.metadata = {}; }
+  }
 
   if (row.source_file) {
     const ref: SourceRef = { file: row.source_file };
@@ -166,7 +171,9 @@ function rowToEdge(row: EdgeRow): GraphEdge {
 
   if (row.weight != null) edge.weight = row.weight;
   if (row.reason) edge.reason = row.reason;
-  if (row.metadata) edge.metadata = JSON.parse(row.metadata);
+  if (row.metadata) {
+    try { edge.metadata = JSON.parse(row.metadata); } catch { /* corrupted edge metadata — skip */ }
+  }
 
   return edge;
 }
@@ -649,25 +656,24 @@ export class SqliteStore {
       };
       collectDescendants(id);
 
-      // Delete edges and nodes for all collected IDs
-      for (const nodeId of toDelete) {
+      // Batch DELETE edges and nodes for all collected IDs (avoids N+1 pattern)
+      if (toDelete.length > 0) {
+        const placeholders = toDelete.map(() => "?").join(",");
         this.db
           .prepare(
-            "DELETE FROM edges WHERE project_id = ? AND (from_node = ? OR to_node = ?)",
+            `DELETE FROM edges WHERE project_id = ? AND (from_node IN (${placeholders}) OR to_node IN (${placeholders}))`,
           )
-          .run(pid, nodeId, nodeId);
-      }
+          .run(pid, ...toDelete, ...toDelete);
 
-      let anyDeleted = false;
-      for (const nodeId of toDelete) {
         const result = this.db
-          .prepare("DELETE FROM nodes WHERE id = ? AND project_id = ?")
-          .run(nodeId, pid);
+          .prepare(`DELETE FROM nodes WHERE project_id = ? AND id IN (${placeholders})`)
+          .run(pid, ...toDelete);
         if (result.changes > 0) {
-          anyDeleted = true;
-          deletedNodeIds.push(nodeId);
+          deletedNodeIds.push(...toDelete);
         }
       }
+
+      const anyDeleted = deletedNodeIds.length > 0;
 
       return anyDeleted;
     })();

@@ -52,8 +52,8 @@ const ACCEPTANCE_PATTERNS = [
   /\bgiven\b.+\bwhen\b/i, /\bwhen\b.+\bthen\b/i,
   /\bdado\b.+\bquando\b/i, /\bquando\b.+\bent[aã]o\b/i,
   // Declarative AC patterns (user/system can/should)
-  /\busu[aá]rio\s+(pode|consegue|deve\s+poder)\b/i,
-  /\buser\s+(can|should\s+be\s+able\s+to)\b/i,
+  /\busu[aá]rio\s{1,5}(pode|consegue|deve\s{1,5}poder)\b/i,
+  /\buser\s{1,5}(can|should\s{1,5}be\s{1,5}able\s{1,5}to)\b/i,
 ];
 
 const RISK_PATTERNS = [

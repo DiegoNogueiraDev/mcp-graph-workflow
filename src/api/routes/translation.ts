@@ -54,6 +54,20 @@ export function createTranslationRouter(storeRef: StoreRef, eventBus?: GraphEven
     return _store as TranslationStore;
   }
 
+  function requireProjectId(): string {
+    const id = storeRef.current.getProject()?.id;
+    if (!id) throw new Error("NO_ACTIVE_PROJECT");
+    return id;
+  }
+
+  /** Map known error messages to HTTP status codes */
+  function errorStatus(err: unknown): number {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg === "NO_ACTIVE_PROJECT") return 409;
+    if (msg.includes("not found") || msg.includes("Not found")) return 404;
+    return 500;
+  }
+
   /** POST /analyze — analyze source code */
   router.post("/analyze", (req, res) => {
     try {
@@ -65,6 +79,11 @@ export function createTranslationRouter(storeRef: StoreRef, eventBus?: GraphEven
 
       const { code, languageHint, targetLanguage } = parsed.data;
       const analysis = getOrchestrator().analyzeSource(code, { languageHint, targetLanguage });
+      eventBus?.emit({
+        type: "translation:analyzed",
+        timestamp: new Date().toISOString(),
+        payload: { constructCount: analysis.totalConstructs, complexity: analysis.complexityScore },
+      });
       res.json(analysis);
     } catch (err) {
       logger.error("Translation analyze failed", { error: err });
@@ -82,7 +101,7 @@ export function createTranslationRouter(storeRef: StoreRef, eventBus?: GraphEven
       }
 
       const { sourceCode, sourceLanguage, targetLanguage, scope } = parsed.data;
-      const projectId = storeRef.current.getProject()?.id ?? "default";
+      const projectId = requireProjectId();
       const result = getOrchestrator().prepareTranslation({
         projectId,
         sourceCode,
@@ -94,21 +113,22 @@ export function createTranslationRouter(storeRef: StoreRef, eventBus?: GraphEven
       eventBus?.emit({ type: "translation:job_created", timestamp: new Date().toISOString(), payload: { jobId: result.jobId, targetLanguage, scope } });
       res.status(201).json(result);
     } catch (err) {
+      const status = errorStatus(err);
       logger.error("Translation job creation failed", { error: err });
       eventBus?.emit({ type: "translation:error", timestamp: new Date().toISOString(), payload: { error: String(err) } });
-      res.status(500).json({ error: "Job creation failed" });
+      res.status(status).json({ error: err instanceof Error ? err.message : "Job creation failed" });
     }
   });
 
   /** GET /jobs — list translation jobs */
   router.get("/jobs", (_req, res) => {
     try {
-      const projectId = storeRef.current.getProject()?.id ?? "default";
+      const projectId = requireProjectId();
       const jobs = getStore().listJobs(projectId);
       res.json({ jobs });
     } catch (err) {
       logger.error("Translation list failed", { error: err });
-      res.status(500).json({ error: "List failed" });
+      res.status(errorStatus(err)).json({ error: err instanceof Error ? err.message : "List failed" });
     }
   });
 
@@ -140,9 +160,10 @@ export function createTranslationRouter(storeRef: StoreRef, eventBus?: GraphEven
       eventBus?.emit({ type: "translation:finalized", timestamp: new Date().toISOString(), payload: { jobId: req.params.id, confidence: result.evidence?.confidenceScore } });
       res.json(result);
     } catch (err) {
+      const status = errorStatus(err);
       logger.error("Translation finalize failed", { error: err });
       eventBus?.emit({ type: "translation:error", timestamp: new Date().toISOString(), payload: { jobId: req.params.id, error: String(err) } });
-      res.status(500).json({ error: "Finalize failed" });
+      res.status(status).json({ error: err instanceof Error ? err.message : "Finalize failed" });
     }
   });
 
@@ -157,14 +178,14 @@ export function createTranslationRouter(storeRef: StoreRef, eventBus?: GraphEven
       res.status(204).send();
     } catch (err) {
       logger.error("Translation delete failed", { error: err });
-      res.status(500).json({ error: "Delete failed" });
+      res.status(errorStatus(err)).json({ error: err instanceof Error ? err.message : "Delete failed" });
     }
   });
 
   /** GET /stats — translation statistics */
   router.get("/stats", (_req, res) => {
     try {
-      const projectId = storeRef.current.getProject()?.id ?? "default";
+      const projectId = requireProjectId();
       const jobs = getStore().listJobs(projectId);
       const done = jobs.filter((j) => j.status === "done");
       const failed = jobs.filter((j) => j.status === "failed");
@@ -181,7 +202,7 @@ export function createTranslationRouter(storeRef: StoreRef, eventBus?: GraphEven
       });
     } catch (err) {
       logger.error("Translation stats failed", { error: err });
-      res.status(500).json({ error: "Stats failed" });
+      res.status(errorStatus(err)).json({ error: err instanceof Error ? err.message : "Stats failed" });
     }
   });
 

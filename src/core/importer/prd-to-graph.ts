@@ -172,15 +172,22 @@ function inferKeywordDeps(nodes: GraphNode[]): GraphEdge[] {
     /somente depois/i, /before/i, /after/i, /depends on/i,
   ];
 
+  // Build title index for O(n) lookup instead of O(n²)
+  const titleIndex = new Map<string, GraphNode>();
+  for (const node of nodes) {
+    titleIndex.set(node.title.toLowerCase(), node);
+  }
+
   for (const node of nodes) {
     if (!node.description) continue;
-    for (const other of nodes) {
-      if (node.id === other.id) continue;
-      // Check if node's description references other's title
-      const titleLower = other.title.toLowerCase();
-      const descLower = node.description.toLowerCase();
+    const descLower = node.description.toLowerCase();
+    if (!depKeywords.some((p) => p.test(descLower))) continue;
 
-      if (descLower.includes(titleLower) && depKeywords.some((p) => p.test(descLower))) {
+    // Check if description contains any other node's title
+    for (const [titleLower, other] of titleIndex) {
+      if (node.id === other.id) continue;
+      if (titleLower.length < 3) continue; // skip very short titles to avoid false matches
+      if (descLower.includes(titleLower)) {
         edges.push(
           createEdge(node.id, other.id, "depends_on", `Keyword inference from description`, true, 0.5),
         );

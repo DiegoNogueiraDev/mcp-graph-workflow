@@ -45,7 +45,7 @@ export function runSynthesisCycle(db: Database.Database): SynthesisResult {
  */
 function synthesizeDecisionPatterns(db: Database.Database, store: KnowledgeStore): number {
   const decisions = db
-    .prepare("SELECT id, title, content, metadata FROM knowledge_documents WHERE source_type = 'ai_decision'")
+    .prepare("SELECT id, title, content, metadata FROM knowledge_documents WHERE source_type = 'ai_decision' LIMIT 1000")
     .all() as Array<{ id: string; title: string; content: string; metadata: string | null }>;
 
   if (decisions.length < MIN_DOCS_FOR_SYNTHESIS) return 0;
@@ -96,7 +96,7 @@ function synthesizeDecisionPatterns(db: Database.Database, store: KnowledgeStore
  */
 function synthesizeSprintTrends(db: Database.Database, store: KnowledgeStore): number {
   const sprints = db
-    .prepare("SELECT content, metadata FROM knowledge_documents WHERE source_type = 'sprint_plan' ORDER BY created_at")
+    .prepare("SELECT content, metadata FROM knowledge_documents WHERE source_type = 'sprint_plan' ORDER BY created_at LIMIT 1000")
     .all() as Array<{ content: string; metadata: string | null }>;
 
   if (sprints.length < MIN_DOCS_FOR_SYNTHESIS) return 0;

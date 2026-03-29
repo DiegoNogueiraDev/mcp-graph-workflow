@@ -149,9 +149,11 @@ describe("API /api/v1/folder", () => {
       expect(projectEntry.hasGraph).toBe(true);
     });
 
-    it("should return 400 for nonexistent path", async () => {
+    it("should return error for nonexistent path", async () => {
+      // Path outside home directory returns 403; nonexistent path under home returns 400
+      const home = process.env.HOME ?? process.env.USERPROFILE ?? "/tmp";
       const res = await request(app)
-        .get("/api/v1/folder/browse?path=/nonexistent/abc123");
+        .get(`/api/v1/folder/browse?path=${encodeURIComponent(home + "/nonexistent_abc123_xyz")}`);
 
       expect(res.status).toBe(400);
       expect(res.body.error).toBeDefined();

@@ -95,9 +95,10 @@ export function removeNodeFromKnowledge(db: Database.Database, nodeId: string): 
  */
 export function indexAllNodes(db: Database.Database, projectId?: string): { indexed: number } {
   try {
+    // LIMIT prevents OOM on very large databases
     const rows = projectId
-      ? db.prepare("SELECT * FROM nodes WHERE project_id = ?").all(projectId) as Array<Record<string, unknown>>
-      : db.prepare("SELECT * FROM nodes").all() as Array<Record<string, unknown>>;
+      ? db.prepare("SELECT * FROM nodes WHERE project_id = ? LIMIT 10000").all(projectId) as Array<Record<string, unknown>>
+      : db.prepare("SELECT * FROM nodes LIMIT 10000").all() as Array<Record<string, unknown>>;
 
     let indexed = 0;
     for (const row of rows) {

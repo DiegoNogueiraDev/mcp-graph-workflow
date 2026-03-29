@@ -12,6 +12,7 @@ import type { GraphEventBus } from "../events/event-bus.js";
 import type { GraphEvent } from "../events/event-types.js";
 import type { SqliteStore } from "../store/sqlite-store.js";
 import { KnowledgeStore } from "../store/knowledge-store.js";
+import { invalidateRagContextCache } from "../context/rag-context.js";
 import { DocsCacheStore } from "../docs/docs-cache-store.js";
 import { EmbeddingStore } from "../rag/embedding-store.js";
 import { indexCachedDocs } from "../rag/docs-indexer.js";
@@ -34,12 +35,15 @@ export interface IntegrationStatus {
   error?: string;
 }
 
+const REINDEX_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+
 export class IntegrationOrchestrator {
   private store: SqliteStore;
   private eventBus: GraphEventBus;
   private basePath: string;
   private autoReindex: boolean;
   private statuses = new Map<string, IntegrationStatus>();
+  private reindexing = false;
 
   constructor(
     store: SqliteStore,
@@ -67,6 +71,11 @@ export class IntegrationOrchestrator {
     this.eventBus.on("knowledge:indexed", (event) => {
       this.onKnowledgeIndexed(event);
     });
+
+    // Invalidate RAG context cache on graph mutations so context stays fresh
+    for (const eventType of ["node:created", "node:updated", "node:deleted"] as const) {
+      this.eventBus.on(eventType, () => invalidateRagContextCache());
+    }
 
     // Siebel integration events
     this.eventBus.on("siebel:sif_imported", (event) => {
@@ -106,39 +115,53 @@ export class IntegrationOrchestrator {
    * Handle import:completed — reindex all knowledge + rebuild embeddings.
    */
   private async onImportCompleted(event: GraphEvent): Promise<void> {
-    logger.info("Orchestrator: import completed, reindexing", event.payload);
+    // Debounce: skip if already reindexing
+    if (this.reindexing) {
+      logger.info("Orchestrator: reindex already in progress, skipping");
+      return;
+    }
+    this.reindexing = true;
 
+    logger.info("Orchestrator: import completed, reindexing", event.payload);
     this.updateStatus("docs", "syncing");
 
     try {
-      const knowledgeStore = new KnowledgeStore(this.store.getDb());
-      const docsCacheStore = new DocsCacheStore(this.store.getDb());
+      const reindexWork = async (): Promise<void> => {
+        const knowledgeStore = new KnowledgeStore(this.store.getDb());
+        const docsCacheStore = new DocsCacheStore(this.store.getDb());
 
-      // Re-index docs cache
-      const docsResult = indexCachedDocs(knowledgeStore, docsCacheStore);
-      indexEntitiesForSource(this.store.getDb(), "docs");
+        const docsResult = indexCachedDocs(knowledgeStore, docsCacheStore);
+        indexEntitiesForSource(this.store.getDb(), "docs");
 
-      // Rebuild embeddings
-      const embeddingStore = new EmbeddingStore(this.store);
-      embeddingStore.clear();
-      const embResult = await indexAllEmbeddings(this.store, embeddingStore);
+        const embeddingStore = new EmbeddingStore(this.store);
+        embeddingStore.clear();
+        const embResult = await indexAllEmbeddings(this.store, embeddingStore);
 
-      this.updateStatus("docs", "idle");
+        this.updateStatus("docs", "idle");
+        this.eventBus.emitTyped("knowledge:indexed", {
+          source: "import_reindex",
+          documentsIndexed: docsResult.documentsIndexed + embResult.nodes + embResult.knowledge,
+        });
+        logger.info("Orchestrator: reindex complete", {
+          docsIndexed: docsResult.documentsIndexed,
+          embeddingNodes: embResult.nodes,
+          embeddingKnowledge: embResult.knowledge,
+        });
+      };
 
-      this.eventBus.emitTyped("knowledge:indexed", {
-        source: "import_reindex",
-        documentsIndexed: docsResult.documentsIndexed + embResult.nodes + embResult.knowledge,
-      });
-
-      logger.info("Orchestrator: reindex complete", {
-        docsIndexed: docsResult.documentsIndexed,
-        embeddingNodes: embResult.nodes,
-        embeddingKnowledge: embResult.knowledge,
-      });
+      // Timeout: prevent hanging forever
+      await Promise.race([
+        reindexWork(),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(`Reindex timed out after ${REINDEX_TIMEOUT_MS / 1000}s`)), REINDEX_TIMEOUT_MS),
+        ),
+      ]);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       this.updateStatus("docs", "error", message);
       logger.error("Orchestrator: reindex failed", { error: message });
+    } finally {
+      this.reindexing = false;
     }
   }
 

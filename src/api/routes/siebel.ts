@@ -82,7 +82,8 @@ export function createSiebelRouter(storeRef: StoreRef, getBasePath: () => string
           content: content,
           metadata: { fileName, importedAt: new Date().toISOString() },
         });
-      } catch {
+      } catch (err) {
+        logger.debug("siebel:knowledgeStoreInsertFailure", { error: err instanceof Error ? err.message : String(err) });
         // Non-fatal
       }
 
@@ -378,7 +379,8 @@ export function createSiebelRouter(storeRef: StoreRef, getBasePath: () => string
     } finally {
       try {
         await unlink(file.path);
-      } catch {
+      } catch (err) {
+        logger.debug("siebel:fileCleanupFailure", { error: err instanceof Error ? err.message : String(err) });
         // Cleanup failure is non-fatal
       }
     }

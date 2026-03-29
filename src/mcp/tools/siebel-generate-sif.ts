@@ -305,7 +305,8 @@ function loadReferenceObjects(knowledgeStore: KnowledgeStore): SiebelObject[] {
       try {
         const parseResult = parseSifContent(doc.content, doc.title);
         objects.push(...parseResult.objects);
-      } catch {
+      } catch (err) {
+        logger.debug("scaffold:docParseFailure", { error: err instanceof Error ? err.message : String(err) });
         // Individual doc parse failure — skip silently
       }
     }
@@ -316,7 +317,8 @@ function loadReferenceObjects(knowledgeStore: KnowledgeStore): SiebelObject[] {
     });
 
     return objects;
-  } catch {
+  } catch (err) {
+    logger.debug("scaffold:knowledgeSearchFailure", { error: err instanceof Error ? err.message : String(err) });
     // Empty knowledge store or search failure
     return [];
   }

@@ -61,7 +61,8 @@ function writeMcpJson(projectDir: string, dryRun?: boolean): UpdateStepResult {
   if (fileExists) {
     try {
       existing = JSON.parse(readFileSync(mcpConfigPath, "utf-8"));
-    } catch {
+    } catch (err) {
+      logger.debug("initProject:corruptedMcpJson", { error: err instanceof Error ? err.message : String(err) });
       // corrupted file, overwrite
     }
   }
@@ -97,7 +98,8 @@ function writeVscodeMcpJson(projectDir: string, dryRun?: boolean): UpdateStepRes
   if (fileExists) {
     try {
       existing = JSON.parse(readFileSync(vscodeMcpPath, "utf-8"));
-    } catch {
+    } catch (err) {
+      logger.debug("initProject:corruptedVscodeMcpJson", { error: err instanceof Error ? err.message : String(err) });
       // corrupted file, overwrite
     }
   }

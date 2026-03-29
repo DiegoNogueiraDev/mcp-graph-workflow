@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { logger } from "../../core/utils/logger.js";
 import type { StoreRef } from "../../core/store/store-manager.js";
 import { buildTaskContext, computeLayeredMetrics, type LayeredTokenMetrics } from "../../core/context/compact-context.js";
 import { detectCycles } from "../../core/planner/dependency-chain.js";
@@ -100,7 +101,8 @@ export function createBenchmarkRouter(storeRef: StoreRef): Router {
           const tokenStore = new ToolTokenStore(store.getDb());
           toolTokenUsage = tokenStore.getSummary(project.id);
         }
-      } catch {
+      } catch (err) {
+        logger.debug("benchmark:toolTokenStoreUnavailable", { error: err instanceof Error ? err.message : String(err) });
         // Pre-migration: table may not exist yet
       }
 

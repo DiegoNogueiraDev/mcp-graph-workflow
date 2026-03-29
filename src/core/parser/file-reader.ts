@@ -1,10 +1,13 @@
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { readPdfBuffer } from "./read-pdf.js";
 import { readHtmlContent } from "./read-html.js";
 import { readDocxContent } from "./read-docx.js";
 import { logger } from "../utils/logger.js";
 import { ValidationError } from "../utils/errors.js";
+
+/** Maximum file size in bytes (50 MB) */
+const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
 const SUPPORTED_EXTENSIONS = new Set([
   ".md", ".txt", ".pdf", ".html", ".htm",
@@ -37,7 +40,16 @@ export async function readFileContent(
     );
   }
 
-  logger.info("Reading file", { name, ext });
+  // Check file size before reading into memory
+  const fileStat = await stat(filePath);
+  if (fileStat.size > MAX_FILE_SIZE) {
+    throw new ValidationError(
+      `File too large: ${(fileStat.size / 1024 / 1024).toFixed(1)} MB (max ${MAX_FILE_SIZE / 1024 / 1024} MB)`,
+      [`file size ${fileStat.size} exceeds limit ${MAX_FILE_SIZE}`],
+    );
+  }
+
+  logger.info("Reading file", { name, ext, sizeBytes: fileStat.size });
 
   const buffer = await readFile(filePath);
   const sizeBytes = buffer.length;
