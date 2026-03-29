@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.27.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.26.0...mcp-graph-v5.27.0) (2026-03-29)
+
+
+### Features
+
+* **code-graph:** periodic reindex with git hash staleness + RAG sync ([f98c61d](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/f98c61d9a856c0a8112ffc73a2979534f69eed58))
+* **language-convert:** React Flow graph + expandable Knowledge entries ([45835bb](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/45835bbaaa05c4558d5541e2b5ddd649404ce891))
+
+
+### Bug Fixes
+
+* **code-graph:** increase default symbol limit from 500 to 10000 ([66c5b00](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/66c5b00db465285f38ff6f5423762a41980fca8d))
+
 ## [5.26.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.25.0...mcp-graph-v5.26.0) (2026-03-29)
 
 
