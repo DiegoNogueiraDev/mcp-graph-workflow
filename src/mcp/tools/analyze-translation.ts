@@ -14,6 +14,7 @@ import { ConstructRegistry } from "../../core/translation/ucr/construct-registry
 import { loadAndSeedRegistry } from "../../core/translation/ucr/construct-seed.js";
 import { logger } from "../../core/utils/logger.js";
 import { assertPathInsideProject } from "../../core/utils/fs.js";
+import { CodeStore } from "../../core/code/code-store.js";
 import { mcpText, mcpError } from "../response-helpers.js";
 
 const EXTENSION_TO_LANGUAGE: Record<string, string> = {
@@ -51,7 +52,8 @@ export function registerAnalyzeTranslation(server: McpServer, store: SqliteStore
       const registry = new ConstructRegistry(db);
       loadAndSeedRegistry(registry);
       const translationStore = new TranslationStore(db);
-      _orchestrator = new TranslationOrchestrator(registry, translationStore);
+      const codeStore = new CodeStore(db);
+      _orchestrator = new TranslationOrchestrator(registry, translationStore, codeStore);
     }
     return _orchestrator as TranslationOrchestrator;
   }
@@ -85,10 +87,13 @@ export function registerAnalyzeTranslation(server: McpServer, store: SqliteStore
           return mcpError("Either code or filePath is required");
         }
 
-        const analysis = getOrchestrator().analyzeSource(resolvedCode, {
-          languageHint: resolvedSourceLanguage,
-          targetLanguage,
-        });
+        const projectId = store.getProject()?.id;
+        const analysis = getOrchestrator().analyzeSource(
+          resolvedCode,
+          { languageHint: resolvedSourceLanguage, targetLanguage },
+          filePath ?? undefined,
+          projectId ?? undefined,
+        );
 
         return mcpText({
           ok: true,

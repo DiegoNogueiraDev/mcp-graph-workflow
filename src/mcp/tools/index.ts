@@ -39,6 +39,7 @@ import { registerTranslationJobs } from "./translation-jobs.js";
 // RAG knowledge tools
 import { registerKnowledgeFeedback } from "./knowledge-feedback.js";
 import { registerKnowledgeStats } from "./knowledge-stats.js";
+import { registerKnowledgeExport } from "./knowledge-export.js";
 // Consolidated tools
 import { registerNode } from "./node.js";
 import { registerValidate } from "./validate.js";
@@ -99,6 +100,7 @@ export function registerAllTools(server: McpServer, store: SqliteStore): void {
   // RAG knowledge tools
   registerKnowledgeFeedback(server, store);
   registerKnowledgeStats(server, store);
+  registerKnowledgeExport(server, store);
 
   // Consolidated tools
   registerNode(server, store);

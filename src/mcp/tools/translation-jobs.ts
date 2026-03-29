@@ -36,7 +36,10 @@ export function registerTranslationJobs(server: McpServer, store: SqliteStore): 
 
       try {
         const translationStore = getTranslationStore();
-        const projectId = store.getProject()?.id ?? "default";
+        const projectId = store.getProject()?.id;
+        if (!projectId) {
+          return mcpError("No active project. Use init or activate a project first.");
+        }
 
         switch (action) {
           case "list": {

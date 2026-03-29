@@ -10,6 +10,7 @@ import { TranslationStore } from "../../core/translation/translation-store.js";
 import { TranslationOrchestrator } from "../../core/translation/translation-orchestrator.js";
 import { ConstructRegistry } from "../../core/translation/ucr/construct-registry.js";
 import { loadAndSeedRegistry } from "../../core/translation/ucr/construct-seed.js";
+import { CodeStore } from "../../core/code/code-store.js";
 import { logger } from "../../core/utils/logger.js";
 
 const AnalyzeSchema = z.object({
@@ -44,7 +45,8 @@ export function createTranslationRouter(storeRef: StoreRef, eventBus?: GraphEven
       _registry = new ConstructRegistry(db);
       loadAndSeedRegistry(_registry);
       _store = new TranslationStore(db);
-      _orchestrator = new TranslationOrchestrator(_registry, _store);
+      const codeStore = new CodeStore(db);
+      _orchestrator = new TranslationOrchestrator(_registry, _store, codeStore);
     }
     return _orchestrator as TranslationOrchestrator;
   }

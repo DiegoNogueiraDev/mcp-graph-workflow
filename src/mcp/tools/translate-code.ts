@@ -14,6 +14,7 @@ import { ConstructRegistry } from "../../core/translation/ucr/construct-registry
 import { loadAndSeedRegistry } from "../../core/translation/ucr/construct-seed.js";
 import { logger } from "../../core/utils/logger.js";
 import { assertPathInsideProject } from "../../core/utils/fs.js";
+import { CodeStore } from "../../core/code/code-store.js";
 import { mcpText, mcpError } from "../response-helpers.js";
 
 const EXTENSION_TO_LANGUAGE: Record<string, string> = {
@@ -51,7 +52,8 @@ export function registerTranslateCode(server: McpServer, store: SqliteStore): vo
       const registry = new ConstructRegistry(db);
       loadAndSeedRegistry(registry);
       const translationStore = new TranslationStore(db);
-      _orchestrator = new TranslationOrchestrator(registry, translationStore);
+      const codeStore = new CodeStore(db);
+      _orchestrator = new TranslationOrchestrator(registry, translationStore, codeStore);
     }
     return _orchestrator as TranslationOrchestrator;
   }
@@ -107,7 +109,10 @@ export function registerTranslateCode(server: McpServer, store: SqliteStore): vo
         }
 
         // Prepare mode: analyze + create job + return prompt
-        const projectId = store.getProject()?.id ?? "default";
+        const projectId = store.getProject()?.id;
+        if (!projectId) {
+          return mcpError("No active project. Use init or activate a project first.");
+        }
         const prepareResult = orchestrator.prepareTranslation({
           projectId,
           sourceCode: resolvedCode,
