@@ -6,19 +6,18 @@ import { describe, it, expect } from "vitest";
 import {
   TranslationPipeline,
   type TranslationPipelineOptions,
-  type PipelineResult,
 } from "../../core/translation/pipeline/translation-pipeline.js";
 import type { ParsedConstruct } from "../../core/translation/parsers/parser-adapter.js";
 
 describe("TranslationPipeline", () => {
   // Mock parser that returns fixed constructs
-  const mockParser = (code: string): ParsedConstruct[] => [
+  const mockParser = (_code: string): ParsedConstruct[] => [
     { constructId: "uc_fn_def", name: "add", startLine: 1, endLine: 3 },
     { constructId: "uc_return", startLine: 2, endLine: 2 },
   ];
 
   // Mock AI translation function
-  const mockTranslate = async (prompt: string): Promise<string> => {
+  const mockTranslate = async (_prompt: string): Promise<string> => {
     return "def add(a, b):\n    return a + b";
   };
 

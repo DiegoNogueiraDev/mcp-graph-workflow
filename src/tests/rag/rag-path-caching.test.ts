@@ -2,7 +2,7 @@
  * TDD tests for extending cache to detail + default RAG paths.
  * Task 3.2: All 3 RAG paths should use caching.
  */
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { ResponseCache } from "../../core/rag/response-cache.js";
 
 describe("ResponseCache for RAG paths", () => {

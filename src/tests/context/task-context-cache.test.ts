@@ -2,7 +2,7 @@
  * TDD tests for TaskContextCache.
  * Task 5.1: Cache buildTaskContext result per nodeId.
  */
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { TaskContextCache } from "../../core/context/task-context-cache.js";
 import type { TaskContext } from "../../core/context/compact-context.js";
 

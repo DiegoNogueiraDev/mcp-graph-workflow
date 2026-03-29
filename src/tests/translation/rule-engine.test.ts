@@ -6,7 +6,7 @@ import { describe, it, expect } from "vitest";
 import { RuleEngine } from "../../core/translation/rules/rule-engine.js";
 import { TS_TO_PYTHON_RULES } from "../../core/translation/rules/ts-to-python-rules.js";
 import { PYTHON_TO_TS_RULES } from "../../core/translation/rules/python-to-ts-rules.js";
-import { createIRNode, type IRNode } from "../../core/translation/ir/ir-types.js";
+import { createIRNode, type IRNode, type IRNodeType } from "../../core/translation/ir/ir-types.js";
 
 describe("RuleEngine", () => {
   describe("TS → Python rules", () => {
@@ -143,7 +143,7 @@ describe("RuleEngine", () => {
 
       let matched = 0;
       for (const type of commonTypes) {
-        const node = createIRNode(type as any, { startLine: 1, endLine: 1 });
+        const node = createIRNode(type as IRNodeType, { startLine: 1, endLine: 1 });
         if (engine.matchRule(node)) matched++;
       }
 

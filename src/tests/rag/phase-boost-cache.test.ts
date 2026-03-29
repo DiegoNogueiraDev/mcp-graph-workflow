@@ -4,7 +4,6 @@
  */
 import { describe, it, expect, beforeEach } from "vitest";
 import { PhaseBoostCache } from "../../core/rag/phase-boost-cache.js";
-import type { LifecyclePhase } from "../../core/planner/lifecycle-phase.js";
 
 describe("PhaseBoostCache", () => {
   let cache: PhaseBoostCache;

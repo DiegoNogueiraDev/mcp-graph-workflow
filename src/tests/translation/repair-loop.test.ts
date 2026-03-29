@@ -5,7 +5,6 @@
 import { describe, it, expect } from "vitest";
 import {
   RepairLoop,
-  type RepairResult,
   type RepairFunction,
 } from "../../core/translation/repair/repair-loop.js";
 import type { ValidationResult } from "../../core/translation/validators/code-validator.js";
@@ -26,7 +25,7 @@ describe("RepairLoop", () => {
 
   // Mock validator that passes on second attempt
   let callCount = 0;
-  const mockValidatorPassOnSecond = (code: string): ValidationResult => {
+  const mockValidatorPassOnSecond = (_code: string): ValidationResult => {
     callCount++;
     if (callCount <= 1) {
       return {

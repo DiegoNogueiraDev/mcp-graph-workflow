@@ -3,7 +3,7 @@
  * Task 4.7: Queryable decision memory that influences rule ranking.
  */
 import { describe, it, expect, beforeEach } from "vitest";
-import { TranslationMemory, type MemoryEntry } from "../../core/translation/memory/translation-memory.js";
+import { TranslationMemory } from "../../core/translation/memory/translation-memory.js";
 
 describe("TranslationMemory", () => {
   let memory: TranslationMemory;

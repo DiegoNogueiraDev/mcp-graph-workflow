@@ -12,9 +12,13 @@ interface Rule {
 const LINE_RULES: Rule[] = [
   { pattern: /^\s*use\s+[\w:]+/, constructId: "uc_import_named" },
   { pattern: /^\s*async\s+fn\s+(\w+)/, constructId: "uc_async_fn", nameGroup: 1 },
+  // eslint-disable-next-line security/detect-unsafe-regex
   { pattern: /^\s*(pub\s+)?(unsafe\s+)?fn\s+(\w+)/, constructId: "uc_fn_def", nameGroup: 3 },
+  // eslint-disable-next-line security/detect-unsafe-regex
   { pattern: /^\s*(pub\s+)?struct\s+(\w+)/, constructId: "uc_class_def", nameGroup: 2 },
+  // eslint-disable-next-line security/detect-unsafe-regex
   { pattern: /^\s*(pub\s+)?enum\s+(\w+)/, constructId: "uc_class_def", nameGroup: 2 },
+  // eslint-disable-next-line security/detect-unsafe-regex
   { pattern: /^\s*(pub\s+)?trait\s+(\w+)/, constructId: "uc_interface", nameGroup: 2 },
   { pattern: /^\s*impl\s+([\w<>]+)/, constructId: "uc_class_def", nameGroup: 1 },
   { pattern: /^\s*match\s+/, constructId: "uc_switch" },

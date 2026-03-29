@@ -6,7 +6,6 @@ import { describe, it, expect } from "vitest";
 import {
   validateTypescript,
   validatePython,
-  type ValidationResult,
 } from "../../core/translation/validators/code-validator.js";
 
 describe("TypeScript Validator", () => {

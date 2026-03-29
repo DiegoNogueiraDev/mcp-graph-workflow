@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { describe, it, expect } from "vitest";
 import Database from "better-sqlite3";
 import { configureDb } from "../core/store/migrations.js";
@@ -61,9 +64,6 @@ describe("configureDb PRAGMAs", () => {
   });
 
   it("should set mmap_size to 67108864 on file-backed DB", () => {
-    const fs = require("fs");
-    const os = require("os");
-    const path = require("path");
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "pragma-test-"));
     const dbPath = path.join(tmpDir, "test.db");
     try {
