@@ -1,0 +1,165 @@
+/**
+ * Python → TS translation rules.
+ * Covers ~60-70% of common constructs deterministically.
+ */
+import type { RuleSet } from "./rule-schema.js";
+
+export const PYTHON_TO_TS_RULES: RuleSet = {
+  id: "python-to-ts",
+  sourceLanguage: "python",
+  targetLanguage: "typescript",
+  version: "1.0.0",
+  rules: [
+    // Control flow
+    {
+      id: "py_ts_if",
+      irNodeType: "IfStatement",
+      sourceLanguage: "python",
+      targetLanguage: "typescript",
+      condition: { irNodeType: "IfStatement" },
+      transformation: { template: "if ({{condition}}) {\n  {{body}}\n} else {\n  {{elseBody}}\n}" },
+      confidence: 1.0,
+    },
+    {
+      id: "py_ts_for",
+      irNodeType: "ForLoop",
+      sourceLanguage: "python",
+      targetLanguage: "typescript",
+      condition: { irNodeType: "ForLoop" },
+      transformation: { template: "for (const {{variable}} of {{iterable}}) {\n  {{body}}\n}" },
+      confidence: 0.9,
+    },
+    {
+      id: "py_ts_while",
+      irNodeType: "WhileLoop",
+      sourceLanguage: "python",
+      targetLanguage: "typescript",
+      condition: { irNodeType: "WhileLoop" },
+      transformation: { template: "while ({{condition}}) {\n  {{body}}\n}" },
+      confidence: 1.0,
+    },
+    {
+      id: "py_ts_return",
+      irNodeType: "ReturnStatement",
+      sourceLanguage: "python",
+      targetLanguage: "typescript",
+      condition: { irNodeType: "ReturnStatement" },
+      transformation: { template: "return {{expression}};" },
+      confidence: 1.0,
+    },
+    // Functions
+    {
+      id: "py_ts_fn",
+      irNodeType: "FunctionDecl",
+      sourceLanguage: "python",
+      targetLanguage: "typescript",
+      condition: { irNodeType: "FunctionDecl" },
+      transformation: { template: "function {{name}}({{params}}): {{returnType}} {\n  {{body}}\n}" },
+      confidence: 1.0,
+    },
+    {
+      id: "py_ts_arrow",
+      irNodeType: "ArrowFunction",
+      sourceLanguage: "python",
+      targetLanguage: "typescript",
+      condition: { irNodeType: "ArrowFunction" },
+      transformation: { template: "const {{name}} = ({{params}}) => {{expression}};" },
+      confidence: 0.8,
+    },
+    {
+      id: "py_ts_method",
+      irNodeType: "MethodDecl",
+      sourceLanguage: "python",
+      targetLanguage: "typescript",
+      condition: { irNodeType: "MethodDecl" },
+      transformation: { template: "{{name}}({{params}}): {{returnType}} {\n  {{body}}\n}" },
+      confidence: 0.95,
+    },
+    // Async
+    {
+      id: "py_ts_async",
+      irNodeType: "AsyncFunction",
+      sourceLanguage: "python",
+      targetLanguage: "typescript",
+      condition: { irNodeType: "AsyncFunction" },
+      transformation: { template: "async function {{name}}({{params}}): Promise<{{returnType}}> {\n  {{body}}\n}" },
+      confidence: 1.0,
+    },
+    {
+      id: "py_ts_await",
+      irNodeType: "AwaitExpr",
+      sourceLanguage: "python",
+      targetLanguage: "typescript",
+      condition: { irNodeType: "AwaitExpr" },
+      transformation: { template: "await {{expression}}" },
+      confidence: 1.0,
+    },
+    // Classes
+    {
+      id: "py_ts_class",
+      irNodeType: "ClassDecl",
+      sourceLanguage: "python",
+      targetLanguage: "typescript",
+      condition: { irNodeType: "ClassDecl" },
+      transformation: { template: "class {{name}}{{extends}} {\n  {{body}}\n}" },
+      confidence: 0.95,
+    },
+    {
+      id: "py_ts_interface",
+      irNodeType: "InterfaceDecl",
+      sourceLanguage: "python",
+      targetLanguage: "typescript",
+      condition: { irNodeType: "InterfaceDecl" },
+      transformation: { template: "interface {{name}} {\n  {{body}}\n}" },
+      confidence: 0.85,
+    },
+    // Error handling
+    {
+      id: "py_ts_try",
+      irNodeType: "TryCatch",
+      sourceLanguage: "python",
+      targetLanguage: "typescript",
+      condition: { irNodeType: "TryCatch" },
+      transformation: { template: "try {\n  {{body}}\n} catch ({{errorVar}}) {\n  {{catchBody}}\n}" },
+      confidence: 1.0,
+    },
+    {
+      id: "py_ts_throw",
+      irNodeType: "ThrowStatement",
+      sourceLanguage: "python",
+      targetLanguage: "typescript",
+      condition: { irNodeType: "ThrowStatement" },
+      transformation: { template: "throw new {{exception}};" },
+      confidence: 0.9,
+    },
+    // Modules
+    {
+      id: "py_ts_import",
+      irNodeType: "Import",
+      sourceLanguage: "python",
+      targetLanguage: "typescript",
+      condition: { irNodeType: "Import" },
+      transformation: { template: "import { {{names}} } from '{{module}}';" },
+      confidence: 0.85,
+    },
+    {
+      id: "py_ts_export",
+      irNodeType: "Export",
+      sourceLanguage: "python",
+      targetLanguage: "typescript",
+      condition: { irNodeType: "Export" },
+      transformation: { template: "export { {{names}} };" },
+      confidence: 0.8,
+    },
+    // Variables
+    {
+      id: "py_ts_var",
+      irNodeType: "VariableDecl",
+      sourceLanguage: "python",
+      targetLanguage: "typescript",
+      condition: { irNodeType: "VariableDecl" },
+      transformation: { template: "const {{name}}: {{type}} = {{value}};" },
+      confidence: 0.9,
+    },
+  ],
+};
