@@ -88,9 +88,11 @@ function AppContent(): React.JSX.Element {
     await Promise.all([refresh(), refreshStats()]);
   }, [refresh, refreshStats]);
 
-  // SSE: auto-refresh on backend events
-  useSSE(useCallback(() => {
-    void handleRefresh();
+  // SSE: auto-refresh on backend events (skip translation events — handled by LanguagesTab)
+  useSSE(useCallback((event: string) => {
+    if (!event.startsWith("translation:")) {
+      void handleRefresh();
+    }
   }, [handleRefresh]));
 
   const done = stats?.byStatus?.done ?? 0;

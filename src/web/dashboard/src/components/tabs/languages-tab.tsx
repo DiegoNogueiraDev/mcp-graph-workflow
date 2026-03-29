@@ -17,22 +17,37 @@ const SUB_TABS: Array<{ id: SubTab; label: string; icon: React.ReactNode }> = [
   { id: "insights", label: "Insights", icon: <BarChart3 className="w-3.5 h-3.5" /> },
 ];
 
+// Module-level form state — survives component unmount/remount from parent re-renders
+const persistedForm = {
+  sourceCode: "",
+  targetLanguage: "python",
+  scope: "snippet" as TranslationScope,
+  generatedCode: "",
+};
+
 export function LanguagesTab(): React.JSX.Element {
   const [subTab, setSubTab] = useState<SubTab>("convert");
   const [translation, translationActions] = useTranslation();
   const [history, historyActions] = useTranslationHistory();
 
-  const [sourceCode, setSourceCode] = useState("");
-  const [targetLanguage, setTargetLanguage] = useState("python");
-  const [scope, setScope] = useState<TranslationScope>("snippet");
-  const [generatedCode, setGeneratedCode] = useState("");
+  const [sourceCode, setSourceCodeState] = useState(persistedForm.sourceCode);
+  const [targetLanguage, setTargetLanguageState] = useState(persistedForm.targetLanguage);
+  const [scope, setScopeState] = useState<TranslationScope>(persistedForm.scope);
+  const [generatedCode, setGeneratedCodeState] = useState(persistedForm.generatedCode);
 
-  // SSE: auto-refresh history on translation events
+  // Wrap setters to persist values outside component lifecycle
+  const setSourceCode = useCallback((v: string) => { persistedForm.sourceCode = v; setSourceCodeState(v); }, []);
+  const setTargetLanguage = useCallback((v: string) => { persistedForm.targetLanguage = v; setTargetLanguageState(v); }, []);
+  const setScope = useCallback((v: TranslationScope) => { persistedForm.scope = v; setScopeState(v); }, []);
+  const setGeneratedCode = useCallback((v: string) => { persistedForm.generatedCode = v; setGeneratedCodeState(v); }, []);
+
+  // SSE: auto-refresh history on translation events (skip during active analysis to avoid re-render)
+  const translationPhase = translation.phase;
   useSSE(useCallback((event: string) => {
-    if (event.startsWith("translation:")) {
+    if (event.startsWith("translation:") && translationPhase !== "analyzing" && translationPhase !== "finalizing") {
       void historyActions.refresh();
     }
-  }, [historyActions]));
+  }, [historyActions, translationPhase]));
 
   const handleAnalyze = (): void => {
     void translationActions.analyze(sourceCode, targetLanguage, scope);
@@ -46,6 +61,8 @@ export function LanguagesTab(): React.JSX.Element {
     translationActions.reset();
     setSourceCode("");
     setGeneratedCode("");
+    setTargetLanguage("python");
+    setScope("snippet");
   };
 
   return (
