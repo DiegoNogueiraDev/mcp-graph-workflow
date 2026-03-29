@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.28.1](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.28.0...mcp-graph-v5.28.1) (2026-03-29)
+
+
+### Bug Fixes
+
+* **ci:** move E2E to separate workflow to prevent concurrency cancellation ([8f6f600](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/8f6f600d5b645631c99bacf97a89011ae64d392a))
+* **ci:** prevent E2E job cancellation + cache Playwright browsers ([aab3842](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/aab384247b9414c32b6d34986cdc2d0bb453979a))
+
 ## [5.28.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.27.0...mcp-graph-v5.28.0) (2026-03-29)
 
 
