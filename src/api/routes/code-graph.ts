@@ -179,7 +179,7 @@ export function createCodeGraphRouter(options: CodeGraphRouterOptions): Router {
   // ── GET /full ─────────────────────────────────
   router.get("/full", (req, res, next) => {
     try {
-      const limit = parseInt(String(req.query.limit ?? "500"), 10);
+      const limit = parseInt(String(req.query.limit ?? "10000"), 10);
       const offset = parseInt(String(req.query.offset ?? "0"), 10);
       const codeStore = getCodeStore();
       const projectId = getProjectId();
