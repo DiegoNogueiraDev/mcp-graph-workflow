@@ -549,7 +549,7 @@ export const PHASE_PREREQUISITES: Record<LifecyclePhase, PrerequisiteRule[]> = {
       triggerCondition: (args) => args.status === "done",
       requiredTools: [
         { tool: "context", scope: "node" },
-        { tool: "rag_context", scope: "node" },
+        { tool: "rag_context", scope: "project" },
         { tool: "analyze", args: "implement_done", scope: "node" },
       ],
       description: "Antes de done: chamar `context` + `rag_context` + `analyze(implement_done)`",

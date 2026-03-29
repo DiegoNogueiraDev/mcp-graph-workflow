@@ -94,12 +94,12 @@ describe("checkPrerequisiteGate", () => {
       expect(missingTools.some((m) => m.includes("analyze"))).toBe(true);
     });
 
-    it("should pass when all prerequisites are met (node-scoped)", () => {
+    it("should pass when all prerequisites are met (rag_context is project-scoped)", () => {
       const warnings = checkPrerequisiteGate(
         phase, toolName, toolArgs, "node-1",
         mockHasBeenCalled([
           ["node-1", "context"],
-          ["node-1", "rag_context"],
+          [null, "rag_context"],
           ["node-1", "analyze", '{"mode":"implement_done"}'],
         ]),
         "strict",
