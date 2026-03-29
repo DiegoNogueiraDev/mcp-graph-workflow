@@ -45,6 +45,9 @@ export function useTranslationHistory(): [UseTranslationHistoryState, UseTransla
     try {
       await apiClient.translationDeleteJob(id);
       setJobs((prev) => prev.filter((j) => j.id !== id));
+      // Refresh stats after delete to keep counters in sync
+      const statsRes = await apiClient.translationStats();
+      setStats(statsRes);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Delete failed");
     }

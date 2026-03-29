@@ -2,7 +2,7 @@ import { Play, CheckCircle, RotateCcw, Copy, Loader2 } from "lucide-react";
 import type { UseTranslationState } from "@/hooks/use-translation";
 import type { TranslationScope } from "@/lib/types";
 
-const TARGET_LANGUAGES = [
+const LANGUAGES = [
   "python", "javascript", "typescript", "java", "csharp", "go",
   "rust", "ruby", "php", "swift", "kotlin", "scala", "cpp",
 ];
@@ -62,14 +62,27 @@ export function TranslationForm({
 
           {/* Controls row */}
           <div className="flex items-center gap-3 mt-3">
-            <div className="flex-1 grid grid-cols-2 gap-3">
+            <div className="flex-1 grid grid-cols-3 gap-3">
+              {/* Detected source language (read-only after analysis, editable before) */}
+              {translation.analysis?.detectedLanguage ? (
+                <div className="px-3 py-1.5 text-xs rounded-md border border-edge bg-surface/50 text-muted flex items-center gap-1.5">
+                  <span className="text-[10px] text-muted/70">from:</span>
+                  <span className="text-foreground font-medium">{translation.analysis.detectedLanguage}</span>
+                </div>
+              ) : (
+                <div className="px-3 py-1.5 text-xs rounded-md border border-edge/50 bg-surface/30 text-muted/50 flex items-center gap-1.5">
+                  <span className="text-[10px]">from: auto-detect</span>
+                </div>
+              )}
+
+              {/* Target language selector */}
               <select
                 value={targetLanguage}
                 onChange={(e) => setTargetLanguage(e.target.value)}
                 disabled={!isIdle}
                 className="px-3 py-1.5 text-xs rounded-md border border-edge bg-surface text-foreground focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
               >
-                {TARGET_LANGUAGES.map((lang) => (
+                {LANGUAGES.map((lang) => (
                   <option key={lang} value={lang}>{lang}</option>
                 ))}
               </select>
