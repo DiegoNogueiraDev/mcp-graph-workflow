@@ -1,10 +1,11 @@
 name: E2E Tests
 
 on:
-  push:
-    branches: [master]
   pull_request:
     branches: [master]
+  schedule:
+    - cron: '0 8 * * *'  # daily 8am UTC as safety net
+  workflow_dispatch:  # manual trigger
 
 permissions:
   contents: read
