@@ -5,6 +5,8 @@
 
 import type { SqliteStore } from "../store/sqlite-store.js";
 import { KnowledgeStore } from "../store/knowledge-store.js";
+import { GraphSnapshotCache } from "../store/graph-snapshot-cache.js";
+import { ResponseCache } from "../rag/response-cache.js";
 import { searchNodes } from "../search/fts-search.js";
 import { buildTaskContext, type TaskContext } from "./compact-context.js";
 import { estimateTokens } from "./token-estimator.js";
@@ -12,6 +14,19 @@ import { understandQuery } from "../rag/query-understanding.js";
 import { DEFAULT_TOKEN_BUDGET } from "../utils/constants.js";
 import { logger } from "../utils/logger.js";
 import type { LifecyclePhase } from "../planner/lifecycle-phase.js";
+
+// Module-level cache for ragBuildContext results (default path)
+const ragContextCache = new ResponseCache({ ttlMs: 2 * 60 * 1000, maxSize: 50 });
+
+/** Invalidate the RAG context cache (call on knowledge:indexed events). */
+export function invalidateRagContextCache(): void {
+  ragContextCache.invalidateAll();
+}
+
+/** Get RAG context cache stats. */
+export function getRagContextCacheStats(): { size: number; hits: number; misses: number; evictions: number } {
+  return ragContextCache.getStats();
+}
 
 export interface KnowledgeSummary {
   id: string;
@@ -58,6 +73,14 @@ export function ragBuildContext(
   tokenBudget: number = DEFAULT_TOKEN_BUDGET,
   phase?: LifecyclePhase,
 ): RagContext {
+  // Check cache first
+  const cacheKey = `default:${query.trim().toLowerCase()}:${tokenBudget}:${phase ?? "none"}`;
+  const cached = ragContextCache.get(cacheKey) as RagContext | undefined;
+  if (cached) {
+    logger.debug("rag:context cache hit", { query: query.slice(0, 60) });
+    return cached;
+  }
+
   // Query understanding: rewrite query for better FTS matching
   const understanding = understandQuery(query);
   const effectiveQuery = understanding.rewrittenQuery || query;
@@ -71,7 +94,8 @@ export function ragBuildContext(
   if (searchResults.length === 0) {
     logger.debug("RAG FTS returned 0 results, falling back to substring search");
     try {
-      const allNodes = store.getAllNodes();
+      const fallbackSnapshot = new GraphSnapshotCache(store).getCachedSnapshot();
+      const allNodes = fallbackSnapshot.nodes;
       const lowerQuery = query.toLowerCase();
       const words = lowerQuery.split(/\s+/).filter((w) => w.length > 2);
       if (words.length > 0) {
@@ -156,12 +180,16 @@ export function ragBuildContext(
   const basePayload = JSON.stringify({ query, relevantNodes, knowledgeResults });
   let tokensUsed = estimateTokens(basePayload);
 
+  // Pre-load snapshot once for the loop (avoids repeated getAllNodes/getAllEdges)
+  const snapshotCache = new GraphSnapshotCache(store);
+  const snapshot = snapshotCache.getCachedSnapshot();
+
   // If the base payload already exceeds budget, cap it and skip expansion
   if (tokensUsed < tokenBudget) {
     for (const result of searchResults) {
       if (tokensUsed >= tokenBudget) break;
 
-      const ctx = buildTaskContext(store, result.node.id);
+      const ctx = buildTaskContext(store, result.node.id, snapshot);
       if (!ctx) continue;
 
       const ctxTokens = ctx.metrics.estimatedTokens;
@@ -186,7 +214,7 @@ export function ragBuildContext(
     `RAG context built: ${relevantNodes.length} nodes, ${knowledgeResults.length} knowledge, ${expandedContexts.length} expanded, ${tokensUsed}/${tokenBudget} tokens`,
   );
 
-  return {
+  const result: RagContext = {
     query,
     relevantNodes,
     knowledgeResults,
@@ -197,4 +225,9 @@ export function ragBuildContext(
       remaining: tokenBudget - reportedUsed,
     },
   };
+
+  // Cache result for subsequent identical queries
+  ragContextCache.set(cacheKey, result);
+
+  return result;
 }

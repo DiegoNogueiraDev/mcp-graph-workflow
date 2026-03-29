@@ -6,12 +6,27 @@
 
 import type { SqliteStore } from "../store/sqlite-store.js";
 import { KnowledgeStore } from "../store/knowledge-store.js";
+import { GraphSnapshotCache } from "../store/graph-snapshot-cache.js";
+import { ResponseCache } from "../rag/response-cache.js";
 import { buildTieredContext, type ContextTier } from "./tiered-context.js";
 import { compressWithBm25 } from "./bm25-compressor.js";
 import { estimateTokens } from "./token-estimator.js";
 import { DEFAULT_TOKEN_BUDGET } from "../utils/constants.js";
 import { logger } from "../utils/logger.js";
 import type { LifecyclePhase } from "../planner/lifecycle-phase.js";
+
+// Module-level cache for assembleContext results (detail path)
+const assemblerCache = new ResponseCache({ ttlMs: 2 * 60 * 1000, maxSize: 50 });
+
+/** Invalidate the assembler context cache. */
+export function invalidateAssemblerCache(): void {
+  assemblerCache.invalidateAll();
+}
+
+/** Get assembler cache stats. */
+export function getAssemblerCacheStats(): { size: number; hits: number; misses: number; evictions: number } {
+  return assemblerCache.getStats();
+}
 
 export interface AssembledContext {
   /** The query used to assemble context */
@@ -64,6 +79,14 @@ export function assembleContext(
   const tokenBudget = options?.tokenBudget ?? DEFAULT_TOKEN_BUDGET;
   const tier = options?.tier ?? "standard";
   const maxKnowledgeChunks = options?.maxKnowledgeChunks ?? 5;
+
+  // Check cache first
+  const cacheKey = `detail:${query.trim().toLowerCase()}:${tier}:${tokenBudget}`;
+  const cached = assemblerCache.get(cacheKey) as AssembledContext | undefined;
+  if (cached) {
+    logger.debug("assembler:context cache hit", { query: query.slice(0, 60) });
+    return cached;
+  }
 
   const sections: ContextSection[] = [];
   const breakdown: Record<string, number> = {};
@@ -171,7 +194,7 @@ export function assembleContext(
     budget: tokenBudget,
   });
 
-  return {
+  const result: AssembledContext = {
     query,
     tier,
     detail: tier,
@@ -183,6 +206,11 @@ export function assembleContext(
       breakdown,
     },
   };
+
+  // Cache result
+  assemblerCache.set(cacheKey, result);
+
+  return result;
 }
 
 /**
@@ -198,7 +226,8 @@ function findRelevantNodeIds(store: SqliteStore, query: string): string[] {
 
   // Fallback: simple substring match on title/description
   try {
-    const allNodes = store.getAllNodes();
+    const snapshotCache = new GraphSnapshotCache(store);
+    const allNodes = snapshotCache.getCachedSnapshot().nodes;
     const lowerQuery = query.toLowerCase();
     const words = lowerQuery.split(/\s+/).filter((w) => w.length > 2);
     if (words.length === 0) return [];

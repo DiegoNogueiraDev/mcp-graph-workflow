@@ -655,6 +655,14 @@ const migrations: Migration[] = [
       );
     `,
   },
+  {
+    version: 18,
+    description: "Add pre-computed recency_score column to knowledge_documents",
+    sql: `
+      ALTER TABLE knowledge_documents ADD COLUMN recency_score REAL DEFAULT 1.0;
+      CREATE INDEX IF NOT EXISTS idx_knowledge_recency ON knowledge_documents(recency_score);
+    `,
+  },
 ];
 
 export function runMigrations(db: Database.Database): void {
@@ -695,4 +703,5 @@ export function configureDb(db: Database.Database): void {
   db.pragma("cache_size = -8000");
   db.pragma("busy_timeout = 5000");
   db.pragma("temp_store = MEMORY");
+  db.pragma("mmap_size = 67108864");
 }

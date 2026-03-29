@@ -11,6 +11,7 @@
 import type { SqliteStore } from "../store/sqlite-store.js";
 import { KnowledgeStore } from "../store/knowledge-store.js";
 import { EmbeddingStore, type SimilarityResult } from "./embedding-store.js";
+import { TfIdfEmbeddingCache } from "./tfidf-embedding-cache.js";
 import { logger } from "../utils/logger.js";
 
 // ── TF-IDF Vectorizer ───────────────────────────
@@ -175,6 +176,9 @@ function hashEmbed(text: string, dim: number): number[] {
 // Encapsulated in class — no raw mutable `let` variables.
 let activeVectorizer: TfIdfVectorizer | null = null;
 
+// Module-level embedding cache — invalidated when activeVectorizer changes.
+const embeddingCache = new TfIdfEmbeddingCache({ maxSize: 200, ttlMs: 10 * 60 * 1000 });
+
 /**
  * Index all nodes from the store as embeddings.
  * Builds a TF-IDF vocabulary from all node texts, then stores vectors.
@@ -210,6 +214,7 @@ export async function indexNodeEmbeddings(
   const vectorizer = new TfIdfVectorizer();
   vectorizer.fit(documents.map((d) => d.tokens));
   activeVectorizer = vectorizer;
+  embeddingCache.invalidateAll();
 
   // Generate and store embeddings
   let indexed = 0;
@@ -282,6 +287,7 @@ export async function indexAllEmbeddings(
   const vectorizer = new TfIdfVectorizer();
   vectorizer.fit(allDocuments.map((d) => d.tokens));
   activeVectorizer = vectorizer;
+  embeddingCache.invalidateAll();
 
   // Generate and store embeddings
   let indexedNodes = 0;
@@ -373,11 +379,20 @@ export async function semanticSearch(
   limit: number = 10,
 ): Promise<SimilarityResult[]> {
   const t0 = performance.now();
-  const vectorizer = activeVectorizer ?? new TfIdfVectorizer();
-  const queryVector = vectorizer.embed(query);
+
+  // Check embedding cache first
+  let queryVector = embeddingCache.get(query);
+  const cacheHit = queryVector !== undefined;
+
+  if (!queryVector) {
+    const vectorizer = activeVectorizer ?? new TfIdfVectorizer();
+    queryVector = vectorizer.embed(query);
+    embeddingCache.set(query, queryVector);
+  }
+
   const results = embeddingStore.findSimilar(queryVector, limit);
   const durationMs = Math.round(performance.now() - t0);
 
-  logger.debug("rag:search", { query: query.slice(0, 80), resultCount: results.length, durationMs });
+  logger.debug("rag:search", { query: query.slice(0, 80), resultCount: results.length, cacheHit, durationMs });
   return results;
 }

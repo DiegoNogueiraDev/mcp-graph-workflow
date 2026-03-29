@@ -11,6 +11,7 @@ import { generateId } from "../utils/id.js";
 import { now } from "../utils/time.js";
 import { logger } from "../utils/logger.js";
 import { getPhaseBoost, applyPhaseBoost } from "../rag/phase-metadata.js";
+import { PhaseBoostCache } from "../rag/phase-boost-cache.js";
 import type { LifecyclePhase } from "../planner/lifecycle-phase.js";
 
 export interface InsertKnowledgeDoc {
@@ -59,6 +60,7 @@ export function contentHash(content: string): string {
 
 export class KnowledgeStore {
   private db: Database.Database;
+  private phaseBoostCache = new PhaseBoostCache({ maxSize: 100, ttlMs: 2 * 60 * 1000 });
 
   constructor(db: Database.Database) {
     this.db = db;
@@ -191,6 +193,12 @@ export class KnowledgeStore {
     currentPhase: LifecyclePhase,
     limit: number = 20,
   ): Array<KnowledgeDocument & { score: number; phaseBoost: number }> {
+    // Check cache first
+    const cached = this.phaseBoostCache.get(query, currentPhase);
+    if (cached) {
+      return cached as Array<KnowledgeDocument & { score: number; phaseBoost: number }>;
+    }
+
     // Fetch more results than needed to allow re-ranking (Bug #051: cap at 200)
     const rawResults = this.search(query, Math.min(limit * 2, 200));
 
@@ -208,7 +216,20 @@ export class KnowledgeStore {
     // Re-sort by boosted score (higher = better)
     boosted.sort((a, b) => b.score - a.score);
 
-    return boosted.slice(0, limit);
+    const results = boosted.slice(0, limit);
+
+    // Cache results
+    this.phaseBoostCache.set(query, currentPhase, results);
+
+    return results;
+  }
+
+  /**
+   * Invalidate the phase-boosted search cache.
+   * Call on knowledge:indexed events or phase changes.
+   */
+  invalidatePhaseBoostCache(): void {
+    this.phaseBoostCache.invalidateAll();
   }
 
   /**
@@ -316,6 +337,39 @@ export class KnowledgeStore {
       if (rows.length < PAGE_SIZE) break;
     }
 
+    return updated;
+  }
+
+  /**
+   * Batch update pre-computed recency_score for all documents.
+   * Formula: pow(0.5, ageDays / 30) — 30-day half-life exponential decay.
+   */
+  batchUpdateRecencyScores(): number {
+    const PAGE_SIZE = 1000;
+    const update = this.db.prepare("UPDATE knowledge_documents SET recency_score = ? WHERE id = ?");
+    const select = this.db.prepare("SELECT id, created_at FROM knowledge_documents LIMIT ? OFFSET ?");
+    let updated = 0;
+    let offset = 0;
+
+    while (true) {
+      const rows = select.all(PAGE_SIZE, offset) as Array<{ id: string; created_at: string }>;
+      if (rows.length === 0) break;
+
+      this.db.transaction(() => {
+        for (const row of rows) {
+          const ageMs = Date.now() - new Date(row.created_at).getTime();
+          const ageDays = Math.max(0, ageMs / (24 * 60 * 60 * 1000));
+          const score = Math.pow(0.5, ageDays / 30);
+          update.run(score, row.id);
+          updated++;
+        }
+      })();
+
+      offset += PAGE_SIZE;
+      if (rows.length < PAGE_SIZE) break;
+    }
+
+    logger.debug("Recency scores updated", { updated });
     return updated;
   }
 

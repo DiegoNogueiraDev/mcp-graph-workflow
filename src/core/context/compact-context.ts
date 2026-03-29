@@ -1,5 +1,6 @@
 import type { SqliteStore } from "../store/sqlite-store.js";
 import type { GraphNode, GraphEdge } from "../graph/graph-types.js";
+import type { GraphSnapshot } from "../store/graph-snapshot-cache.js";
 import { getNodeAcFromStore } from "../utils/ac-helpers.js";
 import { estimateTokens } from "./token-estimator.js";
 import { logger } from "../utils/logger.js";
@@ -208,8 +209,17 @@ export function omitDefaults(obj: unknown): unknown {
 export function buildTaskContext(
   store: SqliteStore,
   nodeId: string,
+  snapshot?: GraphSnapshot,
 ): TaskContext | null {
-  const node = store.getNodeById(nodeId);
+  // Helper: resolve node by ID using snapshot (O(1)) or store query
+  const resolveNode = (id: string): GraphNode | null => {
+    if (snapshot) {
+      return snapshot.nodes.find((n) => n.id === id) ?? null;
+    }
+    return store.getNodeById(id);
+  };
+
+  const node = resolveNode(nodeId);
   if (!node) {
     logger.warn(`buildTaskContext: node ${nodeId} not found`);
     return null;
@@ -218,17 +228,23 @@ export function buildTaskContext(
   // Parent
   let parent: TaskSummary | null = null;
   if (node.parentId) {
-    const parentNode = store.getNodeById(node.parentId);
+    const parentNode = resolveNode(node.parentId);
     if (parentNode) parent = toTaskSummary(parentNode);
   }
 
-  // Children
-  const childNodes = store.getChildNodes(nodeId);
+  // Children — from snapshot or store
+  const childNodes = snapshot
+    ? snapshot.nodes.filter((n) => n.parentId === nodeId)
+    : store.getChildNodes(nodeId);
   const children = childNodes.map(toTaskSummary);
 
-  // Incoming edges → blockers and dependencies
-  const incomingEdges = store.getEdgesTo(nodeId);
-  const outgoingEdges = store.getEdgesFrom(nodeId);
+  // Incoming/outgoing edges — from snapshot or store
+  const incomingEdges = snapshot
+    ? snapshot.edges.filter((e) => e.to === nodeId)
+    : store.getEdgesTo(nodeId);
+  const outgoingEdges = snapshot
+    ? snapshot.edges.filter((e) => e.from === nodeId)
+    : store.getEdgesFrom(nodeId);
 
   const blockers: BlockerInfo[] = [];
   const dependsOn: DependencyInfo[] = [];
@@ -243,7 +259,7 @@ export function buildTaskContext(
   // Edges where something blocks this node: edge.relationType === "blocks" AND edge.to === nodeId
   for (const edge of incomingEdges) {
     if (edge.relationType === "blocks") {
-      const blockerNode = store.getNodeById(edge.from);
+      const blockerNode = resolveNode(edge.from);
       if (blockerNode) {
         blockers.push({
           id: blockerNode.id,
@@ -254,13 +270,13 @@ export function buildTaskContext(
         });
       }
     } else if (edge.relationType === "related_to") {
-      const relNode = store.getNodeById(edge.from);
+      const relNode = resolveNode(edge.from);
       if (relNode && !relatedIds.has(relNode.id)) {
         relatedIds.add(relNode.id);
         relatedNodes.push(toTaskSummary(relNode));
       }
     } else if (edge.relationType === "parent_of" && !edgeParent) {
-      const parentNode = store.getNodeById(edge.from);
+      const parentNode = resolveNode(edge.from);
       if (parentNode) edgeParent = toTaskSummary(parentNode);
     }
   }
@@ -268,7 +284,7 @@ export function buildTaskContext(
   // Edges where this node depends_on something: edge.relationType === "depends_on" AND edge.from === nodeId
   for (const edge of outgoingEdges) {
     if (edge.relationType === "depends_on") {
-      const depNode = store.getNodeById(edge.to);
+      const depNode = resolveNode(edge.to);
       if (depNode) {
         dependsOn.push({
           id: depNode.id,
@@ -279,19 +295,19 @@ export function buildTaskContext(
         });
       }
     } else if (edge.relationType === "related_to") {
-      const relNode = store.getNodeById(edge.to);
+      const relNode = resolveNode(edge.to);
       if (relNode && !relatedIds.has(relNode.id)) {
         relatedIds.add(relNode.id);
         relatedNodes.push(toTaskSummary(relNode));
       }
     } else if (edge.relationType === "implements") {
-      const implNode = store.getNodeById(edge.to);
+      const implNode = resolveNode(edge.to);
       if (implNode) implementsNodes.push(toTaskSummary(implNode));
     } else if (edge.relationType === "derived_from") {
-      const derivedNode = store.getNodeById(edge.to);
+      const derivedNode = resolveNode(edge.to);
       if (derivedNode) derivedFromNodes.push(toTaskSummary(derivedNode));
     } else if (edge.relationType === "parent_of") {
-      const childNode = store.getNodeById(edge.to);
+      const childNode = resolveNode(edge.to);
       if (childNode && !edgeChildrenIds.has(childNode.id)) {
         edgeChildrenIds.add(childNode.id);
         edgeChildren.push(toTaskSummary(childNode));

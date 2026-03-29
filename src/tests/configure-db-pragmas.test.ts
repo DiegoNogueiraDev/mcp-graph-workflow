@@ -51,4 +51,29 @@ describe("configureDb PRAGMAs", () => {
     expect(result[0].temp_store).toBe(2); // MEMORY = 2
     db.close();
   });
+
+  it("should set mmap_size PRAGMA without error", () => {
+    const db = new Database(":memory:");
+    // mmap_size is not readable on :memory: databases (returns empty array),
+    // but the PRAGMA must be applied without throwing
+    expect(() => configureDb(db)).not.toThrow();
+    db.close();
+  });
+
+  it("should set mmap_size to 67108864 on file-backed DB", () => {
+    const fs = require("fs");
+    const os = require("os");
+    const path = require("path");
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "pragma-test-"));
+    const dbPath = path.join(tmpDir, "test.db");
+    try {
+      const db = new Database(dbPath);
+      configureDb(db);
+      const result = db.pragma("mmap_size") as Array<{ mmap_size: number }>;
+      expect(result[0].mmap_size).toBe(67108864);
+      db.close();
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
 });

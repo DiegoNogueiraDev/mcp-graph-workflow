@@ -96,19 +96,16 @@ export function multiStrategySearch(
     }
   }
 
-  // Strategy 3: Recency boost
+  // Strategy 3: Recency boost (uses pre-computed recency_score column)
   let recencyResults: Array<{ id: string; score: number }> = [];
   if (ftsResults.length > 0) {
     const allIds = [...new Set([...ftsResults.map((r) => r.id), ...graphResults.map((r) => r.id)])];
     recencyResults = allIds.map((id) => {
       const row = db
-        .prepare("SELECT created_at FROM knowledge_documents WHERE id = ?")
-        .get(id) as { created_at: string } | undefined;
+        .prepare("SELECT recency_score FROM knowledge_documents WHERE id = ?")
+        .get(id) as { recency_score: number | null } | undefined;
       if (!row) return { id, score: 0 };
-      const ageMs = Date.now() - new Date(row.created_at).getTime();
-      const ageDays = ageMs / (24 * 60 * 60 * 1000);
-      const recencyScore = Math.pow(0.5, ageDays / 30);
-      return { id, score: recencyScore };
+      return { id, score: row.recency_score ?? 1.0 };
     });
   }
 
