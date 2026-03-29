@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.20.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.19.3...mcp-graph-v5.20.0) (2026-03-29)
+
+
+### Features
+
+* add IR canonical representation and declarative rule engine (sprint-2, tasks 4.1+4.2) ([42b9e1d](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/42b9e1daf1f1c9996cd39f6e35e23ebd7041d123))
+* add multi-language parsers and translation memory (sprint-3, 6 tasks) ([2c0f2a8](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/2c0f2a8a7ba39ce4ddf7ebd9fbbe18af54f56921))
+* add validators, repair loop, and translation pipeline (sprint-2, tasks 4.3+4.4+4.5) ([b13480d](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/b13480d8f0912e64509ba4ab36d7c459e8950847))
+* implement cache layer optimization (sprint-1-cache, 9 tasks) ([3f9e03b](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/3f9e03bbdcc240ac66c6663ff083ad2910ccd568))
+
+
+### Bug Fixes
+
+* resolve code review findings (W1-W3, W7, W8, W10, W6) ([628794e](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/628794e22b6f7dfcc1ba1a3a0ed4993e6435e1c7))
+* resolve lint errors from VALIDATE phase ([a29d324](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/a29d32445932ba551e50b60f4a47f28b21d1ae16))
+* update mcp-graph dependency to version 5.19.3 and adjust required workflow steps ([2e7db46](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/2e7db4681e2db8bc0b31caea67be9fac4b988c6c))
+
 ## [5.19.3](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.19.2...mcp-graph-v5.19.3) (2026-03-28)
 
 
