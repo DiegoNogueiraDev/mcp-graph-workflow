@@ -3,6 +3,7 @@
  */
 
 import type { GraphNode, GraphEdge, NodeType, NodeStatus, XpSize } from "../graph/graph-types.js";
+import { GraphNodeSchema } from "../../schemas/node.schema.js";
 import type { ExtractionResult } from "../parser/extract.js";
 import type { ClassifiedBlock } from "../parser/classify.js";
 import { generateId } from "../utils/id.js";
@@ -239,6 +240,14 @@ export function convertToGraph(
     const block = extraction.blocks[bi];
     const node = createNodeFromBlock(block, sourceFile);
     if (!node) continue;
+
+    // Validate node with Zod schema — skip malformed nodes instead of crashing downstream
+    const parsed = GraphNodeSchema.safeParse(node);
+    if (!parsed.success) {
+      logger.warn("prd-to-graph:invalid-node", { blockIndex: bi, title: block.title?.slice(0, 50), errors: parsed.error.issues.map((i) => i.message) });
+      continue;
+    }
+
     nodes.push(node);
     blockNodeMap.set(bi, node);
 

@@ -6,6 +6,7 @@ import { generateId } from "../../core/utils/id.js";
 import { now } from "../../core/utils/time.js";
 import type { RelationType } from "../../core/graph/graph-types.js";
 import { logger } from "../../core/utils/logger.js";
+import { checkCircularity } from "../../core/utils/circularity.js";
 import { mcpText, mcpError } from "../response-helpers.js";
 
 export function registerMoveNode(server: McpServer, store: SqliteStore): void {
@@ -25,25 +26,13 @@ export function registerMoveNode(server: McpServer, store: SqliteStore): void {
       }
 
       if (newParentId !== null) {
-        if (newParentId === id) {
-          return mcpError("A node cannot be its own parent");
-        }
+        const circError = checkCircularity(store, id, newParentId);
+        if (circError) return mcpError(circError);
 
         const newParent = store.getNodeById(newParentId);
         if (!newParent) {
           const err = new NodeNotFoundError(newParentId);
           return mcpError(`New parent not found: ${err.message}`);
-        }
-
-        // Detect circularity: walk up from newParentId to check if id is an ancestor
-        let current = newParent;
-        while (current.parentId) {
-          if (current.parentId === id) {
-            return mcpError("Circular reference detected: target parent is a descendant of this node");
-          }
-          const parent = store.getNodeById(current.parentId);
-          if (!parent) break;
-          current = parent;
         }
       }
 

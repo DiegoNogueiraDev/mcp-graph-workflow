@@ -18,6 +18,18 @@ import { buildTranslationPrompt } from "./prompt-builder.js";
 import type { PromptContext } from "./prompt-builder.js";
 import { TranslationError } from "../utils/errors.js";
 
+/**
+ * Mapping of equivalent constructs across languages.
+ * When source construct X translates to target construct Y,
+ * both are valid equivalents and should not be flagged as risk.
+ */
+const EQUIVALENT_CONSTRUCTS: ReadonlyMap<string, string> = new Map([
+  ["uc_for_each", "uc_for_loop"],
+  ["uc_for_loop", "uc_for_each"],
+  ["uc_fn_def", "uc_arrow_fn"],
+  ["uc_arrow_fn", "uc_fn_def"],
+]);
+
 interface AnalyzeHints {
   languageHint?: string;
   targetLanguage?: string;
@@ -130,7 +142,8 @@ export class TranslationOrchestrator {
    * Prepare a translation job — creates the job, analyzes source, builds prompt.
    */
   prepareTranslation(input: PrepareInput): PrepareResult {
-    const analysis = this.analyzeSource(input.sourceCode, {
+    const sourceCode = input.sourceCode ?? "";
+    const analysis = this.analyzeSource(sourceCode, {
       languageHint: input.sourceLanguage,
       targetLanguage: input.targetLanguage,
     });
@@ -140,7 +153,7 @@ export class TranslationOrchestrator {
       projectId: input.projectId,
       sourceLanguage: analysis.detectedLanguage,
       targetLanguage: input.targetLanguage,
-      sourceCode: input.sourceCode,
+      sourceCode,
       scope: input.scope,
     });
 
@@ -151,18 +164,23 @@ export class TranslationOrchestrator {
     });
 
     // Build scores + ambiguities for prompt
+    // Guard: if registry has no seed data, scoreConstructs returns [] safely
     const parser = PARSERS.get(analysis.detectedLanguage);
-    const parsed = parser ? parser.parseSnippet(input.sourceCode) : [];
-    const constructIds = [...new Set(parsed.map((p) => p.constructId))];
+    const parsed = parser ? parser.parseSnippet(sourceCode) : [];
+    const constructIds = [...new Set(parsed.map((p) => p.constructId))].filter(Boolean);
     const scores = scoreConstructs(this.registry, constructIds, analysis.detectedLanguage, input.targetLanguage);
     const ambiguities = detectAmbiguities(scores, this.registry, analysis.detectedLanguage, input.targetLanguage);
+
+    // Filter out scores/ambiguities with undefined construct data
+    const safeScores = scores.filter((s) => s.constructId != null);
+    const safeAmbiguities = ambiguities.filter((a) => a.constructId != null && a.canonicalName != null);
 
     const promptCtx: PromptContext = {
       sourceLanguage: analysis.detectedLanguage,
       targetLanguage: input.targetLanguage,
-      sourceCode: input.sourceCode,
-      scores,
-      ambiguities,
+      sourceCode,
+      scores: safeScores,
+      ambiguities: safeAmbiguities,
     };
 
     const prompt = buildTranslationPrompt(promptCtx);
@@ -242,12 +260,18 @@ function buildEvidence(
     if (targetIds.has(id)) {
       translated.push({ source: id, target: id, method: "direct" });
     } else {
-      risks.push({
-        construct: id,
-        severity: "medium",
-        message: `${id} from ${sourceLang} has no direct equivalent detected in ${targetLang} output`,
-      });
-      reviewPoints.push(`Review mapping of ${id}`);
+      // Check if an equivalent construct exists in target (e.g. uc_for_each ↔ uc_for_loop)
+      const equivalent = EQUIVALENT_CONSTRUCTS.get(id);
+      if (equivalent && targetIds.has(equivalent)) {
+        translated.push({ source: id, target: equivalent, method: "equivalent" });
+      } else {
+        risks.push({
+          construct: id,
+          severity: "medium",
+          message: `${id} from ${sourceLang} has no direct equivalent detected in ${targetLang} output`,
+        });
+        reviewPoints.push(`Review mapping of ${id}`);
+      }
     }
   }
 

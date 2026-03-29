@@ -1,6 +1,7 @@
 import type { GraphDocument, GraphEdge, GraphNode, GraphStats, IntegrationStatus, CodeGraphStatus, ProjectMemory, ReindexResult, LogEntry, FolderInfo, OpenFolderResult, BrowseResult, CodeGraphData, ImpactResult, KnowledgeStats, Skill, CustomSkill, CustomSkillInput, ContextBudget, JourneyMap, JourneyMapFull, TranslationAnalysis, TranslationJob, TranslationPrepareResult, TranslationFinalizeResult, TranslationStats } from "./types";
 
 const BASE = "/api/v1";
+const REQUEST_TIMEOUT_MS = 30_000;
 
 class ApiError extends Error {
   status: number;
@@ -14,9 +15,18 @@ class ApiError extends Error {
   }
 }
 
+function fetchWithTimeout(url: string, options: RequestInit = {}): Promise<Response> {
+  return Promise.race([
+    fetch(url, options),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new ApiError(`Request timeout after ${REQUEST_TIMEOUT_MS / 1000}s: ${url}`, 0)), REQUEST_TIMEOUT_MS),
+    ),
+  ]);
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const url = `${BASE}${path}`;
-  const res = await fetch(url, {
+  const res = await fetchWithTimeout(url, {
     headers: { "Content-Type": "application/json", ...options.headers },
     ...options,
   });

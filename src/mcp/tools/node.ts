@@ -14,6 +14,7 @@ import { DEFAULT_NODE_STATUS, DEFAULT_NODE_PRIORITY } from "../../core/utils/con
 import { generateId } from "../../core/utils/id.js";
 import { now } from "../../core/utils/time.js";
 import { logger } from "../../core/utils/logger.js";
+import { checkCircularity } from "../../core/utils/circularity.js";
 import { mcpText, mcpError, normalizeNewlines } from "../response-helpers.js";
 import { indexNodeAsKnowledge, removeNodeFromKnowledge } from "../../core/rag/node-indexer.js";
 
@@ -117,22 +118,9 @@ export function registerNode(server: McpServer, store: SqliteStore): void {
         if (parentId !== undefined) fields.parentId = parentId;
         if (acceptanceCriteria !== undefined) fields.acceptanceCriteria = acceptanceCriteria;
 
-        // Bug #036: reject self-parenting in update action
-        if (parentId !== undefined && parentId !== null && parentId === id) {
-          return mcpError("A node cannot be its own parent");
-        }
-
-        // Circularity check: walk up from parentId to ensure id is not an ancestor
-        if (parentId !== undefined && parentId !== null) {
-          let ancestor = store.getNodeById(parentId);
-          while (ancestor?.parentId) {
-            if (ancestor.parentId === id) {
-              return mcpError("Circular reference detected: target parent is a descendant of this node");
-            }
-            ancestor = store.getNodeById(ancestor.parentId);
-            if (!ancestor) break;
-          }
-        }
+        // Bug #036: reject self-parenting and circularity in update action
+        const circError = checkCircularity(store, id, parentId);
+        if (circError) return mcpError(circError);
 
         // If parentId is changing, manage edges atomically (Bug #047)
         if (parentId !== undefined) {
