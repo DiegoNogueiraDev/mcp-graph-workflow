@@ -27,6 +27,7 @@ export class TaskContextCache {
   constructor(options: TaskContextCacheOptions) {
     this.cache = new LRUCache<string, TaskContext>({
       max: options.maxSize,
+      ttl: options.ttlMs,
     });
   }
 

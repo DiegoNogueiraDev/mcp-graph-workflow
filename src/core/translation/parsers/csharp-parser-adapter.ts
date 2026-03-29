@@ -15,8 +15,7 @@ const LINE_RULES: Rule[] = [
   { pattern: /^\s*(public|private|protected|internal)?\s*(static\s+)?(abstract\s+)?class\s+(\w+)/, constructId: "uc_class_def", nameGroup: 4 },
   { pattern: /^\s*(public|private|protected|internal)?\s*interface\s+(\w+)/, constructId: "uc_interface", nameGroup: 2 },
   { pattern: /^\s*(public|private|protected|internal)?\s*(static\s+)?(async\s+)?([\w<>\[\]?]+)\s+(\w+)\s*\(/, constructId: "uc_fn_def", nameGroup: 5,
-    also: [{ constructId: "uc_async_fn" }] }, // detect async methods
-  { pattern: /^\s*(public|private|protected|internal)?\s*(static\s+)?([\w<>\[\]?]+)\s+(\w+)\s*\(/, constructId: "uc_fn_def", nameGroup: 4 },
+    also: [{ constructId: "uc_async_fn" }] },
   { pattern: /^\s*try\s*\{/, constructId: "uc_try_catch" },
   { pattern: /^\s*throw\s+/, constructId: "uc_throw" },
   { pattern: /^\s*if\s*\(/, constructId: "uc_if_else" },

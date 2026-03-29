@@ -81,6 +81,9 @@ export function ragBuildContext(
     return cached;
   }
 
+  // Pre-load snapshot once for the entire function (reused in fallback + expansion loop)
+  const snapshotCache = new GraphSnapshotCache(store);
+
   // Query understanding: rewrite query for better FTS matching
   const understanding = understandQuery(query);
   const effectiveQuery = understanding.rewrittenQuery || query;
@@ -94,8 +97,7 @@ export function ragBuildContext(
   if (searchResults.length === 0) {
     logger.debug("RAG FTS returned 0 results, falling back to substring search");
     try {
-      const fallbackSnapshot = new GraphSnapshotCache(store).getCachedSnapshot();
-      const allNodes = fallbackSnapshot.nodes;
+      const allNodes = snapshotCache.getCachedSnapshot().nodes;
       const lowerQuery = query.toLowerCase();
       const words = lowerQuery.split(/\s+/).filter((w) => w.length > 2);
       if (words.length > 0) {
@@ -180,8 +182,7 @@ export function ragBuildContext(
   const basePayload = JSON.stringify({ query, relevantNodes, knowledgeResults });
   let tokensUsed = estimateTokens(basePayload);
 
-  // Pre-load snapshot once for the loop (avoids repeated getAllNodes/getAllEdges)
-  const snapshotCache = new GraphSnapshotCache(store);
+  // Reuse the snapshot created at function start
   const snapshot = snapshotCache.getCachedSnapshot();
 
   // If the base payload already exceeds budget, cap it and skip expansion

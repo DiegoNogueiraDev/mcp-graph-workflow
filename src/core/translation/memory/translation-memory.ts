@@ -6,6 +6,8 @@
  * Queryable by construct + language pair.
  */
 
+import { now } from "../../utils/time.js";
+
 // ── Types ──────────────────────────────────────────
 
 export interface MemoryEntry {
@@ -58,7 +60,7 @@ export class TranslationMemory {
       ruleId: input.ruleId,
       accepted: true,
       confidence: input.confidence,
-      timestamp: new Date().toISOString(),
+      timestamp: now(),
     });
   }
 
@@ -74,7 +76,7 @@ export class TranslationMemory {
       accepted: false,
       confidence: input.originalConfidence,
       correctionReason: input.correctionReason,
-      timestamp: new Date().toISOString(),
+      timestamp: now(),
     });
   }
 

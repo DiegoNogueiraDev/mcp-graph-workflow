@@ -40,7 +40,8 @@ export function validateTypescript(code: string): ValidationResult {
 
   const errors: ValidationError[] = [];
 
-  // Check for parse diagnostics
+  // Access internal parseDiagnostics (not public API — may change in future TS versions).
+  // The public alternative ts.getPreEmitDiagnostics() requires a Program, which is heavier.
   const diagnostics = (sourceFile as unknown as { parseDiagnostics?: ts.DiagnosticWithLocation[] }).parseDiagnostics ?? [];
 
   for (const diag of diagnostics) {

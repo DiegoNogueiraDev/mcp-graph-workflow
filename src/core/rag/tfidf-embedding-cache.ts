@@ -29,6 +29,7 @@ export class TfIdfEmbeddingCache {
   constructor(options: EmbeddingCacheOptions) {
     this.cache = new LRUCache<string, number[]>({
       max: options.maxSize,
+      ttl: options.ttlMs,
     });
   }
 

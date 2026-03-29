@@ -34,6 +34,7 @@ export class PhaseBoostCache {
   constructor(options: PhaseBoostCacheOptions) {
     this.cache = new LRUCache<string, unknown[]>({
       max: options.maxSize,
+      ttl: options.ttlMs,
     });
   }
 
