@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.21.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.20.1...mcp-graph-v5.21.0) (2026-03-29)
+
+
+### Features
+
+* UX overhaul for Languages tab — interactive feedback & usability ([b9db43e](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/b9db43e0c3868ce3575b0a9580333d4afd69f53a))
+
+
+### Bug Fixes
+
+* prevent SSE-triggered remount of Languages tab during analysis ([9f61129](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/9f6112958c3853fb4c1d12306c0eb505fc129113))
+
 ## [5.20.1](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.20.0...mcp-graph-v5.20.1) (2026-03-29)
 
 
