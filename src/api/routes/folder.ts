@@ -33,11 +33,18 @@ export function validateBrowsePath(rawPath: string): string {
     }
   }
 
-  // Restrict browsing to home directory tree or system tmpdir
+  // Restrict browsing to home directory tree, system tmpdir, or cwd
   const home = process.env.HOME ?? process.env.USERPROFILE ?? "";
   const tmpDir = tmpdir();
-  const allowed = [home, path.dirname(home), tmpDir].filter(Boolean);
-  if (home && !allowed.some((a) => resolved === a || resolved.startsWith(a + path.sep))) {
+  const cwd = process.cwd();
+  const allowed = [home, path.dirname(home), tmpDir, cwd, path.dirname(cwd)].filter(Boolean);
+  // Case-insensitive comparison on Windows
+  const normalize = (s: string): string => process.platform === "win32" ? s.toLowerCase() : s;
+  const normalizedResolved = normalize(resolved);
+  if (home && !allowed.some((a) => {
+    const na = normalize(a);
+    return normalizedResolved === na || normalizedResolved.startsWith(na + path.sep);
+  })) {
     throw new Error("Access denied: browsing restricted to home directory");
   }
 
