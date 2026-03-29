@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.24.1](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.24.0...mcp-graph-v5.24.1) (2026-03-29)
+
+
+### Bug Fixes
+
+* Resolve lint errors from CI pipeline ([a6f1337](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/a6f133729b5b256cf5c26a66eaeb39c0fd159343))
+* Windows compatibility for browse path validation ([7da85d2](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/7da85d275436d73e109522952141c6eed37cad1d))
+
 ## [5.24.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.23.0...mcp-graph-v5.24.0) (2026-03-29)
 
 
