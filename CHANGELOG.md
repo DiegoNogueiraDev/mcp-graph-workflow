@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.23.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.22.1...mcp-graph-v5.23.0) (2026-03-29)
+
+
+### Features
+
+* Backend audit wave 2 — 9 fixes across translation, MCP, dashboard, parser ([#102](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/issues/102)) ([9a7210a](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/9a7210a277475d0b50056881135bec0a6be71d24))
+
 ## [5.22.1](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.22.0...mcp-graph-v5.22.1) (2026-03-29)
 
 
