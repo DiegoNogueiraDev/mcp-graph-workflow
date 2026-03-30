@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.31.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.30.0...mcp-graph-v5.31.0) (2026-03-30)
+
+
+### Features
+
+* **docs:** update lifecycle phases and mandatory execution rule in documentation ([1eb78ec](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/1eb78ec739477288836bcf77b69ff39ea5794a35))
+* **dream:** add DreamMode — REM-inspired knowledge consolidation engine ([80f313e](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/80f313e758fabc9808d6e7c1405ad12a4e8202de))
+
+
+### Bug Fixes
+
+* **tests:** fix analyzer-factory test for multi-language detection ([25e82af](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/25e82af47106377acce0ed902e39994963382fd7))
+* **tests:** increase CLI smoke test timeout for Windows CI runners ([c1df5fd](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/c1df5fd2c5dd3cbd114aab9d21a13b3dc8347b94))
+
 ## [5.30.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.29.1...mcp-graph-v5.30.0) (2026-03-30)
 
 
