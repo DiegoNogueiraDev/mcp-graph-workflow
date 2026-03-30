@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.30.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.29.1...mcp-graph-v5.30.0) (2026-03-30)
+
+
+### Features
+
+* **docs:** add PRD for multi-language support in Code Graph ([3a1769b](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/3a1769b8746f9d4b6f575dec87b56d454156a63d))
+
+
+### Bug Fixes
+
+* **docs:** bundle docs manifest for npm-installed users ([bdc675c](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/bdc675caf3e3b67f3d1da0616730ca37ffd29a1f))
+
 ## [5.29.1](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.29.0...mcp-graph-v5.29.1) (2026-03-30)
 
 
