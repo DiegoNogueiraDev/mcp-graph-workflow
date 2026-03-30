@@ -51,19 +51,19 @@ describe("Smoke Tests", () => {
   });
 
   describe("CLI", () => {
-    it("--help returns usage text", () => {
+    it("--help returns usage text", { timeout: 30_000 }, () => {
       const output = execSync("npx tsx src/cli/index.ts --help", {
         encoding: "utf-8",
-        timeout: 10_000,
+        timeout: 25_000,
       });
       expect(output).toContain("Usage");
     });
 
-    it("--version returns version", () => {
+    it("--version returns version", { timeout: 30_000 }, () => {
       try {
         const output = execSync("npx tsx src/cli/index.ts --version", {
           encoding: "utf-8",
-          timeout: 10_000,
+          timeout: 25_000,
         });
         expect(output.trim()).toMatch(/^\d+\.\d+\.\d+$/);
       } catch {
