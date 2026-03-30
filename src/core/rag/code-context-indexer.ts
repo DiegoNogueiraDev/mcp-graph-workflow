@@ -11,6 +11,8 @@ export interface CodeSymbolInput {
   kind: string;
   file: string;
   exported: boolean;
+  language?: string;
+  docstring?: string;
 }
 
 export interface ProcessFlowInput {
@@ -36,26 +38,42 @@ export function indexCodeAnalysis(
 ): IndexResult {
   let documentsIndexed = 0;
 
-  // Index symbols summary
+  // Group symbols by language
   if (analysis.symbols.length > 0) {
-    const symbolLines = analysis.symbols.map(
-      (s) => `- ${s.kind} ${s.name} (${s.file})${s.exported ? " [exported]" : ""}`,
-    );
-    const content = `# Code Symbols\n\n${symbolLines.join("\n")}`;
+    const byLanguage = new Map<string, CodeSymbolInput[]>();
+    for (const sym of analysis.symbols) {
+      const lang = sym.language ?? "typescript";
+      const group = byLanguage.get(lang) ?? [];
+      group.push(sym);
+      byLanguage.set(lang, group);
+    }
 
-    store.insert({
-      sourceType: "code_context",
-      sourceId: `code_symbols:${new Date().toISOString()}`,
-      title: `Code Symbols (${analysis.symbols.length} symbols)`,
-      content,
-      metadata: {
-        symbolCount: analysis.symbols.length,
-        files: [...new Set(analysis.symbols.map((s) => s.file))],
-        phase: "IMPLEMENT",
-        indexedAt: new Date().toISOString(),
-      },
-    });
-    documentsIndexed++;
+    // Create one knowledge doc per language
+    for (const [language, symbols] of byLanguage) {
+      const symbolLines = symbols.map((s) => {
+        let line = `- ${s.kind} ${s.name} (${s.file})${s.exported ? " [exported]" : ""}`;
+        if (s.docstring) {
+          line += `\n  > ${s.docstring}`;
+        }
+        return line;
+      });
+      const content = `# Code Symbols — ${language} (${symbols.length} symbols)\n\n${symbolLines.join("\n")}`;
+
+      store.insert({
+        sourceType: "code_context",
+        sourceId: `code_symbols:${language}:${new Date().toISOString()}`,
+        title: `Code Symbols — ${language} (${symbols.length} symbols)`,
+        content,
+        metadata: {
+          language,
+          symbolCount: symbols.length,
+          files: [...new Set(symbols.map((s) => s.file))],
+          phase: "IMPLEMENT",
+          indexedAt: new Date().toISOString(),
+        },
+      });
+      documentsIndexed++;
+    }
   }
 
   // Index process flows

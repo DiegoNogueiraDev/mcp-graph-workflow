@@ -22,6 +22,10 @@ interface SymbolRow {
   module_path: string | null;
   signature: string | null;
   metadata: string | null;
+  language: string | null;
+  docstring: string | null;
+  source_snippet: string | null;
+  visibility: string | null;
   indexed_at: string;
 }
 
@@ -61,6 +65,10 @@ function rowToSymbol(row: SymbolRow): CodeSymbol {
     modulePath: row.module_path,
     signature: row.signature,
     metadata: row.metadata ? (JSON.parse(row.metadata) as Record<string, unknown>) : undefined,
+    language: row.language ?? "typescript",
+    docstring: row.docstring ?? undefined,
+    sourceSnippet: row.source_snippet ?? undefined,
+    visibility: row.visibility ?? "public",
     indexedAt: row.indexed_at,
   };
 }
@@ -102,8 +110,8 @@ export class CodeStore {
     const indexedAt = now();
     this.db
       .prepare(
-        `INSERT INTO code_symbols (id, project_id, name, kind, file, start_line, end_line, exported, module_path, signature, metadata, indexed_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO code_symbols (id, project_id, name, kind, file, start_line, end_line, exported, module_path, signature, metadata, language, docstring, source_snippet, visibility, indexed_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         id,
@@ -117,6 +125,10 @@ export class CodeStore {
         symbol.modulePath ?? null,
         symbol.signature ?? null,
         symbol.metadata ? JSON.stringify(symbol.metadata) : null,
+        symbol.language ?? "typescript",
+        symbol.docstring ?? null,
+        symbol.sourceSnippet ?? null,
+        symbol.visibility ?? "public",
         indexedAt,
       );
     return { ...symbol, id, indexedAt };
@@ -125,8 +137,8 @@ export class CodeStore {
   insertSymbolsBulk(symbols: Omit<CodeSymbol, "id" | "indexedAt">[]): number {
     const indexedAt = now();
     const stmt = this.db.prepare(
-      `INSERT INTO code_symbols (id, project_id, name, kind, file, start_line, end_line, exported, module_path, signature, metadata, indexed_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO code_symbols (id, project_id, name, kind, file, start_line, end_line, exported, module_path, signature, metadata, language, docstring, source_snippet, visibility, indexed_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
 
     const insertMany = this.db.transaction((syms: typeof symbols) => {
@@ -143,6 +155,10 @@ export class CodeStore {
           s.modulePath ?? null,
           s.signature ?? null,
           s.metadata ? JSON.stringify(s.metadata) : null,
+          s.language ?? "typescript",
+          s.docstring ?? null,
+          s.sourceSnippet ?? null,
+          s.visibility ?? "public",
           indexedAt,
         );
       }
@@ -170,6 +186,13 @@ export class CodeStore {
     const rows = this.db
       .prepare("SELECT * FROM code_symbols WHERE file = ? AND project_id = ?")
       .all(file, projectId) as SymbolRow[];
+    return rows.map(rowToSymbol);
+  }
+
+  findSymbolsByLanguage(language: string, projectId: string): CodeSymbol[] {
+    const rows = this.db
+      .prepare("SELECT * FROM code_symbols WHERE language = ? AND project_id = ?")
+      .all(language, projectId) as SymbolRow[];
     return rows.map(rowToSymbol);
   }
 

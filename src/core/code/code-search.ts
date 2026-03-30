@@ -12,6 +12,7 @@ export interface CodeSearchOptions {
   limit?: number;
   rerank?: boolean;
   groupByModule?: boolean;
+  language?: string;
 }
 
 /**
@@ -40,10 +41,10 @@ export function searchCodeSymbols(
   projectId: string,
   options: CodeSearchOptions = {},
 ): CodeSearchResult[] {
-  const { limit = 20, rerank = false, groupByModule = false } = options;
+  const { limit = 20, rerank = false, groupByModule = false, language } = options;
   const sanitized = sanitizeFtsQuery(query);
 
-  logger.debug("code-search:start", { query, sanitized, rerank, groupByModule });
+  logger.debug("code-search:start", { query, sanitized, rerank, groupByModule, language });
 
   const startMs = performance.now();
   const candidateLimit = rerank ? Math.min(limit * 3, 100) : limit;
@@ -56,16 +57,23 @@ export function searchCodeSymbols(
 
   if (ftsResults.length === 0) return [];
 
+  // Apply language filter if specified
+  const filtered = language
+    ? ftsResults.filter((r) => r.symbol.language === language)
+    : ftsResults;
+
+  if (filtered.length === 0) return [];
+
   let results: CodeSearchResult[];
 
   if (rerank) {
-    const candidates = ftsResults.map((r) => ({
+    const candidates = filtered.map((r) => ({
       id: r.symbol.id,
       text: [r.symbol.name, r.symbol.file, r.symbol.signature ?? ""].join(" "),
     }));
 
     const reranked = rerankWithTfIdf(candidates, query, limit);
-    const symbolMap = new Map(ftsResults.map((r) => [r.symbol.id, r]));
+    const symbolMap = new Map(filtered.map((r) => [r.symbol.id, r]));
 
     results = [];
     for (const r of reranked) {
@@ -78,7 +86,7 @@ export function searchCodeSymbols(
       });
     }
   } else {
-    results = ftsResults.slice(0, limit).map((r) => ({
+    results = filtered.slice(0, limit).map((r) => ({
       symbol: r.symbol,
       score: r.score,
       modulePath: r.symbol.modulePath,

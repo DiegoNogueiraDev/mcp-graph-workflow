@@ -95,13 +95,20 @@ export function registerReindexKnowledge(server: McpServer, store: SqliteStore):
       if (allSources || sources?.includes("code")) {
         try {
           const symbols = store.getDb()
-            .prepare("SELECT name, kind, file, exported FROM code_symbols LIMIT 10000")
-            .all() as Array<{ name: string; kind: string; file: string; exported: number }>;
+            .prepare("SELECT name, kind, file, exported, language, docstring FROM code_symbols LIMIT 10000")
+            .all() as Array<{ name: string; kind: string; file: string; exported: number; language: string | null; docstring: string | null }>;
           if (symbols.length > 0) {
             results.code = indexCodeAnalysis(
               new KnowledgeStore(store.getDb()),
               {
-                symbols: symbols.map((s) => ({ name: s.name, kind: s.kind, file: s.file, exported: s.exported === 1 })),
+                symbols: symbols.map((s) => ({
+                  name: s.name,
+                  kind: s.kind,
+                  file: s.file,
+                  exported: s.exported === 1,
+                  language: s.language ?? undefined,
+                  docstring: s.docstring ?? undefined,
+                })),
                 flows: [],
               },
             );

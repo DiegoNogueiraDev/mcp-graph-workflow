@@ -15,6 +15,14 @@ export const SymbolKindSchema = z.enum([
   "type_alias",
   "enum",
   "variable",
+  "struct",
+  "trait",
+  "module",
+  "package",
+  "annotation",
+  "macro",
+  "constant",
+  "property",
 ]);
 
 export type SymbolKind = z.infer<typeof SymbolKindSchema>;
@@ -28,6 +36,9 @@ export const RelationTypeSchema = z.enum([
   "implements",
   "belongs_to",
   "exports",
+  "uses",
+  "overrides",
+  "decorates",
 ]);
 
 export type CodeRelationType = z.infer<typeof RelationTypeSchema>;
@@ -52,6 +63,10 @@ export const CodeSymbolSchema = z.object({
   modulePath: z.string().nullable().optional(),
   signature: z.string().nullable().optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
+  language: z.string().optional(),
+  docstring: z.string().nullable().optional(),
+  sourceSnippet: z.string().nullable().optional(),
+  visibility: z.string().optional(),
   indexedAt: z.string(),
 });
 

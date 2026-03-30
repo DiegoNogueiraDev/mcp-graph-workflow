@@ -714,6 +714,49 @@ const migrations: Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_tpf_status ON translation_project_files(status);
     `,
   },
+  {
+    version: 21,
+    description: "Syntax Enrichment — language, docstring, source_snippet, visibility columns + FTS5 rebuild with docstring",
+    sql: `
+      ALTER TABLE code_symbols ADD COLUMN language TEXT DEFAULT 'typescript';
+      ALTER TABLE code_symbols ADD COLUMN docstring TEXT;
+      ALTER TABLE code_symbols ADD COLUMN source_snippet TEXT;
+      ALTER TABLE code_symbols ADD COLUMN visibility TEXT DEFAULT 'public';
+
+      CREATE INDEX IF NOT EXISTS idx_code_sym_language ON code_symbols(language);
+
+      -- Rebuild FTS5 to include docstring as searchable field
+      DROP TRIGGER IF EXISTS code_fts_insert;
+      DROP TRIGGER IF EXISTS code_fts_delete;
+      DROP TRIGGER IF EXISTS code_fts_update;
+      DROP TABLE IF EXISTS code_symbols_fts;
+
+      CREATE VIRTUAL TABLE code_symbols_fts USING fts5(
+        name, file, signature, docstring,
+        content='code_symbols', content_rowid='rowid'
+      );
+
+      CREATE TRIGGER code_fts_insert AFTER INSERT ON code_symbols BEGIN
+        INSERT INTO code_symbols_fts(rowid, name, file, signature, docstring)
+          VALUES (NEW.rowid, NEW.name, NEW.file, COALESCE(NEW.signature, ''), COALESCE(NEW.docstring, ''));
+      END;
+
+      CREATE TRIGGER code_fts_delete AFTER DELETE ON code_symbols BEGIN
+        INSERT INTO code_symbols_fts(code_symbols_fts, rowid, name, file, signature, docstring)
+          VALUES ('delete', OLD.rowid, OLD.name, OLD.file, COALESCE(OLD.signature, ''), COALESCE(OLD.docstring, ''));
+      END;
+
+      CREATE TRIGGER code_fts_update AFTER UPDATE ON code_symbols BEGIN
+        INSERT INTO code_symbols_fts(code_symbols_fts, rowid, name, file, signature, docstring)
+          VALUES ('delete', OLD.rowid, OLD.name, OLD.file, COALESCE(OLD.signature, ''), COALESCE(OLD.docstring, ''));
+        INSERT INTO code_symbols_fts(rowid, name, file, signature, docstring)
+          VALUES (NEW.rowid, NEW.name, NEW.file, COALESCE(NEW.signature, ''), COALESCE(NEW.docstring, ''));
+      END;
+
+      -- Repopulate FTS5 from existing data (critical for DBs that already had symbols)
+      INSERT INTO code_symbols_fts(code_symbols_fts) VALUES('rebuild');
+    `,
+  },
 ];
 
 export function runMigrations(db: Database.Database): void {
