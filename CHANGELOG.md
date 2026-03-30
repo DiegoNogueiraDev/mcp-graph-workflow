@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.29.1](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.29.0...mcp-graph-v5.29.1) (2026-03-30)
+
+
+### Bug Fixes
+
+* **code-graph:** tree-sitter Windows compatibility + graceful WASM degradation ([11cf887](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/commit/11cf887056e8009004d6f0c4c8cf39beafc61eb0))
+
 ## [5.29.0](https://github.com/DiegoNogueiraDev/mcp-graph-workflow/compare/mcp-graph-v5.28.1...mcp-graph-v5.29.0) (2026-03-30)
 
 
