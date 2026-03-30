@@ -85,7 +85,7 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
-    "@mcp-graph-workflow/mcp-graph": "^5.25.0",
+    "@mcp-graph-workflow/mcp-graph": "^5.30.0",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "adm-zip": "^0.5.16",
     "better-sqlite3": "^12.6.2",
