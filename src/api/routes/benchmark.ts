@@ -35,9 +35,14 @@ export function createBenchmarkRouter(storeRef: StoreRef): Router {
         const ctx = buildTaskContext(store, node.id);
         if (!ctx) continue;
 
-        const rawTokens = Math.ceil(ctx.metrics.originalChars / 4);
         const layered = computeLayeredMetrics(store, node.id) ?? undefined;
         if (layered) layeredSamples.push(layered);
+
+        // Use naiveNeighborhoodTokens as the honest baseline (full context without compression).
+        // Fallback to originalChars estimate only when layered metrics are unavailable.
+        const baselineTokens = layered
+          ? layered.naiveNeighborhoodTokens
+          : Math.ceil(ctx.metrics.originalChars / 4);
 
         perTaskMetrics.push({
           id: node.id,
@@ -46,7 +51,7 @@ export function createBenchmarkRouter(storeRef: StoreRef): Router {
           compactChars: ctx.metrics.compactChars,
           compressionPercent: ctx.metrics.reductionPercent,
           estimatedTokens: ctx.metrics.estimatedTokens,
-          estimatedTokensSaved: Math.max(0, rawTokens - ctx.metrics.estimatedTokens),
+          estimatedTokensSaved: Math.max(0, baselineTokens - ctx.metrics.estimatedTokens),
           layered,
         });
       }
@@ -90,9 +95,18 @@ export function createBenchmarkRouter(storeRef: StoreRef): Router {
       // Cost calculations
       const opusInputPrice = 15.0; // $/MTok
       const sonnetInputPrice = 3.0; // $/MTok
+      // Average baseline tokens per task (uncompressed context)
+      const avgBaselineTokensPerTask = sampleSize > 0
+        ? Math.round(
+            perTaskMetrics.reduce((s, m) => s + m.estimatedTokens + m.estimatedTokensSaved, 0) / sampleSize,
+          )
+        : 0;
       // Cost per task AFTER compression (what you actually pay)
       const opusCostPerTask = avgTokensPerTask > 0 ? (avgTokensPerTask * opusInputPrice) / 1_000_000 : 0;
       const sonnetCostPerTask = avgTokensPerTask > 0 ? (avgTokensPerTask * sonnetInputPrice) / 1_000_000 : 0;
+      // Cost per task WITHOUT compression (what you would pay without it)
+      const opusCostPerTaskUncompressed = avgBaselineTokensPerTask > 0 ? (avgBaselineTokensPerTask * opusInputPrice) / 1_000_000 : 0;
+      const sonnetCostPerTaskUncompressed = avgBaselineTokensPerTask > 0 ? (avgBaselineTokensPerTask * sonnetInputPrice) / 1_000_000 : 0;
       // Actual savings from compression (what you save)
       const avgTokensSavedPerTask = sampleSize > 0 ? Math.round(totalTokensSaved / sampleSize) : 0;
       const opusSavedPerTask = avgTokensSavedPerTask > 0 ? (avgTokensSavedPerTask * opusInputPrice) / 1_000_000 : 0;
@@ -130,6 +144,8 @@ export function createBenchmarkRouter(storeRef: StoreRef): Router {
             sonnetSavedPerTask: Math.round(sonnetSavedPerTask * 1000) / 1000,
             opusTotalSaved: Math.round(opusTotalSaved * 100) / 100,
             sonnetTotalSaved: Math.round(sonnetTotalSaved * 100) / 100,
+            opusCostPerTaskUncompressed: Math.round(opusCostPerTaskUncompressed * 1000) / 1000,
+            sonnetCostPerTaskUncompressed: Math.round(sonnetCostPerTaskUncompressed * 1000) / 1000,
           },
         },
         layeredCompression,

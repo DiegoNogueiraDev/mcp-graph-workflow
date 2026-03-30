@@ -26,6 +26,8 @@ export interface BenchmarkData {
       sonnetSavedPerTask: number;
       opusTotalSaved: number;
       sonnetTotalSaved: number;
+      opusCostPerTaskUncompressed: number;
+      sonnetCostPerTaskUncompressed: number;
     };
   };
   dependencyIntelligence: {
