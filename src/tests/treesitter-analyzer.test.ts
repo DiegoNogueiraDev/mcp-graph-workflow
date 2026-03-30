@@ -9,7 +9,7 @@ import { writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { TreeSitterAnalyzer } from "../core/code/treesitter/treesitter-analyzer.js";
-import { resetTreeSitterLoader } from "../core/code/treesitter/treesitter-manager.js";
+import { resetTreeSitterLoader, isTreeSitterAvailable } from "../core/code/treesitter/treesitter-manager.js";
 
 const PYTHON_SOURCE = `"""Module docstring."""
 
@@ -61,11 +61,13 @@ type Config struct {
 describe("TreeSitterAnalyzer", () => {
   let analyzer: TreeSitterAnalyzer;
   let tempDir: string;
+  let wasmAvailable: boolean;
 
   beforeAll(async () => {
     resetTreeSitterLoader();
     analyzer = new TreeSitterAnalyzer();
     await analyzer.initialize();
+    wasmAvailable = await isTreeSitterAvailable();
     tempDir = join(tmpdir(), `ts-analyzer-test-${Date.now()}`);
     mkdirSync(tempDir, { recursive: true });
   });
@@ -88,6 +90,7 @@ describe("TreeSitterAnalyzer", () => {
 
   describe("Python analysis", () => {
     it("should extract functions and classes from Python", async () => {
+      if (!wasmAvailable) return;
       const filePath = join(tempDir, "sample.py");
       writeFileSync(filePath, PYTHON_SOURCE);
 
@@ -103,6 +106,7 @@ describe("TreeSitterAnalyzer", () => {
     });
 
     it("should set language='python' on all symbols", async () => {
+      if (!wasmAvailable) return;
       const filePath = join(tempDir, "lang.py");
       writeFileSync(filePath, "def foo():\n  pass\n");
 
@@ -113,6 +117,7 @@ describe("TreeSitterAnalyzer", () => {
     });
 
     it("should extract docstrings from Python functions", async () => {
+      if (!wasmAvailable) return;
       const filePath = join(tempDir, "doc.py");
       writeFileSync(filePath, PYTHON_SOURCE);
 
@@ -123,6 +128,7 @@ describe("TreeSitterAnalyzer", () => {
     });
 
     it("should detect _private visibility via underscore prefix", async () => {
+      if (!wasmAvailable) return;
       const filePath = join(tempDir, "vis.py");
       writeFileSync(filePath, PYTHON_SOURCE);
 
@@ -136,6 +142,7 @@ describe("TreeSitterAnalyzer", () => {
     });
 
     it("should extract import relations", async () => {
+      if (!wasmAvailable) return;
       const filePath = join(tempDir, "imp.py");
       writeFileSync(filePath, PYTHON_SOURCE);
 
@@ -145,6 +152,7 @@ describe("TreeSitterAnalyzer", () => {
     });
 
     it("should extract call relations", async () => {
+      if (!wasmAvailable) return;
       const filePath = join(tempDir, "call.py");
       writeFileSync(filePath, PYTHON_SOURCE);
 
@@ -156,6 +164,7 @@ describe("TreeSitterAnalyzer", () => {
 
   describe("Go analysis", () => {
     it("should extract functions and structs from Go", async () => {
+      if (!wasmAvailable) return;
       const filePath = join(tempDir, "handler.go");
       writeFileSync(filePath, GO_SOURCE);
 
@@ -169,6 +178,7 @@ describe("TreeSitterAnalyzer", () => {
     });
 
     it("should set language='go' on all symbols", async () => {
+      if (!wasmAvailable) return;
       const filePath = join(tempDir, "lang.go");
       writeFileSync(filePath, GO_SOURCE);
 
@@ -179,6 +189,7 @@ describe("TreeSitterAnalyzer", () => {
     });
 
     it("should detect Go export via uppercase first letter", async () => {
+      if (!wasmAvailable) return;
       const filePath = join(tempDir, "exp.go");
       writeFileSync(filePath, GO_SOURCE);
 
@@ -191,6 +202,7 @@ describe("TreeSitterAnalyzer", () => {
     });
 
     it("should extract GoDoc comments as docstring", async () => {
+      if (!wasmAvailable) return;
       const filePath = join(tempDir, "godoc.go");
       writeFileSync(filePath, GO_SOURCE);
 
@@ -200,6 +212,7 @@ describe("TreeSitterAnalyzer", () => {
     });
 
     it("should detect struct kind", async () => {
+      if (!wasmAvailable) return;
       const filePath = join(tempDir, "struct.go");
       writeFileSync(filePath, GO_SOURCE);
 

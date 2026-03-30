@@ -91,7 +91,7 @@ function resolveGrammarPath(languageId: string): string | null {
   try {
     // Resolve the package path via require.resolve
     const pkgMain = require.resolve(`${entry.pkg}/package.json`);
-    const pkgDir = pkgMain.replace(/\/package\.json$/, "");
+    const pkgDir = pkgMain.replace(/[/\\]package\.json$/, "");
     const wasmPath = join(pkgDir, entry.wasm);
 
     if (existsSync(wasmPath)) {
