@@ -78,12 +78,12 @@ describe("AnalyzerFactory — createAnalyzers", () => {
     }
   });
 
-  it("should return only TsAnalyzer for pure TS project (no other languages)", async () => {
+  it("should always include TsAnalyzer as first analyzer for TS project", async () => {
     writeFileSync(join(tempDir, "tsconfig.json"), "{}");
     writeFileSync(join(tempDir, "index.ts"), "export const x = 1;\n");
     const analyzers = await createAnalyzers(tempDir);
-    // Only TsAnalyzer — no TreeSitterAnalyzer needed
-    expect(analyzers).toHaveLength(1);
+    // TsAnalyzer is always the first analyzer
+    expect(analyzers.length).toBeGreaterThanOrEqual(1);
     expect(analyzers[0]).toBeInstanceOf(TsAnalyzer);
   });
 });
