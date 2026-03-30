@@ -1,6 +1,10 @@
 import React, { useState } from "react";
 import { useContextBudget } from "@/hooks/use-context-budget";
+import { useDream } from "@/hooks/use-dream";
 import { apiClient } from "@/lib/api-client";
+import { DreamPanel } from "./dream/dream-panel";
+import { DreamMetricsCards } from "./dream/dream-metrics";
+import { DreamHistory } from "./dream/dream-history";
 
 const HEALTH_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   green: { bg: "bg-green-500/10", text: "text-green-500", border: "border-green-500/30" },
@@ -10,6 +14,8 @@ const HEALTH_COLORS: Record<string, { bg: string; text: string; border: string }
 
 export function ContextTab(): React.JSX.Element {
   const { budget, loading, error, refresh } = useContextBudget();
+  const dream = useDream();
+  const [confirmingDisable, setConfirmingDisable] = useState<string | null>(null);
 
   if (error) {
     return (
@@ -35,8 +41,6 @@ export function ContextTab(): React.JSX.Element {
   }
 
   const healthStyle = HEALTH_COLORS[budget.health] ?? HEALTH_COLORS.green;
-
-  const [confirmingDisable, setConfirmingDisable] = useState<string | null>(null);
 
   const handleQuickDisable = (skillName: string): void => {
     if (confirmingDisable === skillName) {
@@ -128,6 +132,34 @@ export function ContextTab(): React.JSX.Element {
               background: budget.health === "red" ? "#ef4444" : budget.health === "yellow" ? "#f59e0b" : "#10b981",
             }}
           />
+        </div>
+      </div>
+
+      {/* DreamMode Section */}
+      <div className="border-t border-edge pt-6 space-y-4">
+        <h2 className="text-lg font-semibold">DreamMode</h2>
+        <p className="text-xs text-muted">
+          REM-inspired knowledge consolidation: replay, decay, prune, merge, and synthesize.
+        </p>
+
+        {dream.error && (
+          <div className="text-xs text-red-400">{dream.error}</div>
+        )}
+
+        {dream.status && (
+          <DreamPanel
+            status={dream.status}
+            onStartCycle={() => void dream.startCycle()}
+            onCancelCycle={() => void dream.cancelCycle()}
+            onPreview={dream.preview}
+          />
+        )}
+
+        <DreamMetricsCards metrics={dream.metrics} />
+
+        <div className="space-y-2">
+          <h3 className="text-xs font-semibold text-muted uppercase">Cycle History</h3>
+          <DreamHistory cycles={dream.history} />
         </div>
       </div>
 

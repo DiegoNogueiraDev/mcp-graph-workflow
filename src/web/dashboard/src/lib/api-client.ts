@@ -1,4 +1,4 @@
-import type { GraphDocument, GraphEdge, GraphNode, GraphStats, IntegrationStatus, CodeGraphStatus, ProjectMemory, ReindexResult, LogEntry, FolderInfo, OpenFolderResult, BrowseResult, CodeGraphData, ImpactResult, KnowledgeStats, Skill, CustomSkill, CustomSkillInput, ContextBudget, JourneyMap, JourneyMapFull, TranslationAnalysis, TranslationJob, TranslationPrepareResult, TranslationFinalizeResult, TranslationStats, TranslationKnowledgeStats, TranslationProject, TranslationProjectFile, TranslationProjectSummary, TranslationGraphData } from "./types";
+import type { GraphDocument, GraphEdge, GraphNode, GraphStats, IntegrationStatus, CodeGraphStatus, ProjectMemory, ReindexResult, LogEntry, FolderInfo, OpenFolderResult, BrowseResult, CodeGraphData, ImpactResult, KnowledgeStats, Skill, CustomSkill, CustomSkillInput, ContextBudget, JourneyMap, JourneyMapFull, TranslationAnalysis, TranslationJob, TranslationPrepareResult, TranslationFinalizeResult, TranslationStats, TranslationKnowledgeStats, TranslationProject, TranslationProjectFile, TranslationProjectSummary, TranslationGraphData, DreamStatus, DreamCycleResult, DreamMetrics } from "./types";
 
 const BASE = "/api/v1";
 const REQUEST_TIMEOUT_MS = 30_000;
@@ -461,4 +461,23 @@ export const apiClient = {
       method: "POST",
       body: JSON.stringify({ query, limit }),
     }),
+
+  // Dream
+  dreamStartCycle: (config?: Record<string, unknown>) =>
+    request<{ ok: boolean; cycleId: string }>("/dream/cycle", {
+      method: "POST",
+      body: JSON.stringify(config ?? {}),
+    }),
+  dreamCancelCycle: () =>
+    request<{ ok: boolean }>("/dream/cycle/cancel", { method: "POST" }),
+  dreamGetStatus: () =>
+    request<DreamStatus>("/dream/status"),
+  dreamGetHistory: (limit?: number) =>
+    request<DreamCycleResult[]>(`/dream/history${limit ? `?limit=${limit}` : ""}`),
+  dreamGetHistoryById: (id: string) =>
+    request<DreamCycleResult>(`/dream/history/${id}`),
+  dreamGetPreview: () =>
+    request<DreamCycleResult>("/dream/preview"),
+  dreamGetMetrics: () =>
+    request<DreamMetrics>("/dream/metrics"),
 };

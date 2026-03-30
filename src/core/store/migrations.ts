@@ -757,6 +757,36 @@ const migrations: Migration[] = [
       INSERT INTO code_symbols_fts(code_symbols_fts) VALUES('rebuild');
     `,
   },
+  {
+    version: 22,
+    description: "DreamMode — dream_cycles and dream_archive tables for REM-inspired knowledge consolidation",
+    sql: `
+      CREATE TABLE IF NOT EXISTS dream_cycles (
+        id              TEXT PRIMARY KEY,
+        status          TEXT NOT NULL,
+        config          TEXT NOT NULL,
+        result          TEXT,
+        started_at      TEXT NOT NULL,
+        completed_at    TEXT,
+        error_message   TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_dream_cycles_status ON dream_cycles(status);
+      CREATE INDEX IF NOT EXISTS idx_dream_cycles_started ON dream_cycles(started_at);
+
+      CREATE TABLE IF NOT EXISTS dream_archive (
+        id              TEXT PRIMARY KEY,
+        original_doc_id TEXT NOT NULL,
+        title           TEXT NOT NULL,
+        source_type     TEXT NOT NULL,
+        quality_score   REAL,
+        reason          TEXT NOT NULL,
+        archived_at     TEXT NOT NULL,
+        cycle_id        TEXT REFERENCES dream_cycles(id) ON DELETE CASCADE
+      );
+      CREATE INDEX IF NOT EXISTS idx_dream_archive_cycle ON dream_archive(cycle_id);
+      CREATE INDEX IF NOT EXISTS idx_dream_archive_reason ON dream_archive(reason);
+    `,
+  },
 ];
 
 export function runMigrations(db: Database.Database): void {

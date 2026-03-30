@@ -23,7 +23,12 @@ export type GraphEventType =
   | "translation:job_created"
   | "translation:analyzed"
   | "translation:finalized"
-  | "translation:error";
+  | "translation:error"
+  | "dream:cycle_started"
+  | "dream:phase_started"
+  | "dream:phase_completed"
+  | "dream:cycle_completed"
+  | "dream:cycle_failed";
 
 export interface GraphEvent {
   type: GraphEventType;
@@ -162,4 +167,31 @@ export interface TranslationFinalizedEvent extends GraphEvent {
 export interface TranslationErrorEvent extends GraphEvent {
   type: "translation:error";
   payload: { jobId: string; errorMessage: string };
+}
+
+// ── Dream events ──────────────────────────────────
+
+export interface DreamCycleStartedEvent extends GraphEvent {
+  type: "dream:cycle_started";
+  payload: { cycleId: string; config: Record<string, unknown> };
+}
+
+export interface DreamPhaseStartedEvent extends GraphEvent {
+  type: "dream:phase_started";
+  payload: { cycleId: string; phase: string };
+}
+
+export interface DreamPhaseCompletedEvent extends GraphEvent {
+  type: "dream:phase_completed";
+  payload: { cycleId: string; phase: string; durationMs: number };
+}
+
+export interface DreamCycleCompletedEvent extends GraphEvent {
+  type: "dream:cycle_completed";
+  payload: { cycleId: string; totalPruned: number; totalMerged: number; durationMs: number };
+}
+
+export interface DreamCycleFailedEvent extends GraphEvent {
+  type: "dream:cycle_failed";
+  payload: { cycleId: string; errorMessage: string };
 }

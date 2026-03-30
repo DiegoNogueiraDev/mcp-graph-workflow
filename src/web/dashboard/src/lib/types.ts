@@ -489,3 +489,71 @@ export interface TranslationGraphData {
   nodes: TranslationGraphNode[];
   edges: TranslationGraphEdge[];
 }
+
+// ── DreamMode types ────────────────────────────
+
+export interface DreamStatus {
+  running: boolean;
+  currentPhase?: "nrem" | "rem" | "wake-ready";
+  progress?: number;
+  cycleId?: string;
+}
+
+export interface DreamPhaseResult {
+  durationMs: number;
+}
+
+export interface DreamNremResult extends DreamPhaseResult {
+  replayed: number;
+  scoresDecayed: number;
+  pruned: number;
+  archived: number;
+}
+
+export interface DreamRemResult extends DreamPhaseResult {
+  priorityProcessed: number;
+  urgencyDecayed: number;
+  merged: number;
+  clustersFormed: number;
+  associationsCreated: number;
+}
+
+export interface DreamWakeResult extends DreamPhaseResult {
+  freedTokens: number;
+  signalToNoise: number;
+  newGeneralizations: number;
+}
+
+export interface DreamSummary {
+  totalDocsBefore: number;
+  totalDocsAfter: number;
+  avgQualityBefore: number;
+  avgQualityAfter: number;
+  totalPruned: number;
+  totalMerged: number;
+  totalAssociations: number;
+  freedCapacityEstimate: number;
+}
+
+export interface DreamCycleResult {
+  id: string;
+  startedAt: string;
+  completedAt: string;
+  status: "idle" | "running" | "completed" | "failed" | "cancelled";
+  config: Record<string, unknown>;
+  phases: {
+    nrem: DreamNremResult;
+    rem: DreamRemResult;
+    wakeReady: DreamWakeResult;
+  };
+  summary: DreamSummary;
+}
+
+export interface DreamMetrics {
+  totalCycles: number;
+  totalPruned: number;
+  totalMerged: number;
+  totalAssociations: number;
+  avgQualityImprovement: number;
+  totalFreedTokens: number;
+}
